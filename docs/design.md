@@ -3,7 +3,8 @@
 A job-application tracker for one person applying to dozens of SWE / AI-agent roles a day, often to the
 same posting from several email accounts. Daily-use tool first, portfolio piece second.
 
-Status: design settled 2026-09-23 · Milestones 1–3 (prototype, MVP, demo) done · Milestone 4 (agent v1) next.
+Status: design settled 2026-09-23 · Milestones 1–3 (prototype, MVP, demo) done · Milestone 4 (agent v1) on
+hold. Deferred work is listed in [todo.md](todo.md).
 
 ## 1. Goals
 
@@ -169,5 +170,5 @@ repository.
 - ~~Owner account~~ — set through the `OWNER_EMAILS` secret.
 - ~~Google OAuth client~~ — in Testing mode with the owner as the only test user; publishing would need a
   privacy policy and home page.
-- Workers Paid, before milestone 4 or before the demo is shared widely (§5, §8).
+- Workers Paid — deferred on 2026-09-24; the risks of staying on the free plan are in [todo.md](todo.md).
 - An Anthropic API key — milestone 4.
