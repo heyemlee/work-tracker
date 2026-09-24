@@ -4,9 +4,8 @@ import { Popover } from 'radix-ui';
 import { useState, type ReactNode, type SyntheticEvent } from 'react';
 import { patchApplication, useRepository } from '../data/store';
 import type { Repository } from '../domain/repository';
-import { accountName } from '../domain/accounts';
 import { STAGES, type Account, type Application } from '../domain/types';
-import { useI18n } from '../i18n/context';
+import { accountName, useI18n } from '../i18n/context';
 import { formatShortDate } from '../i18n/format';
 
 const stop = (event: SyntheticEvent) => event.stopPropagation();
@@ -40,7 +39,7 @@ export function ApplicationChip({ application, account }: { application: Applica
   const [open, setOpen] = useState(false);
   const stageLabel = t(`status.${application.stage}`);
   const statusLabel = application.rejected ? `${stageLabel}, ${t('status.rejected')}` : stageLabel;
-  const name = accountName(account);
+  const name = accountName(account, t);
 
   const choose = (operation: (repo: Repository) => Promise<void>, patch: Partial<Application>) => {
     setOpen(false);

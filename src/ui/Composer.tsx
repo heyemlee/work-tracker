@@ -4,13 +4,12 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Dialog, Popover } from 'radix-ui';
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useRepository } from '../data/store';
-import { accountName } from '../domain/accounts';
 import { findJob, suggestCompanies } from '../domain/companies';
 import { toIsoDate } from '../domain/dates';
 import type { JobRow } from '../domain/rows';
 import type { Company, Id, Snapshot } from '../domain/types';
 import { useMediaQuery } from '../hooks/useMediaQuery';
-import { channelName, useI18n } from '../i18n/context';
+import { accountName, channelName, useI18n } from '../i18n/context';
 import { liveDefaults, updatePrefs, usePrefs, type LastUsed } from '../state/prefs';
 import { showToast } from '../state/toasts';
 import { useLiquidGlass } from './glass/useLiquidGlass';
@@ -358,7 +357,7 @@ function ComposerPanel({ snapshot, rows, onOpenJob, onOpenSettings, phone, onClo
                 {snapshot.accounts.map((account) => {
                   const done = taken.has(account.id);
                   const on = !done && selectedIds.includes(account.id);
-                  const name = accountName(account);
+                  const name = accountName(account, t);
                   return (
                     <button
                       key={account.id}
@@ -394,6 +393,15 @@ function ComposerPanel({ snapshot, rows, onOpenJob, onOpenSettings, phone, onClo
                   );
                 })}
               </div>
+              {snapshot.accounts.some((account) => !account.email.trim()) && (
+                <button
+                  type="button"
+                  onClick={onOpenSettings}
+                  className="mt-2 px-1 text-[12px] font-medium text-fg-2 underline-offset-2 hover:text-fg hover:underline"
+                >
+                  {t('composer.fillEmails')}
+                </button>
+              )}
             </div>
 
             <div className="mt-1 flex items-center gap-2">
@@ -488,7 +496,9 @@ function SuggestionList({ suggestions, highlight, onHighlight, onPick, snapshot 
                         className="chip max-w-full"
                         data-status={application.rejected ? 'rejected' : application.stage}
                       >
-                        <span className="truncate font-semibold">{account ? accountName(account) : ''}</span>
+                        <span className="truncate font-semibold">
+                          {account ? accountName(account, t) : ''}
+                        </span>
                         <span className="chip-status">{t(`status.${application.stage}`)}</span>
                       </span>
                     );

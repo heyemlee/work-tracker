@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { Channel } from '../domain/types';
+import type { Account, Channel } from '../domain/types';
 import type { Locale } from '../state/prefs';
 import type { MessageKey } from './messages';
 
@@ -14,6 +14,11 @@ export function useI18n(): I18n {
   const i18n = useContext(I18nContext);
   if (!i18n) throw new Error('useI18n must be used inside <I18nProvider>');
   return i18n;
+}
+
+/** An account goes by its email address, which says which inbox applied. */
+export function accountName(account: Pick<Account, 'email'>, t: I18n['t']): string {
+  return account.email.trim() || t('account.noEmail');
 }
 
 /** Built-in channels store a stable key; user channels store their own name. */

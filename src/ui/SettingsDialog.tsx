@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { Download, LogOut, Plus, RotateCcw, Trash2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Dialog, Popover } from 'radix-ui';
-import { useMemo, useRef, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { signOut } from '../data/auth';
 import { useResetDemo } from '../data/demo';
 import { localRepository, useCurrentUser, useRepository } from '../data/store';
@@ -65,10 +65,13 @@ function SettingsBody({ snapshot }: { snapshot: Snapshot }) {
     [snapshot.applications],
   );
 
-  const addAccount = () => {
-    const color = ACCOUNT_COLORS[snapshot.accounts.length % ACCOUNT_COLORS.length] ?? 'gray';
+  // A new account starts as an email field and is only created once an address is entered.
+  const [adding, setAdding] = useState(false);
+  const newColor = ACCOUNT_COLORS[snapshot.accounts.length % ACCOUNT_COLORS.length] ?? 'gray';
+  const addAccount = (email: string) => {
+    // The label is no longer shown; it stays as a short internal name.
     const label = String.fromCharCode(65 + (snapshot.accounts.length % 26));
-    void run((repo) => repo.saveAccount({ label, email: '', color }));
+    void run((repo) => repo.saveAccount({ label, email, color: newColor }));
   };
 
   return (
@@ -94,7 +97,11 @@ function SettingsBody({ snapshot }: { snapshot: Snapshot }) {
           {snapshot.accounts.map((account) => (
             <AccountRow key={account.id} account={account} inUse={usedAccounts.has(account.id)} />
           ))}
-          <AddButton onClick={addAccount}>{t('settings.addAccount')}</AddButton>
+          {adding ? (
+            <NewAccountRow color={newColor} onSave={addAccount} onDone={() => setAdding(false)} />
+          ) : (
+            <AddButton onClick={() => setAdding(true)}>{t('settings.addAccount')}</AddButton>
+          )}
         </Group>
 
         <Group title={t('settings.resumes')}>
@@ -222,6 +229,56 @@ function TextInput({
         className,
       )}
     />
+  );
+}
+
+/** An email field for a new account. Enter or leaving the field saves it; leaving it empty cancels. */
+function NewAccountRow({
+  color,
+  onSave,
+  onDone,
+}: {
+  color: Account['color'];
+  onSave: (email: string) => void;
+  onDone: () => void;
+}) {
+  const { t } = useI18n();
+  const [invalid, setInvalid] = useState(false);
+  const finished = useRef(false);
+
+  const commit = (input: HTMLInputElement) => {
+    if (finished.current) return;
+    const email = input.value.trim();
+    if (email && !input.checkValidity()) {
+      setInvalid(true);
+      return;
+    }
+    finished.current = true;
+    if (email) onSave(email);
+    onDone();
+  };
+
+  return (
+    <div>
+      <Row>
+        <span className="grid size-8 shrink-0 place-items-center">
+          <span className="size-3.5 rounded-full" style={{ background: `var(--acc-${color})` }} />
+        </span>
+        <input
+          type="email"
+          autoFocus
+          aria-label={t('settings.email')}
+          placeholder="you@example.com"
+          onChange={() => setInvalid(false)}
+          onBlur={(event) => commit(event.currentTarget)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') commit(event.currentTarget);
+          }}
+          className="h-8 min-w-0 flex-1 rounded-[10px] bg-fill-2 px-2.5 text-[14px] outline-none placeholder:text-fg-3"
+        />
+      </Row>
+      {invalid && <p className="mt-1 px-3 text-[12px] text-danger">{t('settings.invalidEmail')}</p>}
+    </div>
   );
 }
 

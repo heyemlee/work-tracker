@@ -4,7 +4,6 @@ import { AnimatePresence, motion, useDragControls, type PanInfo } from 'motion/r
 import { Dialog } from 'radix-ui';
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { patchApplication, useJobEvents, useRepository } from '../data/store';
-import { accountName } from '../domain/accounts';
 import { indexBy } from '../domain/collections';
 import type { JobRow } from '../domain/rows';
 import {
@@ -19,7 +18,7 @@ import {
   type TimelineEvent,
 } from '../domain/types';
 import { useMediaQuery } from '../hooks/useMediaQuery';
-import { channelName, useI18n } from '../i18n/context';
+import { accountName, channelName, useI18n } from '../i18n/context';
 import { formatDateTime, formatShortDate } from '../i18n/format';
 import { getPrefs, liveDefaults } from '../state/prefs';
 import { showToast } from '../state/toasts';
@@ -205,7 +204,7 @@ function PanelBody({ row, snapshot, today, onClose, onGrab }: PanelBodyProps) {
                   >
                     <Plus className="size-3.5 text-fg-2" aria-hidden="true" />
                     <span className="dot" style={{ background: `var(--acc-${account.color})` }} />
-                    {accountName(account)}
+                    {accountName(account, t)}
                   </button>
                 ))}
               </div>
@@ -312,7 +311,7 @@ function ApplicationCard({ application, account, channels, resumes }: Applicatio
       <div className={clsx('flex items-center gap-2', application.rejected && 'opacity-60')}>
         <span className="dot" style={{ background: `var(--acc-${account?.color ?? 'gray'})` }} />
         <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
-          {account ? accountName(account) : t('event.unknownAccount')}
+          {account ? accountName(account, t) : t('event.unknownAccount')}
         </span>
         <span className="shrink-0 text-[12px] text-fg-3">
           {t('detail.appliedOn', { date: formatShortDate(application.appliedAt, locale) })}
@@ -329,7 +328,7 @@ function ApplicationCard({ application, account, channels, resumes }: Applicatio
               optimistic: patchApplication(application.id, { stage }),
             })
           }
-          label={account ? accountName(account) : t('detail.applications')}
+          label={account ? accountName(account, t) : t('detail.applications')}
           layoutId={`stage-${application.id}`}
           className={clsx(application.rejected && 'opacity-60')}
         />
@@ -413,7 +412,7 @@ function Timeline({ events, accountsById }: { events: TimelineEvent[]; accountsB
 
   const describe = (event: TimelineEvent) => {
     const found = event.accountId ? accountsById.get(event.accountId) : undefined;
-    const account = found ? accountName(found) : undefined;
+    const account = found ? accountName(found, t) : undefined;
     const vars = {
       account: account ?? t('event.unknownAccount'),
       stage: event.to ? t(`status.${event.to}`) : '',
