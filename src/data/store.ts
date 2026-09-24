@@ -14,6 +14,7 @@ import { createLocalRepository } from './localRepository';
 export const localRepository = import.meta.env.VITE_DATA === 'local' ? createLocalRepository() : null;
 export const repository: Repository = localRepository ?? createHttpRepository();
 
+export const ME_KEY = ['me'] as const;
 const SNAPSHOT_KEY = ['snapshot'] as const;
 const EVENTS_KEY = ['events'] as const;
 
@@ -21,12 +22,14 @@ export interface User {
   name: string;
   email: string;
   image: string | null;
+  /** A visitor in the public demo's sandbox, not a signed-in owner. */
+  demo: boolean;
 }
 
 /** The signed-in user. Fails with UnauthorizedError when there is no session. */
 export function useCurrentUser() {
   return useQuery({
-    queryKey: ['me'],
+    queryKey: ME_KEY,
     queryFn: async () => (await request<{ user: User }>('GET', '/me')).user,
     enabled: !localRepository,
     staleTime: Infinity,
@@ -73,9 +76,14 @@ export function useRepository() {
       try {
         return await operation(repository);
       } catch (error) {
-        if (!(error instanceof UnauthorizedError)) console.error(error);
-        showToast({ message: error instanceof UnauthorizedError ? t('error.signedOut') : t('error.save') });
-        if (error instanceof UnauthorizedError) void queryClient.invalidateQueries({ queryKey: ['me'] });
+        if (error instanceof UnauthorizedError) {
+          // Refetching the user brings back the sign-in screen, or a fresh sandbox in the demo.
+          showToast({ message: t(error.demo ? 'demo.expired' : 'error.signedOut') });
+          void queryClient.invalidateQueries({ queryKey: ME_KEY });
+        } else {
+          console.error(error);
+          showToast({ message: t('error.save') });
+        }
         return undefined;
       } finally {
         void queryClient.invalidateQueries({ queryKey: SNAPSHOT_KEY });

@@ -1,5 +1,10 @@
-import { useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { LoaderCircle } from 'lucide-react';
+import { motion } from 'motion/react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { initialAuthError, signInWithGoogle } from '../data/auth';
+import { startDemo, type DemoStart as DemoOutcome } from '../data/demo';
+import { ME_KEY } from '../data/store';
 import { useI18n } from '../i18n/context';
 import { updatePrefs } from '../state/prefs';
 import { useLiquidGlass } from './glass/useLiquidGlass';
@@ -28,10 +33,41 @@ function GoogleMark() {
   );
 }
 
-export function SignIn() {
-  const { t, locale } = useI18n();
+/** The glass card the sign-in and demo screens share. */
+function GateCard({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
+  const { locale } = useI18n();
   const paneRef = useRef<HTMLDivElement>(null);
   const glass = useLiquidGlass(paneRef, { radius: 32, bevel: 20 });
+  return (
+    <main className="grid min-h-dvh place-items-center p-4">
+      <motion.div
+        className="w-full max-w-[400px]"
+        initial={delay ? { opacity: 0 } : false}
+        animate={{ opacity: 1 }}
+        transition={{ delay, duration: 0.3 }}
+      >
+        <div ref={paneRef} style={glass.style} className="glass rounded-[32px] px-8 pt-10 pb-7 text-center">
+          {glass.filter}
+          <div className="flex justify-center">
+            <BrandMark size={56} />
+          </div>
+          <h1 className="mt-5 text-[28px] font-semibold tracking-[-0.025em]">Outbox</h1>
+          {children}
+          <button
+            type="button"
+            onClick={() => updatePrefs({ locale: locale === 'en' ? 'zh' : 'en' })}
+            className="mt-6 text-[12px] text-fg-3 hover:text-fg"
+          >
+            {locale === 'en' ? '中文' : 'English'}
+          </button>
+        </div>
+      </motion.div>
+    </main>
+  );
+}
+
+export function SignIn({ demoUrl }: { demoUrl: string | null }) {
+  const { t } = useI18n();
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
   // Better Auth reports a blocked sign-up as unable_to_create_user: the account isn't on the allowlist.
@@ -51,43 +87,86 @@ export function SignIn() {
   };
 
   return (
-    <main className="grid min-h-dvh place-items-center p-4">
-      <div
-        ref={paneRef}
-        style={glass.style}
-        className="glass w-full max-w-[400px] rounded-[32px] px-8 pt-10 pb-7 text-center"
+    <GateCard>
+      <p className="mt-1 text-[17px] text-fg-2">{t('signIn.title')}</p>
+      <p className="mx-auto mt-5 max-w-[280px] text-[13px] leading-relaxed text-fg-3">{t('signIn.body')}</p>
+      <Button
+        variant="primary"
+        className="mt-7 h-11 w-full gap-2.5 text-[15px]"
+        disabled={pending}
+        onClick={() => void start()}
       >
-        {glass.filter}
-        <div className="flex justify-center">
-          <BrandMark size={56} />
-        </div>
-        <h1 className="mt-5 text-[28px] font-semibold tracking-[-0.025em]">Outbox</h1>
-        <p className="mt-1 text-[17px] text-fg-2">{t('signIn.title')}</p>
-        <p className="mx-auto mt-5 max-w-[280px] text-[13px] leading-relaxed text-fg-3">{t('signIn.body')}</p>
-        <Button
-          variant="primary"
-          className="mt-7 h-11 w-full gap-2.5 text-[15px]"
-          disabled={pending}
-          onClick={() => void start()}
+        <span className="grid size-6 place-items-center rounded-full bg-white">
+          <GoogleMark />
+        </span>
+        {t('signIn.google')}
+      </Button>
+      {(failed || (redirectError && !pending)) && (
+        <p role="alert" className="mt-3 text-[12px] text-danger">
+          {failed ? t('signIn.failed') : redirectError}
+        </p>
+      )}
+      {demoUrl && (
+        <a
+          href={demoUrl}
+          className="mt-2.5 flex h-11 w-full items-center justify-center rounded-full bg-fill text-[15px] font-medium transition hover:bg-fill-2 active:scale-[0.97]"
         >
-          <span className="grid size-6 place-items-center rounded-full bg-white">
-            <GoogleMark />
-          </span>
-          {t('signIn.google')}
-        </Button>
-        {(failed || (redirectError && !pending)) && (
-          <p role="alert" className="mt-3 text-[12px] text-danger">
-            {failed ? t('signIn.failed') : redirectError}
+          {t('signIn.demo')}
+        </a>
+      )}
+    </GateCard>
+  );
+}
+
+const DEMO_FAILURES = {
+  tooMany: 'demo.tooMany',
+  busy: 'demo.busy',
+  failed: 'demo.failed',
+} as const;
+
+/** The public demo's front door: creates the visitor's sandbox, then lets the app load it. */
+export function DemoStart() {
+  const { t } = useI18n();
+  const queryClient = useQueryClient();
+  const [attempt, setAttempt] = useState(0);
+  const [failure, setFailure] = useState<Exclude<DemoOutcome, 'started'> | null>(null);
+
+  useEffect(() => {
+    let current = true;
+    void startDemo().then((outcome) => {
+      if (!current) return;
+      if (outcome === 'started') void queryClient.invalidateQueries({ queryKey: ME_KEY });
+      else setFailure(outcome);
+    });
+    return () => {
+      current = false;
+    };
+  }, [attempt, queryClient]);
+
+  return (
+    // Usually done in a blink: wait a moment before showing anything, so the card doesn't flash.
+    <GateCard delay={0.4}>
+      {failure ? (
+        <>
+          <p role="alert" className="mx-auto mt-3 max-w-[300px] text-[14px] text-fg-2">
+            {t(DEMO_FAILURES[failure])}
           </p>
-        )}
-        <button
-          type="button"
-          onClick={() => updatePrefs({ locale: locale === 'en' ? 'zh' : 'en' })}
-          className="mt-6 text-[12px] text-fg-3 hover:text-fg"
-        >
-          {locale === 'en' ? '中文' : 'English'}
-        </button>
-      </div>
-    </main>
+          <Button
+            className="mt-6 h-11 w-full text-[15px]"
+            onClick={() => {
+              setFailure(null);
+              setAttempt((n) => n + 1);
+            }}
+          >
+            {t('error.retry')}
+          </Button>
+        </>
+      ) : (
+        <p className="mt-3 flex items-center justify-center gap-2 text-[14px] text-fg-2">
+          <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+          {t('demo.starting')}
+        </p>
+      )}
+    </GateCard>
   );
 }

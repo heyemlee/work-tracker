@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Dialog, Popover } from 'radix-ui';
 import { useMemo, useRef, type ReactNode } from 'react';
 import { signOut } from '../data/auth';
+import { resetDemo } from '../data/demo';
 import { localRepository, useCurrentUser, useRepository } from '../data/store';
 import { toCsv } from '../domain/csv';
 import { toIsoDate } from '../domain/dates';
@@ -332,6 +333,8 @@ function GeneralSettings({ snapshot }: { snapshot: Snapshot }) {
   const theme = usePrefs((p) => p.theme);
   const hideRejected = usePrefs((p) => p.hideRejected);
   const { data: user } = useCurrentUser();
+  // Sample data can be restored in the local prototype and in the demo; the owner's app has real data.
+  const resetSample = localRepository ? localRepository.resetSampleData : user?.demo ? resetDemo : null;
 
   return (
     <div className="space-y-1.5">
@@ -382,13 +385,13 @@ function GeneralSettings({ snapshot }: { snapshot: Snapshot }) {
           CSV
         </Button>
       </Row>
-      {localRepository ? (
+      {resetSample ? (
         <Row className="justify-between gap-4 py-2 pr-2 pl-3">
           <span className="min-w-0">
             <span className="block text-[14px]">{t('settings.reset')}</span>
             <span className="block text-[12px] text-fg-3">{t('settings.resetHint')}</span>
           </span>
-          <Button onClick={() => void run(async () => localRepository?.resetSampleData())}>
+          <Button onClick={() => void run(resetSample)}>
             <RotateCcw className="size-3.5" aria-hidden="true" />
             {t('tweaks.reset')}
           </Button>

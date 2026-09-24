@@ -1,5 +1,5 @@
-import { BUILTIN_CHANNELS } from '../domain/channels';
-import { addDays, parseIsoDate, toIsoDate } from '../domain/dates';
+import { BUILTIN_CHANNELS } from './channels';
+import { addDays, parseIsoDate, toIsoDate } from './dates';
 import type {
   Account,
   Application,
@@ -11,7 +11,7 @@ import type {
   ResumeVersion,
   Snapshot,
   TimelineEvent,
-} from '../domain/types';
+} from './types';
 
 /** A snapshot plus the timelines behind it. */
 export interface SampleData extends Snapshot {

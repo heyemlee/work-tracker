@@ -13,7 +13,7 @@ import { findCompany } from '../domain/companies';
 import { ConflictError, NotFoundError } from '../domain/errors';
 import type { Repository } from '../domain/repository';
 import type { Application, Id, Job } from '../domain/types';
-import { createSampleData, type SampleData } from './sampleData';
+import { createSampleData, type SampleData } from '../domain/sampleData';
 
 const STORAGE_KEY = 'outbox.sample.v3';
 

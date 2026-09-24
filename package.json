@@ -21,8 +21,8 @@
     "format:check": "prettier --check .",
     "cf-typegen": "wrangler types",
     "db:generate": "drizzle-kit generate",
-    "db:migrate:local": "wrangler d1 migrations apply outbox --local",
-    "db:migrate:remote": "wrangler d1 migrations apply outbox --remote",
+    "db:migrate:local": "wrangler d1 migrations apply outbox --local && wrangler d1 migrations apply outbox-demo --local",
+    "db:migrate:remote": "wrangler d1 migrations apply outbox --remote && wrangler d1 migrations apply outbox-demo --remote",
     "auth:schema": "npx --yes auth@1.7.5 generate --config scripts/auth-schema.config.ts --output worker/db/auth-schema.ts --yes"
   },
   "dependencies": {

@@ -1,37 +1,21 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { getPlatformProxy, type PlatformProxy } from 'wrangler';
 import { NotFoundError } from '../src/domain/errors';
 import type { QuickAddInput } from '../src/domain/repository';
 import { describeRepositoryContract } from '../src/domain/repository.contract';
-import { createDb, type Db } from './db';
+import type { Db } from './db';
 import { user } from './db/auth-schema';
 import { createD1Repository } from './repository';
+import { startTestDatabase } from './testing';
 
-// The real migrations, applied to an in-memory D1 that workerd runs for the test.
-const migrations = import.meta.glob<string>('../migrations/*.sql', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
-let proxy: PlatformProxy<Env>;
 let db: Db;
+let dispose: () => Promise<void>;
 
 beforeAll(async () => {
-  proxy = await getPlatformProxy<Env>({ persist: false });
-  const d1 = proxy.env.DB;
-  for (const [, sql] of Object.entries(migrations).sort(([a], [b]) => a.localeCompare(b))) {
-    const statements = sql
-      .split('--> statement-breakpoint')
-      .map((statement) => statement.trim())
-      .filter(Boolean);
-    await d1.batch(statements.map((statement) => d1.prepare(statement)));
-  }
-  db = createDb(d1);
+  ({ db, dispose } = await startTestDatabase());
 }, 30_000);
 
 afterAll(async () => {
-  await proxy?.dispose();
+  await dispose?.();
 });
 
 let users = 0;

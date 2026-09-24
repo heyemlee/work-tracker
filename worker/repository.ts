@@ -25,6 +25,7 @@ import type {
   TimelineEvent,
 } from '../src/domain/types';
 import type { Db } from './db';
+import { insertRows } from './db/insert';
 import * as t from './db/schema';
 
 type Write = BatchItem<'sqlite'>;
@@ -90,20 +91,23 @@ const toEvent = (row: typeof t.events.$inferSelect): TimelineEvent => ({
   at: row.at,
 });
 
+/** A timeline entry as an `events` row owned by `userId`. */
+export const toEventRow = (e: TimelineEvent, userId: Id): typeof t.events.$inferInsert => ({
+  id: e.id,
+  userId,
+  jobId: e.jobId,
+  applicationId: e.applicationId,
+  accountId: e.accountId,
+  type: e.type,
+  fromStage: e.from,
+  toStage: e.to,
+  actor: e.actor,
+  at: e.at,
+});
+
 /** The Repository contract over D1, scoped to one user: every query filters on `user_id`. */
 export function createD1Repository(db: Db, userId: Id, clock: Clock = systemClock): Repository {
-  const eventRow = (e: TimelineEvent) => ({
-    id: e.id,
-    userId,
-    jobId: e.jobId,
-    applicationId: e.applicationId,
-    accountId: e.accountId,
-    type: e.type,
-    fromStage: e.from,
-    toStage: e.to,
-    actor: e.actor,
-    at: e.at,
-  });
+  const eventRow = (e: TimelineEvent) => toEventRow(e, userId);
 
   /** Runs writes as one D1 batch, which commits or rolls back as a unit. */
   async function commit(writes: Write[]) {
@@ -277,10 +281,14 @@ export function createD1Repository(db: Db, userId: Id, clock: Clock = systemCloc
         );
       }
       if (plan.job) writes.push(db.insert(t.jobs).values({ ...plan.job, userId }));
-      if (plan.applications.length > 0) {
-        writes.push(db.insert(t.applications).values(plan.applications.map((a) => ({ ...a, userId }))));
-      }
-      if (plan.events.length > 0) writes.push(db.insert(t.events).values(plan.events.map(eventRow)));
+      writes.push(
+        ...insertRows(
+          db,
+          t.applications,
+          plan.applications.map((a) => ({ ...a, userId })),
+        ),
+        ...insertRows(db, t.events, plan.events.map(eventRow)),
+      );
       await commit(writes);
       return plan.result;
     },

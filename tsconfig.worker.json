@@ -21,5 +21,5 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["worker", "src/domain", "worker-configuration.d.ts"],
-  "exclude": ["**/*.test.ts", "src/domain/testing.ts", "src/domain/*.contract.ts"]
+  "exclude": ["**/*.test.ts", "**/testing.ts", "src/domain/*.contract.ts"]
 }

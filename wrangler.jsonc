@@ -10,8 +10,11 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"],
   },
-  // One public origin: sign-in cookies and the Google callback are bound to it.
-  "routes": [{ "pattern": "tracker.haoyang.us", "custom_domain": true }],
+  // The owner's app and the public demo. The host decides which database a request can reach.
+  "routes": [
+    { "pattern": "tracker.haoyang.us", "custom_domain": true },
+    { "pattern": "demo.tracker.haoyang.us", "custom_domain": true },
+  ],
   "workers_dev": false,
   "preview_urls": false,
   "d1_databases": [
@@ -21,7 +24,22 @@
       "database_id": "6fb7e342-7ffe-4ab4-8dfc-ca28f68afb98",
       "migrations_dir": "migrations",
     },
+    {
+      // Demo sandboxes live in their own database, so demo traffic can never touch real data.
+      "binding": "DEMO_DB",
+      "database_name": "outbox-demo",
+      "database_id": "b534ba1b-1125-4d0a-a731-633167f72356",
+      "migrations_dir": "migrations",
+    },
   ],
+  "vars": {
+    // Requests to this host run the demo. Locally, .dev.vars sets it to 127.0.0.1.
+    "DEMO_HOST": "demo.tracker.haoyang.us",
+  },
+  // Demo sandboxes a single IP can create per minute.
+  "ratelimits": [{ "name": "DEMO_LIMITER", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } }],
+  // Hourly: purge demo sandboxes older than a day.
+  "triggers": { "crons": ["23 * * * *"] },
   // Configuration lives in secrets, not here, so the public repo holds no personal details:
   // BETTER_AUTH_SECRET, BETTER_AUTH_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OWNER_EMAILS.
   // Locally they come from .dev.vars; see docs/deploy.md.

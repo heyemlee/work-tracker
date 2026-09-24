@@ -1,10 +1,23 @@
 import type { QuickAddResult, Repository } from '../domain/repository';
 import type { Id, Snapshot, TimelineEvent } from '../domain/types';
 
+/** What the Worker says about a request with no session. */
+interface Unauthorized {
+  /** The request came to the demo host: start a sandbox rather than ask for a sign-in. */
+  demo?: boolean;
+  /** Where the public demo lives, for the sign-in screen. */
+  demoUrl?: string;
+}
+
 export class UnauthorizedError extends Error {
-  constructor() {
+  readonly demo: boolean;
+  readonly demoUrl: string | null;
+
+  constructor({ demo = false, demoUrl }: Unauthorized = {}) {
     super('Not signed in');
     this.name = 'UnauthorizedError';
+    this.demo = demo;
+    this.demoUrl = demoUrl ?? null;
   }
 }
 
@@ -27,7 +40,8 @@ export async function request<T>(method: Method, path: string, body?: unknown): 
     headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  if (response.status === 401) throw new UnauthorizedError();
+  if (response.status === 401)
+    throw new UnauthorizedError((await response.json().catch(() => ({}))) as Unauthorized);
   if (!response.ok) throw new HttpError(response.status, (await response.text()) || response.statusText);
   return (response.status === 204 ? undefined : await response.json()) as T;
 }

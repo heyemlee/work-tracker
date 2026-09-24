@@ -9,3 +9,6 @@ DEV_AUTH_BYPASS=true
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 OWNER_EMAILS=you@gmail.com
+
+# Requests to this host run the public demo: open http://demo.localhost:5180 to try it locally.
+DEMO_HOST=demo.localhost
