@@ -1,0 +1,39 @@
+import { drizzleAdapter } from '@better-auth/drizzle-adapter';
+import { betterAuth } from 'better-auth';
+import type { Db } from './db';
+import * as authSchema from './db/auth-schema';
+
+/** OWNER_EMAILS is a comma-separated allowlist. Anyone else is turned away at sign-up. */
+export function allowedEmails(env: Env): string[] {
+  return env.OWNER_EMAILS.split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function createAuth(env: Env, db: Db) {
+  const allowed = allowedEmails(env);
+  return betterAuth({
+    baseURL: env.BETTER_AUTH_URL || undefined,
+    secret: env.BETTER_AUTH_SECRET,
+    database: drizzleAdapter(db, { provider: 'sqlite', schema: authSchema }),
+    socialProviders: env.GOOGLE_CLIENT_ID
+      ? {
+          google: {
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+            prompt: 'select_account',
+          },
+        }
+      : undefined,
+    databaseHooks: {
+      user: {
+        create: {
+          // Returning false aborts creating the user, so only allowlisted accounts ever exist.
+          before: async (user) => (allowed.includes(user.email.toLowerCase()) ? undefined : false),
+        },
+      },
+    },
+  });
+}
+
+export type Auth = ReturnType<typeof createAuth>;

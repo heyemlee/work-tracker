@@ -117,16 +117,22 @@ export function Section({
 }
 
 /** The app mark: a tray with an outgoing arrow. Inverts with the theme. */
+export function BrandMark({ size = 28 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 64 64" width={size} height={size} aria-hidden="true" className="shrink-0">
+      <rect width="64" height="64" rx="15" fill="var(--fg)" />
+      <g fill="none" stroke="var(--canvas)" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 36v5.5a4.5 4.5 0 0 0 4.5 4.5h19a4.5 4.5 0 0 0 4.5-4.5V36" />
+        <path d="M32 37V17M24.5 24.5 32 17l7.5 7.5" />
+      </g>
+    </svg>
+  );
+}
+
 export function Brand() {
   return (
     <div className="flex shrink-0 items-center gap-2 pr-1">
-      <svg viewBox="0 0 64 64" className="size-7" aria-hidden="true">
-        <rect width="64" height="64" rx="15" fill="var(--fg)" />
-        <g fill="none" stroke="var(--canvas)" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18 36v5.5a4.5 4.5 0 0 0 4.5 4.5h19a4.5 4.5 0 0 0 4.5-4.5V36" />
-          <path d="M32 37V17M24.5 24.5 32 17l7.5 7.5" />
-        </g>
-      </svg>
+      <BrandMark />
       <span className="hidden text-[17px] font-semibold tracking-[-0.02em] min-[420px]:inline">Outbox</span>
     </div>
   );

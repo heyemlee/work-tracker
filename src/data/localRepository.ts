@@ -1,302 +1,238 @@
+import { isBuiltinChannel } from '../domain/channels';
+import {
+  planAddApplication,
+  planQuickAdd,
+  planRejectedChange,
+  planRemoveApplication,
+  planStageChange,
+  systemClock,
+  type ApplicationChange,
+  type Clock,
+} from '../domain/commands';
 import { findCompany } from '../domain/companies';
-import type { Application, Id, Job, Snapshot, TimelineEvent } from '../domain/types';
-import type { DeletedJob, Repository } from './repository';
-import { createSampleData } from './sampleData';
+import { ConflictError, NotFoundError } from '../domain/errors';
+import type { Repository } from '../domain/repository';
+import type { Application, Id, Job } from '../domain/types';
+import { createSampleData, type SampleData } from './sampleData';
 
-const STORAGE_KEY = 'outbox.sample.v2';
+const STORAGE_KEY = 'outbox.sample.v3';
 
-function readStorage(): Snapshot | null {
+/** Everything the local repository keeps: the data, every timeline, and which jobs are soft-deleted. */
+interface LocalState extends SampleData {
+  deletedJobIds: Id[];
+}
+
+export interface LocalRepository extends Repository {
+  /** Discards local changes and regenerates the sample data. */
+  resetSampleData(): Promise<void>;
+}
+
+interface Options {
+  /** Where to persist. Null keeps everything in memory. */
+  storage?: Storage | null;
+  /** Starting data when storage is empty. */
+  initial?: () => SampleData;
+  clock?: Clock;
+}
+
+function browserStorage(): Storage | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Snapshot) : null;
+    return globalThis.localStorage ?? null;
   } catch {
     return null;
   }
 }
 
-function writeStorage(snapshot: Snapshot): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-  } catch {
-    // Private mode or a full quota: keep working in memory.
-  }
-}
+/** The offline implementation: the whole dataset lives in memory and is mirrored to localStorage. */
+export function createLocalRepository({
+  storage = browserStorage(),
+  initial = () => createSampleData(new Date()),
+  clock = systemClock,
+}: Options = {}): LocalRepository {
+  const fresh = (): LocalState => ({ ...initial(), deletedJobIds: [] });
 
-export const newId = (prefix: string) => `${prefix}_${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`;
-const now = () => new Date().toISOString();
+  const read = (): LocalState | null => {
+    try {
+      const raw = storage?.getItem(STORAGE_KEY);
+      return raw ? (JSON.parse(raw) as LocalState) : null;
+    } catch {
+      return null;
+    }
+  };
 
-type NewEvent = Omit<TimelineEvent, 'id' | 'at' | 'actor'>;
+  let state = read() ?? fresh();
 
-/** Prototype repository: the whole snapshot lives in memory and is mirrored to localStorage. */
-export function createLocalRepository(): Repository {
-  let state: Snapshot = readStorage() ?? createSampleData(new Date());
-
-  const commit = (next: Snapshot) => {
+  const commit = (next: LocalState) => {
     state = next;
-    writeStorage(next);
+    try {
+      storage?.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Private mode or a full quota: keep working in memory.
+    }
   };
 
-  const event = (partial: NewEvent): TimelineEvent => ({
-    id: newId('evt'),
-    at: now(),
-    actor: 'user',
-    ...partial,
-  });
+  const isDeleted = (jobId: Id) => state.deletedJobIds.includes(jobId);
 
-  const application = (id: Id): Application => {
-    const found = state.applications.find((a) => a.id === id);
-    if (!found) throw new Error(`Unknown application ${id}`);
-    return found;
+  const liveJob = (id: Id): Job => {
+    const job = state.jobs.find((j) => j.id === id);
+    if (!job || isDeleted(id)) throw new NotFoundError('Job', id);
+    return job;
   };
 
-  const patchApplication = (id: Id, patch: Partial<Application>): Application[] =>
-    state.applications.map((a) => (a.id === id ? { ...a, ...patch, updatedAt: now() } : a));
+  const liveApplication = (id: Id): Application => {
+    const app = state.applications.find((a) => a.id === id);
+    if (!app || isDeleted(app.jobId)) throw new NotFoundError('Application', id);
+    return app;
+  };
+
+  const requireAccount = (id: Id) => {
+    if (!state.accounts.some((a) => a.id === id)) throw new NotFoundError('Account', id);
+  };
+
+  const applyChange = (change: ApplicationChange | null) => {
+    if (!change) return;
+    commit({
+      ...state,
+      applications: state.applications.map((a) => (a.id === change.application.id ? change.application : a)),
+      events: [...state.events, change.event],
+    });
+  };
 
   return {
     async load() {
-      return state;
+      return {
+        accounts: state.accounts,
+        resumes: state.resumes,
+        channels: state.channels,
+        companies: state.companies,
+        jobs: state.jobs.filter((j) => !isDeleted(j.id)),
+        applications: state.applications.filter((a) => !isDeleted(a.jobId)),
+      };
+    },
+
+    async loadEvents(jobId) {
+      liveJob(jobId);
+      // Newest first; among same-instant events, the one recorded last comes first.
+      return state.events
+        .filter((e) => e.jobId === jobId)
+        .reverse()
+        .sort((a, b) => b.at.localeCompare(a.at));
     },
 
     async quickAdd(input) {
-      const at = now();
-      let { companies, jobs } = state;
-      const events: TimelineEvent[] = [];
-      let createdCompanyId: Id | null = null;
-      let createdJobId: Id | null = null;
-
-      let jobId = input.jobId;
-      if (!jobId) {
-        let company = findCompany(companies, input.companyName);
-        if (!company) {
-          company = { id: newId('co'), name: input.companyName.trim(), createdAt: at };
-          companies = [...companies, company];
-          createdCompanyId = company.id;
-        }
-        const job: Job = {
-          id: newId('job'),
-          companyId: company.id,
-          title: input.title?.trim() || null,
-          notes: '',
-          createdAt: at,
-          updatedAt: at,
-        };
-        jobs = [...jobs, job];
-        jobId = createdJobId = job.id;
-      }
-
-      const targetJobId: Id = jobId;
-      const taken = new Set(
-        state.applications.filter((a) => a.jobId === targetJobId).map((a) => a.accountId),
+      if (input.jobId) liveJob(input.jobId);
+      input.accountIds.forEach(requireAccount);
+      const plan = planQuickAdd(
+        input,
+        {
+          existingCompany: findCompany(state.companies, input.companyName),
+          takenAccountIds: new Set(
+            state.applications.filter((a) => a.jobId === input.jobId).map((a) => a.accountId),
+          ),
+        },
+        clock,
       );
-      const created = input.accountIds
-        .filter((accountId) => !taken.has(accountId))
-        .map((accountId): Application => ({
-          id: newId('app'),
-          jobId: targetJobId,
-          accountId,
-          channelId: input.channelId,
-          resumeId: input.resumeId,
-          stage: 'applied',
-          rejected: false,
-          appliedAt: input.appliedAt,
-          source: 'user',
-          createdAt: at,
-          updatedAt: at,
-        }));
-      // "Job saved" only means something for a job saved without applying; otherwise "applied" says it all.
-      if (createdJobId && created.length === 0) {
-        events.push(
-          event({
-            jobId: targetJobId,
-            applicationId: null,
-            accountId: null,
-            type: 'job_created',
-            from: null,
-            to: null,
-          }),
-        );
-      }
-      for (const app of created) {
-        events.push(
-          event({
-            jobId: targetJobId,
-            applicationId: app.id,
-            accountId: app.accountId,
-            type: 'applied',
-            from: null,
-            to: 'applied',
-          }),
-        );
-      }
-
       commit({
         ...state,
-        companies,
-        jobs,
-        applications: [...state.applications, ...created],
-        events: [...state.events, ...events],
+        companies: plan.company ? [...state.companies, plan.company] : state.companies,
+        jobs: plan.job ? [...state.jobs, plan.job] : state.jobs,
+        applications: [...state.applications, ...plan.applications],
+        events: [...state.events, ...plan.events],
       });
-      return { jobId: targetJobId, createdJobId, createdCompanyId, applicationIds: created.map((a) => a.id) };
+      return plan.result;
     },
 
     async undoQuickAdd({ createdJobId, createdCompanyId, applicationIds }) {
-      const removedApps = new Set(applicationIds);
+      const removed = new Set(applicationIds);
+      const companyStillUsed = state.jobs.some(
+        (j) => j.companyId === createdCompanyId && j.id !== createdJobId,
+      );
       commit({
         ...state,
-        companies: state.companies.filter((c) => c.id !== createdCompanyId),
+        companies: companyStillUsed
+          ? state.companies
+          : state.companies.filter((c) => c.id !== createdCompanyId),
         jobs: state.jobs.filter((j) => j.id !== createdJobId),
-        applications: state.applications.filter((a) => !removedApps.has(a.id)),
+        applications: state.applications.filter((a) => !removed.has(a.id)),
         events: state.events.filter(
-          (e) => e.jobId !== createdJobId && !(e.applicationId && removedApps.has(e.applicationId)),
+          (e) => e.jobId !== createdJobId && !(e.applicationId && removed.has(e.applicationId)),
         ),
       });
     },
 
     async addApplication(input) {
+      liveJob(input.jobId);
+      requireAccount(input.accountId);
       if (state.applications.some((a) => a.jobId === input.jobId && a.accountId === input.accountId)) {
-        throw new Error('This account already applied to this job');
+        throw new ConflictError('This account already applied to this job');
       }
-      const at = now();
-      const app: Application = {
-        id: newId('app'),
-        ...input,
-        stage: 'applied',
-        rejected: false,
-        source: 'user',
-        createdAt: at,
-        updatedAt: at,
-      };
+      const { application, event } = planAddApplication(input, clock);
       commit({
         ...state,
-        applications: [...state.applications, app],
-        events: [
-          ...state.events,
-          event({
-            jobId: app.jobId,
-            applicationId: app.id,
-            accountId: app.accountId,
-            type: 'applied',
-            from: null,
-            to: 'applied',
-          }),
-        ],
+        applications: [...state.applications, application],
+        events: [...state.events, event],
       });
-      return app.id;
+      return application.id;
     },
 
     async removeApplication(id) {
-      const app = application(id);
+      const app = liveApplication(id);
       commit({
         ...state,
         applications: state.applications.filter((a) => a.id !== id),
-        events: [
-          ...state.events,
-          event({
-            jobId: app.jobId,
-            applicationId: null,
-            accountId: app.accountId,
-            type: 'application_removed',
-            from: app.stage,
-            to: null,
-          }),
-        ],
+        events: [...state.events, planRemoveApplication(app, clock)],
       });
     },
 
     async setStage(id, stage) {
-      const app = application(id);
-      if (app.stage === stage) return;
-      commit({
-        ...state,
-        applications: patchApplication(id, { stage }),
-        events: [
-          ...state.events,
-          event({
-            jobId: app.jobId,
-            applicationId: id,
-            accountId: app.accountId,
-            type: 'stage_changed',
-            from: app.stage,
-            to: stage,
-          }),
-        ],
-      });
+      applyChange(planStageChange(liveApplication(id), stage, clock));
     },
 
     async setRejected(id, rejected) {
-      const app = application(id);
-      if (app.rejected === rejected) return;
-      commit({
-        ...state,
-        applications: patchApplication(id, { rejected }),
-        events: [
-          ...state.events,
-          event({
-            jobId: app.jobId,
-            applicationId: id,
-            accountId: app.accountId,
-            type: rejected ? 'rejected' : 'unrejected',
-            from: app.stage,
-            to: app.stage,
-          }),
-        ],
-      });
+      applyChange(planRejectedChange(liveApplication(id), rejected, clock));
     },
 
     async updateApplication(id, patch) {
-      application(id);
-      commit({ ...state, applications: patchApplication(id, patch) });
+      liveApplication(id);
+      const updatedAt = clock.now();
+      commit({
+        ...state,
+        applications: state.applications.map((a) => (a.id === id ? { ...a, ...patch, updatedAt } : a)),
+      });
     },
 
     async updateJob(id, patch) {
-      commit({
-        ...state,
-        jobs: state.jobs.map((j) => (j.id === id ? { ...j, ...patch, updatedAt: now() } : j)),
-      });
+      liveJob(id);
+      const updatedAt = clock.now();
+      commit({ ...state, jobs: state.jobs.map((j) => (j.id === id ? { ...j, ...patch, updatedAt } : j)) });
     },
 
     async deleteJob(id) {
-      const job = state.jobs.find((j) => j.id === id);
-      if (!job) throw new Error(`Unknown job ${id}`);
-      const orphaned = !state.jobs.some((j) => j.id !== id && j.companyId === job.companyId);
-      const deleted: DeletedJob = {
-        job,
-        company: orphaned ? (state.companies.find((c) => c.id === job.companyId) ?? null) : null,
-        applications: state.applications.filter((a) => a.jobId === id),
-        events: state.events.filter((e) => e.jobId === id),
-      };
-      commit({
-        ...state,
-        companies: orphaned ? state.companies.filter((c) => c.id !== job.companyId) : state.companies,
-        jobs: state.jobs.filter((j) => j.id !== id),
-        applications: state.applications.filter((a) => a.jobId !== id),
-        events: state.events.filter((e) => e.jobId !== id),
-      });
-      return deleted;
+      liveJob(id);
+      commit({ ...state, deletedJobIds: [...state.deletedJobIds, id] });
     },
 
-    async restoreJob({ job, company, applications, events }) {
-      commit({
-        ...state,
-        companies: company ? [...state.companies, company] : state.companies,
-        jobs: [...state.jobs, job],
-        applications: [...state.applications, ...applications],
-        events: [...state.events, ...events],
-      });
+    async restoreJob(id) {
+      if (!isDeleted(id)) throw new NotFoundError('Deleted job', id);
+      commit({ ...state, deletedJobIds: state.deletedJobIds.filter((jobId) => jobId !== id) });
     },
 
-    async saveAccount({ id, ...fields }) {
+    async saveAccount({ id, label, email, color }) {
       if (id) {
-        commit({ ...state, accounts: state.accounts.map((a) => (a.id === id ? { ...a, ...fields } : a)) });
+        requireAccount(id);
+        commit({
+          ...state,
+          accounts: state.accounts.map((a) => (a.id === id ? { ...a, label, email, color } : a)),
+        });
         return id;
       }
-      const account = { id: newId('acc'), ...fields, createdAt: now() };
+      const account = { id: clock.newId('acc'), label, email, color, createdAt: clock.now() };
       commit({ ...state, accounts: [...state.accounts, account] });
       return account.id;
     },
 
     async deleteAccount(id) {
-      if (state.applications.some((a) => a.accountId === id)) throw new Error('Account is in use');
+      if (state.applications.some((a) => a.accountId === id)) throw new ConflictError('Account is in use');
       commit({ ...state, accounts: state.accounts.filter((a) => a.id !== id) });
     },
 
@@ -305,7 +241,7 @@ export function createLocalRepository(): Repository {
         commit({ ...state, resumes: state.resumes.map((r) => (r.id === id ? { ...r, name } : r)) });
         return id;
       }
-      const resume = { id: newId('res'), name, createdAt: now() };
+      const resume = { id: clock.newId('res'), name, createdAt: clock.now() };
       commit({ ...state, resumes: [...state.resumes, resume] });
       return resume.id;
     },
@@ -320,27 +256,26 @@ export function createLocalRepository(): Repository {
 
     async saveChannel({ id, name }) {
       if (id) {
-        commit({
-          ...state,
-          channels: state.channels.map((c) => (c.id === id && !c.builtin ? { ...c, name } : c)),
-        });
+        if (isBuiltinChannel(id)) throw new ConflictError('Built-in channels cannot be renamed');
+        commit({ ...state, channels: state.channels.map((c) => (c.id === id ? { ...c, name } : c)) });
         return id;
       }
-      const channel = { id: newId('ch'), name, builtin: false };
+      const channel = { id: clock.newId('ch'), name, builtin: false };
       commit({ ...state, channels: [...state.channels, channel] });
       return channel.id;
     },
 
     async deleteChannel(id) {
+      if (isBuiltinChannel(id)) throw new ConflictError('Built-in channels cannot be deleted');
       commit({
         ...state,
-        channels: state.channels.filter((c) => c.id !== id || c.builtin),
+        channels: state.channels.filter((c) => c.id !== id),
         applications: state.applications.map((a) => (a.channelId === id ? { ...a, channelId: null } : a)),
       });
     },
 
     async resetSampleData() {
-      commit(createSampleData(new Date()));
+      commit(fresh());
     },
   };
 }

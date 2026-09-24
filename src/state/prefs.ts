@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { Id } from '../domain/types';
+import type { Id, Snapshot } from '../domain/types';
 
 export type Locale = 'en' | 'zh';
 export type ThemePref = 'system' | 'light' | 'dark';
@@ -40,7 +40,7 @@ const DEFAULTS: Prefs = {
   theme: 'system',
   hideRejected: false,
   tweaks: DEFAULT_TWEAKS,
-  lastUsed: { accountIds: ['acc_a'], channelId: 'ch_company_site', resumeId: 'res_sde' },
+  lastUsed: { accountIds: [], channelId: 'ch_company_site', resumeId: null },
 };
 
 // Also read by the pre-paint theme script in index.html.
@@ -87,6 +87,18 @@ function subscribe(listener: () => void) {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
+  };
+}
+
+/**
+ * The remembered composer defaults that still exist in this data. Preferences outlive data — an account
+ * deleted, a sample-data id from the prototype — so stale ids are dropped rather than sent to the server.
+ */
+export function liveDefaults(lastUsed: LastUsed, snapshot: Snapshot): LastUsed {
+  return {
+    accountIds: snapshot.accounts.filter((a) => lastUsed.accountIds.includes(a.id)).map((a) => a.id),
+    channelId: snapshot.channels.some((c) => c.id === lastUsed.channelId) ? lastUsed.channelId : null,
+    resumeId: snapshot.resumes.some((r) => r.id === lastUsed.resumeId) ? lastUsed.resumeId : null,
   };
 }
 

@@ -1,7 +1,8 @@
-import { Send } from 'lucide-react';
+import { AtSign, Send } from 'lucide-react';
 import { MotionConfig } from 'motion/react';
-import { useMemo, useState, type CSSProperties } from 'react';
-import { useSnapshot } from './data/store';
+import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { UnauthorizedError } from './data/httpRepository';
+import { localRepository, useCurrentUser, useSnapshot } from './data/store';
 import {
   buildRows,
   computeStats,
@@ -20,8 +21,9 @@ import { updatePrefs, usePrefs } from './state/prefs';
 import { Composer } from './ui/Composer';
 import { DetailPanel } from './ui/DetailPanel';
 import { JobList } from './ui/JobList';
-import { Switch } from './ui/primitives';
+import { Button, Switch } from './ui/primitives';
 import { SettingsDialog } from './ui/SettingsDialog';
+import { SignIn } from './ui/SignIn';
 import { StatsRow } from './ui/StatsRow';
 import { FilterControl, Toolbar } from './ui/Toolbar';
 import { TweakPanel } from './ui/TweakPanel';
@@ -31,12 +33,58 @@ const PANEL_RESERVE = 444;
 
 export function App() {
   useThemeSync();
-  const { data: snapshot } = useSnapshot();
   return (
     <MotionConfig reducedMotion="user">
       <div aria-hidden="true" className="ambient" />
-      {snapshot && <Workspace snapshot={snapshot} />}
+      <Gate />
     </MotionConfig>
+  );
+}
+
+/** Local mode opens straight into the workspace; otherwise the owner has to be signed in first. */
+function Gate() {
+  const user = useCurrentUser();
+  const snapshot = useSnapshot(localRepository !== null || user.isSuccess);
+
+  if (user.error instanceof UnauthorizedError || snapshot.error instanceof UnauthorizedError)
+    return <SignIn />;
+  if (user.isError) return <LoadError onRetry={() => void user.refetch()} />;
+  if (snapshot.isError) return <LoadError onRetry={() => void snapshot.refetch()} />;
+  return snapshot.data ? <Workspace snapshot={snapshot.data} /> : null;
+}
+
+function EmptyState({
+  icon,
+  title,
+  body,
+  action,
+}: {
+  icon: ReactNode;
+  title: string;
+  body: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="py-20 text-center">
+      <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-fill">{icon}</div>
+      <h2 className="mt-4 text-[17px] font-semibold">{title}</h2>
+      <p className="mx-auto mt-1 max-w-[420px] text-[14px] text-fg-2">{body}</p>
+      {action}
+    </div>
+  );
+}
+
+function LoadError({ onRetry }: { onRetry: () => void }) {
+  const { t } = useI18n();
+  return (
+    <main className="grid min-h-dvh place-items-center p-4 text-center">
+      <div>
+        <p className="text-[15px] text-fg-2">{t('error.load')}</p>
+        <Button className="mt-4" onClick={onRetry}>
+          {t('error.retry')}
+        </Button>
+      </div>
+    </main>
   );
 }
 
@@ -101,19 +149,35 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
             />
           ) : rows.length > 0 ? (
             <p className="py-16 text-center text-[14px] text-fg-2">{t('list.noMatch')}</p>
+          ) : snapshot.accounts.length === 0 ? (
+            <EmptyState
+              icon={<AtSign className="size-6 text-fg-2" aria-hidden="true" />}
+              title={t('onboarding.title')}
+              body={t('onboarding.body')}
+              action={
+                <Button variant="primary" className="mt-5" onClick={() => setSettingsOpen(true)}>
+                  {t('onboarding.action')}
+                </Button>
+              }
+            />
           ) : (
-            <div className="py-20 text-center">
-              <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-fill">
-                <Send className="size-6 text-fg-2" aria-hidden="true" />
-              </div>
-              <h2 className="mt-4 text-[17px] font-semibold">{t('list.emptyTitle')}</h2>
-              <p className="mt-1 text-[14px] text-fg-2">{t('list.emptyBody')}</p>
-            </div>
+            <EmptyState
+              icon={<Send className="size-6 text-fg-2" aria-hidden="true" />}
+              title={t('list.emptyTitle')}
+              body={t('list.emptyBody')}
+            />
           )}
         </div>
       </main>
 
-      <Composer snapshot={snapshot} rows={rows} onOpenJob={setSelectedId} />
+      <Composer
+        snapshot={snapshot}
+        rows={rows}
+        onOpenJob={setSelectedId}
+        onOpenSettings={() => setSettingsOpen(true)}
+        // Below the wide breakpoint the inspector covers the composer's corner; slide it away meanwhile.
+        hidden={selected !== null && !wide}
+      />
       <DetailPanel row={selected} snapshot={snapshot} today={today} onClose={() => setSelectedId(null)} />
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} snapshot={snapshot} />
       <TweakPanel />

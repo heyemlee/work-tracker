@@ -14,7 +14,8 @@ export type IsoDateTime = string;
 /** A calendar date in the owner's time zone, e.g. `2026-09-23`. */
 export type IsoDate = string;
 
-export type Actor = 'user' | 'agent';
+export const ACTORS = ['user', 'agent'] as const;
+export type Actor = (typeof ACTORS)[number];
 
 /** An email identity the owner applies with. Never holds a password. */
 export interface Account {
@@ -70,8 +71,15 @@ export interface Application {
   updatedAt: IsoDateTime;
 }
 
-export type EventType =
-  'job_created' | 'applied' | 'stage_changed' | 'rejected' | 'unrejected' | 'application_removed';
+export const EVENT_TYPES = [
+  'job_created',
+  'applied',
+  'stage_changed',
+  'rejected',
+  'unrejected',
+  'application_removed',
+] as const;
+export type EventType = (typeof EVENT_TYPES)[number];
 
 /** Append-only timeline entry, written on every change. */
 export interface TimelineEvent {
@@ -87,7 +95,10 @@ export interface TimelineEvent {
   at: IsoDateTime;
 }
 
-/** Everything the UI needs. A single owner's data stays small enough to load at once. */
+/**
+ * Everything the list views need. A single owner's data stays small enough to load at once; timelines are
+ * left out and loaded per job.
+ */
 export interface Snapshot {
   accounts: Account[];
   resumes: ResumeVersion[];
@@ -95,5 +106,4 @@ export interface Snapshot {
   companies: Company[];
   jobs: Job[];
   applications: Application[];
-  events: TimelineEvent[];
 }

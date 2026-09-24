@@ -1,8 +1,8 @@
+import { BUILTIN_CHANNELS } from '../domain/channels';
 import { addDays, parseIsoDate, toIsoDate } from '../domain/dates';
 import type {
   Account,
   Application,
-  Channel,
   Company,
   Id,
   IsoDate,
@@ -13,13 +13,10 @@ import type {
   TimelineEvent,
 } from '../domain/types';
 
-export const BUILTIN_CHANNELS: Channel[] = [
-  { id: 'ch_company_site', name: 'company_site', builtin: true },
-  { id: 'ch_linkedin', name: 'linkedin', builtin: true },
-  { id: 'ch_referral', name: 'referral', builtin: true },
-  { id: 'ch_recruiter', name: 'recruiter', builtin: true },
-  { id: 'ch_other', name: 'other', builtin: true },
-];
+/** A snapshot plus the timelines behind it. */
+export interface SampleData extends Snapshot {
+  events: TimelineEvent[];
+}
 
 // Fictional companies only: the public demo must never claim a real company rejected anyone.
 const COMPANIES = [
@@ -120,7 +117,7 @@ function mulberry32(seed: number) {
   };
 }
 
-export function createSampleData(now: Date): Snapshot {
+export function createSampleData(now: Date): SampleData {
   const random = mulberry32(20260923);
   const today = toIsoDate(now);
   const created = new Date(now.getTime() - 60 * 86_400_000).toISOString();
@@ -265,5 +262,5 @@ export function createSampleData(now: Date): Snapshot {
     });
   });
 
-  return { accounts, resumes, channels: BUILTIN_CHANNELS, companies, jobs, applications, events };
+  return { accounts, resumes, channels: [...BUILTIN_CHANNELS], companies, jobs, applications, events };
 }

@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.worker.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.worker-test.tsbuildinfo",
+    "types": ["vite/client"]
+  },
+  "include": ["worker/**/*.test.ts", "src/domain", "worker-configuration.d.ts"],
+  "exclude": []
+}

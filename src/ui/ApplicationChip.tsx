@@ -2,8 +2,8 @@ import clsx from 'clsx';
 import { Check } from 'lucide-react';
 import { Popover } from 'radix-ui';
 import { useState, type ReactNode, type SyntheticEvent } from 'react';
-import type { Repository } from '../data/repository';
-import { useRepository } from '../data/store';
+import { patchApplication, useRepository } from '../data/store';
+import type { Repository } from '../domain/repository';
 import { STAGES, type Account, type Application } from '../domain/types';
 import { useI18n } from '../i18n/context';
 import { formatShortDate } from '../i18n/format';
@@ -40,9 +40,9 @@ export function ApplicationChip({ application, account }: { application: Applica
   const stageLabel = t(`status.${application.stage}`);
   const statusLabel = application.rejected ? `${stageLabel}, ${t('status.rejected')}` : stageLabel;
 
-  const choose = (operation: (repo: Repository) => Promise<void>) => {
+  const choose = (operation: (repo: Repository) => Promise<void>, patch: Partial<Application>) => {
     setOpen(false);
-    void run(operation);
+    void run(operation, { optimistic: patchApplication(application.id, patch) });
   };
 
   return (
@@ -90,7 +90,7 @@ export function ApplicationChip({ application, account }: { application: Applica
             <MenuOption
               key={stage}
               selected={application.stage === stage}
-              onSelect={() => choose((repo) => repo.setStage(application.id, stage))}
+              onSelect={() => choose((repo) => repo.setStage(application.id, stage), { stage })}
             >
               <span className="dot" style={{ background: `var(--st-${stage})` }} />
               {t(`status.${stage}`)}
@@ -99,7 +99,11 @@ export function ApplicationChip({ application, account }: { application: Applica
           <div className="mx-2 my-1 h-px bg-hairline" />
           <MenuOption
             selected={application.rejected}
-            onSelect={() => choose((repo) => repo.setRejected(application.id, !application.rejected))}
+            onSelect={() =>
+              choose((repo) => repo.setRejected(application.id, !application.rejected), {
+                rejected: !application.rejected,
+              })
+            }
           >
             <span className="dot" style={{ background: 'var(--st-rejected)' }} />
             {t('status.rejected')}

@@ -3,7 +3,7 @@ import { Plus, Trash2, X } from 'lucide-react';
 import { AnimatePresence, motion, useDragControls, type PanInfo } from 'motion/react';
 import { Dialog } from 'radix-ui';
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
-import { useRepository } from '../data/store';
+import { patchApplication, useJobEvents, useRepository } from '../data/store';
 import { indexBy } from '../domain/collections';
 import type { JobRow } from '../domain/rows';
 import {
@@ -20,7 +20,7 @@ import {
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { channelName, useI18n } from '../i18n/context';
 import { formatDateTime, formatShortDate } from '../i18n/format';
-import { getPrefs } from '../state/prefs';
+import { getPrefs, liveDefaults } from '../state/prefs';
 import { showToast } from '../state/toasts';
 import { useLiquidGlass } from './glass/useLiquidGlass';
 import { Button, CompanyAvatar, IconButton, Section, Switch } from './primitives';
@@ -130,17 +130,10 @@ function PanelBody({ row, snapshot, today, onClose, onGrab }: PanelBodyProps) {
   const available = snapshot.accounts.filter(
     (account) => !row.applications.some((a) => a.accountId === account.id),
   );
-  const events = useMemo(
-    () =>
-      snapshot.events
-        .filter((e) => e.jobId === row.job.id)
-        .reverse()
-        .sort((a, b) => b.at.localeCompare(a.at)),
-    [snapshot.events, row.job.id],
-  );
+  const events = useJobEvents(row.job.id).data ?? [];
 
   const addApplication = (account: Account) => {
-    const { channelId, resumeId } = getPrefs().lastUsed;
+    const { channelId, resumeId } = liveDefaults(getPrefs().lastUsed, snapshot);
     void run((repo) =>
       repo.addApplication({
         jobId: row.job.id,
@@ -329,7 +322,11 @@ function ApplicationCard({ application, account, channels, resumes }: Applicatio
           size="sm"
           segments={STAGES.map((stage) => ({ value: stage, label: t(`status.${stage}`) }))}
           value={application.stage}
-          onChange={(stage) => void run((repo) => repo.setStage(application.id, stage))}
+          onChange={(stage) =>
+            void run((repo) => repo.setStage(application.id, stage), {
+              optimistic: patchApplication(application.id, { stage }),
+            })
+          }
           label={account?.label ?? t('detail.applications')}
           layoutId={`stage-${application.id}`}
           className={clsx(application.rejected && 'opacity-60')}
@@ -338,7 +335,11 @@ function ApplicationCard({ application, account, channels, resumes }: Applicatio
           {t('detail.rejected')}
           <Switch
             checked={application.rejected}
-            onCheckedChange={(rejected) => void run((repo) => repo.setRejected(application.id, rejected))}
+            onCheckedChange={(rejected) =>
+              void run((repo) => repo.setRejected(application.id, rejected), {
+                optimistic: patchApplication(application.id, { rejected }),
+              })
+            }
           />
         </label>
       </div>
@@ -443,11 +444,12 @@ function DeleteJob({ row, onDeleted }: { row: JobRow; onDeleted: () => void }) {
   const [confirming, setConfirming] = useState(false);
 
   const remove = async () => {
-    const deleted = await run((repo) => repo.deleteJob(row.job.id));
+    const jobId = row.job.id;
+    await run((repo) => repo.deleteJob(jobId));
     onDeleted();
     showToast({
       message: t('toast.deleted', { company: row.company.name }),
-      action: { label: t('toast.undo'), run: () => void run((repo) => repo.restoreJob(deleted)) },
+      action: { label: t('toast.undo'), run: () => void run((repo) => repo.restoreJob(jobId)) },
     });
   };
 

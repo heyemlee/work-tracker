@@ -44,7 +44,6 @@ export function snapshot(parts: Partial<Snapshot> = {}): Snapshot {
     companies: [],
     jobs: [],
     applications: [],
-    events: [],
     ...parts,
   };
 }

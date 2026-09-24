@@ -7,6 +7,8 @@ export interface Toast {
 }
 
 const DURATION_MS = 5000;
+/** Toasts with an action (Undo) stay longer, so there is time to change your mind. */
+const ACTION_DURATION_MS = 8000;
 const MAX_VISIBLE = 3;
 
 let toasts: Toast[] = [];
@@ -18,7 +20,7 @@ export function showToast(toast: Omit<Toast, 'id'>): number {
   const id = nextId++;
   toasts = [...toasts.slice(1 - MAX_VISIBLE), { ...toast, id }];
   emit();
-  setTimeout(() => dismissToast(id), DURATION_MS);
+  setTimeout(() => dismissToast(id), toast.action ? ACTION_DURATION_MS : DURATION_MS);
   return id;
 }
 

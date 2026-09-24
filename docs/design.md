@@ -3,7 +3,7 @@
 A job-application tracker for one person applying to dozens of SWE / AI-agent roles a day, often to the
 same posting from several email accounts. Daily-use tool first, portfolio piece second.
 
-Status: design settled 2026-09-23 · Milestone 1 (prototype) in progress.
+Status: design settled 2026-09-23 · Milestone 1 (prototype) done · Milestone 2 (MVP) in progress.
 
 ## 1. Goals
 
@@ -75,7 +75,7 @@ popovers); content sits on clean, opaque surfaces so dense lists stay readable.
 A single Worker serves everything:
 
 - **Static assets** — the React SPA built by Vite. Asset requests are free and use no Worker CPU.
-- **API** — Hono under `/api/*`, consumed through Hono's typed RPC client.
+- **API** — Hono under `/api/*`: plain REST, bodies validated with zod, every query scoped to the signed-in user.
 - **Cron triggers** — reset the demo database daily; sync Gmail every 30 minutes (milestone 5).
 - **Data** — D1 (SQLite) through Drizzle, as two databases: `outbox` (real data) and `outbox-demo` (sandbox,
   reseeded daily). Physically separate, so demo traffic can never reach real data.
@@ -87,8 +87,17 @@ A single Worker serves everything:
 - **Cost** — free plan through milestone 3. Workers Paid ($5/month) from milestone 4: the free plan allows 10 ms
   of CPU and 50 subrequests per invocation, too little for batch email processing.
 
-Frontend: React 19, TypeScript (strict), Vite, Tailwind CSS v4, Motion, Radix primitives, and TanStack Query over
-a repository interface — a local mock during the prototype, the API afterwards.
+Frontend: React 19, TypeScript (strict), Vite, Tailwind CSS v4, Motion, Radix primitives, and TanStack Query.
+
+**One contract, three implementations.** The UI talks only to a `Repository` interface (`src/domain`). It is
+implemented in the browser (the offline prototype, `npm run dev:local`), over D1 in the Worker, and over HTTP in
+the SPA, which reaches the D1 one. The rules for every write — which timeline entries a stage change records,
+what undoing a quick-add removes — are pure functions in `src/domain/commands.ts` that both stores call, and one
+contract test suite runs against both the browser store and D1.
+
+**Data details.** The list loads one snapshot without timelines; a job's timeline loads when its panel opens.
+Deleting a job is a soft delete, so it can be undone. Stage and rejection changes apply optimistically in the UI.
+Built-in channels live in code; only custom channels are rows.
 
 ## 6. Email agent (milestones 4–5)
 
@@ -128,8 +137,8 @@ demo replays a recorded run over a mock inbox; a rate-limited "paste an email" b
 
 ## 9. Milestones
 
-1. **Prototype** — the full UI on mock data; confirm visuals and interactions. ← current
-2. **MVP** — Worker + Hono + D1 + auth, deployed; daily use starts.
+1. **Prototype** — the full UI on mock data; confirm visuals and interactions. ✓
+2. **MVP** — Worker + Hono + D1 + auth, deployed; daily use starts. ← current
 3. **Demo sandbox** and an English README (architecture diagram, demo GIF).
 4. **Agent v1** — paste an email → classify, match, update; review queue; eval set.
 5. **Agent v2** — Gmail sync.

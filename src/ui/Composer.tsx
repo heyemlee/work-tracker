@@ -10,7 +10,7 @@ import type { JobRow } from '../domain/rows';
 import type { Company, Id, Snapshot } from '../domain/types';
 import { useHotkey } from '../hooks/useHotkey';
 import { channelName, useI18n } from '../i18n/context';
-import { updatePrefs, usePrefs, type LastUsed } from '../state/prefs';
+import { liveDefaults, updatePrefs, usePrefs, type LastUsed } from '../state/prefs';
 import { showToast } from '../state/toasts';
 import { useLiquidGlass } from './glass/useLiquidGlass';
 import { CompanyAvatar } from './primitives';
@@ -24,13 +24,15 @@ interface ComposerProps {
   snapshot: Snapshot;
   rows: JobRow[];
   onOpenJob: (id: Id) => void;
+  onOpenSettings: () => void;
+  hidden?: boolean;
 }
 
 /**
  * Quick add, built for dozens of entries a day: company → Tab → title → accounts → Enter.
  * Picking an existing job from the suggestions attaches more accounts to it instead of creating a duplicate.
  */
-export function Composer({ snapshot, rows, onOpenJob }: ComposerProps) {
+export function Composer({ snapshot, rows, onOpenJob, onOpenSettings, hidden = false }: ComposerProps) {
   const { t } = useI18n();
   const run = useRepository();
   const lastUsed = usePrefs((p) => p.lastUsed);
@@ -50,7 +52,8 @@ export function Composer({ snapshot, rows, onOpenJob }: ComposerProps) {
   useHotkey('n', () => companyInput.current?.focus());
 
   const attached = attachedId ? (rows.find((row) => row.job.id === attachedId) ?? null) : null;
-  const selectedIds = snapshot.accounts.filter((a) => lastUsed.accountIds.includes(a.id)).map((a) => a.id);
+  const defaults = liveDefaults(lastUsed, snapshot);
+  const selectedIds = defaults.accountIds;
   const taken = new Set(attached?.applications.map((a) => a.accountId));
   const addCount = selectedIds.filter((id) => !taken.has(id)).length;
 
@@ -122,17 +125,31 @@ export function Composer({ snapshot, rows, onOpenJob }: ComposerProps) {
       return;
     }
 
+    // Clear at once so the next entry can start while this one saves; put it back if saving fails.
+    setCompany('');
+    setTitle('');
+    setAttachedId(null);
+    setError(null);
+    closeSuggestions();
+    requestAnimationFrame(() => companyInput.current?.focus());
+
     const result = await run((repo) =>
       repo.quickAdd({
         companyName: name,
         title: target ? null : jobTitle,
         jobId: target?.job.id ?? null,
         accountIds,
-        channelId: lastUsed.channelId,
-        resumeId: lastUsed.resumeId,
+        channelId: defaults.channelId,
+        resumeId: defaults.resumeId,
         appliedAt: toIsoDate(new Date()),
       }),
     );
+    if (!result) {
+      setCompany((current) => current || name);
+      setTitle((current) => current || (target ? '' : title));
+      setAttachedId((current) => current ?? attached?.job.id ?? null);
+      return;
+    }
 
     const message =
       accountIds.length === 0
@@ -144,13 +161,6 @@ export function Composer({ snapshot, rows, onOpenJob }: ComposerProps) {
       message,
       action: { label: t('toast.undo'), run: () => void run((repo) => repo.undoQuickAdd(result)) },
     });
-
-    setCompany('');
-    setTitle('');
-    setAttachedId(null);
-    setError(null);
-    closeSuggestions();
-    requestAnimationFrame(() => companyInput.current?.focus());
   }
 
   function onCompanyKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -181,7 +191,13 @@ export function Composer({ snapshot, rows, onOpenJob }: ComposerProps) {
   };
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 pr-[calc(var(--reserve,0px)+12px)] pb-[max(12px,env(safe-area-inset-bottom))] pl-3 transition-[padding] duration-300 ease-out sm:pr-[calc(var(--reserve,0px)+20px)] sm:pl-5">
+    <div
+      inert={hidden}
+      className={clsx(
+        'pointer-events-none fixed inset-x-0 bottom-0 z-30 pr-[calc(var(--reserve,0px)+12px)] pb-[max(12px,env(safe-area-inset-bottom))] pl-3 transition-[padding,translate] duration-300 ease-out sm:pr-[calc(var(--reserve,0px)+20px)] sm:pl-5',
+        hidden && 'translate-y-[calc(100%+24px)]',
+      )}
+    >
       <div
         className="group pointer-events-auto relative mx-auto max-w-[820px]"
         onBlur={(event) => {
@@ -342,6 +358,16 @@ export function Composer({ snapshot, rows, onOpenJob }: ComposerProps) {
               aria-label={t('composer.accounts')}
               className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto md:flex-none"
             >
+              {snapshot.accounts.length === 0 && (
+                <button
+                  type="button"
+                  onClick={onOpenSettings}
+                  className="flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium text-fg-2 hover:bg-fill hover:text-fg"
+                >
+                  <Plus className="size-3.5" aria-hidden="true" />
+                  {t('onboarding.action')}
+                </button>
+              )}
               {snapshot.accounts.map((account) => {
                 const done = taken.has(account.id);
                 const on = !done && selectedIds.includes(account.id);

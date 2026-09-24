@@ -22,6 +22,10 @@ const en = {
   'list.emptyTitle': 'Log your first application',
   'list.emptyBody': 'Press N, type a company, pick the accounts you used, and hit Enter.',
   'list.noMatch': 'No jobs match these filters.',
+  'onboarding.title': 'Add the accounts you apply with',
+  'onboarding.body':
+    'Give each email identity a label and a color. Every application then records which one you used.',
+  'onboarding.action': 'Add accounts',
   'group.today': 'Today',
   'group.yesterday': 'Yesterday',
   'group.thisWeek': 'Earlier this week',
@@ -121,6 +125,18 @@ const en = {
   'channel.recruiter': 'Recruiter',
   'channel.other': 'Other',
 
+  'error.save': 'Couldn’t save that change. Check your connection and try again.',
+  'error.signedOut': 'You’ve been signed out. Sign in again to keep saving.',
+  'error.load': 'Couldn’t load your applications.',
+  'error.retry': 'Try again',
+
+  'signIn.title': 'Every application, every account.',
+  'signIn.body': 'Outbox is a private workspace. Sign in with the owner’s Google account.',
+  'signIn.google': 'Continue with Google',
+  'signIn.failed': 'Couldn’t start sign-in. Try again.',
+  'settings.signedInAs': 'Signed in as',
+  'settings.signOut': 'Sign out',
+
   'tweaks.title': 'Tweaks',
   'tweaks.toggle': 'Show tweaks',
   'tweaks.accent': 'Accent',
@@ -163,6 +179,9 @@ const zh: Record<MessageKey, string> = {
   'list.emptyTitle': '记下第一条投递',
   'list.emptyBody': '按 N，输入公司，选上用过的账户，回车保存。',
   'list.noMatch': '没有符合筛选条件的岗位。',
+  'onboarding.title': '先添加你投递用的账户',
+  'onboarding.body': '给每个投递邮箱起个简称、选个颜色，之后每条投递都会记下用的是哪一个。',
+  'onboarding.action': '添加账户',
   'group.today': '今天',
   'group.yesterday': '昨天',
   'group.thisWeek': '本周早些时候',
@@ -261,6 +280,18 @@ const zh: Record<MessageKey, string> = {
   'channel.referral': '内推',
   'channel.recruiter': 'Recruiter',
   'channel.other': '其他',
+
+  'error.save': '保存失败，请检查网络后重试。',
+  'error.signedOut': '登录已失效，请重新登录后再保存。',
+  'error.load': '加载失败。',
+  'error.retry': '重试',
+
+  'signIn.title': '每一次投递，每一个账户。',
+  'signIn.body': 'Outbox 是私人工作区，请使用所有者的 Google 账号登录。',
+  'signIn.google': '使用 Google 登录',
+  'signIn.failed': '无法开始登录，请重试。',
+  'settings.signedInAs': '当前登录',
+  'settings.signOut': '退出登录',
 
   'tweaks.title': '调节',
   'tweaks.toggle': '显示调节面板',

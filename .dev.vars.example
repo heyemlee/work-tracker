@@ -1,0 +1,11 @@
+# Copy to .dev.vars for local development. .dev.vars is gitignored.
+BETTER_AUTH_SECRET=replace-with-a-long-random-string
+BETTER_AUTH_URL=http://localhost:5180
+
+# Skips Google sign-in locally and acts as a built-in developer account. Never set this in production.
+DEV_AUTH_BYPASS=true
+
+# Needed only to try real Google sign-in locally.
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+OWNER_EMAILS=you@gmail.com

@@ -1,14 +1,4 @@
-import type {
-  AccountColor,
-  Application,
-  Company,
-  Id,
-  IsoDate,
-  Job,
-  Snapshot,
-  Stage,
-  TimelineEvent,
-} from '../domain/types';
+import type { AccountColor, Id, IsoDate, Snapshot, Stage, TimelineEvent } from './types';
 
 export interface QuickAddInput {
   companyName: string;
@@ -49,15 +39,6 @@ export interface JobPatch {
   notes?: string;
 }
 
-/** Everything a job deletion removed, so it can be restored. */
-export interface DeletedJob {
-  job: Job;
-  /** Set when the company had no other jobs and was removed too. */
-  company: Company | null;
-  applications: Application[];
-  events: TimelineEvent[];
-}
-
 export interface AccountInput {
   id?: Id;
   label: string;
@@ -65,12 +46,19 @@ export interface AccountInput {
   color: AccountColor;
 }
 
+export interface NameInput {
+  id?: Id;
+  name: string;
+}
+
 /**
- * The UI talks to data only through this interface: a browser-local implementation backs the prototype, and
- * the Worker API will implement it for the MVP.
+ * The contract between the UI and its data. The browser-local implementation backs the offline prototype;
+ * the Worker implements it over D1, and the SPA reaches that one through HTTP. Both run the same contract tests.
  */
 export interface Repository {
   load(): Promise<Snapshot>;
+  /** A job's timeline, newest first. Loaded on demand to keep the snapshot small. */
+  loadEvents(jobId: Id): Promise<TimelineEvent[]>;
 
   quickAdd(input: QuickAddInput): Promise<QuickAddResult>;
   undoQuickAdd(result: QuickAddResult): Promise<void>;
@@ -82,17 +70,15 @@ export interface Repository {
   updateApplication(id: Id, patch: ApplicationPatch): Promise<void>;
 
   updateJob(id: Id, patch: JobPatch): Promise<void>;
-  deleteJob(id: Id): Promise<DeletedJob>;
-  restoreJob(deleted: DeletedJob): Promise<void>;
+  /** Soft delete: the job disappears but can be restored. */
+  deleteJob(id: Id): Promise<void>;
+  restoreJob(id: Id): Promise<void>;
 
   saveAccount(input: AccountInput): Promise<Id>;
-  /** Rejects when the account has applications — they must keep pointing at a real identity. */
+  /** Rejects with a ConflictError while the account has applications — they must keep pointing at an identity. */
   deleteAccount(id: Id): Promise<void>;
-  saveResume(input: { id?: Id; name: string }): Promise<Id>;
+  saveResume(input: NameInput): Promise<Id>;
   deleteResume(id: Id): Promise<void>;
-  saveChannel(input: { id?: Id; name: string }): Promise<Id>;
+  saveChannel(input: NameInput): Promise<Id>;
   deleteChannel(id: Id): Promise<void>;
-
-  /** Prototype only: discard local changes and regenerate the sample data. */
-  resetSampleData(): Promise<void>;
 }
