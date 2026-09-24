@@ -1,13 +1,13 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { dismissToast, useToasts } from '../state/toasts';
 
-/** Toasts stack at the bottom of the window, centered on the content beside the sidebar. */
+/** Toasts stack just above whatever positioned container renders this (the composer). */
 export function Toaster() {
   const toasts = useToasts();
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-0 bottom-[max(20px,env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2 px-4 md:pl-[280px]"
+      className="pointer-events-none absolute inset-x-0 bottom-full mb-3 flex flex-col items-center gap-2"
     >
       <AnimatePresence initial={false}>
         {toasts.map((toast) => (

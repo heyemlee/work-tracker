@@ -1,17 +1,7 @@
 import { groupBy, indexBy } from './collections';
 import { groupKeyFor, localDateOf, startOfWeek, type GroupKey } from './dates';
 import { rollup } from './stages';
-import type {
-  Account,
-  Application,
-  Company,
-  Id,
-  IsoDate,
-  IsoDateTime,
-  Job,
-  JobStatus,
-  Snapshot,
-} from './types';
+import type { Account, Application, Company, IsoDate, IsoDateTime, Job, JobStatus, Snapshot } from './types';
 
 /** A job joined with everything the list needs to render it. */
 export interface JobRow {
@@ -59,14 +49,7 @@ export function buildRows(snapshot: Snapshot): JobRow[] {
 export type Filter = 'all' | JobStatus;
 export const FILTERS: readonly Filter[] = ['all', 'saved', 'applied', 'oa', 'offer'];
 
-/** With an account picked, a view is about that account's own application rather than the whole job. */
-function matchesFilter(row: JobRow, filter: Filter, accountId: Id | null): boolean {
-  if (accountId !== null) {
-    const application = row.applications.find((a) => a.accountId === accountId);
-    if (!application) return false;
-    if (filter === 'all') return true;
-    return filter !== 'saved' && application.stage === filter && !application.rejected;
-  }
+function matchesFilter(row: JobRow, filter: Filter): boolean {
   if (filter === 'all') return true;
   // Stage filters mean "live at this stage": fully rejected jobs only appear under All.
   return row.status === filter && !row.rejected;
@@ -100,23 +83,14 @@ export function searchRows(rows: readonly JobRow[], { query, hideRejected, accou
   });
 }
 
-export function filterRows(rows: readonly JobRow[], filter: Filter, accountId: Id | null = null): JobRow[] {
-  return rows.filter((row) => matchesFilter(row, filter, accountId));
+export function filterRows(rows: readonly JobRow[], filter: Filter): JobRow[] {
+  return rows.filter((row) => matchesFilter(row, filter));
 }
 
-export function countByFilter(rows: readonly JobRow[], accountId: Id | null = null): Record<Filter, number> {
+export function countByFilter(rows: readonly JobRow[]): Record<Filter, number> {
   const counts: Record<Filter, number> = { all: 0, saved: 0, applied: 0, oa: 0, offer: 0 };
   for (const row of rows) {
-    for (const filter of FILTERS) if (matchesFilter(row, filter, accountId)) counts[filter] += 1;
-  }
-  return counts;
-}
-
-/** How many jobs each account has applied to. An account applies to a job at most once. */
-export function countByAccount(rows: readonly JobRow[]): Map<Id, number> {
-  const counts = new Map<Id, number>();
-  for (const row of rows) {
-    for (const { accountId } of row.applications) counts.set(accountId, (counts.get(accountId) ?? 0) + 1);
+    for (const filter of FILTERS) if (matchesFilter(row, filter)) counts[filter] += 1;
   }
   return counts;
 }

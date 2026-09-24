@@ -31,38 +31,23 @@ interface JobListProps {
   today: IsoDate;
   selectedId: Id | null;
   onSelect: (id: Id) => void;
-  /** Pin each day's heading while its rows scroll by. Only where the list scrolls inside its own pane. */
-  stickyHeadings?: boolean;
 }
 
-/** Jobs by day, flat inside whatever pane holds the list. */
-export function JobList({
-  groups,
-  accounts,
-  today,
-  selectedId,
-  onSelect,
-  stickyHeadings = false,
-}: JobListProps) {
+export function JobList({ groups, accounts, today, selectedId, onSelect }: JobListProps) {
   const i18n = useI18n();
   const accountsById = useMemo(() => indexBy(accounts, (a) => a.id), [accounts]);
 
   return (
-    <div className="pb-2">
+    <div className="space-y-7">
       {groups.map((group) => {
         const label = groupLabel(group.key, today, i18n);
         return (
           <section key={group.key} aria-label={label}>
-            <h2
-              className={clsx(
-                'bar-glass z-10 flex items-baseline gap-2 px-5 pt-4 pb-2 text-[13px] font-semibold text-fg-2',
-                stickyHeadings && 'sticky top-0',
-              )}
-            >
+            <h2 className="mb-2 flex items-baseline gap-2 px-1 text-[13px] font-semibold text-fg-2">
               {label}
               <span className="font-normal text-fg-3 tabular-nums">{group.rows.length}</span>
             </h2>
-            <div>
+            <div className="card overflow-hidden">
               {group.rows.map((row, index) => (
                 <JobRowItem
                   key={row.job.id}
@@ -120,11 +105,11 @@ const JobRowItem = memo(function JobRowItem({
         open();
       }}
       className={clsx(
-        'job-row relative px-5 py-3 outline-offset-[-2px] transition-colors',
+        'job-row relative px-4 py-3 outline-offset-[-2px] transition-colors',
         selected ? 'bg-selected' : 'hover:bg-fill',
       )}
     >
-      {!first && <span aria-hidden="true" className="absolute top-0 right-0 left-[68px] h-px bg-hairline" />}
+      {!first && <span aria-hidden="true" className="absolute top-0 right-0 left-16 h-px bg-hairline" />}
       <span className={clsx('[grid-area:avatar]', row.rejected && 'opacity-50')}>
         <CompanyAvatar name={row.company.name} />
       </span>

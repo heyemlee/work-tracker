@@ -1,11 +1,11 @@
 import clsx from 'clsx';
-import { MousePointerClick, Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2, X } from 'lucide-react';
 import { AnimatePresence, motion, useDragControls, type PanInfo } from 'motion/react';
 import { Dialog } from 'radix-ui';
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { patchApplication, useJobEvents, useRepository } from '../data/store';
 import { indexBy } from '../domain/collections';
-import type { JobRow, Stats } from '../domain/rows';
+import type { JobRow } from '../domain/rows';
 import {
   STAGES,
   type Account,
@@ -17,16 +17,14 @@ import {
   type Snapshot,
   type TimelineEvent,
 } from '../domain/types';
-import { useHotkey } from '../hooks/useHotkey';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { channelName, useI18n } from '../i18n/context';
 import { formatDateTime, formatShortDate } from '../i18n/format';
 import { getPrefs, liveDefaults } from '../state/prefs';
 import { showToast } from '../state/toasts';
-import { GlassPane } from './glass/GlassPane';
+import { useLiquidGlass } from './glass/useLiquidGlass';
 import { Button, CompanyAvatar, IconButton, Section, Switch } from './primitives';
 import { SegmentedControl } from './SegmentedControl';
-import { StatsRow } from './StatsRow';
 
 interface DetailPanelProps {
   row: JobRow | null;
@@ -35,10 +33,7 @@ interface DetailPanelProps {
   onClose: () => void;
 }
 
-/**
- * The selected job, sliding over the list where there is no room beside it: a glass side panel that leaves the
- * list usable on medium screens, a bottom sheet on phones.
- */
+/** A glass inspector: a side panel on desktop that leaves the list usable, a bottom sheet on phones. */
 export function DetailPanel({ row, snapshot, today, onClose }: DetailPanelProps) {
   const mobile = useMediaQuery('(max-width: 767px)');
   const drag = useDragControls();
@@ -88,7 +83,7 @@ export function DetailPanel({ row, snapshot, today, onClose }: DetailPanelProps)
                 className={
                   mobile
                     ? 'fixed inset-x-0 bottom-0 z-50 flex max-h-[88dvh] rounded-t-[28px] outline-none'
-                    : 'fixed top-3 right-3 bottom-3 z-40 flex w-[420px] rounded-[28px] outline-none'
+                    : 'fixed top-[80px] right-3 bottom-3 z-40 flex w-[420px] rounded-[28px] outline-none sm:right-5'
                 }
                 initial={mobile ? { y: '100%' } : { x: 460 }}
                 animate={mobile ? { y: 0 } : { x: 0 }}
@@ -101,21 +96,14 @@ export function DetailPanel({ row, snapshot, today, onClose }: DetailPanelProps)
                 dragElastic={{ top: 0, bottom: 0.7 }}
                 onDragEnd={onDragEnd}
               >
-                <GlassPane
-                  radius={28}
-                  bevel={18}
-                  className="flex min-h-0 w-full flex-col overflow-hidden rounded-[inherit]"
-                >
-                  <Dialog.Title className="sr-only">{row.company.name}</Dialog.Title>
-                  <JobDetails
-                    key={row.job.id}
-                    row={row}
-                    snapshot={snapshot}
-                    today={today}
-                    onClose={onClose}
-                    onGrab={mobile ? (event) => drag.start(event) : undefined}
-                  />
-                </GlassPane>
+                <PanelBody
+                  key={row.job.id}
+                  row={row}
+                  snapshot={snapshot}
+                  today={today}
+                  onClose={onClose}
+                  onGrab={mobile ? (event) => drag.start(event) : undefined}
+                />
               </motion.aside>
             </Dialog.Content>
           </Dialog.Portal>
@@ -125,42 +113,7 @@ export function DetailPanel({ row, snapshot, today, onClose }: DetailPanelProps)
   );
 }
 
-interface DetailPaneProps extends DetailPanelProps {
-  stats: Stats;
-}
-
-/** Beside the list on wide screens: the selected job, or the day's numbers while nothing is selected. */
-export function DetailPane({ row, snapshot, today, stats, onClose }: DetailPaneProps) {
-  const { t } = useI18n();
-  useHotkey('escape', () => {
-    // Escape closing a dialog shouldn't also close the job behind it.
-    if (!document.querySelector('[role="dialog"]')) onClose();
-  });
-
-  return (
-    <aside aria-label={row ? row.company.name : t('overview.label')} className="flex w-[400px] shrink-0">
-      <GlassPane
-        radius={24}
-        bevel={18}
-        className="glass-pane flex min-w-0 flex-1 flex-col overflow-hidden rounded-[24px]"
-      >
-        {row ? (
-          <JobDetails key={row.job.id} row={row} snapshot={snapshot} today={today} onClose={onClose} />
-        ) : (
-          <div className="flex flex-1 flex-col px-6 pt-6">
-            <StatsRow stats={stats} today={today} columns={2} />
-            <p className="mt-10 flex items-center gap-2 text-[13px] text-fg-3">
-              <MousePointerClick className="size-4 shrink-0" aria-hidden="true" />
-              {t('overview.hint')}
-            </p>
-          </div>
-        )}
-      </GlassPane>
-    </aside>
-  );
-}
-
-interface JobDetailsProps {
+interface PanelBodyProps {
   row: JobRow;
   snapshot: Snapshot;
   today: IsoDate;
@@ -168,9 +121,11 @@ interface JobDetailsProps {
   onGrab?: (event: PointerEvent) => void;
 }
 
-function JobDetails({ row, snapshot, today, onClose, onGrab }: JobDetailsProps) {
+function PanelBody({ row, snapshot, today, onClose, onGrab }: PanelBodyProps) {
   const { t } = useI18n();
   const run = useRepository();
+  const paneRef = useRef<HTMLDivElement>(null);
+  const glass = useLiquidGlass(paneRef, { radius: 28, bevel: 18 });
   const accountsById = useMemo(() => indexBy(snapshot.accounts, (a) => a.id), [snapshot.accounts]);
   const available = snapshot.accounts.filter(
     (account) => !row.applications.some((a) => a.accountId === account.id),
@@ -191,7 +146,12 @@ function JobDetails({ row, snapshot, today, onClose, onGrab }: JobDetailsProps) 
   };
 
   return (
-    <>
+    <div
+      ref={paneRef}
+      style={glass.style}
+      className="glass flex min-h-0 w-full flex-col overflow-hidden rounded-[inherit]"
+    >
+      {glass.filter}
       {onGrab && (
         <div onPointerDown={onGrab} className="flex cursor-grab touch-none justify-center pt-2.5 pb-1">
           <span className="h-1.5 w-10 rounded-full bg-fill-2" />
@@ -201,17 +161,19 @@ function JobDetails({ row, snapshot, today, onClose, onGrab }: JobDetailsProps) 
       <header className="flex items-start gap-3 px-5 pt-5 pb-3">
         <CompanyAvatar name={row.company.name} size={44} />
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-[22px] leading-tight font-semibold tracking-[-0.02em]">
+          <Dialog.Title className="truncate text-[22px] leading-tight font-semibold tracking-[-0.02em]">
             {row.company.name}
-          </h2>
+          </Dialog.Title>
           <TitleField
             value={row.job.title}
             onCommit={(title) => void run((repo) => repo.updateJob(row.job.id, { title }))}
           />
         </div>
-        <IconButton label={t('detail.close')} onClick={onClose} className="-mt-1 -mr-2">
-          <X className="size-[18px]" />
-        </IconButton>
+        <Dialog.Close asChild>
+          <IconButton label={t('detail.close')} className="-mt-1 -mr-2">
+            <X className="size-[18px]" />
+          </IconButton>
+        </Dialog.Close>
       </header>
 
       <div className="scroll-area min-h-0 flex-1 px-5 pt-2 pb-6">
@@ -264,7 +226,7 @@ function JobDetails({ row, snapshot, today, onClose, onGrab }: JobDetailsProps) 
 
         <DeleteJob row={row} onDeleted={onClose} />
       </div>
-    </>
+    </div>
   );
 }
 
@@ -435,13 +397,12 @@ function ApplicationCard({ application, account, channels, resumes }: Applicatio
   );
 }
 
-/** Progress is darker; setbacks and bookkeeping stay light. */
 const EVENT_COLORS: Record<TimelineEvent['type'], string> = {
   job_created: 'var(--fg-3)',
-  applied: 'var(--fg-2)',
-  stage_changed: 'var(--fg)',
-  rejected: 'var(--fg-3)',
-  unrejected: 'var(--fg-2)',
+  applied: 'var(--st-applied)',
+  stage_changed: 'var(--st-oa)',
+  rejected: 'var(--st-rejected)',
+  unrejected: 'var(--st-applied)',
   application_removed: 'var(--fg-3)',
 };
 
@@ -457,12 +418,15 @@ function Timeline({ events, accountsById }: { events: TimelineEvent[]; accountsB
     return t(`event.${event.type}`, vars);
   };
 
+  const color = (event: TimelineEvent) =>
+    event.type === 'stage_changed' && event.to ? `var(--st-${event.to})` : EVENT_COLORS[event.type];
+
   return (
     <ol className="relative space-y-3.5 pl-5">
       <span aria-hidden="true" className="absolute top-2 bottom-2 left-[3px] w-px bg-hairline" />
       {events.map((event) => (
         <li key={event.id} className="relative">
-          <span className="dot absolute top-[6px] -left-5" style={{ background: EVENT_COLORS[event.type] }} />
+          <span className="dot absolute top-[6px] -left-5" style={{ background: color(event) }} />
           <p className="text-[13px]">
             {describe(event)}
             {event.actor === 'agent' && <span className="ml-1.5 text-[11px] text-fg-3">Agent</span>}

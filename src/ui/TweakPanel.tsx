@@ -29,7 +29,7 @@ export function TweakPanel() {
       <IconButton
         label={t('tweaks.toggle')}
         onClick={() => setOpen(true)}
-        className="glass fixed right-5 bottom-5 z-40 size-11 text-fg"
+        className="glass fixed bottom-5 left-5 z-40 size-11 text-fg"
       >
         <SlidersHorizontal className="size-[18px]" />
       </IconButton>
@@ -37,7 +37,7 @@ export function TweakPanel() {
   }
 
   return (
-    <aside className="glass glass-strong fixed right-5 bottom-5 z-40 w-[272px] rounded-[22px] p-4 text-[13px]">
+    <aside className="glass glass-strong fixed bottom-5 left-5 z-40 w-[272px] rounded-[22px] p-4 text-[13px]">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-[15px] font-semibold">{t('tweaks.title')}</h2>
         <div className="flex items-center">

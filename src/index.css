@@ -25,105 +25,122 @@
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
 
-  /* Monochrome, after X and Grok: black, white, and neutral grays. Red is kept for destructive actions only. */
   color-scheme: light;
-  --canvas: #e6e6e6;
+  --canvas: #f5f5f7;
   --surface: #ffffff;
-  --fg: #0f0f0f;
-  --fg-2: #5e5e5e;
-  --fg-3: #8a8a8a;
+  --fg: #1d1d1f;
+  --fg-2: #6e6e73;
+  --fg-3: #8a8a8e;
   --hairline: rgb(0 0 0 / 0.08);
   --fill: rgb(0 0 0 / 0.045);
   --fill-2: rgb(0 0 0 / 0.085);
-  --selected: rgb(0 0 0 / 0.05);
-  --danger: #f4212e;
+  --selected: rgb(0 0 0 / 0.055);
+  --danger: #d70015;
   /* Mono accent: the foreground color itself. */
   --accent: var(--fg);
   --on-accent: var(--surface);
   --card-shadow:
-    0 0 0 0.5px rgb(0 0 0 / 0.07), 0 1px 2px rgb(0 0 0 / 0.04), 0 6px 20px -12px rgb(0 0 0 / 0.12);
+    0 0 0 0.5px rgb(0 0 0 / 0.06), 0 1px 2px rgb(0 0 0 / 0.04), 0 6px 20px -12px rgb(0 0 0 / 0.12);
   --thumb: #ffffff;
   --thumb-shadow: 0 1px 2px rgb(0 0 0 / 0.1), 0 3px 8px -2px rgb(0 0 0 / 0.14);
 
   /* Glass: the floating control layer. */
   --glass-rgb: 255 255 255;
-  --glass-alpha: 0.55;
-  --glass-alpha-strong: 0.82;
-  /* The list and details are glass too, a little denser so rows stay easy to read. */
-  --glass-alpha-pane: 0.56;
+  --glass-alpha: 0.5;
+  --glass-alpha-strong: 0.8;
   --glass-blur: 20px;
   --glass-k: 1;
   --glass-rim: rgb(255 255 255 / 0.95);
   --glass-rim-soft: rgb(255 255 255 / 0.2);
-  --glass-edge: rgb(0 0 0 / 0.08);
+  --glass-edge: rgb(0 0 0 / 0.07);
   --glass-sheen: rgb(255 255 255 / 0.6);
-  --glass-shadow: 0 18px 44px -18px rgb(0 0 0 / 0.2), 0 4px 12px -6px rgb(0 0 0 / 0.08);
+  --glass-shadow: 0 18px 44px -18px rgb(0 0 0 / 0.24), 0 4px 12px -6px rgb(0 0 0 / 0.1);
 
-  /* Ambient light behind the glass: white highlights and gray shade, never a hue. */
+  /* Ambient glow: gives the glass something to refract. */
   --glow: 1;
-  --glow-1: rgb(255 255 255 / 1);
-  --glow-2: rgb(0 0 0 / 0.08);
-  --glow-3: rgb(255 255 255 / 0.9);
-  --glow-4: rgb(0 0 0 / 0.07);
+  --glow-1: rgb(110 160 255 / 0.32);
+  --glow-2: rgb(255 140 200 / 0.24);
+  --glow-3: rgb(90 215 190 / 0.26);
+  --glow-4: rgb(255 190 110 / 0.22);
 
-  /* Status in shades of gray: the further along, the darker; an offer is inverted. */
-  --st-saved: var(--fg-3);
-  --st-saved-bg: rgb(0 0 0 / 0.04);
-  --st-applied: var(--fg-2);
-  --st-applied-bg: rgb(0 0 0 / 0.055);
-  --st-oa: var(--fg);
-  --st-oa-bg: rgb(0 0 0 / 0.11);
-  --st-offer: #ffffff;
-  --st-offer-bg: var(--fg);
-  --st-rejected: var(--fg-3);
-  --st-rejected-bg: rgb(0 0 0 / 0.03);
+  /* Status: low saturation, reserved for pipeline state. */
+  --st-saved: #6e6e73;
+  --st-saved-bg: rgb(0 0 0 / 0.05);
+  --st-applied: #4a6790;
+  --st-applied-bg: #e8eef7;
+  --st-oa: #8a590b;
+  --st-oa-bg: #fbefd9;
+  --st-offer: #23703a;
+  --st-offer-bg: #e1f2e5;
+  --st-rejected: #8a8a8e;
+  --st-rejected-bg: rgb(0 0 0 / 0.04);
 
-  /* Accounts keep their stored colors, but show them as neutral dots in the color of the text around them. */
-  --acc-blue: currentColor;
-  --acc-purple: currentColor;
-  --acc-pink: currentColor;
-  --acc-orange: currentColor;
-  --acc-green: currentColor;
-  --acc-teal: currentColor;
-  --acc-gray: currentColor;
+  /* Account identity dots. */
+  --acc-blue: #3478f6;
+  --acc-purple: #9a5de0;
+  --acc-pink: #e0569b;
+  --acc-orange: #ea8420;
+  --acc-green: #2e9e55;
+  --acc-teal: #1a9fb0;
+  --acc-gray: #8e8e93;
+
+  --avatar-l: 0.94;
+  --avatar-c: 0.03;
+  --avatar-fg-l: 0.42;
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
   --canvas: #000000;
-  --surface: #0f0f0f;
-  --fg: #ededed;
-  --fg-2: #9b9b9b;
-  --fg-3: #6e6e6e;
-  --hairline: rgb(255 255 255 / 0.1);
-  --fill: rgb(255 255 255 / 0.06);
+  --surface: #1c1c1e;
+  --fg: #f5f5f7;
+  --fg-2: #a1a1a6;
+  --fg-3: #7c7c80;
+  --hairline: rgb(255 255 255 / 0.09);
+  --fill: rgb(255 255 255 / 0.065);
   --fill-2: rgb(255 255 255 / 0.11);
-  --selected: rgb(255 255 255 / 0.07);
-  --danger: #f4212e;
-  --card-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.12);
+  --selected: rgb(255 255 255 / 0.075);
+  --danger: #ff453a;
+  --card-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.07);
   --thumb: rgb(255 255 255 / 0.18);
   --thumb-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
 
-  --glass-rgb: 22 22 22;
-  --glass-alpha: 0.55;
-  --glass-alpha-strong: 0.86;
-  --glass-alpha-pane: 0.58;
-  --glass-rim: rgb(255 255 255 / 0.3);
+  --glass-rgb: 34 34 38;
+  --glass-alpha: 0.5;
+  --glass-alpha-strong: 0.84;
+  --glass-rim: rgb(255 255 255 / 0.34);
   --glass-rim-soft: rgb(255 255 255 / 0.05);
-  --glass-edge: rgb(255 255 255 / 0.08);
-  --glass-sheen: rgb(255 255 255 / 0.08);
-  --glass-shadow: 0 22px 54px -18px rgb(0 0 0 / 0.8), 0 4px 12px -6px rgb(0 0 0 / 0.5);
+  --glass-edge: rgb(255 255 255 / 0.05);
+  --glass-sheen: rgb(255 255 255 / 0.1);
+  --glass-shadow: 0 22px 54px -18px rgb(0 0 0 / 0.75), 0 4px 12px -6px rgb(0 0 0 / 0.5);
 
-  --glow-1: rgb(255 255 255 / 0.16);
-  --glow-2: rgb(255 255 255 / 0.06);
-  --glow-3: rgb(255 255 255 / 0.1);
-  --glow-4: rgb(255 255 255 / 0.05);
+  --glow-1: rgb(60 100 255 / 0.3);
+  --glow-2: rgb(190 70 150 / 0.22);
+  --glow-3: rgb(30 160 140 / 0.22);
+  --glow-4: rgb(210 130 50 / 0.16);
 
-  --st-saved-bg: rgb(255 255 255 / 0.05);
-  --st-applied-bg: rgb(255 255 255 / 0.07);
-  --st-oa-bg: rgb(255 255 255 / 0.16);
-  --st-offer: #000000;
-  --st-rejected-bg: rgb(255 255 255 / 0.04);
+  --st-saved: #a1a1a6;
+  --st-saved-bg: rgb(255 255 255 / 0.08);
+  --st-applied: #a6bfe2;
+  --st-applied-bg: rgb(120 160 220 / 0.18);
+  --st-oa: #edbe72;
+  --st-oa-bg: rgb(235 170 70 / 0.18);
+  --st-offer: #88d59e;
+  --st-offer-bg: rgb(100 195 130 / 0.18);
+  --st-rejected: #7c7c80;
+  --st-rejected-bg: rgb(255 255 255 / 0.05);
+
+  --acc-blue: #4c8dff;
+  --acc-purple: #b17cf2;
+  --acc-pink: #f06aa8;
+  --acc-orange: #f59a3c;
+  --acc-green: #3fbf6a;
+  --acc-teal: #33bccc;
+  --acc-gray: #98989d;
+
+  --avatar-l: 0.32;
+  --avatar-c: 0.035;
+  --avatar-fg-l: 0.86;
 }
 
 :root[data-accent='blue'] {
@@ -257,17 +274,6 @@
     --glass-alpha: var(--glass-alpha-strong);
   }
 
-  .glass-pane {
-    --glass-alpha: var(--glass-alpha-pane);
-  }
-
-  /* A strip of frosted glass that content scrolls under, such as a list's day headings. */
-  .bar-glass {
-    background: rgb(var(--glass-rgb) / 0.6);
-    -webkit-backdrop-filter: blur(18px) saturate(1.6);
-    backdrop-filter: blur(18px) saturate(1.6);
-  }
-
   .card {
     background: var(--surface);
     border-radius: 18px;
@@ -285,8 +291,7 @@
     align-items: center;
   }
 
-  /* Sized by the list's own width, which the sidebar and the details pane take from the window. */
-  @container (min-width: 560px) {
+  @media (min-width: 640px) {
     .job-row {
       grid-template-columns: auto minmax(0, 1fr) auto auto;
       grid-template-areas: 'avatar text chips meta';
