@@ -18,12 +18,12 @@ import { useMediaQuery } from './hooks/useMediaQuery';
 import { useThemeSync } from './hooks/useThemeSync';
 import { useToday } from './hooks/useToday';
 import { useI18n } from './i18n/context';
-import { updatePrefs, usePrefs } from './state/prefs';
+import { usePrefs } from './state/prefs';
 import { Composer } from './ui/Composer';
 import { DemoBanner } from './ui/DemoBanner';
 import { DetailPanel } from './ui/DetailPanel';
 import { JobList } from './ui/JobList';
-import { Button, Switch } from './ui/primitives';
+import { Button } from './ui/primitives';
 import { SettingsDialog } from './ui/SettingsDialog';
 import { DemoStart, SignIn } from './ui/SignIn';
 import { StatsRow } from './ui/StatsRow';
@@ -143,13 +143,6 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
             <p className="hidden px-1 text-[13px] text-fg-2 md:block">
               {shown === 1 ? t('list.jobsOne') : t('list.jobsMany', { count: shown })}
             </p>
-            <label className="ml-auto flex items-center gap-2 text-[13px] text-fg-2">
-              {t('list.hideRejected')}
-              <Switch
-                checked={hideRejected}
-                onCheckedChange={(value) => updatePrefs({ hideRejected: value })}
-              />
-            </label>
           </div>
 
           {groups.length > 0 ? (

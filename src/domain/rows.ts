@@ -116,18 +116,16 @@ export interface Stats {
   today: number;
   week: number;
   oa: number;
-  offer: number;
 }
 
 /** Counts applications (not jobs): one posting applied to from two accounts is two applications. */
 export function computeStats(applications: readonly Application[], today: IsoDate): Stats {
   const weekStart = startOfWeek(today);
-  const stats: Stats = { today: 0, week: 0, oa: 0, offer: 0 };
+  const stats: Stats = { today: 0, week: 0, oa: 0 };
   for (const app of applications) {
     if (app.appliedAt === today) stats.today += 1;
     if (app.appliedAt >= weekStart && app.appliedAt <= today) stats.week += 1;
     if (!app.rejected && app.stage === 'oa') stats.oa += 1;
-    if (!app.rejected && app.stage === 'offer') stats.offer += 1;
   }
   return stats;
 }

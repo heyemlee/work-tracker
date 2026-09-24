@@ -306,9 +306,8 @@ function AccountRow({ account, inUse }: { account: Account; inUse: boolean }) {
         placeholder="you@example.com"
         onCommit={(email) => save({ email })}
       />
-      {inUse ? (
-        <span className="shrink-0 pr-2.5 text-[12px] text-fg-3">{t('settings.inUse')}</span>
-      ) : (
+      {/* An account with applications can't be deleted: its applications would lose who sent them. */}
+      {!inUse && (
         <IconButton
           label={t('settings.delete')}
           onClick={() => void run((repo) => repo.deleteAccount(account.id))}

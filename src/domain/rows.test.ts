@@ -76,6 +76,6 @@ describe('groupRows', () => {
 
 describe('computeStats', () => {
   it('counts applications, not jobs', () => {
-    expect(computeStats(data.applications, '2026-09-23')).toEqual({ today: 1, week: 1, oa: 1, offer: 0 });
+    expect(computeStats(data.applications, '2026-09-23')).toEqual({ today: 1, week: 1, oa: 1 });
   });
 });
