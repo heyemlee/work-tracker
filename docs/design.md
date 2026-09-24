@@ -45,22 +45,29 @@ rejected, it displays the furthest rejected one, dimmed. Filters use the rollup.
 
 ## 3. UX
 
+- **Layout** — three panes, like a mail client (redesigned 2026-09-24, after Lemni's docs app). A sidebar holds the
+  views `All · Saved · Applied · OA · Offer` with counts, the switch that hides rejected jobs, and the accounts:
+  picking one narrows every view to that account's own applications. The list is in the middle; the selected
+  job sits on the right, and with nothing selected that pane shows the day's numbers (applied today, this week,
+  active OAs, offers). Below 1280px the job slides over the list instead. Phones get a top bar, the views as a
+  segmented control, and bottom sheets.
 - **Main view** — a list grouped by date (Today / Yesterday / This week / Earlier), one row per job. Each account
-  that applied is a chip showing its own status. Rejected jobs are dimmed; one click hides them.
-- **Header** — a KPI row (applied today, this week, active OAs, offers), a segmented control
-  `All · Saved · Applied · OA · Offer`, and search.
-- **Composer (quick add)** — a floating bar; `N` focuses it. Company → `Tab` → title → account chips → `Enter`.
-  Selecting N accounts creates N applications; selecting none saves the job. Typing a company lists its existing
-  jobs; picking one attaches new accounts to it, and accounts that already applied are disabled.
-- **Detail** — a glass side panel on desktop, a bottom sheet on mobile: per-account stage control, rejected
-  toggle, apply with another account, notes, timeline.
+  that applied is a chip showing its own status. Rejected jobs are dimmed; one switch hides them. The header
+  shows the view, a one-line summary, and search (`/`).
+- **Composer (quick add)** — the list's first row, "New application…"; `N` focuses it and it opens into the
+  form. Company → `Tab` → title → account chips → `Enter`, and the new job lands right below it. Selecting N
+  accounts creates N applications; selecting none saves the job. Typing a company lists its existing jobs;
+  picking one attaches new accounts to it, and accounts that already applied are disabled. On phones the top
+  bar's `+` opens it as a sheet.
+- **Detail** — per-account stage control, rejected toggle, apply with another account, notes, timeline.
 - **Settings** — accounts, resume versions, channels, language, CSV export.
 - English (default) and Simplified Chinese. Installable as a PWA.
 
 ## 4. Visual design
 
-Apple Liquid Glass, used the way Apple uses it: glass is the floating control layer (toolbar, composer, panels,
-popovers); content sits on clean, opaque surfaces so dense lists stay readable.
+Apple Liquid Glass, used the way Apple uses it: glass is the floating control layer (the sidebar, the phone's top
+bar, panels and sheets that slide over content, popovers); content sits on clean, opaque panes so dense lists
+stay readable.
 
 - **Canvas** — near-white / near-black with a faint ambient color glow, so the glass has something to refract.
 - **Color** — monochrome UI; the accent is the foreground color. Status colors are low-saturation: Applied

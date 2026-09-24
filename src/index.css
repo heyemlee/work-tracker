@@ -291,7 +291,8 @@
     align-items: center;
   }
 
-  @media (min-width: 640px) {
+  /* Sized by the list's own width, which the sidebar and the details pane take from the window. */
+  @container (min-width: 560px) {
     .job-row {
       grid-template-columns: auto minmax(0, 1fr) auto auto;
       grid-template-areas: 'avatar text chips meta';

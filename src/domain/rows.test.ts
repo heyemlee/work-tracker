@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { buildRows, computeStats, countByFilter, filterRows, groupRows, searchRows } from './rows';
+import {
+  buildRows,
+  computeStats,
+  countByAccount,
+  countByFilter,
+  filterRows,
+  groupRows,
+  searchRows,
+} from './rows';
 import { account, application, company, job, snapshot } from './testing';
 
 const accounts = [account('a', 'A'), account('b', 'B')];
@@ -47,6 +55,26 @@ describe('filtering', () => {
 
   it('counts each filter', () => {
     expect(countByFilter(rows)).toEqual({ all: 3, saved: 1, applied: 0, oa: 1, offer: 0 });
+  });
+
+  it('narrows to one account, judged by that account’s own application', () => {
+    const ids = (filter: Parameters<typeof filterRows>[1], accountId: string) =>
+      filterRows(rows, filter, accountId).map((r) => r.job.id);
+    // j1 is at OA overall (B's application), but A's own application there is still Applied.
+    expect(ids('all', 'a')).toEqual(['j2', 'j1']);
+    expect(ids('applied', 'a')).toEqual(['j1']);
+    expect(ids('oa', 'a')).toEqual([]);
+    expect(ids('oa', 'b')).toEqual(['j1']);
+    expect(countByFilter(rows, 'a')).toEqual({ all: 2, saved: 0, applied: 1, oa: 0, offer: 0 });
+  });
+
+  it('counts the jobs each account applied to', () => {
+    expect(countByAccount(rows)).toEqual(
+      new Map([
+        ['a', 2],
+        ['b', 1],
+      ]),
+    );
   });
 
   it('searches company, title and account labels', () => {
