@@ -30,6 +30,7 @@ import { Sidebar } from './ui/Sidebar';
 import { DemoStart, SignIn } from './ui/SignIn';
 import { StatsRow } from './ui/StatsRow';
 import { Toaster } from './ui/Toaster';
+import { GlassPane } from './ui/glass/GlassPane';
 import { FilterControl, MobileBar, SearchField } from './ui/Toolbar';
 import { TweakPanel } from './ui/TweakPanel';
 
@@ -197,7 +198,11 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
               />
             </label>
           </div>
-          {groups.length > 0 ? <div className="card @container overflow-hidden">{list}</div> : list}
+          {groups.length > 0 ? (
+            <div className="glass glass-pane @container overflow-hidden rounded-[22px]">{list}</div>
+          ) : (
+            list
+          )}
         </main>
         <ComposerSheet
           open={composing}
@@ -232,24 +237,30 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
           onOpenSettings={openSettings}
           footer={demo ? <DemoBanner variant="card" /> : undefined}
         />
-        <main className="card flex min-w-0 flex-1 flex-col overflow-hidden rounded-[24px]">
-          <ListHeader
-            title={filter === 'all' ? t('list.titleAll') : t(`status.${filter}`)}
-            account={account}
-            onClearAccount={() => setPickedAccountId(null)}
-            summary={summary}
-            query={query}
-            onQuery={setQuery}
-          />
-          <div className="px-4 pb-4">
-            <Composer
-              snapshot={snapshot}
-              rows={rows}
-              onOpenJob={setSelectedId}
-              onOpenSettings={openSettings}
+        <main className="flex min-w-0 flex-1">
+          <GlassPane
+            radius={24}
+            bevel={18}
+            className="glass-pane flex min-w-0 flex-1 flex-col overflow-hidden rounded-[24px]"
+          >
+            <ListHeader
+              title={filter === 'all' ? t('list.titleAll') : t(`status.${filter}`)}
+              account={account}
+              onClearAccount={() => setPickedAccountId(null)}
+              summary={summary}
+              query={query}
+              onQuery={setQuery}
             />
-          </div>
-          <div className="scroll-area @container min-h-0 flex-1 border-t border-hairline">{list}</div>
+            <div className="px-4 pb-4">
+              <Composer
+                snapshot={snapshot}
+                rows={rows}
+                onOpenJob={setSelectedId}
+                onOpenSettings={openSettings}
+              />
+            </div>
+            <div className="scroll-area @container min-h-0 flex-1 border-t border-hairline">{list}</div>
+          </GlassPane>
         </main>
         {layout === 'wide' && (
           <DetailPane row={selected} snapshot={snapshot} today={today} stats={stats} onClose={closeJob} />
@@ -282,11 +293,11 @@ function ListHeader({ title, account, onClearAccount, summary, query, onQuery }:
               onClick={onClearAccount}
               aria-label={t('list.clearAccount')}
               title={t('list.clearAccount')}
-              className="flex h-7 shrink-0 items-center gap-1.5 rounded-full bg-fill pr-2 pl-2.5 text-[13px] font-medium transition-colors hover:bg-fill-2"
+              className="flex h-7 min-w-0 items-center gap-1.5 rounded-full bg-fill pr-2 pl-2.5 text-[13px] font-medium transition-colors hover:bg-fill-2"
             >
               <span className="dot" style={{ background: `var(--acc-${account.color})` }} />
-              {account.label}
-              <X className="size-3.5 text-fg-3" aria-hidden="true" />
+              <span className="max-w-[220px] truncate">{account.email || account.label}</span>
+              <X className="size-3.5 shrink-0 text-fg-3" aria-hidden="true" />
             </button>
           )}
         </div>

@@ -35,7 +35,7 @@ interface JobListProps {
   stickyHeadings?: boolean;
 }
 
-/** Jobs by day, flat inside whatever card holds the list. */
+/** Jobs by day, flat inside whatever pane holds the list. */
 export function JobList({
   groups,
   accounts,
@@ -55,7 +55,7 @@ export function JobList({
           <section key={group.key} aria-label={label}>
             <h2
               className={clsx(
-                'z-10 flex items-baseline gap-2 bg-surface/90 px-5 pt-4 pb-2 text-[13px] font-semibold text-fg-2 backdrop-blur-md',
+                'bar-glass z-10 flex items-baseline gap-2 px-5 pt-4 pb-2 text-[13px] font-semibold text-fg-2',
                 stickyHeadings && 'sticky top-0',
               )}
             >

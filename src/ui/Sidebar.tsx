@@ -9,13 +9,12 @@ import { updatePrefs, usePrefs } from '../state/prefs';
 import { useLiquidGlass } from './glass/useLiquidGlass';
 import { Brand, IconButton, Switch } from './primitives';
 
-/** Each view's icon, tinted with its status color like the chips in the list. */
-const VIEWS: Record<Filter, { icon: LucideIcon; color: string }> = {
-  all: { icon: Inbox, color: 'var(--fg-2)' },
-  saved: { icon: Bookmark, color: 'var(--st-saved)' },
-  applied: { icon: Send, color: 'var(--st-applied)' },
-  oa: { icon: CodeXml, color: 'var(--st-oa)' },
-  offer: { icon: Trophy, color: 'var(--st-offer)' },
+const VIEW_ICONS: Record<Filter, LucideIcon> = {
+  all: Inbox,
+  saved: Bookmark,
+  applied: Send,
+  oa: CodeXml,
+  offer: Trophy,
 };
 
 interface SidebarProps {
@@ -53,7 +52,7 @@ export function Sidebar({
       ref={paneRef}
       style={glass.style}
       aria-label={t('sidebar.label')}
-      className="glass flex w-[236px] shrink-0 flex-col rounded-[26px] p-3"
+      className="glass flex w-[256px] shrink-0 flex-col rounded-[26px] p-3"
     >
       {glass.filter}
       <div className="px-2 pt-1 pb-5">
@@ -62,13 +61,13 @@ export function Sidebar({
 
       <ul className="space-y-0.5">
         {FILTERS.map((value) => {
-          const { icon: Icon, color } = VIEWS[value];
+          const Icon = VIEW_ICONS[value];
           return (
             <li key={value}>
               <NavItem
                 current={filter === value}
                 onClick={() => onFilter(value)}
-                icon={<Icon className="size-4" style={{ color }} aria-hidden="true" />}
+                icon={<Icon className="size-4" aria-hidden="true" />}
                 count={formatCount(counts[value], locale)}
               >
                 {value === 'all' ? t('filter.all') : t(`status.${value}`)}
@@ -91,11 +90,11 @@ export function Sidebar({
               <NavItem
                 pressed={on}
                 onClick={() => onAccount(on ? null : account.id)}
-                title={account.email || undefined}
+                title={account.email || account.label}
                 icon={<span className="dot" style={{ background: `var(--acc-${account.color})` }} />}
                 count={formatCount(accountCounts.get(account.id) ?? 0, locale)}
               >
-                {account.label}
+                {account.email || account.label}
               </NavItem>
             </li>
           );

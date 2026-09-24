@@ -444,7 +444,9 @@ export function Composer({
         }}
         className={clsx(
           'rounded-[18px] transition-[background-color,box-shadow] duration-200',
-          expanded ? 'bg-surface shadow-[var(--card-shadow)]' : 'cursor-text bg-fill hover:bg-fill-2',
+          expanded
+            ? 'bg-[rgb(var(--glass-rgb)/0.88)] shadow-[var(--card-shadow)]'
+            : 'cursor-text bg-fill hover:bg-fill-2',
         )}
       >
         <div className="flex h-12 items-center pr-2 pl-1.5">

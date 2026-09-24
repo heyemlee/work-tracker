@@ -1,14 +1,14 @@
 import clsx from 'clsx';
 import { Download, LogOut, Plus, RotateCcw, Trash2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Dialog, Popover } from 'radix-ui';
+import { Dialog } from 'radix-ui';
 import { useMemo, useRef, type ReactNode } from 'react';
 import { signOut } from '../data/auth';
 import { useResetDemo } from '../data/demo';
 import { localRepository, useCurrentUser, useRepository } from '../data/store';
 import { toCsv } from '../domain/csv';
 import { toIsoDate } from '../domain/dates';
-import { ACCOUNT_COLORS, type Account, type AccountColor, type Snapshot } from '../domain/types';
+import { ACCOUNT_COLORS, type Account, type Snapshot } from '../domain/types';
 import { channelName, useI18n } from '../i18n/context';
 import { updatePrefs, usePrefs, type Locale, type ThemePref } from '../state/prefs';
 import { useLiquidGlass } from './glass/useLiquidGlass';
@@ -241,7 +241,6 @@ function AccountRow({ account, inUse }: { account: Account; inUse: boolean }) {
 
   return (
     <Row>
-      <ColorPicker value={account.color} onChange={(color) => save({ color })} />
       <TextInput
         value={account.label}
         label={t('settings.label')}
@@ -267,51 +266,6 @@ function AccountRow({ account, inUse }: { account: Account; inUse: boolean }) {
         </IconButton>
       )}
     </Row>
-  );
-}
-
-function ColorPicker({ value, onChange }: { value: AccountColor; onChange: (color: AccountColor) => void }) {
-  const { t } = useI18n();
-  return (
-    <Popover.Root>
-      <Popover.Trigger asChild>
-        <button
-          type="button"
-          aria-label={t('settings.color')}
-          className="grid size-8 shrink-0 place-items-center rounded-full hover:bg-fill-2"
-        >
-          <span className="size-3.5 rounded-full" style={{ background: `var(--acc-${value})` }} />
-        </button>
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          side="bottom"
-          align="start"
-          sideOffset={6}
-          className="glass glass-strong z-[60] flex gap-1 rounded-full p-1.5 outline-none data-[state=open]:animate-[pop-in_140ms_ease-out]"
-        >
-          {ACCOUNT_COLORS.map((color) => (
-            <Popover.Close asChild key={color}>
-              <button
-                type="button"
-                aria-label={color}
-                aria-pressed={color === value}
-                onClick={() => onChange(color)}
-                className="grid size-7 place-items-center rounded-full hover:bg-fill"
-              >
-                <span
-                  className={clsx(
-                    'size-4 rounded-full',
-                    color === value && 'ring-2 ring-fg ring-offset-2 ring-offset-transparent',
-                  )}
-                  style={{ background: `var(--acc-${color})` }}
-                />
-              </button>
-            </Popover.Close>
-          ))}
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
   );
 }
 

@@ -92,7 +92,6 @@ export function ApplicationChip({ application, account }: { application: Applica
               selected={application.stage === stage}
               onSelect={() => choose((repo) => repo.setStage(application.id, stage), { stage })}
             >
-              <span className="dot" style={{ background: `var(--st-${stage})` }} />
               {t(`status.${stage}`)}
             </MenuOption>
           ))}
@@ -105,7 +104,6 @@ export function ApplicationChip({ application, account }: { application: Applica
               })
             }
           >
-            <span className="dot" style={{ background: 'var(--st-rejected)' }} />
             {t('status.rejected')}
           </MenuOption>
         </Popover.Content>

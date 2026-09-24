@@ -138,21 +138,24 @@ export function DetailPane({ row, snapshot, today, stats, onClose }: DetailPaneP
   });
 
   return (
-    <aside
-      aria-label={row ? row.company.name : t('overview.label')}
-      className="card flex w-[400px] shrink-0 flex-col overflow-hidden rounded-[24px]"
-    >
-      {row ? (
-        <JobDetails key={row.job.id} row={row} snapshot={snapshot} today={today} onClose={onClose} />
-      ) : (
-        <div className="flex flex-1 flex-col px-6 pt-6">
-          <StatsRow stats={stats} today={today} columns={2} />
-          <p className="mt-10 flex items-center gap-2 text-[13px] text-fg-3">
-            <MousePointerClick className="size-4 shrink-0" aria-hidden="true" />
-            {t('overview.hint')}
-          </p>
-        </div>
-      )}
+    <aside aria-label={row ? row.company.name : t('overview.label')} className="flex w-[400px] shrink-0">
+      <GlassPane
+        radius={24}
+        bevel={18}
+        className="glass-pane flex min-w-0 flex-1 flex-col overflow-hidden rounded-[24px]"
+      >
+        {row ? (
+          <JobDetails key={row.job.id} row={row} snapshot={snapshot} today={today} onClose={onClose} />
+        ) : (
+          <div className="flex flex-1 flex-col px-6 pt-6">
+            <StatsRow stats={stats} today={today} columns={2} />
+            <p className="mt-10 flex items-center gap-2 text-[13px] text-fg-3">
+              <MousePointerClick className="size-4 shrink-0" aria-hidden="true" />
+              {t('overview.hint')}
+            </p>
+          </div>
+        )}
+      </GlassPane>
     </aside>
   );
 }
@@ -432,12 +435,13 @@ function ApplicationCard({ application, account, channels, resumes }: Applicatio
   );
 }
 
+/** Progress is darker; setbacks and bookkeeping stay light. */
 const EVENT_COLORS: Record<TimelineEvent['type'], string> = {
   job_created: 'var(--fg-3)',
-  applied: 'var(--st-applied)',
-  stage_changed: 'var(--st-oa)',
-  rejected: 'var(--st-rejected)',
-  unrejected: 'var(--st-applied)',
+  applied: 'var(--fg-2)',
+  stage_changed: 'var(--fg)',
+  rejected: 'var(--fg-3)',
+  unrejected: 'var(--fg-2)',
   application_removed: 'var(--fg-3)',
 };
 
@@ -453,15 +457,12 @@ function Timeline({ events, accountsById }: { events: TimelineEvent[]; accountsB
     return t(`event.${event.type}`, vars);
   };
 
-  const color = (event: TimelineEvent) =>
-    event.type === 'stage_changed' && event.to ? `var(--st-${event.to})` : EVENT_COLORS[event.type];
-
   return (
     <ol className="relative space-y-3.5 pl-5">
       <span aria-hidden="true" className="absolute top-2 bottom-2 left-[3px] w-px bg-hairline" />
       {events.map((event) => (
         <li key={event.id} className="relative">
-          <span className="dot absolute top-[6px] -left-5" style={{ background: color(event) }} />
+          <span className="dot absolute top-[6px] -left-5" style={{ background: EVENT_COLORS[event.type] }} />
           <p className="text-[13px]">
             {describe(event)}
             {event.actor === 'agent' && <span className="ml-1.5 text-[11px] text-fg-3">Agent</span>}
