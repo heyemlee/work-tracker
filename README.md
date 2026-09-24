@@ -6,11 +6,11 @@ follows Apple's Liquid Glass.
 
 **[Try the demo](https://demo.tracker.haoyang.us)** — a private sandbox of fictional data, no sign-in needed.
 
-![The application list, with one posting's details open](docs/screenshots/desktop-light.webp)
+![Logging a posting applied to from two accounts in a few keystrokes, then moving one application to OA](docs/screenshots/quick-add.webp)
 
 <p align="center">
-  <img src="docs/screenshots/desktop-dark.webp" width="72%" alt="The list in dark mode" />
-  <img src="docs/screenshots/mobile-detail.webp" width="25%" alt="A posting's details on a phone" />
+  <img src="docs/screenshots/desktop-dark.webp" width="75%" alt="The list in dark mode" />
+  <img src="docs/screenshots/mobile-detail.webp" width="22%" alt="A posting's details on a phone" />
 </p>
 
 ## Features

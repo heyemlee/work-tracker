@@ -155,7 +155,7 @@ Same Worker, second hostname: `demo.tracker.haoyang.us`. The sign-in screen link
 
 1. **Prototype** — the full UI on mock data; confirm visuals and interactions. ✓
 2. **MVP** — Worker + Hono + D1 + auth, deployed; daily use starts. ✓
-3. **Demo sandbox** and an English README (architecture diagram, screenshots). ✓
+3. **Demo sandbox** and an English README (architecture diagram, an animated walkthrough, screenshots). ✓
 4. **Agent v1** — paste an email → classify, match, update; review queue; eval set.
 5. **Agent v2** — Gmail sync.
 6. _(Optional)_ conversational queries over the data.
