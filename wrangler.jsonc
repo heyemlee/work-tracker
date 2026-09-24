@@ -10,12 +10,15 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"],
   },
+  // One public origin: sign-in cookies and the Google callback are bound to it.
+  "routes": [{ "pattern": "tracker.haoyang.us", "custom_domain": true }],
+  "workers_dev": false,
+  "preview_urls": false,
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "outbox",
-      // Replaced with the real id after `wrangler d1 create outbox`.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "6fb7e342-7ffe-4ab4-8dfc-ca28f68afb98",
       "migrations_dir": "migrations",
     },
   ],

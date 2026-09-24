@@ -149,6 +149,7 @@ repository.
 
 ## 10. Open items
 
-- Custom domain on Cloudflare, or stay on `workers.dev` — decide at milestone 2.
-- The owner's Google account for sign-in — milestone 2.
+- ~~Custom domain~~ — `tracker.haoyang.us`, a Worker custom domain; `workers.dev` is off so there is one origin.
+- ~~Owner account~~ — set through the `OWNER_EMAILS` secret.
+- Google OAuth client for production sign-in — milestone 2.
 - An Anthropic API key — milestone 4.
