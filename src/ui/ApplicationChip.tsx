@@ -4,6 +4,7 @@ import { Popover } from 'radix-ui';
 import { useState, type ReactNode, type SyntheticEvent } from 'react';
 import { patchApplication, useRepository } from '../data/store';
 import type { Repository } from '../domain/repository';
+import { accountName } from '../domain/accounts';
 import { STAGES, type Account, type Application } from '../domain/types';
 import { useI18n } from '../i18n/context';
 import { formatShortDate } from '../i18n/format';
@@ -39,6 +40,7 @@ export function ApplicationChip({ application, account }: { application: Applica
   const [open, setOpen] = useState(false);
   const stageLabel = t(`status.${application.stage}`);
   const statusLabel = application.rejected ? `${stageLabel}, ${t('status.rejected')}` : stageLabel;
+  const name = accountName(account);
 
   const choose = (operation: (repo: Repository) => Promise<void>, patch: Partial<Application>) => {
     setOpen(false);
@@ -52,12 +54,12 @@ export function ApplicationChip({ application, account }: { application: Applica
           type="button"
           className="chip"
           data-status={application.rejected ? 'rejected' : application.stage}
-          aria-label={t('chip.changeStatus', { account: account.label, status: statusLabel })}
+          aria-label={t('chip.changeStatus', { account: name, status: statusLabel })}
           onClick={stop}
           onKeyDown={stop}
         >
           <span className="dot" style={{ background: `var(--acc-${account.color})` }} />
-          <span className="font-semibold">{account.label}</span>
+          <span className="min-w-0 truncate font-semibold">{name}</span>
           <span className="chip-status">{stageLabel}</span>
         </button>
       </Popover.Trigger>
@@ -78,8 +80,7 @@ export function ApplicationChip({ application, account }: { application: Applica
           <div className="px-2.5 pt-1.5 pb-2">
             <div className="flex items-center gap-1.5 text-[14px]">
               <span className="dot" style={{ background: `var(--acc-${account.color})` }} />
-              <span className="font-semibold">{account.label}</span>
-              <span className="truncate text-fg-2">{account.email}</span>
+              <span className="truncate font-semibold">{name}</span>
             </div>
             <p className="mt-0.5 text-[12px] text-fg-3">
               {t('chip.appliedOn', { date: formatShortDate(application.appliedAt, locale) })}

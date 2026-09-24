@@ -1,43 +1,77 @@
 import clsx from 'clsx';
 import { Check, CornerDownLeft, Plus, SlidersHorizontal, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Popover } from 'radix-ui';
+import { Dialog, Popover } from 'radix-ui';
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useRepository } from '../data/store';
+import { accountName } from '../domain/accounts';
 import { findJob, suggestCompanies } from '../domain/companies';
 import { toIsoDate } from '../domain/dates';
 import type { JobRow } from '../domain/rows';
 import type { Company, Id, Snapshot } from '../domain/types';
-import { useHotkey } from '../hooks/useHotkey';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { channelName, useI18n } from '../i18n/context';
 import { liveDefaults, updatePrefs, usePrefs, type LastUsed } from '../state/prefs';
 import { showToast } from '../state/toasts';
 import { useLiquidGlass } from './glass/useLiquidGlass';
-import { CompanyAvatar } from './primitives';
-import { Toaster } from './Toaster';
+import { CompanyAvatar, IconButton } from './primitives';
 
 type Suggestion = { kind: 'company'; company: Company; jobCount: number } | { kind: 'job'; row: JobRow };
 
 const suggestionKey = (s: Suggestion) => (s.kind === 'company' ? `c:${s.company.id}` : `j:${s.row.job.id}`);
 
 interface ComposerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   snapshot: Snapshot;
   rows: JobRow[];
   onOpenJob: (id: Id) => void;
   onOpenSettings: () => void;
-  hidden?: boolean;
 }
 
 /**
- * Quick add, built for dozens of entries a day: company → Tab → title → accounts → Enter.
- * Picking an existing job from the suggestions attaches more accounts to it instead of creating a duplicate.
+ * Quick add: a glass panel over the list, opened with N or the toolbar's New button. Built for dozens of entries
+ * a day: company → Tab → title → accounts → Enter. A bottom sheet on phones.
  */
-export function Composer({ snapshot, rows, onOpenJob, onOpenSettings, hidden = false }: ComposerProps) {
+export function Composer({ open, onOpenChange, ...panel }: ComposerProps) {
+  const phone = useMediaQuery('(max-width: 767px)');
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <AnimatePresence>
+        {open && (
+          <Dialog.Portal forceMount>
+            <Dialog.Overlay asChild forceMount>
+              <motion.div
+                className="fixed inset-0 z-40 bg-black/25"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              />
+            </Dialog.Overlay>
+            <ComposerPanel {...panel} phone={phone} onClose={() => onOpenChange(false)} />
+          </Dialog.Portal>
+        )}
+      </AnimatePresence>
+    </Dialog.Root>
+  );
+}
+
+interface ComposerPanelProps extends Omit<ComposerProps, 'open' | 'onOpenChange'> {
+  phone: boolean;
+  onClose: () => void;
+}
+
+/**
+ * The form. It mounts fresh each time the panel opens, so every entry starts empty; the accounts, channel and
+ * resume are remembered from the last one. Picking an existing job from the suggestions attaches more accounts
+ * to it instead of creating a duplicate.
+ */
+function ComposerPanel({ snapshot, rows, onOpenJob, onOpenSettings, phone, onClose }: ComposerPanelProps) {
   const { t } = useI18n();
   const run = useRepository();
   const lastUsed = usePrefs((p) => p.lastUsed);
-  const formRef = useRef<HTMLFormElement>(null);
-  const glass = useLiquidGlass(formRef, { radius: 26, bevel: 16 });
+  const paneRef = useRef<HTMLDivElement>(null);
+  const glass = useLiquidGlass(paneRef, { radius: phone ? 28 : 26, bevel: 16 });
   const companyInput = useRef<HTMLInputElement>(null);
   const titleInput = useRef<HTMLInputElement>(null);
   const submitButton = useRef<HTMLButtonElement>(null);
@@ -48,8 +82,7 @@ export function Composer({ snapshot, rows, onOpenJob, onOpenSettings, hidden = f
   const [suggesting, setSuggesting] = useState(false);
   const [highlight, setHighlight] = useState(-1);
   const [error, setError] = useState<string | null>(null);
-
-  useHotkey('n', () => companyInput.current?.focus());
+  const [saving, setSaving] = useState(false);
 
   const attached = attachedId ? (rows.find((row) => row.job.id === attachedId) ?? null) : null;
   const defaults = liveDefaults(lastUsed, snapshot);
@@ -104,6 +137,7 @@ export function Composer({ snapshot, rows, onOpenJob, onOpenSettings, hidden = f
   }
 
   async function submit() {
+    if (saving) return;
     const name = (attached?.company.name ?? company).trim();
     if (!name) {
       setError(t('composer.errorCompany'));
@@ -118,21 +152,13 @@ export function Composer({ snapshot, rows, onOpenJob, onOpenSettings, hidden = f
     if (target && accountIds.length === 0) {
       if (selectedIds.length > 0) setError(t('composer.errorAllApplied'));
       else if (attached) setError(t('composer.pickAccount'));
-      else {
-        setError(t('composer.exists'));
-        onOpenJob(target.job.id);
-      }
+      // Already tracked and nothing to add: show the job instead.
+      else onOpenJob(target.job.id);
       return;
     }
 
-    // Clear at once so the next entry can start while this one saves; put it back if saving fails.
-    setCompany('');
-    setTitle('');
-    setAttachedId(null);
-    setError(null);
-    closeSuggestions();
-    requestAnimationFrame(() => companyInput.current?.focus());
-
+    // The panel stays open until the save lands, so a failed save keeps what was typed.
+    setSaving(true);
     const result = await run((repo) =>
       repo.quickAdd({
         companyName: name,
@@ -144,12 +170,8 @@ export function Composer({ snapshot, rows, onOpenJob, onOpenSettings, hidden = f
         appliedAt: toIsoDate(new Date()),
       }),
     );
-    if (!result) {
-      setCompany((current) => current || name);
-      setTitle((current) => current || (target ? '' : title));
-      setAttachedId((current) => current ?? attached?.job.id ?? null);
-      return;
-    }
+    setSaving(false);
+    if (!result) return;
 
     const message =
       accountIds.length === 0
@@ -161,6 +183,7 @@ export function Composer({ snapshot, rows, onOpenJob, onOpenSettings, hidden = f
       message,
       action: { label: t('toast.undo'), run: () => void run((repo) => repo.undoQuickAdd(result)) },
     });
+    onClose();
   }
 
   function onCompanyKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -177,10 +200,6 @@ export function Composer({ snapshot, rows, onOpenJob, onOpenSettings, hidden = f
       event.preventDefault();
       const suggestion = suggestions[highlight];
       if (suggestion) pick(suggestion);
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      if (showSuggestions) closeSuggestions();
-      else event.currentTarget.blur();
     }
   }
 
@@ -190,249 +209,296 @@ export function Composer({ snapshot, rows, onOpenJob, onOpenSettings, hidden = f
     void submit();
   };
 
+  const field = clsx(
+    'w-full min-w-0 rounded-[14px] bg-fill px-4 outline-none transition-colors placeholder:text-fg-3 focus:bg-fill-2',
+    // 16px on phones, so iOS doesn't zoom into the field.
+    phone ? 'h-12 text-[16px]' : 'h-11 text-[15px]',
+  );
+
   return (
-    <div
-      inert={hidden}
-      className={clsx(
-        'pointer-events-none fixed inset-x-0 bottom-0 z-30 pr-[calc(var(--reserve,0px)+12px)] pb-[max(12px,env(safe-area-inset-bottom))] pl-3 transition-[padding,translate] duration-300 ease-out sm:pr-[calc(var(--reserve,0px)+20px)] sm:pl-5',
-        hidden && 'translate-y-[calc(100%+24px)]',
-      )}
+    <Dialog.Content
+      asChild
+      forceMount
+      aria-describedby={undefined}
+      onOpenAutoFocus={(event) => {
+        event.preventDefault();
+        companyInput.current?.focus();
+      }}
+      onEscapeKeyDown={(event) => {
+        // The first Escape only closes the suggestions.
+        if (!showSuggestions) return;
+        event.preventDefault();
+        closeSuggestions();
+      }}
     >
-      <div
-        className="group pointer-events-auto relative mx-auto max-w-[820px]"
-        onBlur={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget)) closeSuggestions();
-        }}
+      {/* Only transforms animate: opacity on an ancestor would cut the glass off from its backdrop. */}
+      <motion.div
+        className={
+          phone
+            ? 'fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] rounded-t-[28px] outline-none'
+            : 'fixed inset-x-0 top-[12dvh] z-50 mx-auto flex max-h-[80dvh] w-[min(580px,calc(100vw-32px))] rounded-[26px] outline-none'
+        }
+        initial={phone ? { y: '100%' } : { y: -10, scale: 0.97 }}
+        animate={phone ? { y: 0 } : { y: 0, scale: 1 }}
+        exit={phone ? { y: '100%' } : { y: -8, scale: 0.97, transition: { duration: 0.14 } }}
+        transition={{ type: 'spring', bounce: 0.15, duration: 0.38 }}
       >
-        <Toaster />
-
-        <AnimatePresence>
-          {showSuggestions && (
-            <motion.div
-              id="composer-suggestions"
-              role="listbox"
-              aria-label={t('composer.company')}
-              initial={{ y: 8, scale: 0.98 }}
-              animate={{ y: 0, scale: 1 }}
-              exit={{ y: 6, scale: 0.98, transition: { duration: 0.12 } }}
-              transition={{ type: 'spring', bounce: 0.2, duration: 0.3 }}
-              className="glass glass-strong absolute inset-x-0 bottom-full mb-2 max-h-[min(360px,50dvh)] overflow-y-auto rounded-[22px] p-1.5"
-            >
-              {suggestions.map((suggestion, index) => (
-                <div
-                  key={suggestionKey(suggestion)}
-                  id={`composer-suggestion-${index}`}
-                  role="option"
-                  aria-selected={index === highlight}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onMouseEnter={() => setHighlight(index)}
-                  onClick={() => pick(suggestion)}
-                  className={clsx(
-                    'flex cursor-pointer items-center gap-3 rounded-[14px] px-2.5 py-2',
-                    index === highlight && 'bg-fill',
-                    suggestion.kind === 'job' && 'pl-[52px]',
-                  )}
-                >
-                  {suggestion.kind === 'company' ? (
-                    <>
-                      <CompanyAvatar name={suggestion.company.name} size={28} />
-                      <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
-                        {suggestion.company.name}
-                      </span>
-                      {suggestion.jobCount > 0 && (
-                        <span className="shrink-0 text-[12px] text-fg-3">
-                          {t('composer.jobCount', { count: suggestion.jobCount })}
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <span className="min-w-0 flex-1 truncate text-[13px]">
-                        {suggestion.row.job.title ?? (
-                          <span className="text-fg-3">{t('composer.untitled')}</span>
-                        )}
-                      </span>
-                      <span className="flex shrink-0 gap-1">
-                        {suggestion.row.applications.map((application) => {
-                          const account = snapshot.accounts.find((a) => a.id === application.accountId);
-                          return (
-                            <span
-                              key={application.id}
-                              className="chip"
-                              data-status={application.rejected ? 'rejected' : application.stage}
-                            >
-                              <span className="font-semibold">{account?.label}</span>
-                              <span className="chip-status">{t(`status.${application.stage}`)}</span>
-                            </span>
-                          );
-                        })}
-                      </span>
-                    </>
-                  )}
-                </div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <form
-          ref={formRef}
+        <div
+          ref={paneRef}
           style={glass.style}
-          aria-label={t('composer.label')}
-          onSubmit={(event) => {
-            event.preventDefault();
-            void submit();
-          }}
-          className="glass flex flex-wrap items-center gap-x-1 gap-y-1.5 rounded-[26px] p-2 md:flex-nowrap"
+          className="glass glass-strong flex min-h-0 w-full flex-col overflow-hidden rounded-[inherit]"
         >
           {glass.filter}
+          <form
+            aria-label={t('composer.label')}
+            onSubmit={(event) => {
+              event.preventDefault();
+              void submit();
+            }}
+            className={clsx(
+              'scroll-area flex flex-col gap-3 px-5 pt-5',
+              phone ? 'pb-[max(20px,env(safe-area-inset-bottom))]' : 'pb-4',
+            )}
+          >
+            <header className="flex items-center justify-between">
+              <Dialog.Title className="text-[17px] font-semibold tracking-[-0.01em]">
+                {t('composer.label')}
+              </Dialog.Title>
+              {phone ? (
+                <Dialog.Close asChild>
+                  <IconButton label={t('detail.close')} className="-mr-2">
+                    <X className="size-[18px]" />
+                  </IconButton>
+                </Dialog.Close>
+              ) : (
+                <kbd className="kbd">esc</kbd>
+              )}
+            </header>
 
-          {attached ? (
-            <div className="flex min-w-0 flex-1 basis-full items-center gap-2.5 pl-1 md:basis-0">
-              <CompanyAvatar name={attached.company.name} size={30} />
-              <div className="min-w-0 flex-1 leading-tight">
-                <div className="text-[11px] text-fg-3">{t('composer.attached')}</div>
-                <div className="truncate text-[14px] font-semibold">
-                  {attached.company.name}
-                  {attached.job.title && (
-                    <span className="font-normal text-fg-2"> · {attached.job.title}</span>
-                  )}
+            {attached ? (
+              <div className="flex items-center gap-3 rounded-[14px] bg-fill p-2 pl-3">
+                <CompanyAvatar name={attached.company.name} size={32} />
+                <div className="min-w-0 flex-1 leading-tight">
+                  <div className="text-[12px] text-fg-3">{t('composer.attached')}</div>
+                  <div className="truncate text-[15px] font-semibold">
+                    {attached.company.name}
+                    {attached.job.title && (
+                      <span className="font-normal text-fg-2"> · {attached.job.title}</span>
+                    )}
+                  </div>
                 </div>
+                <IconButton label={t('composer.detach')} onClick={detach} className="size-8">
+                  <X className="size-4" />
+                </IconButton>
               </div>
+            ) : (
+              <>
+                <input
+                  ref={companyInput}
+                  value={company}
+                  onChange={(event) => {
+                    setCompany(event.target.value);
+                    setSuggesting(true);
+                    setHighlight(-1);
+                    setError(null);
+                  }}
+                  onFocus={() => setSuggesting(true)}
+                  onBlur={closeSuggestions}
+                  onKeyDown={onCompanyKeyDown}
+                  placeholder={t('composer.company')}
+                  aria-label={t('composer.company')}
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-expanded={showSuggestions}
+                  aria-controls="composer-suggestions"
+                  aria-activedescendant={
+                    showSuggestions && highlight >= 0 ? `composer-suggestion-${highlight}` : undefined
+                  }
+                  autoComplete="off"
+                  spellCheck={false}
+                  className={clsx(field, 'font-medium placeholder:font-normal')}
+                />
+                {showSuggestions && (
+                  <SuggestionList
+                    suggestions={suggestions}
+                    highlight={highlight}
+                    onHighlight={setHighlight}
+                    onPick={pick}
+                    snapshot={snapshot}
+                  />
+                )}
+                <input
+                  ref={titleInput}
+                  value={title}
+                  onChange={(event) => {
+                    setTitle(event.target.value);
+                    setError(null);
+                  }}
+                  placeholder={t('composer.title')}
+                  aria-label={t('composer.title')}
+                  autoComplete="off"
+                  className={field}
+                />
+              </>
+            )}
+
+            <div>
+              <p className="mb-2 px-1 text-[12px] font-semibold text-fg-2">{t('composer.accounts')}</p>
+              <div role="group" aria-label={t('composer.accounts')} className="flex flex-wrap gap-1.5">
+                {snapshot.accounts.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={onOpenSettings}
+                    className="flex h-9 items-center gap-1.5 rounded-full bg-fill px-3 text-[14px] font-medium text-fg-2 hover:bg-fill-2 hover:text-fg"
+                  >
+                    <Plus className="size-4" aria-hidden="true" />
+                    {t('onboarding.action')}
+                  </button>
+                )}
+                {snapshot.accounts.map((account) => {
+                  const done = taken.has(account.id);
+                  const on = !done && selectedIds.includes(account.id);
+                  const name = accountName(account);
+                  return (
+                    <button
+                      key={account.id}
+                      type="button"
+                      aria-pressed={on}
+                      disabled={done}
+                      title={done ? t('composer.alreadyApplied', { account: name }) : undefined}
+                      onClick={() => toggleAccount(account.id)}
+                      onKeyDown={submitOnEnter}
+                      className={clsx(
+                        'flex h-9 max-w-full min-w-0 items-center gap-2 rounded-full px-3 text-[14px] font-medium transition-all',
+                        on ? 'text-fg' : 'bg-fill text-fg-2 hover:bg-fill-2 hover:text-fg',
+                        done && 'opacity-45',
+                      )}
+                      style={
+                        on ? { background: 'var(--thumb)', boxShadow: 'var(--thumb-shadow)' } : undefined
+                      }
+                    >
+                      {done ? (
+                        <Check className="size-3.5 shrink-0" aria-hidden="true" />
+                      ) : (
+                        <span
+                          className="dot transition-transform"
+                          style={{
+                            background: `var(--acc-${account.color})`,
+                            transform: on ? 'scale(1.15)' : 'scale(0.85)',
+                            opacity: on ? 1 : 0.55,
+                          }}
+                        />
+                      )}
+                      <span className={clsx('truncate', done && 'line-through')}>{name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-1 flex items-center gap-2">
+              <DefaultsPicker snapshot={snapshot} />
               <button
-                type="button"
-                aria-label={t('composer.detach')}
-                title={t('composer.detach')}
-                onClick={detach}
-                className="grid size-8 shrink-0 place-items-center rounded-full text-fg-2 hover:bg-fill hover:text-fg"
+                ref={submitButton}
+                type="submit"
+                disabled={saving}
+                className={clsx(
+                  'ml-auto flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-accent font-semibold text-on-accent transition hover:opacity-90 active:scale-[0.97] disabled:opacity-60',
+                  phone ? 'h-12 flex-1 text-[16px]' : 'h-10 pr-3.5 pl-4 text-[14px]',
+                )}
               >
-                <X className="size-4" />
+                {addCount > 1
+                  ? t('composer.addMany', { count: addCount })
+                  : addCount === 1 || attached
+                    ? t('composer.add')
+                    : t('composer.save')}
+                {!phone && <CornerDownLeft className="size-3.5 opacity-70" aria-hidden="true" />}
               </button>
             </div>
-          ) : (
-            <div className="flex min-w-0 flex-1 basis-full items-center md:basis-0">
-              <Plus className="mx-2 size-[18px] shrink-0 text-fg-3" aria-hidden="true" />
-              <input
-                ref={companyInput}
-                value={company}
-                onChange={(event) => {
-                  setCompany(event.target.value);
-                  setSuggesting(true);
-                  setHighlight(-1);
-                  setError(null);
-                }}
-                onFocus={() => setSuggesting(true)}
-                onKeyDown={onCompanyKeyDown}
-                placeholder={t('composer.company')}
-                aria-label={t('composer.company')}
-                role="combobox"
-                aria-autocomplete="list"
-                aria-expanded={showSuggestions}
-                aria-controls="composer-suggestions"
-                aria-activedescendant={
-                  showSuggestions && highlight >= 0 ? `composer-suggestion-${highlight}` : undefined
-                }
-                autoComplete="off"
-                spellCheck={false}
-                className="h-10 min-w-0 flex-[1] bg-transparent text-[15px] font-medium outline-none placeholder:font-normal placeholder:text-fg-3"
-              />
-              <span className="mx-2 h-5 w-px shrink-0 bg-hairline" aria-hidden="true" />
-              <input
-                ref={titleInput}
-                value={title}
-                onChange={(event) => {
-                  setTitle(event.target.value);
-                  setError(null);
-                }}
-                placeholder={t('composer.title')}
-                aria-label={t('composer.title')}
-                autoComplete="off"
-                className="h-10 min-w-0 flex-[1.3] bg-transparent text-[15px] outline-none placeholder:text-fg-3"
-              />
-            </div>
-          )}
 
-          <div className="flex min-w-0 items-center gap-1 max-md:w-full">
-            <div
-              role="group"
-              aria-label={t('composer.accounts')}
-              className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto md:flex-none"
-            >
-              {snapshot.accounts.length === 0 && (
-                <button
-                  type="button"
-                  onClick={onOpenSettings}
-                  className="flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium text-fg-2 hover:bg-fill hover:text-fg"
-                >
-                  <Plus className="size-3.5" aria-hidden="true" />
-                  {t('onboarding.action')}
-                </button>
-              )}
-              {snapshot.accounts.map((account) => {
-                const done = taken.has(account.id);
-                const on = !done && selectedIds.includes(account.id);
-                return (
-                  <button
-                    key={account.id}
-                    type="button"
-                    aria-pressed={on}
-                    disabled={done}
-                    title={done ? t('composer.alreadyApplied', { account: account.label }) : account.email}
-                    onClick={() => toggleAccount(account.id)}
-                    onKeyDown={submitOnEnter}
-                    className={clsx(
-                      'flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[13px] font-medium transition-all',
-                      on ? 'text-fg' : 'text-fg-2 hover:bg-fill hover:text-fg',
-                      done && 'opacity-45',
-                    )}
-                    style={on ? { background: 'var(--thumb)', boxShadow: 'var(--thumb-shadow)' } : undefined}
-                  >
-                    {done ? (
-                      <Check className="size-3.5" aria-hidden="true" />
-                    ) : (
-                      <span
-                        className="dot transition-transform"
-                        style={{
-                          background: `var(--acc-${account.color})`,
-                          transform: on ? 'scale(1.15)' : 'scale(0.85)',
-                          opacity: on ? 1 : 0.55,
-                        }}
-                      />
-                    )}
-                    <span className={clsx(done && 'line-through')}>{account.label}</span>
-                  </button>
-                );
-              })}
-            </div>
+            {(error || !phone) && (
+              <p aria-live="polite" className={clsx('px-1 text-[12px]', error ? 'text-danger' : 'text-fg-3')}>
+                {error ?? t('composer.hint')}
+              </p>
+            )}
+          </form>
+        </div>
+      </motion.div>
+    </Dialog.Content>
+  );
+}
 
-            <DefaultsPicker snapshot={snapshot} />
+interface SuggestionListProps {
+  suggestions: Suggestion[];
+  highlight: number;
+  onHighlight: (index: number) => void;
+  onPick: (suggestion: Suggestion) => void;
+  snapshot: Snapshot;
+}
 
-            <button
-              ref={submitButton}
-              type="submit"
-              className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-accent pr-3 pl-3.5 text-[13px] font-semibold text-on-accent transition hover:opacity-90 active:scale-[0.97]"
-            >
-              {addCount > 1
-                ? t('composer.addMany', { count: addCount })
-                : addCount === 1 || attached
-                  ? t('composer.add')
-                  : t('composer.save')}
-              <CornerDownLeft className="size-3.5 opacity-70" aria-hidden="true" />
-            </button>
-          </div>
-        </form>
-
-        {/* Errors always show; the shortcut hint only while the composer has focus. */}
-        <p
-          aria-live="polite"
+function SuggestionList({ suggestions, highlight, onHighlight, onPick, snapshot }: SuggestionListProps) {
+  const { t } = useI18n();
+  return (
+    <div
+      id="composer-suggestions"
+      role="listbox"
+      aria-label={t('composer.company')}
+      className="-mt-1 max-h-[min(300px,40dvh)] overflow-y-auto rounded-[16px] bg-fill p-1"
+    >
+      {suggestions.map((suggestion, index) => (
+        <div
+          key={suggestionKey(suggestion)}
+          id={`composer-suggestion-${index}`}
+          role="option"
+          aria-selected={index === highlight}
+          onMouseDown={(event) => event.preventDefault()}
+          onMouseEnter={() => onHighlight(index)}
+          onClick={() => onPick(suggestion)}
           className={clsx(
-            'glass glass-strong mx-auto mt-2 w-fit rounded-full px-3 py-1 text-[11px]',
-            error ? 'text-danger' : 'hidden text-fg-2 sm:group-focus-within:block',
+            'flex cursor-pointer items-center gap-3 rounded-[12px] px-2.5 py-2',
+            index === highlight && 'bg-fill-2',
+            suggestion.kind === 'job' && 'pl-[52px]',
           )}
         >
-          {error ?? t('composer.hint')}
-        </p>
-      </div>
+          {suggestion.kind === 'company' ? (
+            <>
+              <CompanyAvatar name={suggestion.company.name} size={28} />
+              <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
+                {suggestion.company.name}
+              </span>
+              {suggestion.jobCount > 0 && (
+                <span className="shrink-0 text-[12px] text-fg-3">
+                  {t('composer.jobCount', { count: suggestion.jobCount })}
+                </span>
+              )}
+            </>
+          ) : (
+            // A job: its title, then which emails already applied, on a line of their own.
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[13px]">
+                {suggestion.row.job.title ?? <span className="text-fg-3">{t('composer.untitled')}</span>}
+              </span>
+              {suggestion.row.applications.length > 0 && (
+                <span className="mt-1 flex flex-wrap gap-1">
+                  {suggestion.row.applications.map((application) => {
+                    const account = snapshot.accounts.find((a) => a.id === application.accountId);
+                    return (
+                      <span
+                        key={application.id}
+                        className="chip max-w-full"
+                        data-status={application.rejected ? 'rejected' : application.stage}
+                      >
+                        <span className="truncate font-semibold">{account ? accountName(account) : ''}</span>
+                        <span className="chip-status">{t(`status.${application.stage}`)}</span>
+                      </span>
+                    );
+                  })}
+                </span>
+              )}
+            </span>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -488,19 +554,19 @@ function DefaultsPicker({ snapshot }: { snapshot: Snapshot }) {
           type="button"
           aria-label={t('composer.defaults')}
           title={t('composer.defaults')}
-          className="flex h-8 min-w-0 shrink items-center gap-1.5 rounded-full px-2.5 text-[12px] text-fg-2 transition-colors hover:bg-fill hover:text-fg"
+          className="flex h-9 min-w-0 shrink items-center gap-1.5 rounded-full px-3 text-[13px] text-fg-2 transition-colors hover:bg-fill hover:text-fg"
         >
           <SlidersHorizontal className="size-3.5 shrink-0" aria-hidden="true" />
-          <span className="truncate max-lg:hidden">
+          <span className="truncate">
             {channel ? channelName(channel, t) : t('composer.none')} · {resume?.name ?? t('composer.none')}
           </span>
         </button>
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          side="top"
-          align="end"
-          sideOffset={14}
+          side="bottom"
+          align="start"
+          sideOffset={8}
           collisionPadding={12}
           className="glass glass-strong z-50 w-64 origin-(--radix-popover-content-transform-origin) rounded-[18px] p-2 outline-none data-[state=open]:animate-[pop-in_160ms_ease-out]"
         >

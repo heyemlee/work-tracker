@@ -293,7 +293,8 @@
 
   @media (min-width: 640px) {
     .job-row {
-      grid-template-columns: auto minmax(0, 1fr) auto auto;
+      /* Chips name the email that applied; long ones wrap rather than squeeze the company name. */
+      grid-template-columns: auto minmax(160px, 1fr) fit-content(58%) auto;
       grid-template-areas: 'avatar text chips meta';
     }
   }

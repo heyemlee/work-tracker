@@ -228,7 +228,7 @@ function TextInput({
 function AccountRow({ account, inUse }: { account: Account; inUse: boolean }) {
   const { t } = useI18n();
   const run = useRepository();
-  const save = (patch: Partial<Pick<Account, 'label' | 'email' | 'color'>>) =>
+  const save = (patch: Partial<Pick<Account, 'email' | 'color'>>) =>
     void run((repo) =>
       repo.saveAccount({
         id: account.id,
@@ -242,12 +242,6 @@ function AccountRow({ account, inUse }: { account: Account; inUse: boolean }) {
   return (
     <Row>
       <ColorPicker value={account.color} onChange={(color) => save({ color })} />
-      <TextInput
-        value={account.label}
-        label={t('settings.label')}
-        onCommit={(label) => label && save({ label })}
-        className="max-w-[96px] font-semibold"
-      />
       <TextInput
         value={account.email}
         type="email"

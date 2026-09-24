@@ -13,6 +13,7 @@ import {
   type Filter,
 } from './domain/rows';
 import type { Id, Snapshot } from './domain/types';
+import { useHotkey } from './hooks/useHotkey';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { useThemeSync } from './hooks/useThemeSync';
 import { useToday } from './hooks/useToday';
@@ -27,6 +28,7 @@ import { SettingsDialog } from './ui/SettingsDialog';
 import { DemoStart, SignIn } from './ui/SignIn';
 import { StatsRow } from './ui/StatsRow';
 import { FilterControl, Toolbar } from './ui/Toolbar';
+import { Toaster } from './ui/Toaster';
 import { TweakPanel } from './ui/TweakPanel';
 
 /** Width the open inspector takes from the page on wide screens: panel + its margin. */
@@ -102,6 +104,7 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<Id | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [composing, setComposing] = useState(false);
 
   const rows = useMemo(() => buildRows(snapshot), [snapshot]);
   const searched = useMemo(
@@ -114,6 +117,9 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
   const selected = selectedId ? (rows.find((row) => row.job.id === selectedId) ?? null) : null;
   const shown = counts[filter];
 
+  // N opens the quick-add panel, except over the settings dialog.
+  useHotkey('n', () => !settingsOpen && setComposing(true));
+
   return (
     <div style={{ '--reserve': `${selected && wide ? PANEL_RESERVE : 0}px` } as CSSProperties}>
       <Toolbar
@@ -122,10 +128,11 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
         query={query}
         onQuery={setQuery}
         onOpenSettings={() => setSettingsOpen(true)}
+        onCompose={() => setComposing(true)}
       />
 
       <main className="pr-(--reserve) transition-[padding] duration-300 ease-out">
-        <div className="mx-auto w-full max-w-[1040px] px-4 pt-[100px] pb-52 sm:px-6">
+        <div className="mx-auto w-full max-w-[1040px] px-4 pt-[100px] pb-24 sm:px-6">
           {demo && <DemoBanner />}
           <StatsRow stats={stats} today={today} />
 
@@ -177,13 +184,20 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
       </main>
 
       <Composer
+        open={composing}
+        onOpenChange={setComposing}
         snapshot={snapshot}
         rows={rows}
-        onOpenJob={setSelectedId}
-        onOpenSettings={() => setSettingsOpen(true)}
-        // Below the wide breakpoint the inspector covers the composer's corner; slide it away meanwhile.
-        hidden={selected !== null && !wide}
+        onOpenJob={(id) => {
+          setComposing(false);
+          setSelectedId(id);
+        }}
+        onOpenSettings={() => {
+          setComposing(false);
+          setSettingsOpen(true);
+        }}
       />
+      <Toaster />
       <DetailPanel row={selected} snapshot={snapshot} today={today} onClose={() => setSelectedId(null)} />
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} snapshot={snapshot} />
       <TweakPanel />

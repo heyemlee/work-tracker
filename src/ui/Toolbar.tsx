@@ -1,4 +1,4 @@
-import { Search, Settings2, X } from 'lucide-react';
+import { Plus, Search, Settings2, X } from 'lucide-react';
 import { useRef } from 'react';
 import { FILTERS, type Filter } from '../domain/rows';
 import { useHotkey } from '../hooks/useHotkey';
@@ -39,9 +39,10 @@ interface ToolbarProps {
   query: string;
   onQuery: (query: string) => void;
   onOpenSettings: () => void;
+  onCompose: () => void;
 }
 
-export function Toolbar({ filter, onFilter, query, onQuery, onOpenSettings }: ToolbarProps) {
+export function Toolbar({ filter, onFilter, query, onQuery, onOpenSettings, onCompose }: ToolbarProps) {
   const { t, locale } = useI18n();
   const paneRef = useRef<HTMLDivElement>(null);
   const glass = useLiquidGlass(paneRef, { radius: 22, bevel: 14 });
@@ -99,6 +100,16 @@ export function Toolbar({ filter, onFilter, query, onQuery, onOpenSettings }: To
           <IconButton label={t('toolbar.settings')} onClick={onOpenSettings}>
             <Settings2 className="size-[18px]" />
           </IconButton>
+          <button
+            type="button"
+            onClick={onCompose}
+            aria-label={t('composer.label')}
+            title={`${t('composer.label')} (N)`}
+            className="ml-1 flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 text-[13px] font-semibold text-on-accent transition hover:opacity-90 active:scale-[0.97] sm:pr-3.5"
+          >
+            <Plus className="size-[18px]" aria-hidden="true" />
+            <span className="max-sm:hidden">{t('toolbar.new')}</span>
+          </button>
         </div>
       </div>
     </header>

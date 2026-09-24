@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useDragControls, type PanInfo } from 'motion/r
 import { Dialog } from 'radix-ui';
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { patchApplication, useJobEvents, useRepository } from '../data/store';
+import { accountName } from '../domain/accounts';
 import { indexBy } from '../domain/collections';
 import type { JobRow } from '../domain/rows';
 import {
@@ -204,7 +205,7 @@ function PanelBody({ row, snapshot, today, onClose, onGrab }: PanelBodyProps) {
                   >
                     <Plus className="size-3.5 text-fg-2" aria-hidden="true" />
                     <span className="dot" style={{ background: `var(--acc-${account.color})` }} />
-                    {account.label}
+                    {accountName(account)}
                   </button>
                 ))}
               </div>
@@ -310,8 +311,9 @@ function ApplicationCard({ application, account, channels, resumes }: Applicatio
     <div className="rounded-[16px] bg-fill p-3">
       <div className={clsx('flex items-center gap-2', application.rejected && 'opacity-60')}>
         <span className="dot" style={{ background: `var(--acc-${account?.color ?? 'gray'})` }} />
-        <span className="text-[14px] font-semibold">{account?.label ?? t('event.unknownAccount')}</span>
-        <span className="min-w-0 flex-1 truncate text-[12px] text-fg-2">{account?.email}</span>
+        <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
+          {account ? accountName(account) : t('event.unknownAccount')}
+        </span>
         <span className="shrink-0 text-[12px] text-fg-3">
           {t('detail.appliedOn', { date: formatShortDate(application.appliedAt, locale) })}
         </span>
@@ -327,7 +329,7 @@ function ApplicationCard({ application, account, channels, resumes }: Applicatio
               optimistic: patchApplication(application.id, { stage }),
             })
           }
-          label={account?.label ?? t('detail.applications')}
+          label={account ? accountName(account) : t('detail.applications')}
           layoutId={`stage-${application.id}`}
           className={clsx(application.rejected && 'opacity-60')}
         />
@@ -410,7 +412,8 @@ function Timeline({ events, accountsById }: { events: TimelineEvent[]; accountsB
   const { t, locale } = useI18n();
 
   const describe = (event: TimelineEvent) => {
-    const account = event.accountId ? accountsById.get(event.accountId)?.label : undefined;
+    const found = event.accountId ? accountsById.get(event.accountId) : undefined;
+    const account = found ? accountName(found) : undefined;
     const vars = {
       account: account ?? t('event.unknownAccount'),
       stage: event.to ? t(`status.${event.to}`) : '',

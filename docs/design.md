@@ -46,15 +46,17 @@ rejected, it displays the furthest rejected one, dimmed. Filters use the rollup.
 ## 3. UX
 
 - **Main view** — a list grouped by date (Today / Yesterday / This week / Earlier), one row per job. Each account
-  that applied is a chip showing its own status. Rejected jobs are dimmed; one click hides them.
+  that applied is a chip showing its own status. Rejected jobs are dimmed; one click hides them. Accounts are
+  shown by their email address everywhere, since that's what tells them apart.
 - **Header** — a KPI row (applied today, this week, active OAs, offers), a segmented control
   `All · Saved · Applied · OA · Offer`, and search.
-- **Composer (quick add)** — a floating bar; `N` focuses it. Company → `Tab` → title → account chips → `Enter`.
+- **Composer (quick add)** — a glass panel over the list, opened from the toolbar's New button or `N` (a bottom
+  sheet on phones). Company → `Tab` → title → account chips → `Enter`; the panel closes and a toast offers Undo.
   Selecting N accounts creates N applications; selecting none saves the job. Typing a company lists its existing
   jobs; picking one attaches new accounts to it, and accounts that already applied are disabled.
 - **Detail** — a glass side panel on desktop, a bottom sheet on mobile: per-account stage control, rejected
   toggle, apply with another account, notes, timeline.
-- **Settings** — accounts, resume versions, channels, language, CSV export.
+- **Settings** — accounts (an email address and a color each), resume versions, channels, language, CSV export.
 - English (default) and Simplified Chinese. Installable as a PWA.
 
 ## 4. Visual design
