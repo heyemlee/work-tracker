@@ -548,7 +548,10 @@ function OptionGroup({
   );
 }
 
-/** Channel and resume for new applications. Defaults to whatever was used last. */
+/**
+ * Channel and resume for new applications, remembered from the last one. Only what's set is shown; picking the
+ * selected resume again clears it.
+ */
 function DefaultsPicker({ snapshot }: { snapshot: Snapshot }) {
   const { t } = useI18n();
   const lastUsed = usePrefs((p) => p.lastUsed);
@@ -556,6 +559,7 @@ function DefaultsPicker({ snapshot }: { snapshot: Snapshot }) {
   const resume = snapshot.resumes.find((r) => r.id === lastUsed.resumeId);
   const set = (patch: Partial<LastUsed>) =>
     updatePrefs((prefs) => ({ lastUsed: { ...prefs.lastUsed, ...patch } }));
+  const summary = [channel && channelName(channel, t), resume?.name].filter(Boolean).join(' · ');
 
   return (
     <Popover.Root>
@@ -567,9 +571,7 @@ function DefaultsPicker({ snapshot }: { snapshot: Snapshot }) {
           className="flex h-9 min-w-0 shrink items-center gap-1.5 rounded-full px-3 text-[13px] text-fg-2 transition-colors hover:bg-fill hover:text-fg"
         >
           <SlidersHorizontal className="size-3.5 shrink-0" aria-hidden="true" />
-          <span className="truncate">
-            {channel ? channelName(channel, t) : t('composer.none')} · {resume?.name ?? t('composer.none')}
-          </span>
+          <span className="truncate">{summary || t('composer.channel')}</span>
         </button>
       </Popover.Trigger>
       <Popover.Portal>
@@ -586,16 +588,17 @@ function DefaultsPicker({ snapshot }: { snapshot: Snapshot }) {
             value={lastUsed.channelId}
             onChange={(channelId) => set({ channelId })}
           />
-          <div className="mx-1 my-2 h-px bg-hairline" />
-          <OptionGroup
-            label={t('composer.resume')}
-            options={[
-              { id: null, label: t('composer.none') },
-              ...snapshot.resumes.map((r) => ({ id: r.id, label: r.name })),
-            ]}
-            value={lastUsed.resumeId}
-            onChange={(resumeId) => set({ resumeId })}
-          />
+          {snapshot.resumes.length > 0 && (
+            <>
+              <div className="mx-1 my-2 h-px bg-hairline" />
+              <OptionGroup
+                label={t('composer.resume')}
+                options={snapshot.resumes.map((r) => ({ id: r.id, label: r.name }))}
+                value={lastUsed.resumeId}
+                onChange={(resumeId) => set({ resumeId: resumeId === lastUsed.resumeId ? null : resumeId })}
+              />
+            </>
+          )}
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
