@@ -1,0 +1,16 @@
+node_modules
+dist
+coverage
+*.local
+*.tsbuildinfo
+.DS_Store
+
+# Cloudflare local state and secrets
+.wrangler
+.dev.vars
+
+# Claude Code session files
+.claude/
+
+# Real (anonymized) emails used for local evals never leave this machine
+evals/private/

@@ -1,0 +1,443 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+  --color-hairline: var(--hairline);
+  --color-fill: var(--fill);
+  --color-fill-2: var(--fill-2);
+  --color-selected: var(--selected);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-system);
+}
+
+/* ---------------------------------------------------------------- tokens */
+
+:root {
+  --font-system:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
+
+  color-scheme: light;
+  --canvas: #f5f5f7;
+  --surface: #ffffff;
+  --fg: #1d1d1f;
+  --fg-2: #6e6e73;
+  --fg-3: #8a8a8e;
+  --hairline: rgb(0 0 0 / 0.08);
+  --fill: rgb(0 0 0 / 0.045);
+  --fill-2: rgb(0 0 0 / 0.085);
+  --selected: rgb(0 0 0 / 0.055);
+  --danger: #d70015;
+  /* Mono accent: the foreground color itself. */
+  --accent: var(--fg);
+  --on-accent: var(--surface);
+  --card-shadow:
+    0 0 0 0.5px rgb(0 0 0 / 0.06), 0 1px 2px rgb(0 0 0 / 0.04), 0 6px 20px -12px rgb(0 0 0 / 0.12);
+  --thumb: #ffffff;
+  --thumb-shadow: 0 1px 2px rgb(0 0 0 / 0.1), 0 3px 8px -2px rgb(0 0 0 / 0.14);
+
+  /* Glass: the floating control layer. */
+  --glass-rgb: 255 255 255;
+  --glass-alpha: 0.5;
+  --glass-alpha-strong: 0.8;
+  --glass-blur: 20px;
+  --glass-k: 1;
+  --glass-rim: rgb(255 255 255 / 0.95);
+  --glass-rim-soft: rgb(255 255 255 / 0.2);
+  --glass-edge: rgb(0 0 0 / 0.07);
+  --glass-sheen: rgb(255 255 255 / 0.6);
+  --glass-shadow: 0 18px 44px -18px rgb(0 0 0 / 0.24), 0 4px 12px -6px rgb(0 0 0 / 0.1);
+
+  /* Ambient glow: gives the glass something to refract. */
+  --glow: 1;
+  --glow-1: rgb(110 160 255 / 0.32);
+  --glow-2: rgb(255 140 200 / 0.24);
+  --glow-3: rgb(90 215 190 / 0.26);
+  --glow-4: rgb(255 190 110 / 0.22);
+
+  /* Status: low saturation, reserved for pipeline state. */
+  --st-saved: #6e6e73;
+  --st-saved-bg: rgb(0 0 0 / 0.05);
+  --st-applied: #4a6790;
+  --st-applied-bg: #e8eef7;
+  --st-oa: #8a590b;
+  --st-oa-bg: #fbefd9;
+  --st-offer: #23703a;
+  --st-offer-bg: #e1f2e5;
+  --st-rejected: #8a8a8e;
+  --st-rejected-bg: rgb(0 0 0 / 0.04);
+
+  /* Account identity dots. */
+  --acc-blue: #3478f6;
+  --acc-purple: #9a5de0;
+  --acc-pink: #e0569b;
+  --acc-orange: #ea8420;
+  --acc-green: #2e9e55;
+  --acc-teal: #1a9fb0;
+  --acc-gray: #8e8e93;
+
+  --avatar-l: 0.94;
+  --avatar-c: 0.03;
+  --avatar-fg-l: 0.42;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --canvas: #000000;
+  --surface: #1c1c1e;
+  --fg: #f5f5f7;
+  --fg-2: #a1a1a6;
+  --fg-3: #7c7c80;
+  --hairline: rgb(255 255 255 / 0.09);
+  --fill: rgb(255 255 255 / 0.065);
+  --fill-2: rgb(255 255 255 / 0.11);
+  --selected: rgb(255 255 255 / 0.075);
+  --danger: #ff453a;
+  --card-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.07);
+  --thumb: rgb(255 255 255 / 0.18);
+  --thumb-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+
+  --glass-rgb: 34 34 38;
+  --glass-alpha: 0.5;
+  --glass-alpha-strong: 0.84;
+  --glass-rim: rgb(255 255 255 / 0.34);
+  --glass-rim-soft: rgb(255 255 255 / 0.05);
+  --glass-edge: rgb(255 255 255 / 0.05);
+  --glass-sheen: rgb(255 255 255 / 0.1);
+  --glass-shadow: 0 22px 54px -18px rgb(0 0 0 / 0.75), 0 4px 12px -6px rgb(0 0 0 / 0.5);
+
+  --glow-1: rgb(60 100 255 / 0.3);
+  --glow-2: rgb(190 70 150 / 0.22);
+  --glow-3: rgb(30 160 140 / 0.22);
+  --glow-4: rgb(210 130 50 / 0.16);
+
+  --st-saved: #a1a1a6;
+  --st-saved-bg: rgb(255 255 255 / 0.08);
+  --st-applied: #a6bfe2;
+  --st-applied-bg: rgb(120 160 220 / 0.18);
+  --st-oa: #edbe72;
+  --st-oa-bg: rgb(235 170 70 / 0.18);
+  --st-offer: #88d59e;
+  --st-offer-bg: rgb(100 195 130 / 0.18);
+  --st-rejected: #7c7c80;
+  --st-rejected-bg: rgb(255 255 255 / 0.05);
+
+  --acc-blue: #4c8dff;
+  --acc-purple: #b17cf2;
+  --acc-pink: #f06aa8;
+  --acc-orange: #f59a3c;
+  --acc-green: #3fbf6a;
+  --acc-teal: #33bccc;
+  --acc-gray: #98989d;
+
+  --avatar-l: 0.32;
+  --avatar-c: 0.035;
+  --avatar-fg-l: 0.86;
+}
+
+:root[data-accent='blue'] {
+  --accent: #0071e3;
+  --on-accent: #ffffff;
+}
+:root[data-accent='indigo'] {
+  --accent: #5856d6;
+  --on-accent: #ffffff;
+}
+:root[data-accent='teal'] {
+  --accent: #0a8792;
+  --on-accent: #ffffff;
+}
+:root[data-theme='dark'][data-accent='blue'] {
+  --accent: #0a84ff;
+}
+:root[data-theme='dark'][data-accent='indigo'] {
+  --accent: #5e5ce6;
+}
+:root[data-theme='dark'][data-accent='teal'] {
+  --accent: #40c8e0;
+  --on-accent: #000000;
+}
+
+/* ------------------------------------------------------------------ base */
+
+@layer base {
+  html {
+    background: var(--canvas);
+    color: var(--fg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    min-height: 100dvh;
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  button:not(:disabled),
+  [role='button'] {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+    outline-offset: 2px;
+  }
+
+  input[type='search']::-webkit-search-cancel-button {
+    appearance: none;
+  }
+}
+
+/* ------------------------------------------------------------ components */
+
+@layer components {
+  .ambient {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: var(--glow);
+    background:
+      radial-gradient(42% 36% at 10% 4%, var(--glow-1), transparent 70%),
+      radial-gradient(36% 32% at 92% 10%, var(--glow-2), transparent 70%),
+      radial-gradient(44% 38% at 80% 100%, var(--glow-3), transparent 70%),
+      radial-gradient(32% 30% at 4% 92%, var(--glow-4), transparent 70%);
+  }
+
+  /* Liquid glass. Refraction, when supported, replaces backdrop-filter inline (see useLiquidGlass). */
+  .glass {
+    position: relative;
+    isolation: isolate;
+    background: rgb(var(--glass-rgb) / calc(var(--glass-alpha) * var(--glass-k)));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.8);
+    backdrop-filter: blur(var(--glass-blur)) saturate(1.8);
+    box-shadow:
+      var(--glass-shadow),
+      0 0 0 0.5px var(--glass-edge);
+  }
+
+  /* Specular rim: a gradient border that catches light on the top-left and bottom-right edges. */
+  .glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding: 1px;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      170deg,
+      var(--glass-rim) 0%,
+      var(--glass-rim-soft) 30%,
+      transparent 55%,
+      var(--glass-rim-soft) 80%,
+      var(--glass-rim) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
+  /* Sheen: light pooling along the top of the pane. */
+  .glass::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(180deg, var(--glass-sheen), transparent 42%);
+  }
+
+  /* Popovers and menus sit over busy content; they need more opacity to stay legible. */
+  .glass-strong {
+    --glass-alpha: var(--glass-alpha-strong);
+  }
+
+  .card {
+    background: var(--surface);
+    border-radius: 18px;
+    box-shadow: var(--card-shadow);
+  }
+
+  .job-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'avatar text meta'
+      'avatar chips chips';
+    column-gap: 12px;
+    row-gap: 8px;
+    align-items: center;
+  }
+
+  @media (min-width: 640px) {
+    .job-row {
+      grid-template-columns: auto minmax(0, 1fr) auto auto;
+      grid-template-areas: 'avatar text chips meta';
+    }
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 24px;
+    padding-inline: 8px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--chip-fg);
+    background: var(--chip-bg);
+    transition:
+      transform 120ms ease,
+      box-shadow 120ms ease;
+  }
+
+  button.chip:hover {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-fg) 28%, transparent);
+  }
+
+  button.chip:active {
+    transform: scale(0.96);
+  }
+
+  .chip[data-status='saved'] {
+    --chip-fg: var(--st-saved);
+    --chip-bg: var(--st-saved-bg);
+  }
+  .chip[data-status='applied'] {
+    --chip-fg: var(--st-applied);
+    --chip-bg: var(--st-applied-bg);
+  }
+  .chip[data-status='oa'] {
+    --chip-fg: var(--st-oa);
+    --chip-bg: var(--st-oa-bg);
+  }
+  .chip[data-status='offer'] {
+    --chip-fg: var(--st-offer);
+    --chip-bg: var(--st-offer-bg);
+  }
+  .chip[data-status='rejected'] {
+    --chip-fg: var(--st-rejected);
+    --chip-bg: var(--st-rejected-bg);
+  }
+  .chip[data-status='rejected'] .chip-status {
+    text-decoration: line-through;
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    border-radius: 999px;
+  }
+
+  .switch {
+    position: relative;
+    display: inline-flex;
+    width: 42px;
+    height: 26px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    background: var(--fill-2);
+    transition: background-color 200ms ease;
+  }
+  .switch[data-state='checked'] {
+    background: var(--accent);
+  }
+  .switch-thumb {
+    display: block;
+    width: 22px;
+    height: 22px;
+    margin: 2px;
+    border-radius: 999px;
+    background: #ffffff;
+    box-shadow:
+      0 2px 5px rgb(0 0 0 / 0.18),
+      0 0 0 0.5px rgb(0 0 0 / 0.04);
+    transition:
+      transform 220ms cubic-bezier(0.3, 0.7, 0.4, 1.15),
+      background-color 200ms ease;
+  }
+  .switch[data-state='checked'] .switch-thumb {
+    transform: translateX(16px);
+    background: var(--on-accent);
+  }
+
+  .select {
+    appearance: none;
+    height: 30px;
+    max-width: 100%;
+    padding: 0 26px 0 10px;
+    border-radius: 9px;
+    font-size: 13px;
+    color: var(--fg);
+    background: var(--fill)
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%238e8e93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5l3-3'/%3E%3C/svg%3E")
+      no-repeat right 8px center / 12px;
+  }
+
+  .kbd {
+    display: inline-grid;
+    place-items: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 5px;
+    font: 500 11px/1 var(--font-system);
+    color: var(--fg-3);
+    background: var(--fill);
+  }
+
+  .scroll-area {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--fill-2) transparent;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: rgb(var(--glass-rgb) / 0.97);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .ambient {
+    display: none;
+  }
+}
