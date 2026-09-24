@@ -1,4 +1,4 @@
-import { and, count, eq, gt, like, lt } from 'drizzle-orm';
+import { and, count, gt, like, lt } from 'drizzle-orm';
 import type { BatchItem } from 'drizzle-orm/batch';
 import { isBuiltinChannel } from '../src/domain/channels';
 import { normalizeCompanyName } from '../src/domain/companies';
@@ -11,12 +11,15 @@ import { toEventRow } from './repository';
 
 /**
  * The public demo gives each visitor a private sandbox of sample data in the demo database, identified by a
- * signed cookie. Sandboxes expire after a day and are purged by the cron trigger.
+ * signed cookie. Resetting starts a new sandbox. Sandboxes expire after a day and are purged by the cron trigger.
  */
 
 export const DEMO_TTL_MS = 24 * 60 * 60 * 1000;
-/** Sandboxes created per day at most, so demo traffic can't use up the account's D1 write quota. */
-export const DEMO_DAILY_CAP = 200;
+/**
+ * Sandboxes started per day at most, resets included. Creating one writes about 200 rows and purging it about
+ * 250, so a full day costs under half of D1's free 100,000 rows written per day, which the owner's app shares.
+ */
+export const DEMO_DAILY_CAP = 100;
 const DEMO_USER_PREFIX = 'demo_';
 
 export const isDemoUserId = (id: string) => id.startsWith(DEMO_USER_PREFIX);
@@ -117,21 +120,6 @@ export async function createDemoSandbox(
     ...seedWrites(db, userId, now),
   ]);
   return { ok: true, userId };
-}
-
-/** Puts a sandbox back to fresh sample data, in one batch. */
-export async function resetDemoSandbox(db: Db, userId: string, now = new Date()): Promise<void> {
-  await runBatch(db, [
-    // Children before parents: events and applications, then jobs, then what they point at.
-    db.delete(t.events).where(eq(t.events.userId, userId)),
-    db.delete(t.applications).where(eq(t.applications.userId, userId)),
-    db.delete(t.jobs).where(eq(t.jobs.userId, userId)),
-    db.delete(t.companies).where(eq(t.companies.userId, userId)),
-    db.delete(t.identities).where(eq(t.identities.userId, userId)),
-    db.delete(t.resumes).where(eq(t.resumes.userId, userId)),
-    db.delete(t.channels).where(eq(t.channels.userId, userId)),
-    ...seedWrites(db, userId, now),
-  ]);
 }
 
 /** Deletes sandboxes older than a day. Every table cascades from `user`, so their rows go with them. */

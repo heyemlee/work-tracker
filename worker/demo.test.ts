@@ -5,7 +5,7 @@ import type { Snapshot } from '../src/domain/types';
 import type { Db } from './db';
 import { user } from './db/auth-schema';
 import * as t from './db/schema';
-import { createDemoSandbox, DEMO_TTL_MS, purgeExpiredDemos, resetDemoSandbox } from './demo';
+import { createDemoSandbox, DEMO_TTL_MS, purgeExpiredDemos } from './demo';
 import { createD1Repository } from './repository';
 import { startTestDatabase } from './testing';
 
@@ -78,29 +78,6 @@ describe('demo sandboxes', () => {
     expect(comparable(await createD1Repository(db, bobId).load(), bobId)).toEqual(
       comparable(createSampleData(now)),
     );
-  });
-
-  it('reset to the sample data', async () => {
-    const now = new Date();
-    const userId = await sandbox(now);
-    const repo = createD1Repository(db, userId);
-    const { jobs, applications } = await repo.load();
-    const accountId = await repo.saveAccount({ label: 'Z', email: '', color: 'pink' });
-    await repo.saveChannel({ name: 'Hacker News' });
-    await repo.quickAdd({
-      companyName: 'Brand New Co',
-      title: null,
-      jobId: null,
-      accountIds: [accountId],
-      channelId: null,
-      resumeId: null,
-      appliedAt: '2026-09-01',
-    });
-    await repo.setStage(applications[0]?.id ?? '', 'offer');
-    await repo.deleteJob(jobs[1]?.id ?? '');
-
-    await resetDemoSandbox(db, userId, now);
-    expect(comparable(await repo.load(), userId)).toEqual(comparable(createSampleData(now)));
   });
 
   it('are purged after a day, with everything in them', async () => {

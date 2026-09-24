@@ -10,7 +10,7 @@ import type { Repository } from '../src/domain/repository';
 import { createAuth, type Auth } from './auth';
 import { createDb, type Db } from './db';
 import { user as users } from './db/auth-schema';
-import { createDemoSandbox, DEMO_TTL_MS, isDemoUserId, resetDemoSandbox } from './demo';
+import { createDemoSandbox, DEMO_TTL_MS, isDemoUserId } from './demo';
 import { createD1Repository } from './repository';
 import * as body from './validation';
 
@@ -133,10 +133,6 @@ const noContent = 204;
 const api = new Hono<AppEnv>()
   .use(requireUser)
   .get('/me', (c) => c.json({ user: c.var.user }))
-  .post('/demo/reset', demoOnly, async (c) => {
-    await resetDemoSandbox(c.var.db, c.var.user.id);
-    return c.body(null, noContent);
-  })
   .get('/snapshot', async (c) => c.json(await c.var.repo.load()))
   .get('/jobs/:id/events', async (c) => c.json(await c.var.repo.loadEvents(c.req.param('id'))))
 
@@ -222,6 +218,7 @@ export const app = new Hono<AppEnv>()
   .on(['GET', 'POST'], '/api/auth/*', (c) =>
     c.var.mode === 'demo' ? c.json({ error: 'Not found' }, 404) : authFor(c.env).handler(c.req.raw),
   )
+  // Starts a sandbox for a new visitor, or a fresh one for a reset; the old one is left for the cron to purge.
   .post('/api/demo/session', demoOnly, async (c) => {
     const { success } = await c.env.DEMO_LIMITER.limit({ key: c.req.header('cf-connecting-ip') ?? 'local' });
     if (!success) return c.json({ error: 'Too many demo sessions. Try again in a minute.' }, 429);

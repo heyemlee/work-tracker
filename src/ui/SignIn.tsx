@@ -3,7 +3,7 @@ import { LoaderCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { initialAuthError, signInWithGoogle } from '../data/auth';
-import { startDemo, type DemoStart as DemoOutcome } from '../data/demo';
+import { DEMO_FAILURE_MESSAGES, startDemo, type DemoStart as DemoOutcome } from '../data/demo';
 import { ME_KEY } from '../data/store';
 import { useI18n } from '../i18n/context';
 import { updatePrefs } from '../state/prefs';
@@ -118,12 +118,6 @@ export function SignIn({ demoUrl }: { demoUrl: string | null }) {
   );
 }
 
-const DEMO_FAILURES = {
-  tooMany: 'demo.tooMany',
-  busy: 'demo.busy',
-  failed: 'demo.failed',
-} as const;
-
 /** The public demo's front door: creates the visitor's sandbox, then lets the app load it. */
 export function DemoStart() {
   const { t } = useI18n();
@@ -149,7 +143,7 @@ export function DemoStart() {
       {failure ? (
         <>
           <p role="alert" className="mx-auto mt-3 max-w-[300px] text-[14px] text-fg-2">
-            {t(DEMO_FAILURES[failure])}
+            {t(DEMO_FAILURE_MESSAGES[failure])}
           </p>
           <Button
             className="mt-6 h-11 w-full text-[15px]"

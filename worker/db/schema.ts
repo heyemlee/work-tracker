@@ -3,6 +3,8 @@ import { ACCOUNT_COLORS, ACTORS, EVENT_TYPES, STAGES } from '../../src/domain/ty
 import { user } from './auth-schema';
 
 // Timestamps are ISO-8601 text, matching the domain types; they sort correctly as strings.
+// Every foreign key's column is indexed: SQLite looks it up whenever a parent row is deleted, and without an
+// index each lookup scans the whole table.
 
 const ownerId = () =>
   text('user_id')
@@ -75,7 +77,10 @@ export const jobs = sqliteTable(
     /** Soft delete, so deleting a job can be undone. */
     deletedAt: text('deleted_at'),
   },
-  (table) => [index('jobs_user_idx').on(table.userId, table.deletedAt)],
+  (table) => [
+    index('jobs_user_idx').on(table.userId, table.deletedAt),
+    index('jobs_company_idx').on(table.companyId),
+  ],
 );
 
 export const applications = sqliteTable(
@@ -104,6 +109,7 @@ export const applications = sqliteTable(
     uniqueIndex('applications_job_account_idx').on(table.jobId, table.accountId),
     index('applications_user_idx').on(table.userId),
     index('applications_account_idx').on(table.accountId),
+    index('applications_resume_idx').on(table.resumeId),
   ],
 );
 
@@ -125,6 +131,7 @@ export const events = sqliteTable(
     at: text('at').notNull(),
   },
   (table) => [
+    index('events_user_idx').on(table.userId),
     index('events_job_idx').on(table.jobId, table.at),
     index('events_application_idx').on(table.applicationId),
   ],

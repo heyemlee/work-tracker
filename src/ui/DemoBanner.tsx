@@ -1,13 +1,12 @@
 import { FlaskConical, RotateCcw } from 'lucide-react';
-import { resetDemo } from '../data/demo';
-import { useRepository } from '../data/store';
+import { useResetDemo } from '../data/demo';
 import { useI18n } from '../i18n/context';
 import { Button } from './primitives';
 
 /** Tells a demo visitor what they're looking at, and lets them start over. */
 export function DemoBanner() {
   const { t } = useI18n();
-  const run = useRepository();
+  const reset = useResetDemo();
   return (
     <div className="mb-8 flex flex-wrap items-center gap-x-3 gap-y-2.5 rounded-[20px] bg-fill py-3 pr-3 pl-4">
       <FlaskConical className="size-5 shrink-0 text-fg-2" aria-hidden="true" />
@@ -16,7 +15,7 @@ export function DemoBanner() {
         <span className="hidden md:inline"> {t('demo.tryIt')}</span>
       </p>
       {/* When the text wraps it onto its own line on a phone, the button keeps to the right. */}
-      <Button className="ml-auto" onClick={() => void run(resetDemo)}>
+      <Button className="ml-auto" onClick={() => void reset()}>
         <RotateCcw className="size-3.5" aria-hidden="true" />
         {t('tweaks.reset')}
       </Button>
