@@ -19,7 +19,13 @@ let starting: Promise<DemoStart> | null = null;
  * is in flight share it, so running the effect twice (StrictMode does) never creates two sandboxes.
  */
 export function startDemo(): Promise<DemoStart> {
-  starting ??= fetch('/api/demo/session', { method: 'POST', credentials: 'same-origin' })
+  starting ??= fetch('/api/demo/session', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    // The sample data is laid out around the visitor's own today.
+    body: JSON.stringify({ utcOffsetMinutes: -new Date().getTimezoneOffset() }),
+  })
     .then((response): DemoStart => {
       if (response.ok) return 'started';
       if (response.status === 429) return 'tooMany';

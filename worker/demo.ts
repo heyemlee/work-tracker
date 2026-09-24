@@ -17,23 +17,37 @@ import { toEventRow } from './repository';
 export const DEMO_TTL_MS = 24 * 60 * 60 * 1000;
 /**
  * Sandboxes started per day at most, resets included. Creating one writes about 200 rows and purging it about
- * 250, so a full day costs under half of D1's free 100,000 rows written per day, which the owner's app shares.
+ * 300, so a full day stays around half of D1's free 100,000 rows written per day, which the owner's app shares.
  */
 export const DEMO_DAILY_CAP = 100;
 const DEMO_USER_PREFIX = 'demo_';
 
 export const isDemoUserId = (id: string) => id.startsWith(DEMO_USER_PREFIX);
 
-/** Suffixes every sample row id so sandboxes can share one database. Built-in channel ids stay shared. */
-function namespaced(data: SampleData, suffix: string): SampleData {
+/**
+ * The sample data for one visitor. createSampleData works on the runtime's local clock, which in Workers is UTC,
+ * so it runs on a clock moved to the visitor's time zone — "today" is then the visitor's today — and every
+ * timestamp is moved back to the real instant afterwards. Row ids get the sandbox's suffix, so sandboxes can
+ * share one database; built-in channel ids stay shared.
+ */
+function sampleFor(now: Date, utcOffsetMinutes: number, suffix: string): SampleData {
+  const shiftMs = (utcOffsetMinutes + now.getTimezoneOffset()) * 60_000;
+  const data = createSampleData(new Date(now.getTime() + shiftMs));
+  const instant = (wallClock: string) => new Date(Date.parse(wallClock) - shiftMs).toISOString();
   const own = (id: string) => `${id}_${suffix}`;
   const ownNullable = (id: string | null) => (id === null ? null : own(id));
   return {
-    accounts: data.accounts.map((a) => ({ ...a, id: own(a.id) })),
-    resumes: data.resumes.map((r) => ({ ...r, id: own(r.id) })),
+    accounts: data.accounts.map((a) => ({ ...a, id: own(a.id), createdAt: instant(a.createdAt) })),
+    resumes: data.resumes.map((r) => ({ ...r, id: own(r.id), createdAt: instant(r.createdAt) })),
     channels: data.channels,
-    companies: data.companies.map((c) => ({ ...c, id: own(c.id) })),
-    jobs: data.jobs.map((j) => ({ ...j, id: own(j.id), companyId: own(j.companyId) })),
+    companies: data.companies.map((c) => ({ ...c, id: own(c.id), createdAt: instant(c.createdAt) })),
+    jobs: data.jobs.map((j) => ({
+      ...j,
+      id: own(j.id),
+      companyId: own(j.companyId),
+      createdAt: instant(j.createdAt),
+      updatedAt: instant(j.updatedAt),
+    })),
     applications: data.applications.map((a) => ({
       ...a,
       id: own(a.id),
@@ -41,6 +55,8 @@ function namespaced(data: SampleData, suffix: string): SampleData {
       accountId: own(a.accountId),
       resumeId: ownNullable(a.resumeId),
       channelId: a.channelId === null || isBuiltinChannel(a.channelId) ? a.channelId : own(a.channelId),
+      createdAt: instant(a.createdAt),
+      updatedAt: instant(a.updatedAt),
     })),
     events: data.events.map((e) => ({
       ...e,
@@ -48,12 +64,13 @@ function namespaced(data: SampleData, suffix: string): SampleData {
       jobId: own(e.jobId),
       applicationId: ownNullable(e.applicationId),
       accountId: ownNullable(e.accountId),
+      at: instant(e.at),
     })),
   };
 }
 
-function seedWrites(db: Db, userId: string, now: Date): BatchItem<'sqlite'>[] {
-  const data = namespaced(createSampleData(now), userId.slice(DEMO_USER_PREFIX.length));
+function seedWrites(db: Db, userId: string, now: Date, utcOffsetMinutes: number): BatchItem<'sqlite'>[] {
+  const data = sampleFor(now, utcOffsetMinutes, userId.slice(DEMO_USER_PREFIX.length));
   return [
     ...insertRows(
       db,
@@ -95,9 +112,16 @@ async function runBatch(db: Db, writes: BatchItem<'sqlite'>[]) {
 
 export type DemoStart = { ok: true; userId: string } | { ok: false; reason: 'busy' };
 
+interface SandboxOptions {
+  now?: Date;
+  /** The visitor's offset from UTC, east positive: the sample data's "today" is theirs. */
+  utcOffsetMinutes?: number;
+  dailyCap?: number;
+}
+
 export async function createDemoSandbox(
   db: Db,
-  { now = new Date(), dailyCap = DEMO_DAILY_CAP }: { now?: Date; dailyCap?: number } = {},
+  { now = new Date(), utcOffsetMinutes = 0, dailyCap = DEMO_DAILY_CAP }: SandboxOptions = {},
 ): Promise<DemoStart> {
   const [recent] = await db
     .select({ value: count() })
@@ -117,7 +141,7 @@ export async function createDemoSandbox(
       createdAt: now,
       updatedAt: now,
     }),
-    ...seedWrites(db, userId, now),
+    ...seedWrites(db, userId, now, utcOffsetMinutes),
   ]);
   return { ok: true, userId };
 }

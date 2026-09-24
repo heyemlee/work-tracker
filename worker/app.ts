@@ -219,10 +219,10 @@ export const app = new Hono<AppEnv>()
     c.var.mode === 'demo' ? c.json({ error: 'Not found' }, 404) : authFor(c.env).handler(c.req.raw),
   )
   // Starts a sandbox for a new visitor, or a fresh one for a reset; the old one is left for the cron to purge.
-  .post('/api/demo/session', demoOnly, async (c) => {
+  .post('/api/demo/session', demoOnly, zValidator('json', body.demoSession), async (c) => {
     const { success } = await c.env.DEMO_LIMITER.limit({ key: c.req.header('cf-connecting-ip') ?? 'local' });
     if (!success) return c.json({ error: 'Too many demo sessions. Try again in a minute.' }, 429);
-    const started = await createDemoSandbox(c.var.db);
+    const started = await createDemoSandbox(c.var.db, c.req.valid('json'));
     if (!started.ok) return c.json({ error: 'The demo is busy. Try again later.' }, 503);
     await setSignedCookie(c, DEMO_COOKIE, started.userId, c.env.BETTER_AUTH_SECRET, {
       httpOnly: true,

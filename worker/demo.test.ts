@@ -20,8 +20,9 @@ afterAll(async () => {
   await dispose?.();
 });
 
+/** A sandbox for a visitor in the tests' own time zone, so it matches createSampleData run here. */
 async function sandbox(now = new Date()): Promise<string> {
-  const started = await createDemoSandbox(db, { now });
+  const started = await createDemoSandbox(db, { now, utcOffsetMinutes: -now.getTimezoneOffset() });
   if (!started.ok) throw new Error('The demo is busy');
   return started.userId;
 }
@@ -78,6 +79,24 @@ describe('demo sandboxes', () => {
     expect(comparable(await createD1Repository(db, bobId).load(), bobId)).toEqual(
       comparable(createSampleData(now)),
     );
+  });
+
+  it('are laid out around the visitor’s own today', async () => {
+    // 18:00 UTC is still the 23rd in California and already the 24th in Shanghai.
+    const now = new Date('2026-09-23T18:00:00Z');
+    const visitors = [
+      { utcOffsetMinutes: -7 * 60, today: '2026-09-23' },
+      { utcOffsetMinutes: 8 * 60, today: '2026-09-24' },
+    ];
+    for (const { utcOffsetMinutes, today } of visitors) {
+      const started = await createDemoSandbox(db, { now, utcOffsetMinutes, dailyCap: Infinity });
+      if (!started.ok) throw new Error('The demo is busy');
+      const { jobs, applications } = await createD1Repository(db, started.userId).load();
+      expect(applications.map((a) => a.appliedAt).sort()).toContain(today);
+      expect(applications.every((a) => a.appliedAt <= today)).toBe(true);
+      const stamps = [...jobs.map((j) => j.createdAt), ...applications.map((a) => a.createdAt)];
+      expect(stamps.every((at) => at <= now.toISOString())).toBe(true);
+    }
   });
 
   it('are purged after a day, with everything in them', async () => {
