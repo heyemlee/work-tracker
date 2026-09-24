@@ -134,6 +134,8 @@ const en = {
   'signIn.body': 'Outbox is a private workspace. Sign in with the owner’s Google account.',
   'signIn.google': 'Continue with Google',
   'signIn.failed': 'Couldn’t start sign-in. Try again.',
+  'signIn.incomplete': 'Sign-in didn’t finish. Try again.',
+  'signIn.notAllowed': 'This Google account doesn’t have access to this Outbox.',
   'settings.signedInAs': 'Signed in as',
   'settings.signOut': 'Sign out',
 
@@ -290,6 +292,8 @@ const zh: Record<MessageKey, string> = {
   'signIn.body': 'Outbox 是私人工作区，请使用所有者的 Google 账号登录。',
   'signIn.google': '使用 Google 登录',
   'signIn.failed': '无法开始登录，请重试。',
+  'signIn.incomplete': '登录没有完成，请重试。',
+  'signIn.notAllowed': '这个 Google 账号没有访问权限。',
   'settings.signedInAs': '当前登录',
   'settings.signOut': '退出登录',
 

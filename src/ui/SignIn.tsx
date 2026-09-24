@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { signInWithGoogle } from '../data/auth';
+import { initialAuthError, signInWithGoogle } from '../data/auth';
 import { useI18n } from '../i18n/context';
 import { updatePrefs } from '../state/prefs';
 import { useLiquidGlass } from './glass/useLiquidGlass';
@@ -34,6 +34,10 @@ export function SignIn() {
   const glass = useLiquidGlass(paneRef, { radius: 32, bevel: 20 });
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
+  // Better Auth reports a blocked sign-up as unable_to_create_user: the account isn't on the allowlist.
+  const redirectError = initialAuthError
+    ? t(initialAuthError === 'unable_to_create_user' ? 'signIn.notAllowed' : 'signIn.incomplete')
+    : null;
 
   const start = async () => {
     setPending(true);
@@ -71,9 +75,9 @@ export function SignIn() {
           </span>
           {t('signIn.google')}
         </Button>
-        {failed && (
+        {(failed || (redirectError && !pending)) && (
           <p role="alert" className="mt-3 text-[12px] text-danger">
-            {t('signIn.failed')}
+            {failed ? t('signIn.failed') : redirectError}
           </p>
         )}
         <button

@@ -36,7 +36,9 @@ step 4 is done, the app loads but can't sign anyone in. To use your own domain, 
 In the [Google Cloud console](https://console.cloud.google.com/apis/credentials):
 
 1. Configure the OAuth consent screen (External). Sign-in only asks for the basic `openid email profile`
-   scopes, which need no verification.
+   scopes. Leave the app in **Testing** and add your Google account as a test user: Google then admits only
+   that account, and `OWNER_EMAILS` checks again on the server. (Publishing would first require a privacy
+   policy and home page on the Branding page.)
 2. Create an **OAuth client ID** of type **Web application** with:
    - Authorized JavaScript origin: your app URL
    - Authorized redirect URI: your app URL + `/api/auth/callback/google`

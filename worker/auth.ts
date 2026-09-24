@@ -15,6 +15,8 @@ export function createAuth(env: Env, db: Db) {
   return betterAuth({
     baseURL: env.BETTER_AUTH_URL || undefined,
     secret: env.BETTER_AUTH_SECRET,
+    // Failed sign-ins land back on the app's own sign-in screen (with ?error=) instead of Better Auth's page.
+    onAPIError: env.BETTER_AUTH_URL ? { errorURL: `${env.BETTER_AUTH_URL}/` } : undefined,
     database: drizzleAdapter(db, { provider: 'sqlite', schema: authSchema }),
     socialProviders: env.GOOGLE_CLIENT_ID
       ? {
