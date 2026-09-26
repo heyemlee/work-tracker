@@ -1,19 +1,16 @@
 # Deploying Outbox
 
 Outbox runs as one Cloudflare Worker: the React app is served as static assets, `/api/*` runs Hono, and data
-lives in D1. The same Worker serves the public demo on a second hostname, against a second database. Steps 1–4
-are one-time setup; after that, deploying is step 3 alone.
+lives in D1. Steps 1–4 are one-time setup; after that, deploying is step 3 alone.
 
-## 1. Cloudflare account and databases
+## 1. Cloudflare account and database
 
 ```bash
 npx wrangler login
-npx wrangler d1 create outbox        # the owner's data
-npx wrangler d1 create outbox-demo   # demo visitors' sandboxes
+npx wrangler d1 create outbox
 ```
 
-Copy each `database_id` that `d1 create` prints into `wrangler.jsonc`: `outbox` goes in the `DB` entry and
-`outbox-demo` in the `DEMO_DB` entry.
+Copy the `database_id` that `d1 create` prints into the `DB` entry in `wrangler.jsonc`.
 
 ## 2. Schema
 
@@ -21,21 +18,21 @@ Copy each `database_id` that `d1 create` prints into `wrangler.jsonc`: `outbox` 
 npm run db:migrate:remote
 ```
 
-This migrates both databases. Run it again whenever `migrations/` gains a file. Schema changes start in
+Run it again whenever `migrations/` gains a file. Schema changes start in
 `worker/db/schema.ts`: `npm run db:generate` writes the migration, and `npm run db:migrate:local` applies it
 locally.
 
 ## 3. Domains and deploy
 
-In `wrangler.jsonc`, `routes` lists the app's hostname and the demo's as Worker custom domains (their zone has
-to be on your Cloudflare account), and `vars.DEMO_HOST` names the demo's. Change them to your own, then:
+In `wrangler.jsonc`, `routes` names the app's hostname as a Worker custom domain (its zone has to be on your
+Cloudflare account). Change it to your own, then:
 
 ```bash
 npm run deploy
 ```
 
-Cloudflare creates the DNS records and certificates for both hostnames. The demo works right away; until step 4
-is done, the app loads but can't sign anyone in. `workers.dev` stays off, so the app has a single origin.
+Cloudflare creates the DNS record and certificate. Until step 4 is done, the app loads but can't sign anyone
+in. `workers.dev` stays off, so the app has a single origin.
 
 ## 4. Google sign-in and secrets
 
@@ -73,5 +70,4 @@ npm run dev                      # http://localhost:5180
 ```
 
 With `DEV_AUTH_BYPASS=true` in `.dev.vars`, the local app signs you in as a built-in developer account. The
-Worker honors the bypass only on localhost, and `.dev.vars` is never uploaded. The demo runs locally at
-http://demo.localhost:5180, because `.dev.vars` sets `DEMO_HOST=demo.localhost`.
+Worker honors the bypass only on localhost, and `.dev.vars` is never uploaded.

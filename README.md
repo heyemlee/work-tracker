@@ -4,8 +4,6 @@ A job-application tracker for people who apply to the same posting from more tha
 account's application moves through its own stages, logging one takes about five seconds, and the interface
 follows Apple's Liquid Glass.
 
-**[Try the demo](https://demo.tracker.haoyang.us)** — a private sandbox of fictional data, no sign-in needed.
-
 ![Logging a posting applied to from two accounts in a few keystrokes, then moving one application to OA](docs/screenshots/quick-add.webp)
 
 <p align="center">
@@ -36,18 +34,13 @@ flowchart LR
   subgraph worker["One Cloudflare Worker"]
     api["Hono API<br/>zod-validated"]
     auth["Better Auth<br/>Google sign-in"]
-    cron["Hourly cron"]
   end
-  owner[("D1: outbox<br/>the owner's data")]
-  demo[("D1: outbox-demo<br/>visitor sandboxes")]
+  db[("D1: outbox")]
 
   app -- "tracker.haoyang.us" --> api
-  app -- "demo.tracker.haoyang.us" --> api
   api --> auth
-  api -- "owner host" --> owner
-  auth --> owner
-  api -- "demo host" --> demo
-  cron -- "purge after a day" --> demo
+  api --> db
+  auth --> db
 ```
 
 The Worker serves the built app as static assets and runs the API under `/api`.
@@ -56,10 +49,6 @@ The Worker serves the built app as static assets and runs the API under `/api`.
   the browser (the offline prototype), over D1 in the Worker, and over HTTP in the app. The rules for every
   write — what a stage change records on the timeline, what undoing an add removes — are pure functions both
   stores call, and one contract test suite runs against the browser store and against D1 running in workerd.
-- **The demo can't reach real data.** The Worker picks the database by hostname: the demo host only ever
-  opens `outbox-demo`, and sign-in isn't served there. Each visitor gets a sandbox seeded with fictional data
-  on their own clock, identified by an HMAC-signed cookie. Starting one is rate-limited per IP and capped per
-  day, so demo traffic stays well inside the account's database quota.
 - **Private by default.** Sign-in is Google only, and only allowlisted addresses can create an account. Every
   query is scoped to the signed-in user, request bodies are validated, cross-site form posts are rejected, and
   configuration lives in Worker secrets.
@@ -79,7 +68,6 @@ npm install
 cp .dev.vars.example .dev.vars   # set BETTER_AUTH_SECRET to any long random string
 npm run db:migrate:local
 npm run dev                      # http://localhost:5180, signed in as a local developer
-                                 # http://demo.localhost:5180 runs the demo
 npm run dev:local                # the original prototype: sample data in the browser, no backend
 ```
 
@@ -89,8 +77,8 @@ npm run dev:local                # the original prototype: sample data in the br
 npm test
 ```
 
-Covers the domain logic, the repository contract against both stores, and the demo: seeding, isolation between
-visitors, time zones, purging, and the daily cap. CI also type-checks, lints, and builds.
+Covers the domain logic and the repository contract against both stores. CI also type-checks, lints, and
+builds.
 
 ## Deploy
 

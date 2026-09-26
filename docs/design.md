@@ -3,7 +3,7 @@
 A job-application tracker for one person applying to dozens of SWE / AI-agent roles a day, often to the
 same posting from several email accounts. Daily-use tool first, portfolio piece second.
 
-Status: design settled 2026-09-23 · Milestones 1–3 (prototype, MVP, demo) done · Milestone 4 (agent v1) on
+Status: design settled 2026-09-23 · Milestones 1–3 (prototype, MVP, README) done · Milestone 4 (agent v1) on
 hold. Deferred work is listed in [todo.md](todo.md).
 
 ## 1. Goals
@@ -11,7 +11,7 @@ hold. Deferred work is listed in [todo.md](todo.md).
 - Log an application in under 5 seconds — the owner applies to dozens of roles a day.
 - Track one posting applied to from several identities (email accounts), each progressing independently.
 - Keep statuses current with little manual work: an email-reading agent (milestones 4–5).
-- Be a credible portfolio project: clean TypeScript, a live demo, measured evals.
+- Be a credible portfolio project: clean TypeScript, measured evals.
 
 Non-goals: multi-tenant SaaS, storing portal passwords, interview-round tracking, JD / salary / location fields.
 
@@ -79,19 +79,15 @@ A single Worker serves everything:
 
 - **Static assets** — the React SPA built by Vite. Asset requests are free and use no Worker CPU.
 - **API** — Hono under `/api/*`: plain REST, bodies validated with zod, every query scoped to the signed-in user.
-- **Cron triggers** — hourly, purge demo sandboxes older than a day; sync Gmail every 30 minutes (milestone 5).
-- **Data** — D1 (SQLite) through Drizzle, as two databases: `outbox` (real data) and `outbox-demo` (visitor
-  sandboxes). Physically separate, so demo traffic can never reach real data.
-- **Auth** — Better Auth with Google sign-in, allowlisted to the owner's email. It is not served on the demo
-  host; demo visitors are identified by a signed cookie instead (§8).
-- **LLM calls** — the Anthropic API through Cloudflare AI Gateway (request logs, cost stats, rate-limiting the
-  demo's live try-out).
-- **Deploy** — `npm run deploy` (wrangler). Custom domains `tracker.haoyang.us` (app) and
-  `demo.tracker.haoyang.us` (demo); `workers.dev` is off. GitHub Actions runs the checks.
+- **Cron triggers** — sync Gmail every 30 minutes (milestone 5).
+- **Data** — D1 (SQLite) through Drizzle, one database: `outbox`.
+- **Auth** — Better Auth with Google sign-in, allowlisted to the owner's email.
+- **LLM calls** — the Anthropic API through Cloudflare AI Gateway (request logs, cost stats).
+- **Deploy** — `npm run deploy` (wrangler). Custom domain `tracker.haoyang.us`; `workers.dev` is off. GitHub
+  Actions runs the checks.
 - **Cost** — free plan through milestone 3. Workers Paid ($5/month) from milestone 4: the free plan allows 10 ms
   of CPU and 50 subrequests per invocation, too little for batch email processing. Measured in production, API
-  requests already take 2–13 ms of CPU and starting a demo sandbox 13–41 ms. They succeed, but the free plan
-  doesn't promise that, and on Workers Paid going past the D1 quota is billed instead of failing (§8).
+  requests already take 2–13 ms of CPU. They succeed, but the free plan doesn't promise that.
 
 Frontend: React 19, TypeScript (strict), Vite, Tailwind CSS v4, Motion, Radix primitives, and TanStack Query.
 
@@ -136,29 +132,17 @@ of ~15 each, plus ~20 hard cases — several postings at one company, soft-worde
 HackerRank rather than the company, recruiter blasts. The owner's real emails, anonymized, stay local and
 gitignored. CI runs evals only when agent code changes (~$0.2–1 per run).
 
-## 8. Demo and privacy
+## 8. Privacy
 
-Same Worker, second hostname: `demo.tracker.haoyang.us`. The sign-in screen links to it.
-
-- **Host isolation.** The Worker picks the database by hostname. The demo host only ever opens `outbox-demo`,
-  and Better Auth isn't served there, so no owner session can exist on it.
-- **Per-visitor sandboxes.** A visitor's first request starts a sandbox: a `demo_<uuid>` user in `outbox-demo`
-  seeded with fictional companies in one atomic batch, identified by an HMAC-signed, HttpOnly cookie. Visitors
-  never see each other's changes. The sample is generated on the visitor's clock (the browser sends its UTC
-  offset), so "today" is theirs rather than UTC's. "Reset" starts a fresh sandbox.
-- **Limits.** Starting a sandbox, resets included, is rate-limited to 5 per minute per IP and capped at 100 per
-  day; the hourly cron deletes sandboxes older than a day, and every row cascades from the user. A sandbox
-  writes about 200 rows to create and about 300 to purge, so a full day stays around half of D1's free 100,000
-  rows written per day. Edits inside a sandbox aren't capped: until the account is on Workers Paid, a scripted
-  abuser could exhaust the quota the owner's app shares for the rest of the day.
-- **Agent demo (milestone 4).** Replays a recorded run over a mock inbox; a rate-limited "paste an email" box
-  runs it live.
+The app has a single user, the owner. Everyone else only ever sees the sign-in screen. The agent's live try-out
+(milestone 4) would need its own isolated sandbox if it is ever made public.
 
 ## 9. Milestones
 
 1. **Prototype** — the full UI on mock data; confirm visuals and interactions. ✓
 2. **MVP** — Worker + Hono + D1 + auth, deployed; daily use starts. ✓
-3. **Demo sandbox** and an English README (architecture diagram, an animated walkthrough, screenshots). ✓
+3. **English README** (architecture diagram, an animated walkthrough, screenshots). ✓ A public demo sandbox
+   was built too, then removed on 2026-09-25: the app is for the owner's own use.
 4. **Agent v1** — paste an email → classify, match, update; review queue; eval set.
 5. **Agent v2** — Gmail sync.
 6. _(Optional)_ conversational queries over the data.

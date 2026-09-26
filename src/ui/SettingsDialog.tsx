@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Dialog, Popover } from 'radix-ui';
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { signOut } from '../data/auth';
-import { useResetDemo } from '../data/demo';
 import { localRepository, useCurrentUser, useRepository } from '../data/store';
 import { toCsv } from '../domain/csv';
 import { toIsoDate } from '../domain/dates';
@@ -383,13 +382,8 @@ function GeneralSettings({ snapshot }: { snapshot: Snapshot }) {
   const theme = usePrefs((p) => p.theme);
   const hideRejected = usePrefs((p) => p.hideRejected);
   const { data: user } = useCurrentUser();
-  const resetDemo = useResetDemo();
-  // Sample data can be restored in the local prototype and in the demo; the owner's app has real data.
-  const resetSample = localRepository
-    ? () => run(async () => localRepository?.resetSampleData())
-    : user?.demo
-      ? resetDemo
-      : null;
+  // Sample data can be restored in the local prototype; the owner's app has real data.
+  const resetSample = localRepository ? () => run(async () => localRepository?.resetSampleData()) : null;
 
   return (
     <div className="space-y-1.5">

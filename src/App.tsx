@@ -20,12 +20,11 @@ import { useToday } from './hooks/useToday';
 import { useI18n } from './i18n/context';
 import { usePrefs } from './state/prefs';
 import { Composer } from './ui/Composer';
-import { DemoBanner } from './ui/DemoBanner';
 import { DetailPanel } from './ui/DetailPanel';
 import { JobList } from './ui/JobList';
 import { Button } from './ui/primitives';
 import { SettingsDialog } from './ui/SettingsDialog';
-import { DemoStart, SignIn } from './ui/SignIn';
+import { SignIn } from './ui/SignIn';
 import { StatsRow } from './ui/StatsRow';
 import { FilterControl, Toolbar } from './ui/Toolbar';
 import { Toaster } from './ui/Toaster';
@@ -44,16 +43,13 @@ export function App() {
   );
 }
 
-/**
- * Local mode opens straight into the workspace. Otherwise the owner has to be signed in first, and a demo
- * visitor gets a sandbox of their own.
- */
+/** Local mode opens straight into the workspace; otherwise the owner has to be signed in first. */
 function Gate() {
   const user = useCurrentUser();
   const snapshot = useSnapshot(localRepository !== null || user.isSuccess);
 
-  const signedOut = [user.error, snapshot.error].find((error) => error instanceof UnauthorizedError);
-  if (signedOut) return signedOut.demo ? <DemoStart /> : <SignIn demoUrl={signedOut.demoUrl} />;
+  if (user.error instanceof UnauthorizedError || snapshot.error instanceof UnauthorizedError)
+    return <SignIn />;
   if (user.isError) return <LoadError onRetry={() => void user.refetch()} />;
   if (snapshot.isError) return <LoadError onRetry={() => void snapshot.refetch()} />;
   return snapshot.data ? <Workspace snapshot={snapshot.data} /> : null;
@@ -96,7 +92,6 @@ function LoadError({ onRetry }: { onRetry: () => void }) {
 
 function Workspace({ snapshot }: { snapshot: Snapshot }) {
   const { t } = useI18n();
-  const demo = useCurrentUser().data?.demo ?? false;
   const today = useToday();
   const hideRejected = usePrefs((p) => p.hideRejected);
   const wide = useMediaQuery('(min-width: 1180px)');
@@ -133,7 +128,6 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
 
       <main className="pr-(--reserve) transition-[padding] duration-300 ease-out">
         <div className="mx-auto w-full max-w-[1040px] px-4 pt-[100px] pb-24 sm:px-6">
-          {demo && <DemoBanner />}
           <StatsRow stats={stats} today={today} />
 
           <div className="mt-10 mb-3 flex flex-wrap items-center gap-3">

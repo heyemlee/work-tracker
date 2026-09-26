@@ -9,15 +9,6 @@ const title = z.string().trim().max(200);
 const somethingToUpdate = (patch: Record<string, unknown>) =>
   Object.values(patch).some((value) => value !== undefined);
 
-export const demoSession = z.object({
-  // UTC-12:00 to UTC+14:00, the full range of time zones in use.
-  utcOffsetMinutes: z
-    .number()
-    .int()
-    .min(-12 * 60)
-    .max(14 * 60),
-});
-
 export const quickAdd = z.object({
   companyName: z.string().trim().min(1).max(120),
   title: title.nullable(),

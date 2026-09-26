@@ -18,7 +18,7 @@ export interface SampleData extends Snapshot {
   events: TimelineEvent[];
 }
 
-// Fictional companies only: the public demo must never claim a real company rejected anyone.
+// Fictional companies only: sample data must never claim a real company rejected anyone.
 const COMPANIES = [
   'Northwind AI',
   'Lumen Labs',
@@ -87,7 +87,7 @@ const MULTI_ACCOUNT: Record<number, Id[]> = {
 };
 
 type Outcome = 'applied' | 'oa' | 'offer' | 'rejected' | 'rejected_after_oa';
-/** `${jobIndex}:${applicationIndex}` → outcome, so the demo always shows every state. */
+/** `${jobIndex}:${applicationIndex}` → outcome, so the sample always shows every state. */
 const FORCED: Record<string, Outcome> = {
   '16:0': 'oa',
   '24:0': 'rejected',
