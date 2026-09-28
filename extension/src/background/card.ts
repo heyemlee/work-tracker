@@ -14,7 +14,7 @@ import type { Profile } from '../profile/schema';
 import type { RuleContext } from '../rules/context';
 import { remember } from '../rules/memory';
 import {
-  apiKeyItem,
+  aiKey,
   finalsItem,
   getSettings,
   lastUsedItem,
@@ -125,7 +125,7 @@ export async function cardState(session: TabSession, outbox?: OutboxState): Prom
     profileItem.getValue(),
     resumesItem.getValue(),
     getSettings(),
-    apiKeyItem.getValue(),
+    aiKey(),
   ]);
   const job = matchedJob(snapshot, session);
   const applied = new Set(job?.applications.map((application) => application.accountId) ?? []);
@@ -316,11 +316,7 @@ export async function fill(tabId: number, url: string): Promise<CardState> {
   const scans = await scanFrames(tabId, prepare);
   const found = merge(scans, session);
   const outbox = await outboxState();
-  const [memory, settings, key] = await Promise.all([
-    memoryItem.getValue(),
-    getSettings(),
-    apiKeyItem.getValue(),
-  ]);
+  const [memory, settings, key] = await Promise.all([memoryItem.getValue(), getSettings(), aiKey()]);
   session = await updateSession(tabId, url, () => ({ ...found, phase: 'filling' }));
   await pushState(session);
   const ctx = contextFor(session, profile, outbox.snapshot, true);

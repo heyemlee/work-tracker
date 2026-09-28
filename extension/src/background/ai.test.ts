@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { apiKeyItem, usageItem } from '../storage';
+import { afterEach } from 'vitest';
+import { apiKeyItem, DEFAULT_SETTINGS, openaiKeyItem, settingsItem, usageItem } from '../storage';
 import { makeProfile } from '../test/profiles';
 
 const create = vi.fn();
@@ -10,7 +11,8 @@ vi.mock('@anthropic-ai/sdk', () => ({
   },
 }));
 
-const { answerFields, draftAnswer, NoApiKey, parseResume } = await import('./ai');
+const { answerFields, draftAnswer, listOpenAIModels, NoApiKey, openaiEndpoint, parseResume } =
+  await import('./ai');
 
 function reply(text: string, stop = 'end_turn') {
   return {
@@ -49,6 +51,7 @@ describe('answerFields', () => {
   beforeEach(async () => {
     create.mockReset();
     await apiKeyItem.setValue('sk-ant-test');
+    await settingsItem.setValue({ ...DEFAULT_SETTINGS, provider: 'anthropic' });
     await usageItem.setValue([]);
   });
 
@@ -109,6 +112,7 @@ describe('draftAnswer', () => {
   beforeEach(async () => {
     create.mockReset();
     await apiKeyItem.setValue('sk-ant-test');
+    await settingsItem.setValue({ ...DEFAULT_SETTINGS, provider: 'anthropic' });
   });
 
   it('returns nothing when the model declines', async () => {
@@ -165,6 +169,7 @@ describe('parseResume', () => {
   beforeEach(async () => {
     create.mockReset();
     await apiKeyItem.setValue('sk-ant-test');
+    await settingsItem.setValue({ ...DEFAULT_SETTINGS, provider: 'anthropic' });
   });
 
   it('sends the PDF with the schema, and reads the answer loosely', async () => {
@@ -197,5 +202,92 @@ describe('parseResume', () => {
     expect(await parseResume('JVBERi0xLjQK')).toBeNull();
     create.mockResolvedValue(reply('not json'));
     expect(await parseResume('JVBERi0xLjQK')).toBeNull();
+  });
+});
+
+describe('an OpenAI-compatible provider', () => {
+  const fetchMock = vi.fn();
+  const answer = (content: string, status = 200) =>
+    new Response(
+      status === 200
+        ? JSON.stringify({
+            choices: [{ message: { content }, finish_reason: 'stop' }],
+            usage: { prompt_tokens: 900, completion_tokens: 100 },
+          })
+        : content,
+      { status },
+    );
+
+  beforeEach(async () => {
+    fetchMock.mockReset();
+    vi.stubGlobal('fetch', fetchMock);
+    await openaiKeyItem.setValue('sk-proxy');
+    await usageItem.setValue([]);
+    await settingsItem.setValue({ ...DEFAULT_SETTINGS, provider: 'openai' });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('adds /v1 to a bare address', () => {
+    expect(openaiEndpoint('https://api.kabi.pro')).toBe('https://api.kabi.pro/v1');
+    expect(openaiEndpoint('https://api.kabi.pro/')).toBe('https://api.kabi.pro/v1');
+    expect(openaiEndpoint('https://api.openai.com/v1')).toBe('https://api.openai.com/v1');
+  });
+
+  it('asks chat completions with the model, the key and a strict schema', async () => {
+    fetchMock.mockResolvedValue(
+      answer(
+        JSON.stringify({
+          answers: [{ id: 'b', answer: 'Python', choices: [], confidence: 0.9, reason: '' }],
+        }),
+      ),
+    );
+    const answers = await answerFields(questions, makeProfile(), null, '2026-09-27');
+    expect(answers.map((entry) => entry.id)).toEqual(['b']);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://api.kabi.pro/v1/chat/completions');
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer sk-proxy');
+    const body = JSON.parse(String(init.body));
+    expect(body.model).toBe('gpt-5.6-terra');
+    expect(body.response_format).toMatchObject({ type: 'json_schema', json_schema: { strict: true } });
+    expect(JSON.stringify(body)).not.toMatch(/F-1|STEM OPT|sponsor|veteran/i);
+    const [today] = await usageItem.getValue();
+    expect(today).toMatchObject({ inputTokens: 900, outputTokens: 100, cost: 0 });
+  });
+
+  it('sends a resume as a PDF file part', async () => {
+    fetchMock.mockResolvedValue(
+      answer('```json\n{"name":{"first":"Alex","last":"Chen","preferred":""}}\n```'),
+    );
+    const facts = await parseResume('JVBERi0xLjQK');
+    expect(facts?.name.first).toBe('Alex');
+    const body = JSON.parse(String((fetchMock.mock.calls[0] as [string, RequestInit])[1].body));
+    expect(body.messages[1].content[0]).toEqual({
+      type: 'file',
+      file: { filename: 'resume.pdf', file_data: 'data:application/pdf;base64,JVBERi0xLjQK' },
+    });
+  });
+
+  it('tries again without what a proxy refuses', async () => {
+    fetchMock
+      .mockResolvedValueOnce(answer('Unsupported parameter: max_completion_tokens', 400))
+      .mockResolvedValueOnce(answer('response_format json_schema is not supported', 400))
+      .mockResolvedValueOnce(answer(JSON.stringify({ answers: [] })));
+    expect(await answerFields(questions, makeProfile(), null, '2026-09-27')).toEqual([]);
+    const bodies = fetchMock.mock.calls.map((call) =>
+      JSON.parse(String((call as [string, RequestInit])[1].body)),
+    );
+    expect(bodies[1]).toMatchObject({ max_tokens: 4000 });
+    expect(bodies[1].max_completion_tokens).toBeUndefined();
+    expect(bodies[2].response_format).toBeUndefined();
+    expect(bodies[2].messages[0].content).toMatch(/Reply with JSON only/);
+  });
+
+  it('needs its own key, and lists the models the endpoint offers', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ data: [{ id: 'gpt-5.6-terra' }, { id: 'gpt-5.6' }] })),
+    );
+    expect(await listOpenAIModels()).toEqual(['gpt-5.6', 'gpt-5.6-terra']);
+    await openaiKeyItem.setValue('');
+    await expect(answerFields(questions, makeProfile(), null, '2026-09-27')).rejects.toBeInstanceOf(NoApiKey);
   });
 });

@@ -1,7 +1,7 @@
 import type { Snapshot } from '@domain/types';
 import { useEffect, useState, type ReactNode } from 'react';
 import type { WxtStorageItem } from 'wxt/utils/storage';
-import { checkKey } from '../../src/background/ai';
+import { checkKey, listOpenAIModels } from '../../src/background/ai';
 import { flushQueue, loadSnapshot, OutboxSignedOut, syncProfile } from '../../src/background/outbox';
 import { missingItems } from '../../src/profile/profile';
 import { addResume, removeResume, updateResume } from '../../src/resumes';
@@ -11,6 +11,7 @@ import {
   finalsItem,
   lastUsedItem,
   memoryItem,
+  openaiKeyItem,
   pendingLogsItem,
   profileItem,
   profileSourceItem,
@@ -224,38 +225,71 @@ function OutboxSection({
 }
 
 function AiSection({ s, settings }: { s: Strings; settings: Settings }) {
-  const key = useItem(apiKeyItem) ?? '';
+  const openai = settings.provider === 'openai';
+  const keyItem = openai ? openaiKeyItem : apiKeyItem;
+  const key = useItem(keyItem) ?? '';
   const usage = useItem(usageItem) ?? [];
   const [draft, setDraft] = useState('');
+  const [baseUrl, setBaseUrl] = useState(settings.openaiBaseUrl);
+  const [models, setModels] = useState<string[]>([]);
   const [result, setResult] = useState<string | null>(null);
   const month = new Date().toLocaleDateString('en-CA').slice(0, 7);
   const monthCost = usage.filter((day) => day.day.startsWith(month)).reduce((sum, day) => sum + day.cost, 0);
+  const save = (change: Partial<Settings>) => void settingsItem.setValue({ ...settings, ...change });
+  const fail = (error: unknown) =>
+    setResult(s('keyBad', { detail: error instanceof Error ? error.message : String(error) }));
   return (
     <Section title={s('ai')} help={s('aiHelp')}>
       <label className="flex items-center gap-2 text-[13px]">
         <input
           type="checkbox"
           checked={settings.aiEnabled}
-          onChange={(event) => void settingsItem.setValue({ ...settings, aiEnabled: event.target.checked })}
+          onChange={(event) => save({ aiEnabled: event.target.checked })}
         />
         {s('aiEnabled')}
       </label>
+      <label className="flex items-center gap-2 text-[13px]">
+        {s('provider')}
+        <select
+          className="h-8 rounded-lg border border-black/10 bg-transparent px-2 dark:border-white/15"
+          value={settings.provider}
+          onChange={(event) => {
+            setResult(null);
+            save({ provider: event.target.value as Settings['provider'] });
+          }}
+        >
+          <option value="openai">{s('providerOpenai')}</option>
+          <option value="anthropic">{s('providerAnthropic')}</option>
+        </select>
+      </label>
+      {openai && (
+        <div>
+          <p className="text-[13px] font-medium">{s('baseUrl')}</p>
+          <p className="text-[12px] text-[#6e6e73]">{s('baseUrlHelp')}</p>
+          <div className="mt-2 flex gap-2">
+            <input className={input} value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} />
+            <button className={button} onClick={() => save({ openaiBaseUrl: baseUrl.trim() })}>
+              {s('save')}
+            </button>
+          </div>
+        </div>
+      )}
       <div>
-        <p className="text-[13px] font-medium">{s('apiKey')}</p>
-        <p className="text-[12px] text-[#6e6e73]">{s('apiKeyHelp')}</p>
+        <p className="text-[13px] font-medium">{openai ? s('openaiKey') : s('apiKey')}</p>
+        <p className="text-[12px] text-[#6e6e73]">{openai ? s('openaiKeyHelp') : s('apiKeyHelp')}</p>
         <div className="mt-2 flex gap-2">
           <input
             className={input}
             type="password"
             autoComplete="off"
-            placeholder={key ? `••••${key.slice(-4)}` : 'sk-ant-…'}
+            placeholder={key ? `••••${key.slice(-4)}` : openai ? 'sk-…' : 'sk-ant-…'}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
           />
           <button
             className={primary}
             onClick={() => {
-              void apiKeyItem.setValue(draft.trim());
+              void keyItem.setValue(draft.trim());
               setDraft('');
               setResult(s('saved'));
             }}
@@ -276,23 +310,55 @@ function AiSection({ s, settings }: { s: Strings; settings: Settings }) {
         </div>
         {result && <p className="mt-1 text-[12px]">{result}</p>}
       </div>
-      <label className="flex items-center gap-2 text-[13px]">
-        {s('model')}
-        <select
-          className="h-8 rounded-lg border border-black/10 bg-transparent px-2 dark:border-white/15"
-          value={settings.model}
-          onChange={(event) =>
-            void settingsItem.setValue({ ...settings, model: event.target.value as Settings['model'] })
-          }
-        >
-          <option value="claude-opus-5">Claude Opus 5</option>
-          <option value="claude-sonnet-5">Claude Sonnet 5</option>
-        </select>
-      </label>
+      {openai ? (
+        <div className="flex flex-wrap items-center gap-2 text-[13px]">
+          {s('model')}
+          <input
+            className={`${input} max-w-[260px]`}
+            list="openai-models"
+            defaultValue={settings.openaiModel}
+            key={settings.openaiModel}
+            onBlur={(event) => {
+              const model = event.target.value.trim();
+              if (model !== settings.openaiModel) save({ openaiModel: model });
+            }}
+          />
+          <datalist id="openai-models">
+            {models.map((model) => (
+              <option key={model} value={model} />
+            ))}
+          </datalist>
+          <button
+            className={button}
+            disabled={!key}
+            onClick={() =>
+              void listOpenAIModels().then((found) => {
+                setModels(found);
+                setResult(s('modelsLoaded', { n: found.length }));
+              }, fail)
+            }
+          >
+            {s('loadModels')}
+          </button>
+        </div>
+      ) : (
+        <label className="flex items-center gap-2 text-[13px]">
+          {s('model')}
+          <select
+            className="h-8 rounded-lg border border-black/10 bg-transparent px-2 dark:border-white/15"
+            value={settings.model}
+            onChange={(event) => save({ model: event.target.value as Settings['model'] })}
+          >
+            <option value="claude-opus-5">Claude Opus 5</option>
+            <option value="claude-sonnet-5">Claude Sonnet 5</option>
+          </select>
+        </label>
+      )}
       <div className="text-[13px]">
         <p className="font-medium">
           {s('usage')} · {s('usageMonth', { cost: monthCost.toFixed(2) })}
         </p>
+        {openai && <p className="text-[12px] text-[#6e6e73]">{s('costUntracked')}</p>}
         <ul className="mt-1 text-[12px] text-[#6e6e73]">
           {usage.slice(0, 7).map((day) => (
             <li key={day.day}>
@@ -427,6 +493,7 @@ function DataSection({ s }: { s: Strings }) {
       profileItem.removeValue(),
       profileSourceItem.removeValue(),
       apiKeyItem.removeValue(),
+      openaiKeyItem.removeValue(),
       memoryItem.removeValue(),
       finalsItem.removeValue(),
       snapshotsItem.removeValue(),

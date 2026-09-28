@@ -79,6 +79,7 @@ One release with everything below, no MVP. Design: [autofill.md](autofill.md).
 - [x] Free-text drafts grounded in the resume, stories, approved snippets and the description; style rules; the
       owner's edited finals as examples; optional questions skipped.
 - [x] Usage and cost per day on the options page.
+- [x] An OpenAI-compatible provider (address, key, model), the default: `https://api.kabi.pro`, GPT-5.6 Terra.
 - [x] Free-text eval: 20 questions, Opus 5 vs Sonnet 5, through the extension's own `draftAnswer`
       (`npm run eval -w extension`). Runs cost money, so the owner starts each.
 
@@ -108,7 +109,8 @@ One release with everything below, no MVP. Design: [autofill.md](autofill.md).
       from full-time and contract work).
 - [ ] Load the extension: `npm run ext:build`, then `chrome://extensions` → Developer mode → Load unpacked →
       `extension/.output/chrome-mv3`.
-- [ ] Create an Anthropic API key in the Console with a monthly spend limit, and paste it on the options page.
+- [ ] Paste the API key for `https://api.kabi.pro` under AI on the options page and press Check (or pick
+      Anthropic and use a Console key with a monthly spend limit).
 - [ ] Run the free-text eval once (about $1) and choose Opus 5 or Sonnet 5 from its report.
 - [ ] On each Workday page, press "This page didn't fill right" once: Workday's forms are behind sign-in, so these
       snapshots are its only fixtures.

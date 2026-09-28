@@ -139,6 +139,11 @@ from its `data-automation-id` conventions, not from a saved form, so its first r
   Console.
 - **Model:** Claude Opus 5 by default, Claude Sonnet 5 selectable; the free-text eval decides whether to switch.
   Server-side refusal fallback is on.
+- **Or an OpenAI-compatible endpoint** (added 2026-09-28, and the default since): OpenAI's chat completions API at any
+  address — the owner uses a proxy at `https://api.kabi.pro` (`/v1` is added to a bare address) with GPT-5.6 Terra.
+  Its own key, also only in `chrome.storage.local`. Structured output goes as a strict `json_schema`, a resume as a PDF
+  `file` part; a proxy that refuses `max_completion_tokens` or structured output gets the request again without it.
+  Token counts are recorded, cost isn't: the proxy's prices aren't known. The free-text eval still runs on Claude.
 - **Field fallback:** one structured-output request per form listing the unplaced fields; each answer comes back with
   a confidence.
 - **Free-text drafts** ("Why this company?") are grounded in real material: the resume, STAR stories, approved

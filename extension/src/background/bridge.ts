@@ -1,7 +1,7 @@
 import type { ExtensionReadiness } from '@domain/bridge';
 import { OUTBOX_MATCHES } from '../hosts';
 import type { ToBackground } from '../messages';
-import { apiKeyItem, getSettings } from '../storage';
+import { aiKey, getSettings } from '../storage';
 import { NoApiKey, parseResume } from './ai';
 
 /** Only Outbox's own pages may ask the extension to spend the owner's key. */
@@ -10,7 +10,7 @@ export function fromOutbox(url: string | undefined): boolean {
 }
 
 export async function readiness(): Promise<ExtensionReadiness> {
-  const [key, settings] = await Promise.all([apiKeyItem.getValue(), getSettings()]);
+  const [key, settings] = await Promise.all([aiKey(), getSettings()]);
   if (!settings.aiEnabled) return 'ai-off';
   return key ? 'ready' : 'no-key';
 }

@@ -13,7 +13,15 @@ import {
   RESUME_SYSTEM,
 } from '../ai/prompts';
 import type { Profile } from '../profile/schema';
-import { apiKeyItem, getSettings, usageItem, type FinalAnswer, type Model } from '../storage';
+import {
+  apiKeyItem,
+  getSettings,
+  openaiKeyItem,
+  usageItem,
+  type FinalAnswer,
+  type Model,
+  type Settings,
+} from '../storage';
 import { norm, overlap } from '../text';
 
 /** List prices, US dollars per million tokens: [input, output]. */
@@ -24,7 +32,7 @@ const PRICES: Record<Model, [number, number]> = {
 
 export class NoApiKey extends Error {
   constructor() {
-    super('No Anthropic API key on the options page');
+    super('No API key on the options page');
     this.name = 'NoApiKey';
   }
 }
@@ -51,13 +59,18 @@ async function recordUsage(message: BetaMessage, model: Model): Promise<void> {
       cachedWrite * inputPrice * 1.25 +
       usage.output_tokens * outputPrice) /
     1e6;
+  await addUsage(usage.input_tokens + cachedRead + cachedWrite, usage.output_tokens, cost);
+}
+
+/** Adds a request to today's line. An OpenAI-compatible endpoint's prices aren't known, so its cost stays 0. */
+async function addUsage(inputTokens: number, outputTokens: number, cost: number): Promise<void> {
   const day = new Date().toLocaleDateString('en-CA');
   const days = await usageItem.getValue();
   const today = days.find((entry) => entry.day === day) ?? { day, inputTokens: 0, outputTokens: 0, cost: 0 };
   const updated = {
     day,
-    inputTokens: today.inputTokens + usage.input_tokens + cachedRead + cachedWrite,
-    outputTokens: today.outputTokens + usage.output_tokens,
+    inputTokens: today.inputTokens + inputTokens,
+    outputTokens: today.outputTokens + outputTokens,
     cost: today.cost + cost,
   };
   await usageItem.setValue([updated, ...days.filter((entry) => entry.day !== day)].slice(0, 90));
@@ -67,7 +80,7 @@ async function recordUsage(message: BetaMessage, model: Model): Promise<void> {
  * One request. Claude Opus 5 may decline a request its safety classifiers flag; the server-side fallback then
  * re-runs it on another model instead of returning the refusal.
  */
-async function ask(params: {
+interface AskParams {
   system: string;
   /** The applicant's material, cached across a day's requests. */
   material?: string;
@@ -77,7 +90,11 @@ async function ask(params: {
   effort: 'low' | 'medium';
   maxTokens: number;
   schema?: Record<string, unknown>;
-}): Promise<string | null> {
+}
+
+async function ask(params: AskParams): Promise<string | null> {
+  const settings = await getSettings();
+  if (settings.provider === 'openai') return askOpenAI(params, settings);
   const { anthropic, model } = await client();
   const message = await anthropic.beta.messages.create({
     model,
@@ -128,6 +145,116 @@ async function ask(params: {
     .join('')
     .trim();
   return text || null;
+}
+
+/** `https://api.kabi.pro` → `https://api.kabi.pro/v1`; an address with a path is used as given. */
+export function openaiEndpoint(base: string): string {
+  const trimmed = base.trim().replace(/\/+$/, '');
+  return new URL(trimmed).pathname === '/' ? `${trimmed}/v1` : trimmed;
+}
+
+async function openaiKey(): Promise<string> {
+  const key = await openaiKeyItem.getValue();
+  if (!key) throw new NoApiKey();
+  return key;
+}
+
+type ChatBody = Record<string, unknown>;
+
+/**
+ * The same request over OpenAI's chat completions API, which OpenAI and most proxies speak. Proxies differ in what
+ * they accept, so a request refused for `max_completion_tokens` or for structured output is sent again without it;
+ * the prompt still asks for JSON.
+ */
+async function askOpenAI(params: AskParams, settings: Settings): Promise<string | null> {
+  const key = await openaiKey();
+  if (!settings.openaiModel.trim()) throw new Error('Choose a model on the options page');
+  const content: unknown[] = [];
+  if (params.pdf)
+    content.push({
+      type: 'file',
+      file: { filename: 'resume.pdf', file_data: `data:application/pdf;base64,${params.pdf}` },
+    });
+  if (params.material) content.push({ type: 'text', text: params.material });
+  content.push({ type: 'text', text: params.prompt });
+  let body: ChatBody = {
+    model: settings.openaiModel.trim(),
+    messages: [
+      {
+        role: 'system',
+        content: params.schema ? `${params.system}\n\nReply with JSON only.` : params.system,
+      },
+      { role: 'user', content },
+    ],
+    max_completion_tokens: params.maxTokens,
+    ...(params.schema
+      ? {
+          response_format: {
+            type: 'json_schema',
+            json_schema: { name: 'answer', strict: true, schema: params.schema },
+          },
+        }
+      : {}),
+  };
+
+  for (let attempt = 0; ; attempt++) {
+    const response = await fetch(`${openaiEndpoint(settings.openaiBaseUrl)}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(90_000),
+    });
+    if (!response.ok) {
+      const detail = (await response.text()).slice(0, 400);
+      const retry = response.status === 400 && attempt < 2 ? relaxed(body, detail) : null;
+      if (retry) {
+        body = retry;
+        continue;
+      }
+      throw new Error(`${response.status} ${detail}`);
+    }
+    const data = (await response.json()) as {
+      choices?: { message?: { content?: string | null; refusal?: string | null }; finish_reason?: string }[];
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    };
+    await addUsage(data.usage?.prompt_tokens ?? 0, data.usage?.completion_tokens ?? 0, 0);
+    const choice = data.choices?.[0];
+    if (!choice || choice.message?.refusal || choice.finish_reason === 'length') return null;
+    const text = (choice.message?.content ?? '').trim();
+    // Without structured output some models wrap the JSON in a code fence.
+    return (
+      text
+        .replace(/^```(?:json)?\s*/i, '')
+        .replace(/\s*```$/, '')
+        .trim() || null
+    );
+  }
+}
+
+/** The request without what a 400 says the endpoint won't take, or null when it names neither. */
+function relaxed(body: ChatBody, detail: string): ChatBody | null {
+  if (/max_completion_tokens/i.test(detail) && 'max_completion_tokens' in body) {
+    const { max_completion_tokens: limit, ...rest } = body;
+    return { ...rest, max_tokens: limit };
+  }
+  if (/response_format|json_schema/i.test(detail) && 'response_format' in body) {
+    const rest = { ...body };
+    delete rest.response_format;
+    return rest;
+  }
+  return null;
+}
+
+/** The models an OpenAI-compatible endpoint offers, for the options page. */
+export async function listOpenAIModels(): Promise<string[]> {
+  const [settings, key] = await Promise.all([getSettings(), openaiKey()]);
+  const response = await fetch(`${openaiEndpoint(settings.openaiBaseUrl)}/models`, {
+    headers: { Authorization: `Bearer ${key}` },
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) throw new Error(`${response.status} ${(await response.text()).slice(0, 200)}`);
+  const data = (await response.json()) as { data?: { id?: string }[] };
+  return (data.data ?? []).flatMap((model) => (model.id ? [model.id] : [])).sort();
 }
 
 export interface FieldQuestion {

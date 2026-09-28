@@ -85,9 +85,11 @@ The extension is loaded unpacked in Chrome; it isn't published to the Chrome Web
    developing), sign in to Outbox in the same Chrome profile, and press **Check**. Logging uses Outbox's session
    cookie. If Chrome withholds it, the extension borrows the session of an open Outbox tab as a bearer token,
    which needs a Worker deployed with the `bearer` plugin (step 3 above, from this version on).
-6. For AI, create a key in the [Anthropic Console](https://console.anthropic.com), set a monthly spend limit
-   there, paste the key under **AI** and press **Save**. Without a key the rules still fill every field they
-   can; the rest are listed for you.
+6. For AI, under **AI** on the options page: the provider is **OpenAI-compatible** with the address
+   `https://api.kabi.pro` and model `gpt-5.6-terra` already filled in. Paste the key, press **Save**, then **Check**.
+   **Load models** lists what the endpoint offers if the model name differs. To use Claude instead, pick
+   **Anthropic**, and paste a key from the [Anthropic Console](https://console.anthropic.com) with a monthly spend
+   limit. Without a key the rules still fill every field they can; the rest are listed for you.
 
 The card opens on application pages; `Alt+Shift+F` fills (change it at `chrome://extensions/shortcuts`). On
 other sites, click the toolbar icon.

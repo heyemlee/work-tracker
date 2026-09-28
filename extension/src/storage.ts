@@ -4,12 +4,19 @@ import type { Profile } from './profile/schema';
 import type { MemoryEntry } from './rules/memory';
 
 export type Model = 'claude-opus-5' | 'claude-sonnet-5';
+/** Who answers the AI requests: Anthropic, or any endpoint speaking OpenAI's chat completions API. */
+export type Provider = 'anthropic' | 'openai';
 export type Language = 'auto' | 'en' | 'zh';
 
 export interface Settings {
   /** Where Outbox runs; `http://localhost:5180` while developing. */
   outboxUrl: string;
+  provider: Provider;
   model: Model;
+  /** An OpenAI-compatible endpoint: OpenAI's own, or a proxy. `/v1` is added when it has no path. */
+  openaiBaseUrl: string;
+  /** Whatever model name the endpoint accepts. */
+  openaiModel: string;
   /** Warn after this many postings at one company in 30 days. */
   sameCompanyLimit: number;
   language: Language;
@@ -19,7 +26,10 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   outboxUrl: 'https://tracker.haoyang.us',
+  provider: 'openai',
   model: 'claude-opus-5',
+  openaiBaseUrl: 'https://api.kabi.pro',
+  openaiModel: 'gpt-5.6-terra',
   sameCompanyLimit: 3,
   language: 'auto',
   aiEnabled: true,
@@ -88,6 +98,7 @@ export const profileSourceItem = storage.defineItem<{ updatedAt: string; syncedA
 );
 export const settingsItem = storage.defineItem<Settings>('local:settings', { fallback: DEFAULT_SETTINGS });
 export const apiKeyItem = storage.defineItem<string>('local:anthropicKey', { fallback: '' });
+export const openaiKeyItem = storage.defineItem<string>('local:openaiKey', { fallback: '' });
 export const memoryItem = storage.defineItem<MemoryEntry[]>('local:memory', { fallback: [] });
 export const finalsItem = storage.defineItem<FinalAnswer[]>('local:finals', { fallback: [] });
 export const usageItem = storage.defineItem<UsageDay[]>('local:usage', { fallback: [] });
@@ -105,6 +116,12 @@ export const lastUsedItem = storage.defineItem<{ accountId: string | null; resum
 /** Settings merged over the defaults, so settings saved by an older version still carry every key. */
 export async function getSettings(): Promise<Settings> {
   return { ...DEFAULT_SETTINGS, ...(await settingsItem.getValue()) };
+}
+
+/** The key for the provider in use; empty when there's none. */
+export async function aiKey(): Promise<string> {
+  const { provider } = await getSettings();
+  return provider === 'openai' ? openaiKeyItem.getValue() : apiKeyItem.getValue();
 }
 
 export type { Answer };
