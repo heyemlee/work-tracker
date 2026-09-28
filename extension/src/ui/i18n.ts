@@ -3,7 +3,6 @@ import type { Language } from '../storage';
 const en = {
   outbox: 'Outbox',
   close: 'Close',
-  expand: 'Open Outbox Autofill',
   options: 'Options',
   'match.red': 'Likely screened out',
   'match.yellow': 'Worth a look',
@@ -63,7 +62,6 @@ type Key = keyof typeof en;
 const zh: Record<Key, string> = {
   outbox: 'Outbox',
   close: '关闭',
-  expand: '打开 Outbox Autofill',
   options: '设置',
   'match.red': '大概率会被筛掉',
   'match.yellow': '值得看一眼',

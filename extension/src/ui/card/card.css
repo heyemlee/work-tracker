@@ -94,18 +94,6 @@
     inset 0 1px 0 var(--glass-rim);
 }
 
-.pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 36px;
-  padding: 0 14px 0 12px;
-  border-radius: 999px;
-  cursor: pointer;
-  font: 600 13px/1 var(--font);
-  color: var(--fg);
-}
-
 .card {
   width: 344px;
   max-height: min(640px, calc(100vh - 32px));
@@ -194,9 +182,6 @@
 }
 .dot.blue {
   background: var(--blue);
-}
-.dot.gray {
-  background: var(--fg-3);
 }
 
 .match {

@@ -77,8 +77,13 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     toBackground('card:state', { refresh: true })
       .then((next) => {
         setState(next);
-        // Open on application forms, and on the confirmation page to show the log with its Undo.
-        if ((next.hasForm && next.ats !== 'generic') || (next.logged && !next.logged.undone)) setOpen(true);
+        // Open where there's something to do: an application form, a posting on an applicant-tracking site or
+        // LinkedIn (its match check, before applying), the confirmation page with its Undo. Elsewhere the detect
+        // script opens the card for a form with a resume upload.
+        const show =
+          (next.ats !== 'generic' && (next.hasForm || Boolean(next.posting?.title))) ||
+          (next.logged && !next.logged.undone);
+        if (show) setOpen(true);
       })
       .catch(() => undefined);
   }, []);
@@ -132,24 +137,8 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     };
   }, [refresh, fill]);
 
-  if (!state) return null;
-  if (!open) {
-    if (!state.hasForm && !state.posting) return null;
-    return (
-      <button
-        className="pill glass"
-        // Read the page again: it may have drawn its form since the card last looked.
-        onClick={() => {
-          setOpen(true);
-          refresh();
-        }}
-        aria-label={t('expand')}
-      >
-        <span className={`dot ${state.match?.level ?? 'gray'}`} />
-        {t('outbox')}
-      </button>
-    );
-  }
+  // Closed, the card is gone until the page changes or the toolbar button is pressed; no pill waits in the corner.
+  if (!state || !open) return null;
 
   const select = (change: { accountId?: string | null; resumeId?: string | null }) =>
     void toBackground('card:select', change)

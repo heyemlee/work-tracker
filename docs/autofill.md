@@ -21,7 +21,7 @@ typing, fingerprint spoofing, CAPTCHA solving); automating LinkedIn, whose terms
 
 1. Open an application page. Once the form is on the page, a card opens in the corner: the match check (green,
    yellow, red, with reasons), the account to apply from — accounts that already applied to this posting are
-   disabled — and the resume. A posting whose form isn't showing yet gets a small pill instead.
+   disabled — and the resume. A posting whose form isn't showing yet opens the card too, for its match check.
 2. Press **Fill** (or the shortcut). Recognized fields fill in about a second and the resume PDF is attached.
 3. Work through the card's checklist: confirm the work-authorization answers, edit the AI drafts, fill what's missing.
 4. Press Submit on the page.
@@ -31,7 +31,8 @@ Workday runs over several pages: Fill once per page. It draws each page's fields
 the card opens when they appear. On its sign-up page the extension fills the email and Chrome generates and saves
 the password. On LinkedIn the card only offers **Log to Outbox**. On other sites the card opens by itself on a form
 with a resume upload and a name or email field — not on a job board's own apply flow, such as LinkedIn's or Indeed's
-— or from the toolbar, and fills what the field dictionary recognizes. Closed, the card stays closed on that page.
+— or from the toolbar, and fills what the field dictionary recognizes. Closed, the card stays closed on that page;
+the toolbar button brings it back.
 
 ## 3. Architecture
 
