@@ -1,12 +1,32 @@
 import { listen, toBackground, type CapturedAnswer, type FrameMessage } from '../messages';
 import type { FrameScan, PlannedField } from '../model';
 import { adapterFor } from './adapters';
+import type { Handle } from './adapters/types';
 import { applyAnswer, readAnswer, type Applied } from './apply';
 import { sleep } from './dom';
-import { extractFields, type Extraction } from './extract';
+import { attachedFile, controlsOf, extractFields, isFilled, type Extraction } from './extract';
 import { formSnapshot } from './snapshot';
 import { watchSubmission } from './submit';
 import { fileFromBase64, readComboboxOptions } from './widgets';
+
+/** What a field the page filled holds, for the checklist. */
+function shownValue(handle: Handle): string | undefined {
+  if (handle.type === 'file') return attachedFile(handle.element) ?? undefined;
+  const answer = readAnswer(handle);
+  if (!answer) return undefined;
+  switch (answer.type) {
+    case 'text':
+      return answer.text;
+    case 'choice':
+      return answer.option ?? undefined;
+    case 'choices':
+      return answer.texts.join(', ');
+    case 'check':
+      return answer.checked ? 'checked' : 'unchecked';
+    default:
+      return undefined;
+  }
+}
 
 /**
  * The content script, in every frame it runs in: it reads the form, fills it when asked, and reports submissions.
@@ -16,6 +36,9 @@ export function startContent(): void {
   const adapter = adapterFor(location.href);
   const top = window === window.top;
   let extraction: Extraction | null = null;
+  // Controls this script filled: filling again may redo them. Any other value in the form is the page's, and stays.
+  const wrote = new WeakSet<Element>();
+  const ours = (handle: Handle) => controlsOf(handle).some((element) => wrote.has(element));
 
   async function scan(
     frameId: number,
@@ -24,6 +47,10 @@ export function startContent(): void {
     const form = adapter.form(document);
     if (form && prepare && adapter.prepare && (await adapter.prepare(form, prepare))) await sleep(300);
     extraction = extractFields(adapter, document, frameId);
+    for (const field of extraction.fields) {
+      const handle = extraction.handles.get(field.id);
+      if (field.filled && handle && ours(handle)) field.filled = false;
+    }
     return {
       frameId,
       ats: adapter.ats,
@@ -42,15 +69,24 @@ export function startContent(): void {
   async function fill(fields: PlannedField[]): Promise<Record<string, Applied>> {
     const results: Record<string, Applied> = {};
     if (!extraction) return results;
-    // The resume goes first: Lever and Ashby parse it and fill fields of their own, which the profile then corrects.
+    const filled = new Set(extraction.fields.filter((field) => field.filled).map((field) => field.id));
+    // The resume goes first: Lever and Ashby parse it and fill fields of their own, which are then kept.
     const ordered = [...fields].sort(
       (a, b) => Number(b.answer?.type === 'file') - Number(a.answer?.type === 'file'),
     );
     for (const entry of ordered) {
       const handle = extraction.handles.get(entry.fieldId);
       if (!handle || !entry.answer) continue;
+      // What the page holds stays: a resume it parsed, a Workday profile, the owner's typing. The email doesn't: it
+      // names the account applying.
+      if (entry.key !== 'email' && !ours(handle) && (filled.has(entry.fieldId) || isFilled(handle))) {
+        results[entry.fieldId] = { ok: true, value: shownValue(handle) };
+        continue;
+      }
       results[entry.fieldId] = await applyAnswer(handle, entry.answer, loadResume);
-      if (entry.answer.type === 'file' && results[entry.fieldId]?.ok)
+      if (!results[entry.fieldId]?.ok) continue;
+      for (const element of controlsOf(handle)) wrote.add(element);
+      if (entry.answer.type === 'file')
         await sleep(adapter.ats === 'lever' || adapter.ats === 'ashby' ? 2500 : 300);
     }
     return results;

@@ -73,3 +73,49 @@ describe('workday', () => {
     expect(answerOf('From', 0)).toBe('2025-06-01');
   });
 });
+
+describe('workday, after "Autofill with Resume"', () => {
+  const ctx = {
+    profile: makeProfile(),
+    email: 'alex@example.com',
+    resumeId: null,
+    posting: null,
+    today: '2026-09-28',
+    appliedBefore: false,
+  };
+  /** The page as Workday leaves it when it has read a resume: the first job filled in. */
+  const parsed = () => {
+    document.body.innerHTML = PAGE;
+    document.querySelector<HTMLInputElement>('#title-1')!.value = 'Staff Engineer';
+  };
+
+  it('leaves the work experience it filled in to the page, and fills the rest from the profile', () => {
+    parsed();
+    const { fields } = extractFields(workday, document, 0);
+    const plan = planForm(fields, ctx, []);
+    const planned = (label: string, index = 0) =>
+      plan.find((entry) => entry.fieldId === fields.filter((field) => field.label === label)[index]?.id);
+    // The second entry's company is empty, but the page's jobs may not be in the profile's order.
+    expect(planned('Job Title')).toMatchObject({ status: 'filled', answer: null });
+    expect(planned('Company', 1)?.answer).toBeNull();
+    expect(planned('From')).toMatchObject({ answer: null });
+    expect(planned('First Name')?.answer).toEqual({ type: 'text', text: 'Alex' });
+  });
+
+  it('adds no entries to a section the page filled in', async () => {
+    parsed();
+    const section = document.querySelector('[data-automation-id="workExperienceSection"]')!;
+    let added = 0;
+    section.querySelector('button')!.addEventListener('click', () => {
+      added++;
+      section.insertAdjacentHTML('beforeend', `<div data-automation-id="workExperience-${2 + added}"></div>`);
+    });
+    const form = workday.form(document)!;
+    expect(await workday.prepare!(form, { experience: 3, education: 0 })).toBe(false);
+    expect(added).toBe(0);
+
+    document.querySelector<HTMLInputElement>('#title-1')!.value = '';
+    expect(await workday.prepare!(form, { experience: 3, education: 0 })).toBe(true);
+    expect(added).toBe(1);
+  });
+});

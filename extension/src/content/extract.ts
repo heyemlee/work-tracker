@@ -70,7 +70,25 @@ function groupLabel(inputs: HTMLInputElement[]): string {
   return choices.has(text) ? '' : text;
 }
 
-function isFilled(handle: Handle): boolean {
+/** "Alex_Chen_Resume.pdf", not "Accepted types: .pdf, .docx" or "Upload .pdf". */
+const FILE_NAME = /^[^\s:,][^:,]{0,200}[^\s.:,]\.(pdf|docx?|rtf|odt|txt)$/i;
+
+/**
+ * The file an upload holds: the one chosen in it, or one the page shows by name next to it, as Workday does with the
+ * resume "Autofill with Resume" read and Lever with one the owner attached.
+ */
+export function attachedFile(input: HTMLInputElement): string | null {
+  const chosen = input.files?.[0];
+  if (chosen) return chosen.name;
+  const box = questionContainer(input) ?? input.parentElement?.parentElement?.parentElement;
+  for (const element of box?.querySelectorAll('*') ?? []) {
+    if (element.childElementCount === 0 && FILE_NAME.test(textOf(element))) return textOf(element);
+  }
+  return null;
+}
+
+/** The field holds something: the page filled it in, or the owner did. */
+export function isFilled(handle: Handle): boolean {
   switch (handle.type) {
     case 'input':
     case 'typeahead':
@@ -88,7 +106,7 @@ function isFilled(handle: Handle): boolean {
     case 'checkbox':
       return handle.element.checked;
     case 'file':
-      return (handle.element.files?.length ?? 0) > 0;
+      return attachedFile(handle.element) !== null;
     case 'combobox': {
       // react-select shows the chosen option in a sibling "single value" element.
       const container = handle.element.closest('[class*="select__control"], [class*="container"]');
@@ -194,7 +212,7 @@ export function extractFields(adapter: Adapter, doc: Document, frameId: number):
             hint: adapter.hint?.(control) ?? null,
             section: sectionOf(control),
             entry: adapter.entry?.(control) ?? null,
-            filled: (control.files?.length ?? 0) > 0,
+            filled: attachedFile(control) !== null,
             maxLength: null,
           },
           { type: 'file', element: control },
@@ -319,7 +337,7 @@ function fileLabel(input: HTMLInputElement, label: string): string {
   return named || (group ? questionText(group) : '') || label;
 }
 
-function controlsOf(handle: Handle): Element[] {
+export function controlsOf(handle: Handle): Element[] {
   switch (handle.type) {
     case 'radio':
     case 'multi':

@@ -48,6 +48,43 @@ test('fills a Lever application, and logs it once the thank-you page loads', asy
   });
 });
 
+test('keeps what Lever read from the resume and what the owner typed, and fills the rest', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  // Lever reads an uploaded resume and fills the fields it found; this stands in for its parser.
+  const parser = `<script>
+    document.querySelector('#resume-upload-input').addEventListener('change', () => setTimeout(() => {
+      for (const [name, value] of [['name', 'Alexander Chen'], ['email', 'alex.chen@gmail.com'], ['org', 'Acme AI Labs']]) {
+        const input = document.querySelector('input[name="' + name + '"]');
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }, 200));
+  </script>`;
+  await serve(
+    context,
+    'jobs.lever.co',
+    fixture('lever/palantir.html').replace('</body>', `${parser}</body>`),
+    THANKS,
+  );
+  const page = await context.newPage();
+  await page.goto('https://jobs.lever.co/palantir/10dfc8bc-99ad-4ca2-ab76-853cb90a92c2/apply');
+  await page.locator('input[name="phone"]').fill('+1 408 555 0100');
+
+  const card = page.locator('outbox-autofill');
+  await card.getByRole('button', { name: /^Fill/ }).click();
+  await expect(card.getByText(/^Filled · \d+/)).toBeVisible({ timeout: 45_000 });
+  await expect(page.locator('input[name="name"]')).toHaveValue('Alexander Chen');
+  await expect(page.locator('input[name="org"]')).toHaveValue('Acme AI Labs');
+  await expect(page.locator('input[name="phone"]')).toHaveValue('+1 408 555 0100');
+  // The email is the account applying, not the resume's.
+  await expect(page.locator('input[name="email"]')).toHaveValue('alex@example.com');
+  await expect(page.locator('input[name="urls[GitHub]"]')).toHaveValue('https://github.com/alexchen');
+});
+
 test('fills an Ashby application: system fields, yes/no buttons, radio groups', async ({
   context,
   worker,

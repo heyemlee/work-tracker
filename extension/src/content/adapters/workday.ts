@@ -91,6 +91,15 @@ const required = (element: Element) =>
     element.closest('[data-automation-id^="formField-"]')?.querySelector('abbr, [class*="required"]'),
   ) || /\*\s*$/.test(textOf(element.closest('[data-automation-id^="formField-"]')?.querySelector('label')));
 
+/** Something typed or picked in a section: a date, a job title, a school chosen from a prompt. */
+const holdsAnything = (section: Element) =>
+  [
+    ...section.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+      'input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="file"]), textarea',
+    ),
+  ].some((control) => control.value.trim() !== '') ||
+  section.querySelector('[data-automation-id="selectedItem"]') !== null;
+
 function addButton(section: Element | null): HTMLElement | null {
   if (!section) return null;
   return (
@@ -220,7 +229,9 @@ export const workday: Adapter = {
     ];
     for (const [section, wanted, prefix] of sections) {
       const container = form.querySelector(`[data-automation-id="${section}"]`);
-      for (let attempt = 0; container && attempt < Math.min(wanted, 6); attempt++) {
+      // Entries already filled in ("Autofill with Resume") stay as they are: adding the profile's would repeat them.
+      if (!container || holdsAnything(container)) continue;
+      for (let attempt = 0; attempt < Math.min(wanted, 6); attempt++) {
         const have = container.querySelectorAll(`[data-automation-id^="${prefix}"]`).length;
         if (have >= wanted) break;
         const add = addButton(container);

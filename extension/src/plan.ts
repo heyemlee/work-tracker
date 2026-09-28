@@ -1,4 +1,4 @@
-import type { Hint, PlannedField, ScannedField, Source } from './model';
+import type { Entry, Hint, PlannedField, ScannedField, Source } from './model';
 import { latestEducation } from './profile/profile';
 import type { Education, Experience } from './profile/schema';
 import { answerAuth, classifyAuth, postingCountry } from './rules/authorization';
@@ -29,7 +29,26 @@ export function planForm(
   ctx: RuleContext,
   memory: readonly MemoryEntry[],
 ): PlannedField[] {
-  return fields.map((field) => planField(field, ctx, memory));
+  // Work experience or education the page filled in (Workday's "Autofill with Resume") is left to the page: its
+  // entries needn't follow the profile's order, so filling their gaps from the profile could mix two jobs.
+  const started = new Set(fields.flatMap((field) => (field.entry && field.filled ? [field.entry.kind] : [])));
+  return fields.map((field) =>
+    field.entry && started.has(field.entry.kind)
+      ? leftToPage(field, field.entry)
+      : planField(field, ctx, memory),
+  );
+}
+
+function leftToPage(field: ScannedField, entry: Entry): PlannedField {
+  return {
+    fieldId: field.id,
+    status: field.filled ? 'filled' : field.required ? 'missing' : 'skipped',
+    answer: null,
+    source: null,
+    key: field.hint ? `${field.hint}#${entry.index}` : null,
+    note: field.filled ? 'already filled' : null,
+    critical: false,
+  };
 }
 
 export function planField(
@@ -38,8 +57,9 @@ export function planField(
   memory: readonly MemoryEntry[],
 ): PlannedField {
   const { resolution, source } = resolve(field, ctx, memory);
-  // A field the page already filled (a parsed resume, a Workday profile) is kept when there's nothing better.
-  if (!resolution.answer && field.filled && resolution.status !== 'draft') {
+  // A field the page already filled (a parsed resume, a Workday profile, the owner's typing) is kept. Where a rule
+  // has an answer, the content script makes that call as it fills: uploading the resume can fill more fields.
+  if (!resolution.answer && field.filled) {
     return {
       fieldId: field.id,
       status: 'filled',
