@@ -13,7 +13,7 @@ import {
   submitConfirmed,
   undo,
 } from './card';
-import { flushQueue } from './outbox';
+import { flushQueue, syncProfile } from './outbox';
 import { dropSession } from './session';
 
 /** Tabs whose top frame runs the content script (and so has, or can mount, the card). */
@@ -105,5 +105,8 @@ export function startBackground(): void {
   });
 
   // Logs queued while Outbox was unreachable go out when the browser starts.
-  browser.runtime.onStartup.addListener(() => void flushQueue().catch(() => undefined));
+  browser.runtime.onStartup.addListener(() => {
+    void flushQueue().catch(() => undefined);
+    void syncProfile().catch(() => undefined);
+  });
 }

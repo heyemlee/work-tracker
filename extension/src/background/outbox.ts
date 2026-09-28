@@ -1,6 +1,7 @@
 import type { QuickAddInput, QuickAddResult } from '@domain/repository';
+import type { SavedProfile } from '@domain/profile';
 import type { Snapshot } from '@domain/types';
-import { getSettings, outboxTokenItem, pendingLogsItem } from '../storage';
+import { getSettings, outboxTokenItem, pendingLogsItem, profileItem, profileSourceItem } from '../storage';
 
 export class OutboxSignedOut extends Error {
   constructor() {
@@ -100,4 +101,16 @@ export async function flushQueue(): Promise<number> {
   }
   if (sent > 0) await pendingLogsItem.setValue((await pendingLogsItem.getValue()).slice(sent));
   return sent;
+}
+
+/**
+ * Copies the profile the owner edits on Outbox into this browser, where filling reads it. When Outbox can't be
+ * reached the last copy stays in use. Returns the profile Outbox holds, or null if none was saved yet.
+ */
+export async function syncProfile(): Promise<SavedProfile | null> {
+  const { saved } = await call<{ saved: SavedProfile | null }>('GET', '/profile');
+  if (!saved) return null;
+  await profileItem.setValue(saved.profile);
+  await profileSourceItem.setValue({ updatedAt: saved.updatedAt, syncedAt: new Date().toISOString() });
+  return saved;
 }

@@ -2,9 +2,8 @@ import type { Snapshot } from '@domain/types';
 import { useEffect, useState, type ReactNode } from 'react';
 import type { WxtStorageItem } from 'wxt/utils/storage';
 import { checkKey } from '../../src/background/ai';
-import { flushQueue, loadSnapshot, OutboxSignedOut } from '../../src/background/outbox';
+import { flushQueue, loadSnapshot, OutboxSignedOut, syncProfile } from '../../src/background/outbox';
 import { missingItems } from '../../src/profile/profile';
-import { parseProfile } from '../../src/profile/schema';
 import { addResume, removeResume, updateResume } from '../../src/resumes';
 import {
   apiKeyItem,
@@ -60,23 +59,25 @@ const primary =
 const input =
   'h-8 w-full rounded-lg border border-black/10 bg-transparent px-2.5 text-[13px] dark:border-white/15';
 
-function ProfileSection({ s }: { s: Strings }) {
+function ProfileSection({ s, settings }: { s: Strings; settings: Settings }) {
   const profile = useItem(profileItem);
   const source = useItem(profileSourceItem);
-  const [errors, setErrors] = useState<string[]>([]);
-  const onFile = async (file: File | undefined) => {
-    if (!file) return;
-    try {
-      const parsed = parseProfile(JSON.parse(await file.text()));
-      if (!parsed.ok) return setErrors(parsed.errors);
-      setErrors([]);
-      await profileItem.setValue(parsed.profile);
-      await profileSourceItem.setValue({ fileName: file.name, importedAt: new Date().toISOString() });
-    } catch (error) {
-      setErrors([error instanceof Error ? error.message : String(error)]);
-    }
-  };
+  const [status, setStatus] = useState<string | null>(null);
+  const sync = () =>
+    syncProfile().then(
+      (saved) => setStatus(saved ? null : s('noProfileOnOutbox')),
+      (error: unknown) =>
+        setStatus(
+          error instanceof OutboxSignedOut
+            ? s('signedOut')
+            : s('unreachable', { detail: error instanceof Error ? error.message : String(error) }),
+        ),
+    );
+  // Fetches once when the page opens and whenever the address changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => void sync(), [settings.outboxUrl]);
   const missing = profile ? missingItems(profile) : [];
+  const when = (iso: string) => new Date(iso).toLocaleString();
   return (
     <Section title={s('profile')} help={s('profileHelp')}>
       {profile ? (
@@ -85,10 +86,7 @@ function ProfileSection({ s }: { s: Strings }) {
             {profile.name.first} {profile.name.last}
           </strong>
           {source && (
-            <>
-              {' '}
-              · {s('imported', { file: source.fileName, date: new Date(source.importedAt).toLocaleString() })}
-            </>
+            <> · {s('synced', { updated: when(source.updatedAt), synced: when(source.syncedAt) })}</>
           )}
         </p>
       ) : (
@@ -99,31 +97,19 @@ function ProfileSection({ s }: { s: Strings }) {
           {s('missing')} <code>{missing.join(', ')}</code>
         </p>
       )}
-      {errors.length > 0 && (
-        <div className="rounded-lg bg-[#d70015]/10 p-3 text-[12px] text-[#d70015]">
-          {s('invalid')}
-          <ul className="mt-1 list-disc pl-5">
-            {errors.map((error) => (
-              <li key={error}>{error}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {status && <p className="text-[13px] text-[#6e6e73]">{status}</p>}
       <div className="flex gap-2">
-        <label className={`${primary} inline-flex cursor-pointer items-center`}>
-          {s('import')}
-          <input
-            type="file"
-            accept="application/json,.json"
-            className="hidden"
-            onChange={(event) => void onFile(event.target.files?.[0])}
-          />
-        </label>
-        {profile && (
-          <button className={button} onClick={() => void profileItem.setValue(null)}>
-            {s('clear')}
-          </button>
-        )}
+        <button className={primary} onClick={() => void sync()}>
+          {s('syncNow')}
+        </button>
+        <a
+          className={`${button} inline-flex items-center`}
+          href={settings.outboxUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {s('editOnOutbox')}
+        </a>
       </div>
     </Section>
   );
@@ -473,7 +459,7 @@ export function App() {
         <h1 className="text-[22px] font-semibold">{s('title')}</h1>
         <p className="mt-1 text-[14px] text-[#6e6e73] dark:text-[#a1a1a6]">{s('subtitle')}</p>
       </header>
-      <ProfileSection s={s} />
+      <ProfileSection s={s} settings={settings} />
       <ResumesSection s={s} snapshot={snapshot} />
       <OutboxSection s={s} settings={settings} onSnapshot={setSnapshot} />
       <AiSection s={s} settings={settings} />

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Clock } from './commands';
 import { ConflictError, NotFoundError } from './errors';
+import { emptyProfile } from './profile';
 import type { QuickAddInput, Repository } from './repository';
 
 /** A clock that advances one second per reading, so timeline order is deterministic. */
@@ -254,6 +255,25 @@ export function describeRepositoryContract(name: string, create: (clock: Clock) 
 
       it('protects built-in channels', async () => {
         await expect(repo.deleteChannel('ch_linkedin')).rejects.toBeInstanceOf(ConflictError);
+      });
+    });
+
+    describe('profile', () => {
+      const profile = () => ({
+        ...emptyProfile(),
+        name: { ...emptyProfile().name, first: 'Alex', last: 'Chen' },
+      });
+
+      it('has none until one is saved', async () => {
+        expect(await repo.loadProfile()).toBeNull();
+      });
+
+      it('returns what was saved, and a later save replaces it', async () => {
+        const first = await repo.saveProfile(profile());
+        expect(await repo.loadProfile()).toEqual(first);
+        const second = await repo.saveProfile({ ...profile(), phone: '+1 408-555-0100' });
+        expect(second.updatedAt > first.updatedAt).toBe(true);
+        expect(await repo.loadProfile()).toEqual(second);
       });
     });
   });

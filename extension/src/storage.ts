@@ -81,11 +81,10 @@ export interface PendingLog {
 }
 
 export const profileItem = storage.defineItem<Profile | null>('local:profile', { fallback: null });
-export const profileSourceItem = storage.defineItem<{ fileName: string; importedAt: string } | null>(
-  'local:profileSource',
-  {
-    fallback: null,
-  },
+/** When the local copy of the profile was saved on Outbox, and when it was last fetched. */
+export const profileSourceItem = storage.defineItem<{ updatedAt: string; syncedAt: string } | null>(
+  'local:profileSync',
+  { fallback: null },
 );
 export const settingsItem = storage.defineItem<Settings>('local:settings', { fallback: DEFAULT_SETTINGS });
 export const apiKeyItem = storage.defineItem<string>('local:anthropicKey', { fallback: '' });

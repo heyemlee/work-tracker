@@ -19,6 +19,8 @@ One release with everything below, no MVP. Design: [autofill.md](autofill.md).
 
 - [x] Profile schema (zod, versioned).
 - [x] Draft `~/Desktop/job-search/autofill-profile.json` from the resume and `profile.md`.
+- [x] Edit the profile on Outbox (Settings → Autofill profile), stored in D1 and synced by the extension
+      (decided 2026-09-27, replacing the JSON import on the options page).
 - [x] Options page: import and validate the profile, list what's missing.
 - [x] Options page: add resume PDFs, name each after an Outbox resume version, pick the default.
 
@@ -96,17 +98,17 @@ One release with everything below, no MVP. Design: [autofill.md](autofill.md).
 
 ### Waiting on the owner
 
-- [ ] Review the profile draft: phone, address and ZIP, citizenship, salary expectation, earliest start date,
-      relocation, languages, EEO answers, and years of experience (computed as 2 from full-time and contract
-      work).
+- [ ] On Outbox, Settings → Autofill profile: import `~/Desktop/job-search/autofill-profile.json` once, then check
+      phone, address and ZIP, citizenship, salary expectation, earliest start date, relocation, languages, EEO
+      answers, and years of experience (computed as 2 from full-time and contract work).
 - [ ] Load the extension: `npm run ext:build`, then `chrome://extensions` → Developer mode → Load unpacked →
       `extension/.output/chrome-mv3`.
 - [ ] Create an Anthropic API key in the Console with a monthly spend limit, and paste it on the options page.
 - [ ] Run the free-text eval once (about $1) and choose Opus 5 or Sonnet 5 from its report.
 - [ ] On each Workday page, press "This page didn't fill right" once: Workday's forms are behind sign-in, so these
       snapshots are its only fixtures.
-- [ ] Before the extension logs to production: deploy the Worker with job links (migration 0002 is already applied
-      remotely) and the `bearer` plugin.
+- [ ] Before using the extension with production: `npm run db:migrate:remote` (migration 0003, the profile table),
+      then deploy the Worker with job links, the profile API and the `bearer` plugin.
 - [ ] Optional: Simplify's free version until the extension is installed; afterwards turn it off on Greenhouse,
       Lever and Ashby.
 - [ ] Optional: three to five STAR stories with `my-interview-prep`, to ground free-text answers.

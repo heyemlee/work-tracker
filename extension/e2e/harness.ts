@@ -43,6 +43,9 @@ export const test = base.extend<{ outbox: OutboxMock; context: BrowserContext; w
         response.end(body === undefined ? '' : JSON.stringify(body));
       };
       if (request.method === 'GET' && request.url === '/api/snapshot') return send(200, SNAPSHOT);
+      // The profile lives on Outbox; the extension fetches it before filling.
+      if (request.method === 'GET' && request.url === '/api/profile')
+        return send(200, { saved: { profile: makeProfile(), updatedAt: '2026-09-27T12:00:00.000Z' } });
       if (request.method === 'POST' && request.url === '/api/quick-add') {
         let data = '';
         request.on('data', (chunk) => (data += chunk));
@@ -84,17 +87,15 @@ export const test = base.extend<{ outbox: OutboxMock; context: BrowserContext; w
   },
 });
 
-/** Puts a profile, settings and a resume PDF into the extension, as the options page would. */
+/** Puts settings and a resume PDF into the extension, as the options page would. The profile comes from Outbox. */
 export async function seed(worker: Worker, outboxUrl: string): Promise<void> {
-  const profile = makeProfile();
   await worker.evaluate(
-    async ({ profile, outboxUrl }) => {
+    async ({ outboxUrl }) => {
       const pdf = '%PDF-1.4\n% Outbox Autofill test resume\n';
       const { chrome } = globalThis as unknown as {
         chrome: { storage: { local: { set(items: object): Promise<void> } } };
       };
       await chrome.storage.local.set({
-        profile,
         settings: {
           outboxUrl,
           model: 'claude-opus-5',
@@ -127,7 +128,7 @@ export async function seed(worker: Worker, outboxUrl: string): Promise<void> {
       });
       db.close();
     },
-    { profile, outboxUrl },
+    { outboxUrl },
   );
 }
 

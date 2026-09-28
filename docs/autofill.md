@@ -1,6 +1,6 @@
 # Outbox Autofill — Design
 
-A Chrome extension that fills job applications from a profile kept on the owner's machine and logs every submission
+A Chrome extension that fills job applications from a profile the owner edits on Outbox and logs every submission
 to Outbox. Status: decided and built 2026-09-27, in one release without an MVP. What still waits on the owner is in
 [todo.md](todo.md).
 
@@ -10,8 +10,8 @@ to Outbox. Status: decided and built 2026-09-27, in one release without an MVP. 
 - Every submission lands in Outbox with its account, channel, resume version and link, without typing it again.
 - Answers are accurate. Work-authorization questions follow fixed rules, never a model.
 
-Principles: rules first, AI for what rules can't place; the owner always presses Submit; the profile never leaves the
-machine.
+Principles: rules first, AI for what rules can't place; the owner always presses Submit; the profile stays with the
+owner's own Outbox account and browser.
 
 Non-goals: submitting on the owner's behalf; finding postings or applying in bulk; evading bot detection (simulated
 typing, fingerprint spoofing, CAPTCHA solving); automating LinkedIn, whose terms forbid it; storing portal passwords
@@ -62,8 +62,11 @@ flowchart LR
 
 ## 4. Profile
 
-Kept in `chrome.storage.local`; resume PDFs in IndexedDB. Its source is `~/Desktop/job-search/autofill-profile.json`,
-imported on the options page — never stored in D1 or in git.
+Edited on Outbox under **Settings → Autofill profile** (decided 2026-09-27, replacing the earlier local JSON file) and
+stored with the owner's account in D1 as one JSON document (`profiles` table), validated by the shared schema in
+`src/domain/profile.ts` on every save. The page can import the old `autofill-profile.json` once. The extension copies
+it into `chrome.storage.local` whenever it reads a page or fills, so filling works offline from the last copy. Resume
+PDFs, the API key and remembered answers stay in the extension; they never go to Outbox. Nothing is in git.
 
 | Section            | Contents                                                                                                  |
 | ------------------ | --------------------------------------------------------------------------------------------------------- |
@@ -164,8 +167,8 @@ a posting there shows a note. It is a note, not a block.
 
 ## 9. Privacy
 
-The profile, resumes, remembered answers and API key stay on the machine. Outbox receives only what it already
-stores. Claude receives field labels and options, the profile parts a question needs, and the posting's text for
+The profile is stored in the owner's own D1 database behind Google sign-in limited to their account, and copied into
+the browser that fills. Resumes, remembered answers and the API key stay on the machine. Claude receives field labels and options, the profile parts a question needs, and the posting's text for
 drafts — never voluntary (EEO) answers or work-authorization questions. Form snapshots carry no values.
 
 ## 10. Testing

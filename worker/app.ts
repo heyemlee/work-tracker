@@ -4,6 +4,7 @@ import { csrf } from 'hono/csrf';
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
 import { ConflictError, NotFoundError } from '../src/domain/errors';
+import { profileSchema } from '../src/domain/profile';
 import type { Repository } from '../src/domain/repository';
 import { createAuth, type Auth } from './auth';
 import { createDb, type Db } from './db';
@@ -153,7 +154,12 @@ const api = new Hono<AppEnv>()
   .delete('/channels/:id', async (c) => {
     await c.var.repo.deleteChannel(c.req.param('id'));
     return c.body(null, noContent);
-  });
+  })
+
+  .get('/profile', async (c) => c.json({ saved: await c.var.repo.loadProfile() }))
+  .put('/profile', zValidator('json', profileSchema), async (c) =>
+    c.json(await c.var.repo.saveProfile(c.req.valid('json'))),
+  );
 
 export const app = new Hono<AppEnv>()
   // Rejects cross-site form posts; JSON requests from other origins are already stopped by CORS preflight.

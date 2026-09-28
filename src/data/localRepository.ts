@@ -11,15 +11,18 @@ import {
 } from '../domain/commands';
 import { findCompany } from '../domain/companies';
 import { ConflictError, NotFoundError } from '../domain/errors';
+import type { SavedProfile } from '../domain/profile';
 import type { Repository } from '../domain/repository';
 import type { Application, Id, Job } from '../domain/types';
 import { createSampleData, type SampleData } from '../domain/sampleData';
 
 const STORAGE_KEY = 'outbox.sample.v4';
 
-/** Everything the local repository keeps: the data, every timeline, and which jobs are soft-deleted. */
+/** Everything the local repository keeps: the data, every timeline, which jobs are soft-deleted, the profile. */
 interface LocalState extends SampleData {
   deletedJobIds: Id[];
+  /** Missing in state saved before profiles existed. */
+  profile?: SavedProfile | null;
 }
 
 export interface LocalRepository extends Repository {
@@ -274,6 +277,16 @@ export function createLocalRepository({
         channels: state.channels.filter((c) => c.id !== id),
         applications: state.applications.map((a) => (a.channelId === id ? { ...a, channelId: null } : a)),
       });
+    },
+
+    async loadProfile() {
+      return state.profile ?? null;
+    },
+
+    async saveProfile(profile) {
+      const saved = { profile, updatedAt: clock.now() };
+      commit({ ...state, profile: saved });
+      return saved;
     },
 
     async resetSampleData() {

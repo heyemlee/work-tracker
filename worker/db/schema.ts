@@ -137,3 +137,12 @@ export const events = sqliteTable(
     index('events_application_idx').on(table.applicationId),
   ],
 );
+
+/** The autofill profile: one JSON document per user, validated by the domain's profile schema on the way in. */
+export const profiles = sqliteTable('profiles', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  data: text('data', { mode: 'json' }).notNull(),
+  updatedAt: text('updated_at').notNull(),
+});

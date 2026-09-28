@@ -26,7 +26,7 @@ import {
 } from '../storage';
 import { answerFields, draftAnswer, NoApiKey, similarFinals } from './ai';
 import { fillFrames, frameOf, readOptions, scanFrames } from './frames';
-import { loadSnapshot, OutboxSignedOut, quickAddOrQueue, undoQuickAdd } from './outbox';
+import { loadSnapshot, OutboxSignedOut, quickAddOrQueue, syncProfile, undoQuickAdd } from './outbox';
 import { getSession, updateSession, type TabSession } from './session';
 
 const today = () => toIsoDate(new Date());
@@ -182,10 +182,12 @@ export async function pushState(session: TabSession): Promise<void> {
 /** Reads the tab: the posting, its form, the match check, which accounts applied. */
 export async function readTab(tabId: number, url: string): Promise<CardState> {
   const previous = await getSession(tabId);
+  // The profile is edited on Outbox: refresh the local copy alongside the page scan. Offline, the copy stands.
+  const synced = syncProfile().catch(() => null);
   const [scans, outbox, profile, settings, last, resumes, h1b] = await Promise.all([
     scanFrames(tabId, null),
     outboxState(true),
-    profileItem.getValue(),
+    synced.then(() => profileItem.getValue()),
     getSettings(),
     lastUsedItem.getValue(),
     resumesItem.getValue(),
@@ -293,6 +295,8 @@ function contextFor(
 
 /** Fills the tab's form: rules first, into the page at once; then AI for what's left, as it arrives. */
 export async function fill(tabId: number, url: string): Promise<CardState> {
+  // The owner may have edited the profile on Outbox since the last fill; offline, the last copy is used.
+  await syncProfile().catch(() => undefined);
   const profile = await profileItem.getValue();
   if (!profile) {
     const session = await updateSession(tabId, url, () => ({ error: 'profile' }));

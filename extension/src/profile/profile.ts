@@ -106,17 +106,4 @@ export function authFacts(profile: Profile, country: string): AuthFacts {
   };
 }
 
-/** Blanks worth filling before the first application, for the options page. */
-export function missingItems(profile: Profile): string[] {
-  const missing: string[] = [];
-  if (!profile.phone) missing.push('phone');
-  if (!profile.address.city) missing.push('address.city');
-  if (!profile.address.zip) missing.push('address.zip');
-  if (!profile.links.linkedin) missing.push('links.linkedin');
-  if (profile.workAuthorization.citizenship.length === 0) missing.push('workAuthorization.citizenship');
-  if (!profile.answers.salary) missing.push('answers.salary');
-  if (!profile.answers.earliestStart) missing.push('answers.earliestStart');
-  if (profile.education.length === 0) missing.push('education');
-  if (profile.experience.length === 0) missing.push('experience');
-  return missing;
-}
+export { missingItems } from './schema';

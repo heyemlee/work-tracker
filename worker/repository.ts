@@ -13,6 +13,7 @@ import {
 } from '../src/domain/commands';
 import { normalizeCompanyName } from '../src/domain/companies';
 import { ConflictError, NotFoundError } from '../src/domain/errors';
+import { profileSchema } from '../src/domain/profile';
 import type { Repository } from '../src/domain/repository';
 import type {
   Account,
@@ -459,6 +460,24 @@ export function createD1Repository(db: Db, userId: Id, clock: Clock = systemCloc
           .where(and(eq(t.applications.channelId, id), eq(t.applications.userId, userId))),
         db.delete(t.channels).where(and(eq(t.channels.id, id), eq(t.channels.userId, userId))),
       ]);
+    },
+
+    async loadProfile() {
+      const row = await db.query.profiles.findFirst({ where: eq(t.profiles.userId, userId) });
+      // Parsing fills defaults for fields added to the schema after the profile was saved.
+      return row ? { profile: profileSchema.parse(row.data), updatedAt: row.updatedAt } : null;
+    },
+
+    async saveProfile(profile) {
+      const saved = { profile, updatedAt: clock.now() };
+      await db
+        .insert(t.profiles)
+        .values({ userId, data: profile, updatedAt: saved.updatedAt })
+        .onConflictDoUpdate({
+          target: t.profiles.userId,
+          set: { data: profile, updatedAt: saved.updatedAt },
+        });
+      return saved;
     },
   };
 }

@@ -1,3 +1,4 @@
+import type { Profile, SavedProfile } from './profile';
 import type { AccountColor, Id, IsoDate, Snapshot, Stage, TimelineEvent } from './types';
 
 export interface QuickAddInput {
@@ -84,4 +85,9 @@ export interface Repository {
   deleteResume(id: Id): Promise<void>;
   saveChannel(input: NameInput): Promise<Id>;
   deleteChannel(id: Id): Promise<void>;
+
+  /** The autofill extension's profile; null until it is first saved. */
+  loadProfile(): Promise<SavedProfile | null>;
+  /** Replaces the whole profile. Callers validate it first; the Worker does so on every request. */
+  saveProfile(profile: Profile): Promise<SavedProfile>;
 }

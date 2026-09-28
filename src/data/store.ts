@@ -40,6 +40,13 @@ export function useSnapshot(enabled = true) {
   return useQuery({ queryKey: SNAPSHOT_KEY, queryFn: () => repository.load(), enabled, staleTime: 30_000 });
 }
 
+export const PROFILE_KEY = ['profile'] as const;
+
+/** The autofill profile, loaded when its editor or summary is shown. */
+export function useProfile() {
+  return useQuery({ queryKey: PROFILE_KEY, queryFn: () => repository.loadProfile() });
+}
+
 export function useJobEvents(jobId: Id) {
   return useQuery({ queryKey: [...EVENTS_KEY, jobId], queryFn: () => repository.loadEvents(jobId) });
 }

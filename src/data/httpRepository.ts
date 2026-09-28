@@ -1,3 +1,4 @@
+import type { SavedProfile } from '../domain/profile';
 import type { QuickAddResult, Repository } from '../domain/repository';
 import type { Id, Snapshot, TimelineEvent } from '../domain/types';
 
@@ -18,7 +19,7 @@ export class HttpError extends Error {
   }
 }
 
-type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export async function request<T>(method: Method, path: string, body?: unknown): Promise<T> {
   const response = await fetch(`/api${path}`, {
@@ -75,5 +76,8 @@ export function createHttpRepository(): Repository {
       return id;
     },
     deleteChannel: (id) => request<void>('DELETE', `/channels/${at(id)}`),
+
+    loadProfile: async () => (await request<{ saved: SavedProfile | null }>('GET', '/profile')).saved,
+    saveProfile: (profile) => request<SavedProfile>('PUT', '/profile', profile),
   };
 }
