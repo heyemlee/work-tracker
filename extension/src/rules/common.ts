@@ -81,7 +81,9 @@ function firstDateFrom(options: readonly string[], from: string, today: string):
 
 const LANGUAGE_NAMES = ['english', 'mandarin', 'chinese', 'cantonese', 'spanish', 'french', 'german', 'japanese', 'korean', 'arabic', 'hindi', 'portuguese', 'italian', 'russian', 'dutch', 'hebrew', 'vietnamese', 'turkish', 'polish', 'swedish', 'norwegian', 'danish', 'finnish', 'greek', 'thai', 'indonesian', 'malay', 'tagalog', 'urdu', 'bengali', 'punjabi', 'tamil', 'telugu', 'persian', 'farsi', 'ukrainian', 'czech', 'romanian', 'hungarian']; // prettier-ignore
 
-const COUNTRY_US = ['United States', 'United States of America', 'USA', 'US', 'U.S.', 'America'];
+// The longest name first: a bare "United States" also matches "United States Minor Outlying Islands", which sorts
+// ahead of "United States of America" in Workday's lists. An exact "United States" still matches on its turn.
+const COUNTRY_US = ['United States of America', 'United States', 'USA', 'US', 'U.S.', 'America'];
 
 const HEARD_SYNONYMS: Record<string, string[]> = {
   // Without a LinkedIn option, a job board is what LinkedIn is; the company's own site isn't.
@@ -270,12 +272,15 @@ export const RULES: readonly Rule[] = [
     key: 'phone.country',
     test: /country (phone )?code|phone country|dial(l)?ing code|country phone|phone (number )?country/,
     answer: (field) =>
-      text('phone.country', field, 'United States (+1)', [
-        '+1',
-        'United States',
-        'US (+1)',
-        'USA (+1)',
+      // Not a bare "+1": Canada and much of the Caribbean share it.
+      text('phone.country', field, 'United States of America (+1)', [
+        'United States (+1)',
         'United States of America',
+        'United States',
+        'USA (+1)',
+        'US (+1)',
+        'USA',
+        'US',
       ]),
   },
   {
@@ -324,7 +329,9 @@ export const RULES: readonly Rule[] = [
     not: /code|citizenship|authori/,
     answer: (field, ctx) => {
       const country = ctx.profile.address.country;
-      return text('address.country', field, country, isUnitedStates(country) ? COUNTRY_US : []);
+      // Typed, the profile's own spelling; from a list, the names in COUNTRY_US's order.
+      if (!isUnitedStates(country) || isTextKind(field.kind)) return text('address.country', field, country);
+      return text('address.country', field, COUNTRY_US[0] ?? country, COUNTRY_US.slice(1));
     },
   },
   {

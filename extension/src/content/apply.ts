@@ -198,8 +198,10 @@ export async function applyAnswer(
                 ? (answer.texts[0] ?? '')
                 : '';
         if (!query || !want) return { ok: false, error: 'nothing to search for' };
-        // Search by the most distinctive part: "Santa Clara, CA" finds "Santa Clara, California, United States".
-        const search = handle.type === 'typeahead' ? (query.split(',')[0] ?? query) : query;
+        // Search by the most distinctive part: "Santa Clara, CA" finds "Santa Clara, California, United States", and
+        // "United States of America (+1)" is searched without its dialing code.
+        const bare = query.replace(/\s*\([^)]*\)/g, '').trim() || query;
+        const search = handle.type === 'typeahead' ? (bare.split(',')[0] ?? bare) : bare;
         const choice = await pickFromTypeahead(
           handle.element,
           search,
