@@ -87,7 +87,7 @@ export interface ToBackground {
   'bridge:status': { request: Record<string, never>; response: ExtensionReadiness };
   /** From Outbox's page: read this resume PDF (base64) with the owner's key. */
   'resume:parse': {
-    request: { pdf: string };
+    request: { pdf: string; text: string };
     response: { ok: true; facts: ResumeFacts } | { ok: false; error: ParseError; detail: string };
   };
 }

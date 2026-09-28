@@ -254,14 +254,19 @@ describe('an OpenAI-compatible provider', () => {
     expect(today).toMatchObject({ inputTokens: 900, outputTokens: 100, cost: 0 });
   });
 
-  it('sends a resume as a PDF file part', async () => {
-    fetchMock.mockResolvedValue(
+  it('sends a resume as its text, and as a PDF file only when it has none', async () => {
+    fetchMock.mockImplementation(async () =>
       answer('```json\n{"name":{"first":"Alex","last":"Chen","preferred":""}}\n```'),
     );
-    const facts = await parseResume('JVBERi0xLjQK');
+    const facts = await parseResume('JVBERi0xLjQK', 'Alex Chen\nAI Engineer, Acme AI');
     expect(facts?.name.first).toBe('Alex');
-    const body = JSON.parse(String((fetchMock.mock.calls[0] as [string, RequestInit])[1].body));
-    expect(body.messages[1].content[0]).toEqual({
+    await parseResume('JVBERi0xLjQK', '');
+    const [withText, scan] = fetchMock.mock.calls.map((call) =>
+      JSON.parse(String((call as [string, RequestInit])[1].body)),
+    );
+    expect(withText.messages[1].content[0].text).toContain('AI Engineer, Acme AI');
+    expect(JSON.stringify(withText)).not.toContain('application/pdf');
+    expect(scan.messages[1].content[0]).toEqual({
       type: 'file',
       file: { filename: 'resume.pdf', file_data: 'data:application/pdf;base64,JVBERi0xLjQK' },
     });

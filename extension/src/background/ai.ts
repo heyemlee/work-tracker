@@ -86,6 +86,8 @@ interface AskParams {
   material?: string;
   /** A PDF to read, as base64. */
   pdf?: string;
+  /** The same PDF's text, for a provider that may not pass a PDF on to its model. */
+  pdfText?: string;
   prompt: string;
   effort: 'low' | 'medium';
   maxTokens: number;
@@ -170,7 +172,10 @@ async function askOpenAI(params: AskParams, settings: Settings): Promise<string 
   const key = await openaiKey();
   if (!settings.openaiModel.trim()) throw new Error('Choose a model on the options page');
   const content: unknown[] = [];
-  if (params.pdf)
+  // A proxy may accept a PDF part and drop it; the text reaches any model. The file goes only when there's no text.
+  if (params.pdfText)
+    content.push({ type: 'text', text: `The resume's text, taken from the PDF:\n\n${params.pdfText}` });
+  else if (params.pdf)
     content.push({
       type: 'file',
       file: { filename: 'resume.pdf', file_data: `data:application/pdf;base64,${params.pdf}` },
@@ -366,10 +371,11 @@ function fitTo(text: string, limit: number): string {
 }
 
 /** Reads a resume PDF (base64) into the parts of a profile it settles. Null when the model can't. */
-export async function parseResume(pdf: string): Promise<ResumeFacts | null> {
+export async function parseResume(pdf: string, pdfText = ''): Promise<ResumeFacts | null> {
   const text = await ask({
     system: RESUME_SYSTEM,
     pdf,
+    pdfText,
     prompt: 'Read this resume into the schema.',
     effort: 'low',
     maxTokens: 8000,

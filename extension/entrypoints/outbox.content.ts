@@ -14,7 +14,7 @@ export default defineContentScript({
   async main(ctx) {
     const stop = startBridge(window, {
       readiness: () => toBackground('bridge:status', {}),
-      parse: (pdf) => toBackground('resume:parse', { pdf }),
+      parse: (pdf, text) => toBackground('resume:parse', { pdf, text }),
     });
     ctx.onInvalidated(stop);
     try {

@@ -13,7 +13,14 @@ export type ParseError = 'no-key' | 'ai-off' | 'too-large' | 'failed';
 
 export type PageMessage =
   | { source: typeof FROM_PAGE; type: 'ping' }
-  | { source: typeof FROM_PAGE; type: 'parse-resume'; id: string; pdf: string };
+  | {
+      source: typeof FROM_PAGE;
+      type: 'parse-resume';
+      id: string;
+      pdf: string;
+      /** The PDF's text, read in the page; empty for a scan. Models that can't open a PDF read this. */
+      text: string;
+    };
 
 export type ExtensionMessage =
   | { source: typeof FROM_EXTENSION; type: 'hello'; readiness: ExtensionReadiness }
@@ -22,3 +29,6 @@ export type ExtensionMessage =
 
 /** A resume PDF of up to 5 MB, as base64. */
 export const MAX_RESUME_BASE64 = Math.ceil((5 * 1024 * 1024 * 4) / 3);
+
+/** A resume's text, capped well above any real resume. */
+export const MAX_RESUME_TEXT = 60_000;

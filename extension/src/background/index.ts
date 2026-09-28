@@ -52,7 +52,9 @@ export function startBackground(): void {
       if (message.type === 'resume:read') return readResume(message.resumeId);
       if (message.type === 'bridge:status' || message.type === 'resume:parse') {
         if (!fromOutbox(sender.url)) return undefined;
-        return message.type === 'bridge:status' ? readiness() : readResumeForOutbox(message.pdf);
+        return message.type === 'bridge:status'
+          ? readiness()
+          : readResumeForOutbox(message.pdf, message.text);
       }
       if (tabId === undefined) return undefined;
       switch (message.type) {

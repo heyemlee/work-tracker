@@ -40,9 +40,9 @@ describe('the bridge to Outbox’s page', () => {
   it('reads a resume and answers with the same id', async () => {
     const parse = vi.fn(async () => ({ ok: true as const, facts: { phone: '+1' } as never }));
     const { posted, send } = page({ parse });
-    send({ source: FROM_PAGE, type: 'parse-resume', id: 'r1', pdf: 'JVBERi0x' });
+    send({ source: FROM_PAGE, type: 'parse-resume', id: 'r1', pdf: 'JVBERi0x', text: 'Alex Chen' });
     await settle();
-    expect(parse).toHaveBeenCalledWith('JVBERi0x');
+    expect(parse).toHaveBeenCalledWith('JVBERi0x', 'Alex Chen');
     expect(posted.at(-1)).toEqual({
       source: FROM_EXTENSION,
       type: 'parse-result',
