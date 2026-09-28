@@ -19,16 +19,19 @@ typing, fingerprint spoofing, CAPTCHA solving); automating LinkedIn, whose terms
 
 ## 2. How it's used
 
-1. Open an application page. A card appears in the corner: the match check (green, yellow, red, with reasons), the
-   account to apply from — accounts that already applied to this posting are disabled — and the resume.
+1. Open an application page. Once the form is on the page, a card opens in the corner: the match check (green,
+   yellow, red, with reasons), the account to apply from — accounts that already applied to this posting are
+   disabled — and the resume. A posting whose form isn't showing yet gets a small pill instead.
 2. Press **Fill** (or the shortcut). Recognized fields fill in about a second and the resume PDF is attached.
 3. Work through the card's checklist: confirm the work-authorization answers, edit the AI drafts, fill what's missing.
 4. Press Submit on the page.
 5. The extension sees the confirmation and logs the application to Outbox, with Undo.
 
-Workday runs over several pages: Fill once per page. On its sign-up page the extension fills the email and Chrome
-generates and saves the password. On LinkedIn the card only offers **Log to Outbox**. On other sites the card opens
-from the toolbar and fills what the field dictionary recognizes.
+Workday runs over several pages: Fill once per page. It draws each page's fields a while after the page loads, so
+the card opens when they appear. On its sign-up page the extension fills the email and Chrome generates and saves
+the password. On LinkedIn the card only offers **Log to Outbox**. On other sites the card opens by itself on a form
+with a resume upload and a name or email field — not on a job board's own apply flow, such as LinkedIn's or Indeed's
+— or from the toolbar, and fills what the field dictionary recognizes. Closed, the card stays closed on that page.
 
 ## 3. Architecture
 
@@ -49,8 +52,12 @@ flowchart LR
   bg --> claude
 ```
 
-- **Content script in every frame of every site**, dormant unless the page is on a known applicant-tracking host or
-  the owner opens the card. Greenhouse, Lever and Ashby forms are often embedded in an iframe on a company's own
+- **Content script** in every frame of the known applicant-tracking hosts. Every other site gets a 6 kB detect script
+  instead, idle until the page shows a form with a resume upload (`resumeForm`; at a job address, a React page without
+  a `<form>` tag counts too, read around its resume upload); the service worker then injects the content script into
+  that frame and the card into the top frame. Each frame reports a form once per address (and Workday step), when it
+  has fields (`watch.ts`). The service worker never injects the script twice into one frame, since WXT would stop the
+  running copy, card and all. Greenhouse, Lever and Ashby forms are often embedded in an iframe on a company's own
   career site, so the form's frame and the card's frame can differ.
 - **Card** in the top frame, in a shadow root so the page's CSS can't reach it. Outbox's Liquid Glass styling,
   English and Simplified Chinese.
@@ -131,7 +138,7 @@ resume's file input.
 | Ashby      | `jobs.ashbyhq.com`, embeds                                     | React; yes/no buttons; posting from `window.__appData`     |
 | Workday    | `*.myworkdayjobs.com`, `*.myworkdaysite.com`                   | One Fill per page; built from `data-automation-id` names   |
 | LinkedIn   | `linkedin.com/jobs`                                            | No filling: Log to Outbox                                  |
-| Other      | Any                                                            | Dictionary only; card opened from the toolbar              |
+| Other      | Any                                                            | Dictionary only; card opens on a form with a resume upload |
 
 **The job's country** comes from the posting's location: a US state or city anywhere in it means the US ("San
 Francisco; London"), otherwise the country or large city abroad it names ("Belgrade" is Serbia; "Dublin, CA" stays

@@ -65,9 +65,17 @@ export interface CapturedAnswer {
   answer: Answer;
 }
 
+/**
+ * Set on the extension's side of a frame once the content script runs there. The service worker checks it before
+ * injecting the script: WXT stops a running copy, card and all, when the same script starts again.
+ */
+export const RUNNING_FLAG = '__outboxAutofill';
+
 /** Messages to the service worker, and what each one answers. */
 export interface ToBackground {
   'frame:hello': { request: { ats: Ats; hasForm: boolean; top: boolean }; response: void };
+  /** The frame now shows an application form (see watch.ts): the card should open for it. */
+  'frame:form': { request: Record<string, never>; response: void };
   'card:state': { request: { refresh: boolean }; response: CardState };
   'card:select': { request: { accountId?: string | null; resumeId?: string | null }; response: CardState };
   'card:fill': { request: Record<string, never>; response: CardState };
@@ -107,8 +115,9 @@ export interface ToFrame {
   'frame:focus': { request: { fieldId: string }; response: boolean };
   'frame:snapshot': { request: { plan: PlannedField[] }; response: Omit<FormSnapshot, 'id' | 'at'> | null };
   'card:update': { request: { state: CardState }; response: void };
-  'card:open': { request: Record<string, never>; response: void };
-  'card:fill': { request: Record<string, never>; response: void };
+  /** The card answers true, so the service worker knows there is one. */
+  'card:open': { request: Record<string, never>; response: boolean };
+  'card:fill': { request: Record<string, never>; response: boolean };
 }
 
 type Envelope<Map, Type extends keyof Map> = { type: Type } & (Map[Type] extends { request: infer Request }

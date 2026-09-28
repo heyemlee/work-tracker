@@ -93,7 +93,12 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   useEffect(() => {
     void getSettings().then((settings) => setT(() => translator(resolveLanguage(settings.language))));
     refresh();
-    const listener = (message: { type?: string; state?: CardState }) => {
+    const listener = (
+      message: { type?: string; state?: CardState },
+      _sender: unknown,
+      // Answering tells the service worker there's a card here.
+      sendResponse: (reply: boolean) => void,
+    ) => {
       if (message.type === 'card:update' && message.state) {
         setState(message.state);
         if (message.state.logged && !message.state.logged.undone) setOpen(true);
@@ -101,8 +106,12 @@ export function Card({ startOpen }: { startOpen: boolean }) {
       if (message.type === 'card:open') {
         setOpen(true);
         refresh();
+        sendResponse(true);
       }
-      if (message.type === 'card:fill') fill();
+      if (message.type === 'card:fill') {
+        fill();
+        sendResponse(true);
+      }
       return undefined;
     };
     browser.runtime.onMessage.addListener(listener);
@@ -127,7 +136,15 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   if (!open) {
     if (!state.hasForm && !state.posting) return null;
     return (
-      <button className="pill glass" onClick={() => setOpen(true)} aria-label={t('expand')}>
+      <button
+        className="pill glass"
+        // Read the page again: it may have drawn its form since the card last looked.
+        onClick={() => {
+          setOpen(true);
+          refresh();
+        }}
+        aria-label={t('expand')}
+      >
         <span className={`dot ${state.match?.level ?? 'gray'}`} />
         {t('outbox')}
       </button>

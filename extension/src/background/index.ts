@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser';
+import { onJobBoard } from '../hosts';
 import { listen, toFrame, type BackgroundMessage } from '../messages';
 import { readResume } from '../resumes';
 import { outboxTokenItem } from '../storage';
@@ -14,34 +15,9 @@ import {
   undo,
 } from './card';
 import { fromOutbox, readiness, readResumeForOutbox } from './bridge';
+import { forgetTab, openCard, showForm } from './inject';
 import { flushQueue, syncProfile } from './outbox';
 import { dropSession } from './session';
-
-/** Tabs whose top frame runs the content script (and so has, or can mount, the card). */
-const topReady = new Set<number>();
-
-/** Mounts the card in a tab's top frame that doesn't run the content script: a career site embedding a form. */
-async function injectCard(tabId: number, allFrames: boolean): Promise<void> {
-  await browser.scripting.executeScript({
-    target: allFrames ? { tabId, allFrames: true } : { tabId, frameIds: [0] },
-    files: ['/content-scripts/inject.js'],
-  });
-  topReady.add(tabId);
-}
-
-async function openCard(tabId: number): Promise<void> {
-  try {
-    await toFrame(tabId, 0, 'card:open', {});
-  } catch {
-    // Not running here yet (any site other than an applicant-tracking host): inject into every frame, then open.
-    try {
-      await injectCard(tabId, true);
-      setTimeout(() => void toFrame(tabId, 0, 'card:open', {}).catch(() => undefined), 500);
-    } catch {
-      // A page extensions can't touch (the Chrome Web Store, chrome:// pages).
-    }
-  }
-}
 
 export function startBackground(): void {
   listen<BackgroundMessage>(
@@ -59,14 +35,12 @@ export function startBackground(): void {
       if (tabId === undefined) return undefined;
       switch (message.type) {
         case 'frame:hello':
-          if (message.top) topReady.add(tabId);
-          else if (message.hasForm) {
-            // Give the top frame a moment to announce itself before injecting a card there.
-            setTimeout(() => {
-              if (!topReady.has(tabId)) void injectCard(tabId, false).catch(() => undefined);
-            }, 800);
-          }
+          // Nothing to do yet: a frame reports its form once the form has fields (frame:form).
           return undefined;
+        case 'frame:form':
+          // A job board's own apply flow, or Outbox itself: there the card waits for the toolbar button.
+          if (onJobBoard(url) || fromOutbox(url)) return undefined;
+          return showForm(tabId, sender.frameId ?? 0);
         case 'card:state':
           return readTab(tabId, url);
         case 'card:select':
@@ -99,15 +73,16 @@ export function startBackground(): void {
   browser.commands.onCommand.addListener((command, tab) => {
     if (command !== 'fill-application' || tab?.id === undefined) return;
     const tabId = tab.id;
-    void toFrame(tabId, 0, 'card:fill', {}).catch(() => openCard(tabId));
-  });
-
-  browser.webNavigation.onCommitted.addListener(({ tabId, frameId }) => {
-    if (frameId === 0) topReady.delete(tabId);
+    // The card answers when it's there and fills; otherwise the shortcut opens it, as the toolbar button does.
+    void toFrame(tabId, 0, 'card:fill', {})
+      .catch(() => false)
+      .then((filling) => {
+        if (!filling) return openCard(tabId);
+      });
   });
 
   browser.tabs.onRemoved.addListener((tabId) => {
-    topReady.delete(tabId);
+    forgetTab(tabId);
     void dropSession(tabId);
   });
 

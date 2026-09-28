@@ -14,3 +14,38 @@ export const ATS_MATCHES = [
 
 /** Where Outbox runs. The content script on these pages hands the session token to the service worker. */
 export const OUTBOX_MATCHES = ['https://tracker.haoyang.us/*', 'http://localhost:5180/*'];
+
+/**
+ * Job boards with apply flows of their own (LinkedIn's Easy Apply, Indeed Apply…) and sites that keep a resume on
+ * file: the card never opens by itself there. The toolbar button still opens it.
+ */
+const JOB_BOARDS = [
+  'linkedin.com',
+  'indeed.com',
+  'glassdoor.com',
+  'ziprecruiter.com',
+  'dice.com',
+  'monster.com',
+  'simplyhired.com',
+  'wellfound.com',
+  'joinhandshake.com',
+  'builtin.com',
+  'hired.com',
+  'welcometothejungle.com',
+  'workatastartup.com',
+  'jobright.ai',
+  'simplify.jobs',
+];
+
+/** A pattern with `*.` matches the domain itself too. */
+export const JOB_BOARD_MATCHES = JOB_BOARDS.map((domain) => `*://*.${domain}/*`);
+
+export function onJobBoard(url: string | undefined): boolean {
+  if (!url) return false;
+  try {
+    const host = new URL(url).hostname;
+    return JOB_BOARDS.some((domain) => host === domain || host.endsWith(`.${domain}`));
+  } catch {
+    return false;
+  }
+}
