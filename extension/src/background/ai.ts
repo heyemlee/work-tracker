@@ -12,6 +12,7 @@ import {
   RESUME_SCHEMA,
   RESUME_SYSTEM,
 } from '../ai/prompts';
+import { resumeShape } from '../ai/resumeShape';
 import type { Profile } from '../profile/schema';
 import {
   apiKeyItem,
@@ -199,7 +200,10 @@ async function askOpenAI(params: AskParams, settings: Settings): Promise<Reply> 
     messages: [
       {
         role: 'system',
-        content: params.schema ? `${params.system}\n\nReply with JSON only.` : params.system,
+        // A proxy may drop structured output; the schema in the prompt still shows the model the shape.
+        content: params.schema
+          ? `${params.system}\n\nReply with JSON only, in exactly the shape of this JSON schema: every key it lists, and no others.\n${JSON.stringify(params.schema)}`
+          : params.system,
       },
       { role: 'user', content },
     ],
@@ -387,33 +391,12 @@ function fitTo(text: string, limit: number): string {
 }
 
 /** Reads a resume PDF (base64) into the parts of a profile it settles. Null when the model can't. */
-/**
- * The JSON object in a model's answer, whatever surrounds it (a code fence, a sentence), made to fit the resume
- * schema's shape: nulls dropped, numbers as text ("GPA 3.9"), and a skills line split into a list.
- */
+/** The JSON object in a model's answer, whatever surrounds it (a code fence, a sentence), in the resume's shape. */
 export function looseResumeJson(text: string): unknown {
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
   if (start < 0 || end <= start) throw new Error('no JSON object in it');
-  const tidy = (value: unknown): unknown => {
-    if (Array.isArray(value)) return value.filter((item) => item !== null).map(tidy);
-    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-    if (!value || typeof value !== 'object') return value;
-    return Object.fromEntries(
-      Object.entries(value)
-        .filter(([, item]) => item !== null)
-        .map(([key, item]) => [
-          key,
-          (key === 'skills' || key === 'languages') && typeof item === 'string'
-            ? item
-                .split(/[,;\n]/)
-                .map((part) => part.trim())
-                .filter(Boolean)
-            : tidy(item),
-        ]),
-    );
-  };
-  return tidy(JSON.parse(text.slice(start, end + 1)));
+  return resumeShape(JSON.parse(text.slice(start, end + 1)));
 }
 
 /** Reads a resume PDF (base64, with its text when the page could read it) into the parts of a profile it settles. */
