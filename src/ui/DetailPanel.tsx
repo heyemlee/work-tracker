@@ -1,10 +1,11 @@
 import clsx from 'clsx';
-import { Plus, Trash2, X } from 'lucide-react';
+import { ArrowUpRight, Link2, Plus, Trash2, X } from 'lucide-react';
 import { AnimatePresence, motion, useDragControls, type PanInfo } from 'motion/react';
 import { Dialog } from 'radix-ui';
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import { patchApplication, useJobEvents, useRepository } from '../data/store';
 import { indexBy } from '../domain/collections';
+import { cleanLink, displayLink } from '../domain/postings';
 import type { JobRow } from '../domain/rows';
 import {
   STAGES,
@@ -168,6 +169,10 @@ function PanelBody({ row, snapshot, today, onClose, onGrab }: PanelBodyProps) {
             value={row.job.title}
             onCommit={(title) => void run((repo) => repo.updateJob(row.job.id, { title }))}
           />
+          <LinkField
+            value={row.job.url}
+            onCommit={(url) => void run((repo) => repo.updateJob(row.job.id, { url }))}
+          />
         </div>
         <Dialog.Close asChild>
           <IconButton label={t('detail.close')} className="-mt-1 -mr-2">
@@ -247,6 +252,54 @@ function TitleField({ value, onCommit }: { value: string | null; onCommit: (titl
       aria-label={t('detail.titlePlaceholder')}
       className="mt-0.5 w-full bg-transparent text-[15px] text-fg-2 outline-none placeholder:text-fg-3 focus:text-fg"
     />
+  );
+}
+
+/** Shows the link without its scheme; editing shows all of it. Text that isn't a web link is discarded. */
+function LinkField({ value, onCommit }: { value: string | null; onCommit: (url: string | null) => void }) {
+  const { t } = useI18n();
+  const [draft, setDraft] = useState<string | null>(null);
+  const commit = () => {
+    if (draft === null) return;
+    const text = draft.trim();
+    const next = text ? cleanLink(text) : null;
+    setDraft(null);
+    if ((next || !text) && next !== value) onCommit(next);
+  };
+  return (
+    <div className="-ml-0.5 flex items-center gap-1.5 text-fg-3">
+      <Link2 className="size-3.5 shrink-0" aria-hidden="true" />
+      <input
+        value={draft ?? (value ? displayLink(value) : '')}
+        onFocus={(event) => {
+          // The full link replaces the short one, so select it all: the usual edit is pasting a new link.
+          const input = event.currentTarget;
+          setDraft(value ?? '');
+          requestAnimationFrame(() => input.select());
+        }}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => event.key === 'Enter' && event.currentTarget.blur()}
+        placeholder={t('detail.linkPlaceholder')}
+        aria-label={t('detail.link')}
+        inputMode="url"
+        autoComplete="off"
+        spellCheck={false}
+        className="h-7 min-w-0 flex-1 truncate bg-transparent text-[13px] text-fg-2 outline-none placeholder:text-fg-3 focus:text-fg"
+      />
+      {value && (
+        <a
+          href={value}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={t('detail.openLink')}
+          title={t('detail.openLink')}
+          className="grid size-7 shrink-0 place-items-center rounded-full text-fg-2 transition-colors hover:bg-fill hover:text-fg"
+        >
+          <ArrowUpRight className="size-4" />
+        </a>
+      )}
+    </div>
   );
 }
 

@@ -71,6 +71,7 @@ export const jobs = sqliteTable(
       .notNull()
       .references(() => companies.id),
     title: text('title'),
+    url: text('url'),
     notes: text('notes').notNull().default(''),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),

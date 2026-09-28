@@ -35,8 +35,10 @@ const en = {
   'chip.changeStatus': '{account}: {status}. Change status',
 
   'composer.label': 'New application',
-  'composer.company': 'Company',
+  'composer.company': 'Company or job link',
   'composer.title': 'Title (optional)',
+  'composer.link': 'Job link',
+  'composer.removeLink': 'Remove link',
   'composer.accounts': 'Applied with',
   'composer.save': 'Save',
   'composer.add': 'Add',
@@ -65,6 +67,9 @@ const en = {
 
   'detail.close': 'Close',
   'detail.titlePlaceholder': 'Add a title',
+  'detail.link': 'Job link',
+  'detail.linkPlaceholder': 'Add a job link',
+  'detail.openLink': 'Open posting',
   'detail.applications': 'Applications',
   'detail.applyWith': 'Apply with another account',
   'detail.markApplied': 'Mark as applied with',
@@ -192,8 +197,10 @@ const zh: Record<MessageKey, string> = {
   'chip.changeStatus': '{account}：{status}。修改状态',
 
   'composer.label': '新增投递',
-  'composer.company': '公司',
+  'composer.company': '公司或职位链接',
   'composer.title': '职位（选填）',
+  'composer.link': '职位链接',
+  'composer.removeLink': '移除链接',
   'composer.accounts': '投递账户',
   'composer.save': '保存',
   'composer.add': '添加',
@@ -222,6 +229,9 @@ const zh: Record<MessageKey, string> = {
 
   'detail.close': '关闭',
   'detail.titlePlaceholder': '填写职位',
+  'detail.link': '职位链接',
+  'detail.linkPlaceholder': '添加职位链接',
+  'detail.openLink': '打开职位页面',
   'detail.applications': '投递记录',
   'detail.applyWith': '用其他账户投递',
   'detail.markApplied': '标记为已投递，账户',

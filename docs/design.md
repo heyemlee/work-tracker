@@ -27,7 +27,7 @@ Company 1─n Job 1─n Application 1─n Event
 | Entity        | Fields                                                                | Notes                                                                            |
 | ------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | Company       | name                                                                  | Unique by normalized name; drives autocomplete                                   |
-| Job           | company\*, title, notes                                               | One posting. Title and notes are optional                                        |
+| Job           | company\*, title, url, notes                                          | One posting. Title, link and notes are optional                                  |
 | Application   | job\*, account\*, channel, resume, stage, rejected, appliedAt, source | At most one per (job, account)                                                   |
 | Account       | label, email, color                                                   | Never stores passwords — use a password manager                                  |
 | ResumeVersion | name                                                                  | Names only (e.g. `SDE-v3`), no files                                             |
@@ -53,9 +53,12 @@ rejected, it displays the furthest rejected one, dimmed. Filters use the rollup.
 - **Composer (quick add)** — a glass panel over the list, opened from the toolbar's New button or `N` (a bottom
   sheet on phones). Company → `Tab` → title → account chips → `Enter`; the panel closes and a toast offers Undo.
   Selecting N accounts creates N applications; selecting none saves the job. Typing a company lists its existing
-  jobs; picking one attaches new accounts to it, and accounts that already applied are disabled.
+  jobs; picking one attaches new accounts to it, and accounts that already applied are disabled. Pasting the
+  posting's link instead of a company fills the company in — from an applicant-tracking board (Greenhouse, Lever,
+  Ashby, Workday, …) or the career site's domain — and, for Workday, the title. The link is saved with the job, and
+  a link that's already tracked attaches to its job, so applying from another account is paste, pick, `Enter`.
 - **Detail** — a glass side panel on desktop, a bottom sheet on mobile: per-account stage control, rejected
-  toggle, apply with another account, notes, timeline.
+  toggle, apply with another account, the posting's link, notes, timeline.
 - **Settings** — accounts (an email address and a color each), resume versions, channels, language, CSV export.
 - English (default) and Simplified Chinese. Installable as a PWA.
 

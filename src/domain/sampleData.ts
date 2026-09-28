@@ -72,6 +72,13 @@ const TITLES = [
   'Software Engineer, Platform',
 ];
 
+/** A posting link for most sample jobs, on example.com so none of them points at a real company's board. */
+function sampleLink(companyName: string, index: number): string | null {
+  if (index % 6 === 4) return null;
+  const slug = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  return `https://jobs.example.com/${slug}/${4_100_000 + index * 7_919}`;
+}
+
 /** Days before today for each sample job: dense recent activity, a long tail behind it. */
 const DAYS_AGO = [
   0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 6, 7, 7, 8, 8, 9, 9, 10, 11, 12, 14, 15, 16,
@@ -162,6 +169,7 @@ export function createSampleData(now: Date): SampleData {
       id: id('job'),
       companyId: company.id,
       title,
+      url: sampleLink(companyName, index),
       notes: NOTES[index] ?? '',
       createdAt: jobCreated,
       updatedAt: jobCreated,

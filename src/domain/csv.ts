@@ -5,6 +5,7 @@ import type { Snapshot } from './types';
 const HEADER = [
   'company',
   'title',
+  'url',
   'account',
   'email',
   'channel',
@@ -30,7 +31,7 @@ export function toCsv(snapshot: Snapshot): string {
 
   const lines = [HEADER];
   for (const row of buildRows(snapshot)) {
-    const base = [row.company.name, row.job.title ?? ''];
+    const base = [row.company.name, row.job.title ?? '', row.job.url ?? ''];
     if (row.applications.length === 0) {
       lines.push([...base, '', '', '', '', 'saved', '', '', row.job.notes]);
       continue;

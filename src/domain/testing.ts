@@ -11,7 +11,7 @@ export function company(id: string, name: string): Company {
 }
 
 export function job(id: string, companyId: string, title: string | null = null, createdAt = T0): Job {
-  return { id, companyId, title, notes: '', createdAt, updatedAt: createdAt };
+  return { id, companyId, title, url: null, notes: '', createdAt, updatedAt: createdAt };
 }
 
 export function application(

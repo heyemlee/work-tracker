@@ -3,6 +3,8 @@ import type { AccountColor, Id, IsoDate, Snapshot, Stage, TimelineEvent } from '
 export interface QuickAddInput {
   companyName: string;
   title: string | null;
+  /** The posting's link. A new job stores it; an existing job gets it only if it has none. */
+  url: string | null;
   /** Attach the new applications to this job instead of creating one. */
   jobId: Id | null;
   /** No accounts means "save the job for later". */
@@ -36,6 +38,7 @@ export interface ApplicationPatch {
 
 export interface JobPatch {
   title?: string | null;
+  url?: string | null;
   notes?: string;
 }
 

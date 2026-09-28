@@ -34,6 +34,8 @@ export interface QuickAddPlan {
   job: Job | null;
   applications: Application[];
   events: TimelineEvent[];
+  /** A link for the existing job being attached to; repositories set it only where the job has none. */
+  link: string | null;
   result: QuickAddResult;
 }
 
@@ -53,6 +55,7 @@ export function planQuickAdd(input: QuickAddInput, context: QuickAddContext, clo
       id: clock.newId('job'),
       companyId,
       title: input.title?.trim() || null,
+      url: input.url,
       notes: '',
       createdAt: at,
       updatedAt: at,
@@ -109,6 +112,7 @@ export function planQuickAdd(input: QuickAddInput, context: QuickAddContext, clo
     job,
     applications,
     events,
+    link: job ? null : input.url,
     result: {
       jobId: targetJobId,
       createdJobId: job?.id ?? null,

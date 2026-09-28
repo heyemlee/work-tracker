@@ -9,16 +9,16 @@ describe('toCsv', () => {
       channels: [{ id: 'ch', name: 'referral', builtin: true }],
       companies: [company('c1', 'Acme, "Robotics"'), company('c2', 'Lumen Labs')],
       jobs: [
-        { ...job('j1', 'c1', 'SWE'), notes: 'line one\nline two' },
+        { ...job('j1', 'c1', 'SWE'), url: 'https://jobs.lever.co/acme/1', notes: 'line one\nline two' },
         job('j2', 'c2', null, '2026-08-01T00:00:00.000Z'),
       ],
       applications: [application('p1', 'j1', 'a', { channelId: 'ch', stage: 'oa' })],
     });
 
     expect(toCsv(data).split('\r\n')).toEqual([
-      'company,title,account,email,channel,resume,stage,rejected,applied_at,notes',
-      '"Acme, ""Robotics""",SWE,A,a@example.com,referral,,oa,no,2026-09-01,"line one\nline two"',
-      'Lumen Labs,,,,,,saved,,,',
+      'company,title,url,account,email,channel,resume,stage,rejected,applied_at,notes',
+      '"Acme, ""Robotics""",SWE,https://jobs.lever.co/acme/1,A,a@example.com,referral,,oa,no,2026-09-01,"line one\nline two"',
+      'Lumen Labs,,,,,,,saved,,,',
       '',
     ]);
   });

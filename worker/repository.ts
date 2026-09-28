@@ -60,6 +60,7 @@ const toJob = (row: typeof t.jobs.$inferSelect): Job => ({
   id: row.id,
   companyId: row.companyId,
   title: row.title,
+  url: row.url,
   notes: row.notes,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
@@ -281,6 +282,14 @@ export function createD1Repository(db: Db, userId: Id, clock: Clock = systemCloc
         );
       }
       if (plan.job) writes.push(db.insert(t.jobs).values({ ...plan.job, userId }));
+      if (plan.link) {
+        writes.push(
+          db
+            .update(t.jobs)
+            .set({ url: plan.link })
+            .where(and(eq(t.jobs.id, plan.result.jobId), eq(t.jobs.userId, userId), isNull(t.jobs.url))),
+        );
+      }
       writes.push(
         ...insertRows(
           db,

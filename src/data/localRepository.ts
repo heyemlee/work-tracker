@@ -15,7 +15,7 @@ import type { Repository } from '../domain/repository';
 import type { Application, Id, Job } from '../domain/types';
 import { createSampleData, type SampleData } from '../domain/sampleData';
 
-const STORAGE_KEY = 'outbox.sample.v3';
+const STORAGE_KEY = 'outbox.sample.v4';
 
 /** Everything the local repository keeps: the data, every timeline, and which jobs are soft-deleted. */
 interface LocalState extends SampleData {
@@ -135,7 +135,9 @@ export function createLocalRepository({
       commit({
         ...state,
         companies: plan.company ? [...state.companies, plan.company] : state.companies,
-        jobs: plan.job ? [...state.jobs, plan.job] : state.jobs,
+        jobs: plan.job
+          ? [...state.jobs, plan.job]
+          : state.jobs.map((j) => (j.id === plan.result.jobId && !j.url ? { ...j, url: plan.link } : j)),
         applications: [...state.applications, ...plan.applications],
         events: [...state.events, ...plan.events],
       });

@@ -1,11 +1,19 @@
 import clsx from 'clsx';
-import { Check, CornerDownLeft, Plus, SlidersHorizontal, X } from 'lucide-react';
+import { Check, CornerDownLeft, Link2, Plus, SlidersHorizontal, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Dialog, Popover } from 'radix-ui';
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useRepository } from '../data/store';
-import { findJob, suggestCompanies } from '../domain/companies';
+import { suggestCompanies } from '../domain/companies';
 import { toIsoDate } from '../domain/dates';
+import {
+  companyFromSlug,
+  displayLink,
+  findJobByLink,
+  findSamePosting,
+  parsePosting,
+  type Posting,
+} from '../domain/postings';
 import type { JobRow } from '../domain/rows';
 import type { Company, Id, Snapshot } from '../domain/types';
 import { useMediaQuery } from '../hooks/useMediaQuery';
@@ -30,7 +38,8 @@ interface ComposerProps {
 
 /**
  * Quick add: a glass panel over the list, opened with N or the toolbar's New button. Built for dozens of entries
- * a day: company → Tab → title → accounts → Enter. A bottom sheet on phones.
+ * a day: company → Tab → title → accounts → Enter, or paste the posting's link instead of typing the company.
+ * A bottom sheet on phones.
  */
 export function Composer({ open, onOpenChange, ...panel }: ComposerProps) {
   const phone = useMediaQuery('(max-width: 767px)');
@@ -77,6 +86,7 @@ function ComposerPanel({ snapshot, rows, onOpenJob, onOpenSettings, phone, onClo
 
   const [company, setCompany] = useState('');
   const [title, setTitle] = useState('');
+  const [link, setLink] = useState<string | null>(null);
   const [attachedId, setAttachedId] = useState<Id | null>(null);
   const [suggesting, setSuggesting] = useState(false);
   const [highlight, setHighlight] = useState(-1);
@@ -117,6 +127,29 @@ function ComposerPanel({ snapshot, rows, onOpenJob, onOpenSettings, phone, onClo
     requestAnimationFrame(() => submitButton.current?.focus());
   }
 
+  /**
+   * A pasted link fills in the company (and, from Workday, the title). A link that's already tracked attaches to
+   * its job, so applying to the same posting from another account is paste, Enter.
+   */
+  function fillFromLink(posting: Posting) {
+    closeSuggestions();
+    setError(null);
+    setLink(posting.url);
+    const tracked = findJobByLink(rows, posting.url);
+    if (tracked) {
+      setAttachedId(tracked.job.id);
+      setCompany(tracked.company.name);
+      setTitle('');
+      requestAnimationFrame(() => submitButton.current?.focus());
+      return;
+    }
+    const name = posting.companySlug ? companyFromSlug(posting.companySlug, snapshot.companies) : '';
+    setCompany(name);
+    if (posting.title) setTitle(posting.title);
+    // Without a company from the link, stay put so it can be typed.
+    if (name) titleInput.current?.focus();
+  }
+
   function detach() {
     setAttachedId(null);
     requestAnimationFrame(() => titleInput.current?.focus());
@@ -144,7 +177,7 @@ function ComposerPanel({ snapshot, rows, onOpenJob, onOpenSettings, phone, onClo
       return;
     }
     const jobTitle = title.trim() || null;
-    const target = attached ?? findJob(rows, name, jobTitle) ?? null;
+    const target = attached ?? findSamePosting(rows, name, jobTitle, link) ?? null;
     const applied = new Set(target?.applications.map((a) => a.accountId));
     const accountIds = selectedIds.filter((id) => !applied.has(id));
 
@@ -162,6 +195,7 @@ function ComposerPanel({ snapshot, rows, onOpenJob, onOpenSettings, phone, onClo
       repo.quickAdd({
         companyName: name,
         title: target ? null : jobTitle,
+        url: link,
         jobId: target?.job.id ?? null,
         accountIds,
         channelId: defaults.channelId,
@@ -301,6 +335,12 @@ function ComposerPanel({ snapshot, rows, onOpenJob, onOpenSettings, phone, onClo
                     setHighlight(-1);
                     setError(null);
                   }}
+                  onPaste={(event) => {
+                    const posting = parsePosting(event.clipboardData.getData('text'));
+                    if (!posting) return;
+                    event.preventDefault();
+                    fillFromLink(posting);
+                  }}
                   onFocus={() => setSuggesting(true)}
                   onBlur={closeSuggestions}
                   onKeyDown={onCompanyKeyDown}
@@ -339,6 +379,21 @@ function ComposerPanel({ snapshot, rows, onOpenJob, onOpenSettings, phone, onClo
                   className={field}
                 />
               </>
+            )}
+
+            {/* The link waiting to be saved; a job that already has one keeps it. */}
+            {link && !attached?.job.url && (
+              <div className="-mt-1 flex min-w-0 items-center gap-1.5 pl-1 text-[12px] text-fg-2">
+                <Link2 className="size-3.5 shrink-0" aria-label={t('composer.link')} />
+                <span className="min-w-0 truncate">{displayLink(link)}</span>
+                <IconButton
+                  label={t('composer.removeLink')}
+                  onClick={() => setLink(null)}
+                  className="-my-1.5 size-7 text-fg-3"
+                >
+                  <X className="size-3.5" />
+                </IconButton>
+              </div>
             )}
 
             <div>

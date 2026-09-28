@@ -18,7 +18,8 @@ follows Apple's Liquid Glass.
   OA" keeps its stage. A posting with no applications yet is simply saved.
 - **Logging in about five seconds.** Press `N`, type the company, `Tab` to the title, pick the accounts, press
   `Enter`. Typing a company you've applied to before offers its postings, and accounts that already applied
-  can't be picked twice. Adds and deletes can be undone.
+  can't be picked twice. Or paste the posting's link: the company fills itself in, and a link you've already
+  tracked opens its posting, ready for the next account. Adds and deletes can be undone.
 - **A list you can scan.** Grouped by day, with today's and this week's counts, active OAs, offers, status
   filters, search (`/`), and a switch to hide rejections. Every change lands on the posting's timeline.
 - **Liquid Glass.** Blur, saturation, and a specular rim in every browser, with real refraction (an SVG

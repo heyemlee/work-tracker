@@ -45,11 +45,13 @@ export interface Company {
   createdAt: IsoDateTime;
 }
 
-/** One posting. Title and notes are optional by design — only the company is required. */
+/** One posting. Title, link and notes are optional by design — only the company is required. */
 export interface Job {
   id: Id;
   companyId: Id;
   title: string | null;
+  /** The posting's page, when the owner pasted or entered it. */
+  url: string | null;
   notes: string;
   createdAt: IsoDateTime;
   updatedAt: IsoDateTime;

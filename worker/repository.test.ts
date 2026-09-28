@@ -40,6 +40,7 @@ describe('D1 repository isolation', () => {
   const input = (accountId: string): QuickAddInput => ({
     companyName: 'Northwind AI',
     title: null,
+    url: null,
     jobId: null,
     accountIds: [accountId],
     channelId: null,

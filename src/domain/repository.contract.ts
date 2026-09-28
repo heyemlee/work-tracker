@@ -27,6 +27,7 @@ export function describeRepositoryContract(name: string, create: (clock: Clock) 
       repo.quickAdd({
         companyName: 'Northwind AI',
         title: 'Software Engineer, Agents',
+        url: null,
         jobId: null,
         accountIds: [a],
         channelId: 'ch_company_site',
@@ -86,6 +87,18 @@ export function describeRepositoryContract(name: string, create: (clock: Clock) 
         expect(second.applicationIds).toHaveLength(1);
         const applications = (await repo.load()).applications.filter((app) => app.jobId === first.jobId);
         expect(applications.map((app) => app.accountId).sort()).toEqual([a, b].sort());
+      });
+
+      it('stores the link on a new job', async () => {
+        await add({ url: 'https://jobs.lever.co/northwind/1' });
+        expect((await repo.load()).jobs[0]?.url).toBe('https://jobs.lever.co/northwind/1');
+      });
+
+      it('gives a link to an attached job that has none, but never replaces one', async () => {
+        const { jobId } = await add();
+        await add({ jobId, accountIds: [b], url: 'https://jobs.lever.co/northwind/1' });
+        await add({ jobId, accountIds: [], url: 'https://jobs.lever.co/northwind/2' });
+        expect((await repo.load()).jobs[0]?.url).toBe('https://jobs.lever.co/northwind/1');
       });
 
       it('rejects accounts it does not know', async () => {
@@ -185,10 +198,14 @@ export function describeRepositoryContract(name: string, create: (clock: Clock) 
     });
 
     describe('jobs', () => {
-      it('updates title and notes', async () => {
-        const { jobId } = await add();
-        await repo.updateJob(jobId, { title: null, notes: 'Referral from Sam' });
-        expect((await repo.load()).jobs[0]).toMatchObject({ title: null, notes: 'Referral from Sam' });
+      it('updates title, link and notes', async () => {
+        const { jobId } = await add({ url: 'https://jobs.lever.co/northwind/1' });
+        await repo.updateJob(jobId, { title: null, url: null, notes: 'Referral from Sam' });
+        expect((await repo.load()).jobs[0]).toMatchObject({
+          title: null,
+          url: null,
+          notes: 'Referral from Sam',
+        });
       });
 
       it('soft-deletes a job with its applications, and restores it', async () => {

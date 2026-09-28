@@ -6,12 +6,14 @@ import { ACCOUNT_COLORS, STAGES } from '../src/domain/types';
 const id = z.string().min(1).max(64);
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected a YYYY-MM-DD date');
 const title = z.string().trim().max(200);
+const link = z.url({ protocol: /^https?$/ }).max(2048);
 const somethingToUpdate = (patch: Record<string, unknown>) =>
   Object.values(patch).some((value) => value !== undefined);
 
 export const quickAdd = z.object({
   companyName: z.string().trim().min(1).max(120),
   title: title.nullable(),
+  url: link.nullable().default(null),
   jobId: id.nullable(),
   accountIds: z.array(id).max(20),
   channelId: id.nullable(),
@@ -47,6 +49,7 @@ export const applicationPatch = z
 export const jobPatch = z
   .object({
     title: title.nullable().optional(),
+    url: link.nullable().optional(),
     notes: z.string().max(20_000).optional(),
   })
   .refine(somethingToUpdate, 'Nothing to update');
