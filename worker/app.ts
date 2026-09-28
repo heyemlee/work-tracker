@@ -6,6 +6,7 @@ import { HTTPException } from 'hono/http-exception';
 import { ConflictError, NotFoundError } from '../src/domain/errors';
 import { profileSchema } from '../src/domain/profile';
 import type { Repository } from '../src/domain/repository';
+import { base64ToBytes, resumeUploadSchema } from '../src/domain/resumes';
 import { createAuth, type Auth } from './auth';
 import { createDb, type Db } from './db';
 import { user as users } from './db/auth-schema';
@@ -75,6 +76,12 @@ const requireUser = createMiddleware<AppEnv>(async (c, next) => {
 
 const noContent = 204;
 
+/** Shown in the browser, saved under its own name: RFC 5987's `filename*`, which `encodeURIComponent` nearly is. */
+function inlineFile(name: string): string {
+  const escape = (char: string) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`;
+  return `inline; filename*=UTF-8''${encodeURIComponent(name).replace(/['()*]/g, escape)}`;
+}
+
 const api = new Hono<AppEnv>()
   .use(requireUser)
   .get('/me', (c) => c.json({ user: c.var.user }))
@@ -142,6 +149,21 @@ const api = new Hono<AppEnv>()
   .delete('/resumes/:id', async (c) => {
     await c.var.repo.deleteResume(c.req.param('id'));
     return c.body(null, noContent);
+  })
+  .put('/resumes/:id/file', zValidator('json', resumeUploadSchema), async (c) =>
+    c.json(await c.var.repo.saveResumeFile(c.req.param('id'), c.req.valid('json'))),
+  )
+  // The PDF itself, so a plain link opens it in the browser's viewer.
+  .get('/resumes/:id/file', async (c) => {
+    const id = c.req.param('id');
+    const file = await c.var.repo.loadResumeFile(id);
+    if (!file) throw new NotFoundError('Resume file', id);
+    return c.body(base64ToBytes(file.data), 200, {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': inlineFile(file.name),
+      // A replaced PDF keeps its address.
+      'Cache-Control': 'private, no-cache',
+    });
   })
 
   .post('/channels', zValidator('json', body.named), async (c) =>

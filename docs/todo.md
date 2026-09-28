@@ -26,7 +26,9 @@ One release with everything below, no MVP. Design: [autofill.md](autofill.md).
 - [x] Fill from a resume PDF: read by the extension with the owner's key, previewed, contact details only where
       empty; never work authorization, EEO or preferences.
 - [x] Options page: import and validate the profile, list what's missing.
-- [x] Options page: add resume PDFs, name each after an Outbox resume version, pick the default.
+- [x] Resumes on Outbox, in their own panel from the toolbar (decided 2026-09-28, replacing the options page's PDFs
+      and Settings' resume versions): upload, rename, open, replace, delete, fill the profile from one. PDFs in D1
+      as base64; the extension downloads the one it attaches and keeps a copy.
 
 ### Reading the page
 
@@ -116,6 +118,10 @@ One release with everything below, no MVP. Design: [autofill.md](autofill.md).
       snapshots are its only fixtures.
 - [ ] Before using the extension with production: `npm run db:migrate:remote` (migration 0003, the profile table),
       then deploy the Worker with job links, the profile API and the `bearer` plugin.
+- [ ] Apply migration 0004 (resume PDFs) with `npm run db:migrate:remote`, deploy the Worker, and reload the
+      rebuilt extension.
+- [ ] Upload each resume PDF in Outbox's resumes panel: PDFs added on the extension's options page are cleared
+      by this version.
 - [ ] Optional: Simplify's free version until the extension is installed; afterwards turn it off on Greenhouse,
       Lever and Ashby.
 - [ ] Optional: three to five STAR stories with `my-interview-prep`, to ground free-text answers.

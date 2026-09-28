@@ -13,16 +13,22 @@ import { findCompany } from '../domain/companies';
 import { ConflictError, NotFoundError } from '../domain/errors';
 import type { SavedProfile } from '../domain/profile';
 import type { Repository } from '../domain/repository';
+import { base64Size } from '../domain/resumes';
 import type { Application, Id, Job } from '../domain/types';
 import { createSampleData, type SampleData } from '../domain/sampleData';
 
 const STORAGE_KEY = 'outbox.sample.v4';
 
-/** Everything the local repository keeps: the data, every timeline, which jobs are soft-deleted, the profile. */
+/**
+ * Everything the local repository keeps: the data, every timeline, which jobs are soft-deleted, the profile, the
+ * resume PDFs.
+ */
 interface LocalState extends SampleData {
   deletedJobIds: Id[];
   /** Missing in state saved before profiles existed. */
   profile?: SavedProfile | null;
+  /** Each resume's PDF as base64, by resume id. Missing in state saved before resumes had files. */
+  resumeFiles?: Record<Id, string>;
 }
 
 export interface LocalRepository extends Repository {
@@ -105,7 +111,8 @@ export function createLocalRepository({
     async load() {
       return {
         accounts: state.accounts,
-        resumes: state.resumes,
+        // Resumes saved before they had files have no `file`.
+        resumes: state.resumes.map((r) => ({ ...r, file: r.file ?? null })),
         channels: state.channels,
         companies: state.companies,
         jobs: state.jobs.filter((j) => !isDeleted(j.id)),
@@ -246,17 +253,37 @@ export function createLocalRepository({
         commit({ ...state, resumes: state.resumes.map((r) => (r.id === id ? { ...r, name } : r)) });
         return id;
       }
-      const resume = { id: clock.newId('res'), name, createdAt: clock.now() };
+      const resume = { id: clock.newId('res'), name, createdAt: clock.now(), file: null };
       commit({ ...state, resumes: [...state.resumes, resume] });
       return resume.id;
     },
 
     async deleteResume(id) {
+      const resumeFiles = { ...state.resumeFiles };
+      delete resumeFiles[id];
       commit({
         ...state,
         resumes: state.resumes.filter((r) => r.id !== id),
         applications: state.applications.map((a) => (a.resumeId === id ? { ...a, resumeId: null } : a)),
+        resumeFiles,
       });
+    },
+
+    async saveResumeFile(id, { name, data }) {
+      if (!state.resumes.some((r) => r.id === id)) throw new NotFoundError('Resume', id);
+      const file = { name, size: base64Size(data), uploadedAt: clock.now() };
+      commit({
+        ...state,
+        resumes: state.resumes.map((r) => (r.id === id ? { ...r, file } : r)),
+        resumeFiles: { ...state.resumeFiles, [id]: data },
+      });
+      return file;
+    },
+
+    async loadResumeFile(id) {
+      const name = state.resumes.find((r) => r.id === id)?.file?.name;
+      const data = state.resumeFiles?.[id];
+      return name && data ? { name, data } : null;
     },
 
     async saveChannel({ id, name }) {

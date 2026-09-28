@@ -11,10 +11,9 @@ const en = {
   editOnOutbox: 'Edit on Outbox',
   missing: 'Still empty:',
   resumes: 'Resumes',
-  resumesHelp: 'PDFs to attach. Link each to the Outbox resume version it stands for, so logs record it.',
-  addResume: 'Add PDF',
-  outboxVersion: 'Outbox version',
-  none: 'None',
+  resumesHelp:
+    'Uploaded on Outbox, from the resumes button in its toolbar. This browser keeps a copy of each one it attaches.',
+  noResumes: 'Outbox has no resume PDFs yet.',
   outbox: 'Outbox',
   outboxHelp: 'Where Outbox runs. Sign in there in this browser.',
   check: 'Check',
@@ -66,7 +65,7 @@ const en = {
   exportAll: 'Export everything (without the API key)',
   deleteAll: 'Delete everything',
   confirmDelete:
-    'Delete the profile, resumes, remembered answers, snapshots and the API key from this browser?',
+    'Delete the profile, resume copies, remembered answers, snapshots and the API key from this browser?',
   fields: '{n} fields',
 };
 
@@ -84,10 +83,8 @@ const zh: Record<Key, string> = {
   editOnOutbox: '去 Outbox 编辑',
   missing: '还空着：',
   resumes: '简历',
-  resumesHelp: '要上传的 PDF。每份对应 Outbox 里的一个简历版本，记录时会一起写进去。',
-  addResume: '添加 PDF',
-  outboxVersion: 'Outbox 版本',
-  none: '无',
+  resumesHelp: '在 Outbox 上传，入口是工具栏的简历按钮。扩展会在本机保留附过的每份 PDF 的副本。',
+  noResumes: 'Outbox 上还没有简历 PDF。',
   outbox: 'Outbox',
   outboxHelp: 'Outbox 的地址。请在这个浏览器里登录 Outbox。',
   check: '检查',
@@ -135,7 +132,7 @@ const zh: Record<Key, string> = {
   data: '数据',
   exportAll: '导出全部（不含 API key）',
   deleteAll: '清空全部',
-  confirmDelete: '要从这个浏览器删除档案、简历、记住的回答、快照和 API key 吗？',
+  confirmDelete: '要从这个浏览器删除档案、简历副本、记住的回答、快照和 API key 吗？',
   fields: '{n} 个字段',
 };
 

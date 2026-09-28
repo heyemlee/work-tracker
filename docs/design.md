@@ -31,7 +31,7 @@ Company 1─n Job 1─n Application 1─n Event
 | Job           | company\*, title, url, notes                                          | One posting. Title, link and notes are optional                                  |
 | Application   | job\*, account\*, channel, resume, stage, rejected, appliedAt, source | At most one per (job, account)                                                   |
 | Account       | label, email, color                                                   | Never stores passwords — use a password manager                                  |
-| ResumeVersion | name                                                                  | Names only (e.g. `SDE-v3`), no files                                             |
+| ResumeVersion | name, file                                                            | A name (e.g. `SDE-v3`) and its PDF, up to 1.4 MB; the file is loaded on its own  |
 | Channel       | name, builtin                                                         | Built-ins: Company site, LinkedIn, Referral, Recruiter, Other; user can add more |
 | Event         | job, application, type, from, to, at, actor                           | Append-only timeline written on every change; actor is `user` or `agent`         |
 
@@ -60,7 +60,10 @@ rejected, it displays the furthest rejected one, dimmed. Filters use the rollup.
   a link that's already tracked attaches to its job, so applying from another account is paste, pick, `Enter`.
 - **Detail** — a glass side panel on desktop, a bottom sheet on mobile: per-account stage control, rejected
   toggle, apply with another account, the posting's link, notes, timeline.
-- **Settings** — accounts (an email address and a color each), resume versions, channels, language, CSV export.
+- **Settings** — accounts (an email address and a color each), channels, language, CSV export.
+- **Resumes** — their own panel from the toolbar's document button: upload a PDF (or drop it), and it becomes a
+  version named after the file. Each can be renamed, opened, replaced, deleted, or read into the autofill profile.
+  The extension attaches these PDFs, so each version is uploaded once, here.
 - **Autofill profile** — its own panel from the toolbar's profile button (where a language toggle used to be); see
   [autofill.md](autofill.md).
 - English (default) and Simplified Chinese. Installable as a PWA.

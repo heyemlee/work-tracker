@@ -4,7 +4,7 @@ import type { WxtStorageItem } from 'wxt/utils/storage';
 import { checkKey, listOpenAIModels } from '../../src/background/ai';
 import { flushQueue, loadSnapshot, OutboxSignedOut, syncProfile } from '../../src/background/outbox';
 import { missingItems } from '../../src/profile/profile';
-import { addResume, removeResume, updateResume } from '../../src/resumes';
+import { clearResumeCopies } from '../../src/resumes';
 import {
   apiKeyItem,
   DEFAULT_SETTINGS,
@@ -15,7 +15,6 @@ import {
   pendingLogsItem,
   profileItem,
   profileSourceItem,
-  resumesItem,
   settingsItem,
   snapshotsItem,
   usageItem,
@@ -116,54 +115,21 @@ function ProfileSection({ s, settings }: { s: Strings; settings: Settings }) {
   );
 }
 
+/** The resumes on Outbox the card can attach. They're uploaded there; this page only lists them. */
 function ResumesSection({ s, snapshot }: { s: Strings; snapshot: Snapshot | null }) {
-  const resumes = useItem(resumesItem) ?? [];
+  const resumes = snapshot?.resumes.filter((resume) => resume.file) ?? [];
   return (
     <Section title={s('resumes')} help={s('resumesHelp')}>
-      {resumes.map((resume) => (
-        <div key={resume.id} className="flex items-center gap-3 text-[13px]">
-          <span className="min-w-0 flex-1 truncate">
-            {resume.fileName} <span className="text-[#8a8a8e]">· {Math.round(resume.size / 1024)} KB</span>
-          </span>
-          <label className="flex items-center gap-2 text-[12px] text-[#6e6e73]">
-            {s('outboxVersion')}
-            <select
-              className="h-8 rounded-lg border border-black/10 bg-transparent px-2 text-[13px] dark:border-white/15"
-              value={resume.outboxResumeId ?? ''}
-              onChange={(event) => {
-                const version = snapshot?.resumes.find((item) => item.id === event.target.value);
-                void updateResume(resume.id, {
-                  outboxResumeId: version?.id ?? null,
-                  label: version?.name ?? resume.fileName,
-                });
-              }}
-            >
-              <option value="">{s('none')}</option>
-              {snapshot?.resumes.map((version) => (
-                <option key={version.id} value={version.id}>
-                  {version.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button className={button} onClick={() => void removeResume(resume.id)}>
-            {s('delete')}
-          </button>
-        </div>
-      ))}
-      <label className={`${primary} inline-flex cursor-pointer items-center`}>
-        {s('addResume')}
-        <input
-          type="file"
-          accept="application/pdf,.pdf"
-          className="hidden"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) void addResume(file, file.name.replace(/\.pdf$/i, ''), null);
-            event.target.value = '';
-          }}
-        />
-      </label>
+      {snapshot &&
+        (resumes.length ? (
+          resumes.map((resume) => (
+            <p key={resume.id} className="text-[13px]">
+              <strong>{resume.name}</strong> <span className="text-[#8a8a8e]">· {resume.file?.name}</span>
+            </p>
+          ))
+        ) : (
+          <p className="text-[13px] text-[#6e6e73]">{s('noResumes')}</p>
+        ))}
     </Section>
   );
 }
@@ -482,13 +448,12 @@ function DataSection({ s }: { s: Strings }) {
       settings: await settingsItem.getValue(),
       memory: await memoryItem.getValue(),
       finals: await finalsItem.getValue(),
-      resumes: await resumesItem.getValue(),
       snapshots: await snapshotsItem.getValue(),
       usage: await usageItem.getValue(),
     });
   const deleteAll = async () => {
     if (!confirm(s('confirmDelete'))) return;
-    for (const resume of await resumesItem.getValue()) await removeResume(resume.id);
+    await clearResumeCopies();
     await Promise.all([
       profileItem.removeValue(),
       profileSourceItem.removeValue(),

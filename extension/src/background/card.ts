@@ -13,6 +13,7 @@ import { yearsOfExperience } from '../profile/profile';
 import type { Profile } from '../profile/schema';
 import type { RuleContext } from '../rules/context';
 import { remember } from '../rules/memory';
+import { resumeChoices } from '../resumes';
 import {
   aiKey,
   finalsItem,
@@ -20,7 +21,6 @@ import {
   lastUsedItem,
   memoryItem,
   profileItem,
-  resumesItem,
   snapshotsItem,
   type FormSnapshot,
 } from '../storage';
@@ -123,7 +123,7 @@ export async function cardState(session: TabSession, outbox?: OutboxState): Prom
   const { snapshot, status } = outbox ?? (await outboxState());
   const [profile, resumes, settings, key] = await Promise.all([
     profileItem.getValue(),
-    resumesItem.getValue(),
+    resumeChoices(snapshot),
     getSettings(),
     aiKey(),
   ]);
@@ -146,10 +146,7 @@ export async function cardState(session: TabSession, outbox?: OutboxState): Prom
     profileLoaded: profile !== null,
     accounts,
     accountId: session.accountId,
-    resumes: resumes.map((resume) => ({
-      id: resume.id,
-      label: snapshot?.resumes.find((version) => version.id === resume.outboxResumeId)?.name ?? resume.label,
-    })),
+    resumes,
     resumeId: session.resumeId,
     match: session.match,
     duplicateHint:
@@ -184,15 +181,15 @@ export async function readTab(tabId: number, url: string): Promise<CardState> {
   const previous = await getSession(tabId);
   // The profile is edited on Outbox: refresh the local copy alongside the page scan. Offline, the copy stands.
   const synced = syncProfile().catch(() => null);
-  const [scans, outbox, profile, settings, last, resumes, h1b] = await Promise.all([
+  const [scans, outbox, profile, settings, last, h1b] = await Promise.all([
     scanFrames(tabId, null),
     outboxState(true),
     synced.then(() => profileItem.getValue()),
     getSettings(),
     lastUsedItem.getValue(),
-    resumesItem.getValue(),
     loadH1b(),
   ]);
+  const resumes = await resumeChoices(outbox.snapshot);
   const found = merge(scans, previous);
   const job = matchedJob(outbox.snapshot, found);
   const applied = new Set(job?.applications.map((application) => application.accountId) ?? []);
@@ -210,9 +207,12 @@ export async function readTab(tabId: number, url: string): Promise<CardState> {
       : null) ??
     accounts.find((account) => !applied.has(account.id))?.id ??
     null;
-  const resumeId =
-    previous?.resumeId ??
-    (resumes.some((resume) => resume.id === last.resumeId) ? last.resumeId : (resumes[0]?.id ?? null));
+  const offered = (id: string | null | undefined) => resumes.some((resume) => resume.id === id);
+  const resumeId = offered(previous?.resumeId)
+    ? (previous?.resumeId ?? null)
+    : offered(last.resumeId)
+      ? last.resumeId
+      : (resumes[0]?.id ?? null);
   const match = found.posting
     ? matchReport({
         posting: found.posting,
@@ -489,7 +489,11 @@ export async function logApplication(tabId: number, url: string, manual: boolean
     session = await updateSession(tabId, url, () => ({ error: 'alreadyLogged' }));
     return cardState(session, outbox);
   }
-  const resumes = await resumesItem.getValue();
+  // A version deleted on Outbox since it was picked would make the log fail; offline, the pick stands.
+  const resumeId =
+    !outbox.snapshot || outbox.snapshot.resumes.some((resume) => resume.id === session.resumeId)
+      ? session.resumeId
+      : null;
   const input: QuickAddInput = {
     companyName: posting.company,
     title: job ? null : posting.title,
@@ -497,7 +501,7 @@ export async function logApplication(tabId: number, url: string, manual: boolean
     jobId: job?.job.id ?? null,
     accountIds: session.accountId ? [session.accountId] : [],
     channelId: session.ats === 'linkedin' ? 'ch_linkedin' : 'ch_company_site',
-    resumeId: resumes.find((resume) => resume.id === session.resumeId)?.outboxResumeId ?? null,
+    resumeId,
     appliedAt: today(),
   };
   try {

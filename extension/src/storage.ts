@@ -35,17 +35,6 @@ export const DEFAULT_SETTINGS: Settings = {
   aiEnabled: true,
 };
 
-/** A resume PDF kept on this machine (the file itself is in IndexedDB), tied to an Outbox resume version. */
-export interface ResumeMeta {
-  id: string;
-  fileName: string;
-  size: number;
-  /** The Outbox resume version it stands for; the name shown on the card comes from there. */
-  outboxResumeId: string | null;
-  label: string;
-  addedAt: string;
-}
-
 /** An AI draft the owner edited before submitting: an example of their voice for later drafts. */
 export interface FinalAnswer {
   question: string;
@@ -103,9 +92,9 @@ export const memoryItem = storage.defineItem<MemoryEntry[]>('local:memory', { fa
 export const finalsItem = storage.defineItem<FinalAnswer[]>('local:finals', { fallback: [] });
 export const usageItem = storage.defineItem<UsageDay[]>('local:usage', { fallback: [] });
 export const snapshotsItem = storage.defineItem<FormSnapshot[]>('local:snapshots', { fallback: [] });
-export const resumesItem = storage.defineItem<ResumeMeta[]>('local:resumes', { fallback: [] });
 export const outboxTokenItem = storage.defineItem<string | null>('local:outboxToken', { fallback: null });
 export const pendingLogsItem = storage.defineItem<PendingLog[]>('local:pendingLogs', { fallback: [] });
+/** The account and the Outbox resume version picked last. */
 export const lastUsedItem = storage.defineItem<{ accountId: string | null; resumeId: string | null }>(
   'local:lastUsed',
   {

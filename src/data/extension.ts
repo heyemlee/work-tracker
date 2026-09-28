@@ -10,6 +10,7 @@ import {
   type ParseError,
 } from '../domain/bridge';
 import { resumeFactsSchema, type ResumeFacts } from '../domain/profile';
+import { bytesToBase64 } from '../domain/resumes';
 import { pdfText } from './pdfText';
 
 /** Whether the autofill extension runs on this page, and whether it can read a resume. */
@@ -57,17 +58,9 @@ export function useExtension(): ExtensionState {
   return state;
 }
 
-async function toBase64(file: Blob): Promise<string> {
-  const bytes = new Uint8Array(await file.arrayBuffer());
-  let binary = '';
-  for (let at = 0; at < bytes.length; at += 0x8000)
-    binary += String.fromCharCode(...bytes.subarray(at, at + 0x8000));
-  return btoa(binary);
-}
-
 /** Has the extension read a resume PDF with the owner's key. Takes up to a minute or so. */
 export async function readResumeWithExtension(file: File): Promise<ResumeFacts> {
-  const pdf = await toBase64(file);
+  const pdf = bytesToBase64(new Uint8Array(await file.arrayBuffer()));
   if (pdf.length > MAX_RESUME_BASE64) throw new ExtensionError('too-large');
   // Not every provider passes a PDF on to its model; the text reaches any of them.
   const text = await pdfText(file).catch(() => '');

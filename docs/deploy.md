@@ -76,11 +76,12 @@ The extension is loaded unpacked in Chrome; it isn't published to the Chrome Web
 
 2. In Chrome, open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and pick
    `extension/.output/chrome-mv3`. After each rebuild, press the reload arrow on the extension's card.
-3. On Outbox, open the profile panel (the card icon in the toolbar). Start from your resume PDF with **Fill from
-   resume** (this needs step 6's API key), or import `~/Desktop/job-search/autofill-profile.json` once, then fill
-   whatever **Still empty** lists and save. The extension fetches the profile before each fill; its options page
+3. On Outbox, open the resumes panel (the document icon in the toolbar) and upload each resume PDF you send; each
+   becomes a resume version. The extension downloads the one picked on its card.
+4. Press **Fill profile** on a resume (this needs step 6's API key), or import
+   `~/Desktop/job-search/autofill-profile.json` once from the profile panel (the card icon), then fill whatever
+   **Still empty** lists and save. The extension fetches the profile before each fill; its options page
    (**Details → Extension options**) shows the copy it holds and a **Sync now** button.
-4. Under **Resumes**, add the PDFs and link each to the Outbox resume version it stands for.
 5. Under **Outbox**, keep the address (`https://tracker.haoyang.us`, or `http://localhost:5180` while
    developing), sign in to Outbox in the same Chrome profile, and press **Check**. Logging uses Outbox's session
    cookie. If Chrome withholds it, the extension borrows the session of an open Outbox tab as a bearer token,

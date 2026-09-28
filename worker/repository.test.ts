@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { NotFoundError } from '../src/domain/errors';
 import type { QuickAddInput } from '../src/domain/repository';
+import { bytesToBase64, MAX_RESUME_BYTES, resumeUploadSchema } from '../src/domain/resumes';
 import { describeRepositoryContract } from '../src/domain/repository.contract';
 import type { Db } from './db';
 import { user } from './db/auth-schema';
@@ -67,11 +68,45 @@ describe('D1 repository isolation', () => {
     expect((await alice.load()).applications.map((a) => a.stage)).toEqual(['applied']);
   });
 
+  it('never shows or replaces another user’s resume PDF', async () => {
+    const alice = createD1Repository(db, await newUser());
+    const bob = createD1Repository(db, await newUser());
+    const resumeId = await alice.saveResume({ name: 'SDE-v3' });
+    const pdf = { name: 'Alice.pdf', data: 'JVBERi0xLjcgb25l' };
+    await alice.saveResumeFile(resumeId, pdf);
+
+    expect(await bob.loadResumeFile(resumeId)).toBeNull();
+    await expect(bob.saveResumeFile(resumeId, { ...pdf, name: 'Bob.pdf' })).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
+    expect(await alice.loadResumeFile(resumeId)).toEqual(pdf);
+  });
+
   it('keeps company names unique per user, not globally', async () => {
     const alice = createD1Repository(db, await newUser());
     const bob = createD1Repository(db, await newUser());
     await alice.quickAdd(input(await alice.saveAccount({ label: 'A', email: '', color: 'blue' })));
     await bob.quickAdd(input(await bob.saveAccount({ label: 'B', email: '', color: 'teal' })));
     expect((await bob.load()).companies.map((c) => c.name)).toEqual(['Northwind AI']);
+  });
+});
+
+describe('D1 resume files', () => {
+  it('stores a PDF as large as uploads allow', async () => {
+    const repo = createD1Repository(db, await newUser());
+    const bytes = new Uint8Array(MAX_RESUME_BYTES).fill(32);
+    bytes.set(new TextEncoder().encode('%PDF-1.7'));
+    const pdf = resumeUploadSchema.parse({ name: 'Large.pdf', data: bytesToBase64(bytes) });
+    const resumeId = await repo.saveResume({ name: 'Large' });
+
+    expect(await repo.saveResumeFile(resumeId, pdf)).toMatchObject({ size: MAX_RESUME_BYTES });
+    expect((await repo.loadResumeFile(resumeId))?.data).toBe(pdf.data);
+  });
+
+  it('turns away anything else, or anything larger', () => {
+    const tooLarge = bytesToBase64(new Uint8Array(MAX_RESUME_BYTES + 3).fill(32));
+    expect(resumeUploadSchema.safeParse({ name: 'a.pdf', data: `JVBERi0x${tooLarge}` }).success).toBe(false);
+    expect(resumeUploadSchema.safeParse({ name: 'a.pdf', data: 'aGVsbG8h' }).success).toBe(false);
+    expect(resumeUploadSchema.safeParse({ name: '', data: 'JVBERi0xLjcgb25l' }).success).toBe(false);
   });
 });

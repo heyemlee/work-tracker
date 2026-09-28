@@ -10,7 +10,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 export const fixture = (path: string) => readFileSync(resolve(here, '../test/fixtures', path), 'utf8');
 
-/** What Outbox answers: one account, one resume version, nothing applied yet. */
+/** The resume PDF Outbox holds for its one version. */
+const RESUME_PDF = '%PDF-1.4\n% Outbox Autofill test resume\n';
+
+/** What Outbox answers: one account, one resume version with its PDF, nothing applied yet. */
 export const SNAPSHOT = {
   accounts: [
     {
@@ -21,7 +24,14 @@ export const SNAPSHOT = {
       createdAt: '2026-09-01T00:00:00.000Z',
     },
   ],
-  resumes: [{ id: 'res-1', name: 'SDE-v3', createdAt: '2026-09-01T00:00:00.000Z' }],
+  resumes: [
+    {
+      id: 'res-1',
+      name: 'SDE-v3',
+      createdAt: '2026-09-01T00:00:00.000Z',
+      file: { name: 'Alex_Chen_Resume.pdf', size: RESUME_PDF.length, uploadedAt: '2026-09-28T12:00:00.000Z' },
+    },
+  ],
   channels: [],
   companies: [],
   jobs: [],
@@ -43,6 +53,14 @@ export const test = base.extend<{ outbox: OutboxMock; context: BrowserContext; w
         response.end(body === undefined ? '' : JSON.stringify(body));
       };
       if (request.method === 'GET' && request.url === '/api/snapshot') return send(200, SNAPSHOT);
+      // Resume PDFs live on Outbox; the extension downloads the one it attaches.
+      if (request.method === 'GET' && request.url === '/api/resumes/res-1/file') {
+        response.writeHead(200, {
+          'content-type': 'application/pdf',
+          'content-disposition': "inline; filename*=UTF-8''Alex_Chen_Resume.pdf",
+        });
+        return response.end(RESUME_PDF);
+      }
       // The profile lives on Outbox; the extension fetches it before filling.
       if (request.method === 'GET' && request.url === '/api/profile')
         return send(200, { saved: { profile: makeProfile(), updatedAt: '2026-09-27T12:00:00.000Z' } });
@@ -87,11 +105,10 @@ export const test = base.extend<{ outbox: OutboxMock; context: BrowserContext; w
   },
 });
 
-/** Puts settings and a resume PDF into the extension, as the options page would. The profile comes from Outbox. */
+/** Puts settings into the extension, as the options page would. The profile and the resume come from Outbox. */
 export async function seed(worker: Worker, outboxUrl: string): Promise<void> {
   await worker.evaluate(
     async ({ outboxUrl }) => {
-      const pdf = '%PDF-1.4\n% Outbox Autofill test resume\n';
       const { chrome } = globalThis as unknown as {
         chrome: { storage: { local: { set(items: object): Promise<void> } } };
       };
@@ -103,30 +120,7 @@ export async function seed(worker: Worker, outboxUrl: string): Promise<void> {
           language: 'en',
           aiEnabled: false,
         },
-        resumes: [
-          {
-            id: 'resume-1',
-            fileName: 'Alex_Chen_Resume.pdf',
-            size: pdf.length,
-            outboxResumeId: 'res-1',
-            label: 'SDE-v3',
-            addedAt: new Date().toISOString(),
-          },
-        ],
       });
-      const db = await new Promise<IDBDatabase>((done, fail) => {
-        const request = indexedDB.open('outbox-autofill', 1);
-        request.onupgradeneeded = () => request.result.createObjectStore('resumes');
-        request.onsuccess = () => done(request.result);
-        request.onerror = () => fail(request.error);
-      });
-      await new Promise<void>((done, fail) => {
-        const transaction = db.transaction('resumes', 'readwrite');
-        transaction.objectStore('resumes').put(new Blob([pdf], { type: 'application/pdf' }), 'resume-1');
-        transaction.oncomplete = () => done();
-        transaction.onerror = () => fail(transaction.error);
-      });
-      db.close();
     },
     { outboxUrl },
   );

@@ -32,9 +32,24 @@ export const resumes = sqliteTable(
     userId: ownerId(),
     name: text('name').notNull(),
     createdAt: text('created_at').notNull(),
+    // The PDF's details, all null until one is uploaded; its bytes are in resume_files.
+    fileName: text('file_name'),
+    fileSize: integer('file_size'),
+    fileUploadedAt: text('file_uploaded_at'),
   },
   (table) => [index('resumes_user_idx').on(table.userId)],
 );
+
+/**
+ * A resume's PDF as base64, apart from its version so the snapshot never reads it. Owned through the resume: the
+ * repository joins `resumes` to check the user.
+ */
+export const resumeFiles = sqliteTable('resume_files', {
+  resumeId: text('resume_id')
+    .primaryKey()
+    .references(() => resumes.id, { onDelete: 'cascade' }),
+  data: text('data').notNull(),
+});
 
 /** User-defined channels only; the built-in ones live in code. */
 export const channels = sqliteTable(

@@ -22,7 +22,7 @@ export class OutboxUnreachable extends Error {
  * Outbox, so Chrome sends it); if Outbox still answers 401, the session token captured from an open Outbox tab is
  * sent as a bearer token instead.
  */
-async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
+async function send(method: 'GET' | 'POST', path: string, body?: unknown): Promise<Response> {
   const { outboxUrl } = await getSettings();
   const url = `${outboxUrl.replace(/\/$/, '')}/api${path}`;
   const init = (auth: 'cookie' | string): RequestInit => ({
@@ -46,6 +46,11 @@ async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Pr
   }
   if (response.status === 401) throw new OutboxSignedOut();
   if (!response.ok) throw new OutboxUnreachable(`${response.status} ${await response.text()}`);
+  return response;
+}
+
+async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
+  const response = await send(method, path, body);
   return (response.status === 204 ? undefined : await response.json()) as T;
 }
 
@@ -57,6 +62,12 @@ export async function loadSnapshot(force = false): Promise<Snapshot> {
   const snapshot = await call<Snapshot>('GET', '/snapshot');
   cached = { at: Date.now(), snapshot };
   return snapshot;
+}
+
+/** A resume version's PDF, as the owner uploaded it on Outbox. */
+export async function downloadResume(id: string): Promise<Blob> {
+  const response = await send('GET', `/resumes/${encodeURIComponent(id)}/file`);
+  return response.blob();
 }
 
 export async function quickAdd(input: QuickAddInput): Promise<QuickAddResult> {

@@ -1,5 +1,6 @@
 import type { Profile, SavedProfile } from './profile';
-import type { AccountColor, Id, IsoDate, Snapshot, Stage, TimelineEvent } from './types';
+import type { ResumeUpload } from './resumes';
+import type { AccountColor, Id, IsoDate, ResumeFile, Snapshot, Stage, TimelineEvent } from './types';
 
 export interface QuickAddInput {
   companyName: string;
@@ -82,7 +83,12 @@ export interface Repository {
   /** Rejects with a ConflictError while the account has applications — they must keep pointing at an identity. */
   deleteAccount(id: Id): Promise<void>;
   saveResume(input: NameInput): Promise<Id>;
+  /** Deletes the version and its PDF; applications that used it keep their row without a resume. */
   deleteResume(id: Id): Promise<void>;
+  /** Stores a resume version's PDF, replacing the one before. Callers validate it first. */
+  saveResumeFile(id: Id, file: ResumeUpload): Promise<ResumeFile>;
+  /** A resume version's PDF; null when the version has none, or isn't there. */
+  loadResumeFile(id: Id): Promise<ResumeUpload | null>;
   saveChannel(input: NameInput): Promise<Id>;
   deleteChannel(id: Id): Promise<void>;
 

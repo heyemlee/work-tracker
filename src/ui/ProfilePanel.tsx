@@ -2,14 +2,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { ChevronRight, FileText, LoaderCircle, Upload, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Dialog } from 'radix-ui';
-import { useRef, useState, type ReactNode } from 'react';
+import { Dialog, Popover } from 'radix-ui';
+import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react';
 import {
   ExtensionError,
   readResumeWithExtension,
   useExtension,
   type ExtensionState,
 } from '../data/extension';
+import { formatSize, loadResumePdf, resumeProblem, uploadResume } from '../data/resumes';
 import { PROFILE_KEY, useProfile, useRepository } from '../data/store';
 import {
   applyResume,
@@ -24,6 +25,8 @@ import {
   type ResumeParts,
   type SavedProfile,
 } from '../domain/profile';
+import { versionName } from '../domain/resumes';
+import type { Id, ResumeVersion } from '../domain/types';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useI18n } from '../i18n/context';
 import type { MessageKey } from '../i18n/messages';
@@ -38,10 +41,14 @@ type Translate = (key: MessageKey, vars?: Record<string, string | number>) => st
 interface ProfilePanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** The stored resume versions, to read one of them into the profile. */
+  resumes: ResumeVersion[];
+  /** A stored resume to read as soon as the panel opens. */
+  readFirst: Id | null;
 }
 
 /** The autofill profile, in its own panel opened from the toolbar. Edited as a draft and saved as a whole. */
-export function ProfilePanel({ open, onOpenChange }: ProfilePanelProps) {
+export function ProfilePanel({ open, onOpenChange, resumes, readFirst }: ProfilePanelProps) {
   const { t } = useI18n();
   const dirty = useRef(false);
   const change = (next: boolean) => {
@@ -73,6 +80,8 @@ export function ProfilePanel({ open, onOpenChange }: ProfilePanelProps) {
                   transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
                 >
                   <PanelBody
+                    resumes={resumes}
+                    readFirst={readFirst}
                     onDirty={(value) => {
                       dirty.current = value;
                     }}
@@ -88,7 +97,14 @@ export function ProfilePanel({ open, onOpenChange }: ProfilePanelProps) {
   );
 }
 
-function PanelBody({ onDirty, onClose }: { onDirty: (dirty: boolean) => void; onClose: () => void }) {
+interface EditorProps {
+  resumes: ResumeVersion[];
+  readFirst: Id | null;
+  onDirty: (dirty: boolean) => void;
+  onClose: () => void;
+}
+
+function PanelBody(props: EditorProps) {
   const paneRef = useRef<HTMLDivElement>(null);
   const glass = useLiquidGlass(paneRef, { radius: 28, bevel: 18 });
   const { data, isPending } = useProfile();
@@ -100,9 +116,7 @@ function PanelBody({ onDirty, onClose }: { onDirty: (dirty: boolean) => void; on
     >
       {glass.filter}
       {/* A save replaces the stored profile; the editor restarts from it. */}
-      {!isPending && (
-        <Editor key={data?.updatedAt ?? 'new'} saved={data ?? null} onDirty={onDirty} onClose={onClose} />
-      )}
+      {!isPending && <Editor key={data?.updatedAt ?? 'new'} saved={data ?? null} {...props} />}
     </div>
   );
 }
@@ -120,13 +134,11 @@ function extensionText(t: Translate, reason: ExtensionState | ExtensionError): s
 
 function Editor({
   saved,
+  resumes,
+  readFirst,
   onDirty,
   onClose,
-}: {
-  saved: SavedProfile | null;
-  onDirty: (dirty: boolean) => void;
-  onClose: () => void;
-}) {
+}: EditorProps & { saved: SavedProfile | null }) {
   const { t, locale } = useI18n();
   const run = useRepository();
   const queryClient = useQueryClient();
@@ -189,15 +201,6 @@ function Editor({
     update(() => parsed.profile);
   };
 
-  const pickResume = () => {
-    setNotice(null);
-    if (extension !== 'ready') {
-      setNotice(extensionText(t, extension));
-      return;
-    }
-    resumeRef.current?.click();
-  };
-
   const readResume = async (file: File) => {
     setReading(true);
     setErrors([]);
@@ -210,6 +213,46 @@ function Editor({
       setReading(false);
     }
   };
+
+  /** Whether a resume can be read now; says why not when it can't. */
+  const canRead = () => {
+    setNotice(null);
+    if (extension === 'ready') return true;
+    setNotice(extensionText(t, extension));
+    return false;
+  };
+
+  const readStored = async (id: Id) => {
+    setReading(true);
+    const file = await run((repo) => loadResumePdf(repo, id));
+    if (file) await readResume(file);
+    else setReading(false);
+  };
+
+  // A new PDF becomes a resume version too, so the extension can attach it.
+  const uploadAndRead = async (file: File) => {
+    const problem = await resumeProblem(file);
+    if (problem) {
+      setNotice(t(`resumes.${problem}`, { file: file.name, size: formatSize(file.size) }));
+      return;
+    }
+    setReading(true);
+    const id = await run((repo) => uploadResume(repo, file));
+    if (!id) return setReading(false);
+    showToast({ message: t('resumes.added', { name: versionName(file.name) }) });
+    await readResume(file);
+  };
+
+  // Opened from the resumes panel: read that resume once the extension has answered.
+  const started = useRef(false);
+  const readFirstNow = useEffectEvent((id: Id) => {
+    if (canRead()) void readStored(id);
+  });
+  useEffect(() => {
+    if (!readFirst || started.current || extension === 'checking') return;
+    started.current = true;
+    readFirstNow(readFirst);
+  }, [readFirst, extension]);
 
   const jump = (section: ProfileSection) => {
     const target = sectionRefs.current[section];
@@ -265,7 +308,7 @@ function Editor({
           onChange={(event) => {
             const file = event.target.files?.[0];
             event.target.value = '';
-            if (file) void readResume(file);
+            if (file) void uploadAndRead(file);
           }}
         />
         <input
@@ -279,10 +322,18 @@ function Editor({
             if (file) void importJson(file);
           }}
         />
-        <Button variant="ghost" onClick={pickResume} disabled={reading} title={t('profile.fromResume')}>
+        <ResumeButton
+          variant="ghost"
+          resumes={resumes}
+          disabled={reading}
+          title={t('profile.fromResume')}
+          canRead={canRead}
+          onRead={(id) => void readStored(id)}
+          onUpload={() => resumeRef.current?.click()}
+        >
           {resumeIcon}
           <span className="max-sm:hidden">{reading ? t('profile.reading') : t('profile.fromResume')}</span>
-        </Button>
+        </ResumeButton>
         <Button variant="ghost" onClick={() => jsonRef.current?.click()} title={t('profile.import')}>
           <Upload className="size-3.5" aria-hidden="true" />
           <span className="max-sm:hidden">{t('profile.import')}</span>
@@ -333,13 +384,24 @@ function Editor({
               <p className="text-[15px] font-semibold">{t('profile.startTitle')}</p>
               <p className="mt-1 text-[13px] text-fg-2">{t('profile.startBody')}</p>
               <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
-                <Button variant="primary" onClick={pickResume} disabled={reading}>
+                <ResumeButton
+                  variant="primary"
+                  resumes={resumes}
+                  disabled={reading}
+                  canRead={canRead}
+                  onRead={(id) => void readStored(id)}
+                  onUpload={() => resumeRef.current?.click()}
+                >
                   {resumeIcon}
-                  {reading ? t('profile.reading') : t('profile.startUpload')}
-                </Button>
+                  {reading
+                    ? t('profile.reading')
+                    : resumes.some((resume) => resume.file)
+                      ? t('profile.startPick')
+                      : t('profile.startUpload')}
+                </ResumeButton>
                 <span className="text-[12px] text-fg-3">{t('profile.startOr')}</span>
               </div>
-              {(extension === 'missing' || extension === 'no-key' || extension === 'ai-off') && (
+              {!notice && (extension === 'missing' || extension === 'no-key' || extension === 'ai-off') && (
                 <p className="mt-2 text-[12px] text-fg-3">{extensionText(t, extension)}</p>
               )}
             </div>
@@ -451,6 +513,88 @@ function Block({
       </summary>
       <div className="space-y-2 px-3.5 pb-3.5">{children}</div>
     </details>
+  );
+}
+
+/**
+ * Reads a resume: picks one of the stored ones from a menu, or uploads a new PDF straight away when none is stored.
+ */
+function ResumeButton({
+  resumes,
+  canRead,
+  onRead,
+  onUpload,
+  variant,
+  disabled,
+  title,
+  children,
+}: {
+  resumes: ResumeVersion[];
+  canRead: () => boolean;
+  onRead: (id: Id) => void;
+  onUpload: () => void;
+  variant: 'primary' | 'ghost';
+  disabled: boolean;
+  title?: string;
+  children: ReactNode;
+}) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const stored = resumes.filter((resume) => resume.file);
+  const choose = (action: () => void) => {
+    setOpen(false);
+    action();
+  };
+  const option =
+    'flex w-full items-center gap-2.5 rounded-[12px] px-2.5 py-2 text-left text-[14px] transition-colors hover:bg-fill';
+
+  return (
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Anchor asChild>
+        <Button
+          variant={variant}
+          disabled={disabled}
+          title={title}
+          onClick={() => {
+            if (!canRead()) return;
+            if (stored.length) setOpen(true);
+            else onUpload();
+          }}
+        >
+          {children}
+        </Button>
+      </Popover.Anchor>
+      <Popover.Portal>
+        <Popover.Content
+          side="bottom"
+          align="end"
+          sideOffset={8}
+          collisionPadding={12}
+          className="glass glass-strong z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-[18px] p-1.5 outline-none data-[state=open]:animate-[pop-in_160ms_ease-out]"
+        >
+          <p className="px-2.5 pt-1.5 pb-1 text-[12px] font-medium text-fg-3">{t('profile.chooseResume')}</p>
+          {stored.map((resume) => (
+            <button
+              key={resume.id}
+              type="button"
+              className={option}
+              onClick={() => choose(() => onRead(resume.id))}
+            >
+              <FileText className="size-4 shrink-0 text-accent" aria-hidden="true" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">{resume.name}</span>
+                <span className="block truncate text-[12px] text-fg-3">{resume.file?.name}</span>
+              </span>
+            </button>
+          ))}
+          <div className="mx-2 my-1 h-px bg-hairline" />
+          <button type="button" className={clsx(option, 'text-fg-2')} onClick={() => choose(onUpload)}>
+            <Upload className="size-4 shrink-0" aria-hidden="true" />
+            {t('profile.uploadNew')}
+          </button>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
 

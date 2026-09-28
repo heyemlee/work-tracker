@@ -258,6 +258,44 @@ export function describeRepositoryContract(name: string, create: (clock: Clock) 
       });
     });
 
+    describe('resume files', () => {
+      // "%PDF-1.7 one" and "%PDF-1.7 two", as base64.
+      const one = { name: 'Alex_Chen.pdf', data: 'JVBERi0xLjcgb25l' };
+      const two = { name: 'Alex Chen (agents).pdf', data: 'JVBERi0xLjcgdHdv' };
+
+      it('has no file until one is uploaded', async () => {
+        const id = await repo.saveResume({ name: 'SDE-v3' });
+        expect((await repo.load()).resumes).toEqual([expect.objectContaining({ id, file: null })]);
+        expect(await repo.loadResumeFile(id)).toBeNull();
+      });
+
+      it('lists what was uploaded, returns the file, and a later upload replaces it', async () => {
+        const id = await repo.saveResume({ name: 'SDE-v3' });
+        const first = await repo.saveResumeFile(id, one);
+        expect(first).toMatchObject({ name: 'Alex_Chen.pdf', size: 12 });
+        expect((await repo.load()).resumes[0]?.file).toEqual(first);
+        expect(await repo.loadResumeFile(id)).toEqual(one);
+
+        const second = await repo.saveResumeFile(id, two);
+        expect(second.uploadedAt > first.uploadedAt).toBe(true);
+        expect((await repo.load()).resumes[0]).toMatchObject({ name: 'SDE-v3', file: second });
+        expect(await repo.loadResumeFile(id)).toEqual(two);
+      });
+
+      it('keeps the file when the version is renamed, and drops it with the version', async () => {
+        const id = await repo.saveResume({ name: 'SDE-v3' });
+        await repo.saveResumeFile(id, one);
+        await repo.saveResume({ id, name: 'SDE-v4' });
+        expect(await repo.loadResumeFile(id)).toEqual(one);
+        await repo.deleteResume(id);
+        expect(await repo.loadResumeFile(id)).toBeNull();
+      });
+
+      it('refuses a file for a version it doesn’t know', async () => {
+        await expect(repo.saveResumeFile('res_missing', one)).rejects.toBeInstanceOf(NotFoundError);
+      });
+    });
+
     describe('profile', () => {
       const profile = () => ({
         ...emptyProfile(),

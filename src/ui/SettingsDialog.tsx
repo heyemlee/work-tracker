@@ -103,28 +103,6 @@ function SettingsBody({ snapshot }: { snapshot: Snapshot }) {
           )}
         </Group>
 
-        <Group title={t('settings.resumes')}>
-          {snapshot.resumes.map((resume) => (
-            <Row key={resume.id}>
-              <TextInput
-                value={resume.name}
-                label={t('settings.resumes')}
-                onCommit={(name) => void run((repo) => repo.saveResume({ id: resume.id, name }))}
-              />
-              <IconButton
-                label={t('settings.delete')}
-                onClick={() => void run((repo) => repo.deleteResume(resume.id))}
-                className="size-8 text-fg-3 hover:text-danger"
-              >
-                <Trash2 className="size-4" />
-              </IconButton>
-            </Row>
-          ))}
-          <AddButton onClick={() => void run((repo) => repo.saveResume({ name: t('settings.newResume') }))}>
-            {t('settings.addResume')}
-          </AddButton>
-        </Group>
-
         <Group title={t('settings.channels')}>
           {snapshot.channels.map((channel) => (
             <Row key={channel.id}>

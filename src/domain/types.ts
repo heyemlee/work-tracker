@@ -30,6 +30,16 @@ export interface ResumeVersion {
   id: Id;
   name: string;
   createdAt: IsoDateTime;
+  /** The PDF sent with this version; null until one is uploaded. */
+  file: ResumeFile | null;
+}
+
+/** What the snapshot says about a resume's PDF. The file itself is loaded on its own. */
+export interface ResumeFile {
+  name: string;
+  /** Bytes. */
+  size: number;
+  uploadedAt: IsoDateTime;
 }
 
 /** How an application was submitted. Built-in channels store an i18n key as their name. */

@@ -24,6 +24,7 @@ import { DetailPanel } from './ui/DetailPanel';
 import { JobList } from './ui/JobList';
 import { Button } from './ui/primitives';
 import { ProfilePanel } from './ui/ProfilePanel';
+import { ResumesPanel } from './ui/ResumesPanel';
 import { SettingsDialog } from './ui/SettingsDialog';
 import { SignIn } from './ui/SignIn';
 import { StatsRow } from './ui/StatsRow';
@@ -101,6 +102,9 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
   const [selectedId, setSelectedId] = useState<Id | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [resumesOpen, setResumesOpen] = useState(false);
+  // A stored resume the profile panel reads as it opens.
+  const [resumeToRead, setResumeToRead] = useState<Id | null>(null);
   const [composing, setComposing] = useState(false);
 
   const rows = useMemo(() => buildRows(snapshot), [snapshot]);
@@ -115,7 +119,7 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
   const shown = counts[filter];
 
   // N opens the quick-add panel, except over the settings dialog.
-  useHotkey('n', () => !settingsOpen && !profileOpen && setComposing(true));
+  useHotkey('n', () => !settingsOpen && !profileOpen && !resumesOpen && setComposing(true));
 
   return (
     <div style={{ '--reserve': `${selected && wide ? PANEL_RESERVE : 0}px` } as CSSProperties}>
@@ -125,6 +129,7 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
         query={query}
         onQuery={setQuery}
         onOpenSettings={() => setSettingsOpen(true)}
+        onOpenResumes={() => setResumesOpen(true)}
         onOpenProfile={() => setProfileOpen(true)}
         onCompose={() => setComposing(true)}
       />
@@ -190,7 +195,25 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
       <Toaster />
       <DetailPanel row={selected} snapshot={snapshot} today={today} onClose={() => setSelectedId(null)} />
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} snapshot={snapshot} />
-      <ProfilePanel open={profileOpen} onOpenChange={setProfileOpen} />
+      <ResumesPanel
+        open={resumesOpen}
+        onOpenChange={setResumesOpen}
+        snapshot={snapshot}
+        onFillProfile={(id) => {
+          setResumesOpen(false);
+          setResumeToRead(id);
+          setProfileOpen(true);
+        }}
+      />
+      <ProfilePanel
+        open={profileOpen}
+        onOpenChange={(open) => {
+          setProfileOpen(open);
+          if (!open) setResumeToRead(null);
+        }}
+        resumes={snapshot.resumes}
+        readFirst={resumeToRead}
+      />
       <TweakPanel />
     </div>
   );

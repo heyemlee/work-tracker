@@ -38,7 +38,7 @@ flowchart LR
     cs["Content script, every frame<br/>detect · read · fill · watch submit"]
     card["Card, top frame<br/>shadow DOM"]
     bg["Service worker<br/>storage · Outbox client · Claude client"]
-    opts["Options page<br/>profile · resumes · AI · answers"]
+    opts["Options page<br/>profile · AI · answers"]
   end
   outbox[("tracker.haoyang.us/api")]
   claude["Claude API"]
@@ -67,11 +67,21 @@ earlier local JSON file): a list of sections beside the form on wide screens, co
 on the toolbar button and on each section while something most forms ask for is still empty. Stored with the owner's
 account in D1 as one JSON document (`profiles` table), validated by the shared schema in `src/domain/profile.ts` on
 every save. The panel can import the old `autofill-profile.json` once. The extension copies the profile into
-`chrome.storage.local` whenever it reads a page or fills, so filling works offline from the last copy. Resume PDFs, the
-API key and remembered answers stay in the extension; they never go to Outbox. Nothing is in git.
+`chrome.storage.local` whenever it reads a page or fills, so filling works offline from the last copy. The API key and
+remembered answers stay in the extension; they never go to Outbox. Nothing is in git.
 
-**From a resume.** A new profile starts from the resume, as Simplify and similar tools do. "Fill from resume" hands
-the PDF to the extension through its content script on Outbox (`src/domain/bridge.ts`, `window.postMessage` limited to
+**Resumes** (decided 2026-09-28, replacing PDFs added on the options page) are uploaded on Outbox, in their own panel
+from the toolbar: one PDF per resume version, up to 1.4 MB, stored in D1 as base64 (`resume_files`, apart from the
+version so the snapshot never reads it). Base64 rather than a blob: D1 hands a blob to the Worker as an array of
+numbers, which costs more CPU than the free plan allows, and a row holds at most 2 MB. `GET /api/resumes/:id/file`
+serves the PDF itself, so the panel opens it with a plain link. The card lists the versions that have a PDF; on Fill
+the extension downloads the one picked and keeps a copy in its IndexedDB, replaced when Outbox's is newer, so filling
+works offline. Uploading is the start of everything else: the extension attaches the PDF, logs record its version,
+and the profile is read from it.
+
+**From a resume.** A new profile starts from the resume, as Simplify and similar tools do. "Fill from resume" picks
+one of the stored resumes (or uploads a new PDF, which becomes a version too), and "Fill profile" on a resume in the
+resumes panel opens this panel reading it. The page hands the PDF to the extension through its content script on Outbox (`src/domain/bridge.ts`, `window.postMessage` limited to
 the page's own window and origin); the service worker reads it with the owner's key (Claude, structured output into
 `resumeFactsSchema`) and hands back only the facts. The panel then lists what would change for the owner to pick
 from: contact details and links fill only empty fields, education and work experience are replaced, new skills and
@@ -90,7 +100,7 @@ extension, or without its key, the panel says what's missing.
 | Voluntary (EEO)    | Gender, Hispanic/Latino, race, veteran, disability; "decline" allowed for each                            |
 | Common answers     | How you heard, earliest start, salary expectation, relocation, on-site, previously employed, age 18+      |
 | Writing material   | Summary, STAR stories, approved snippets — grounding for free-text answers                                |
-| Resumes            | PDFs, each named after an Outbox resume version; one is the default                                       |
+| Resumes            | Not in the profile: PDFs uploaded on Outbox, one per resume version (see above)                           |
 
 ## 5. Filling
 
@@ -183,9 +193,9 @@ a posting there shows a note. It is a note, not a block.
 
 ## 9. Privacy
 
-The profile is stored in the owner's own D1 database behind Google sign-in limited to their account, and copied into
-the browser that fills. Resumes, remembered answers and the API key stay on the machine; a resume PDF goes to Claude
-only when the owner asks the profile panel to read it. Claude receives field labels and options, the profile parts a question needs, and the posting's text for
+The profile and the resume PDFs are stored in the owner's own D1 database behind Google sign-in limited to their
+account, and copied into the browser that fills. Remembered answers and the API key stay on the machine; a resume PDF
+goes to the model only when the owner asks the profile panel to read it. Claude receives field labels and options, the profile parts a question needs, and the posting's text for
 drafts — never voluntary (EEO) answers or work-authorization questions. Form snapshots carry no values.
 
 ## 10. Testing

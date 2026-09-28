@@ -1,4 +1,4 @@
-import { IdCard, Plus, Search, Settings2, X } from 'lucide-react';
+import { FileText, IdCard, Plus, Search, Settings2, X } from 'lucide-react';
 import { useRef } from 'react';
 import { useProfile } from '../data/store';
 import { emptyProfile, missingItems } from '../domain/profile';
@@ -40,6 +40,7 @@ interface ToolbarProps {
   query: string;
   onQuery: (query: string) => void;
   onOpenSettings: () => void;
+  onOpenResumes: () => void;
   onOpenProfile: () => void;
   onCompose: () => void;
 }
@@ -50,6 +51,7 @@ export function Toolbar({
   query,
   onQuery,
   onOpenSettings,
+  onOpenResumes,
   onOpenProfile,
   onCompose,
 }: ToolbarProps) {
@@ -104,6 +106,9 @@ export function Toolbar({
               <kbd className="kbd hidden sm:inline-grid">/</kbd>
             )}
           </label>
+          <IconButton label={t('toolbar.resumes')} onClick={onOpenResumes}>
+            <FileText className="size-[18px]" />
+          </IconButton>
           <IconButton
             label={
               missing

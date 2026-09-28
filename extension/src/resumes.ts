@@ -1,17 +1,34 @@
-import { resumesItem, type ResumeMeta } from './storage';
+import { bytesToBase64 } from '@domain/resumes';
+import type { Snapshot } from '@domain/types';
+import { downloadResume, loadSnapshot } from './background/outbox';
 
 /**
- * Resume PDFs, kept in the extension's own IndexedDB: `chrome.storage` is meant for small JSON, and a PDF is
- * bytes. Only the extension's pages and service worker can open this database.
+ * Resume PDFs live on Outbox with their versions; the owner uploads them there. The extension keeps a copy of each
+ * one it has attached, in its own IndexedDB (`chrome.storage` is meant for small JSON, and a PDF is bytes), so a PDF
+ * isn't downloaded for every application and filling still works offline.
  */
 
 const DB = 'outbox-autofill';
 const STORE = 'resumes';
 
+interface Copy {
+  /** The version's name on Outbox, for the card when Outbox can't be reached. */
+  label: string;
+  fileName: string;
+  /** Tells whether the copy is still the PDF Outbox holds. */
+  uploadedAt: string;
+  blob: Blob;
+}
+
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB, 1);
-    request.onupgradeneeded = () => request.result.createObjectStore(STORE);
+    // Version 1 held PDFs added on the options page, by their own ids; copies are keyed by Outbox's resume id.
+    const request = indexedDB.open(DB, 2);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (db.objectStoreNames.contains(STORE)) db.deleteObjectStore(STORE);
+      db.createObjectStore(STORE);
+    };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
@@ -30,50 +47,52 @@ async function run<T>(mode: IDBTransactionMode, body: (store: IDBObjectStore) =>
   }
 }
 
-export async function addResume(
-  file: File,
-  label: string,
-  outboxResumeId: string | null,
-): Promise<ResumeMeta> {
-  const meta: ResumeMeta = {
-    id: crypto.randomUUID(),
-    fileName: file.name,
-    size: file.size,
-    outboxResumeId,
-    label,
-    addedAt: new Date().toISOString(),
-  };
-  await run('readwrite', (store) => store.put(file, meta.id));
-  await resumesItem.setValue([...(await resumesItem.getValue()), meta]);
-  return meta;
+/**
+ * The resumes the card offers: Outbox's versions that have a PDF, or, while Outbox can't be reached, the copies
+ * kept here.
+ */
+export async function resumeChoices(snapshot: Snapshot | null): Promise<{ id: string; label: string }[]> {
+  if (snapshot)
+    return snapshot.resumes.filter((resume) => resume.file).map(({ id, name }) => ({ id, label: name }));
+  const [ids, copies] = await Promise.all([
+    run('readonly', (store) => store.getAllKeys()),
+    run<Copy[]>('readonly', (store) => store.getAll()),
+  ]);
+  return ids.map((id, at) => ({ id: String(id), label: copies[at]?.label ?? '' }));
 }
 
-export async function removeResume(id: string): Promise<void> {
-  await run('readwrite', (store) => store.delete(id));
-  await resumesItem.setValue((await resumesItem.getValue()).filter((meta) => meta.id !== id));
-}
-
-export async function updateResume(
-  id: string,
-  patch: Partial<Pick<ResumeMeta, 'label' | 'outboxResumeId'>>,
-): Promise<void> {
-  await resumesItem.setValue(
-    (await resumesItem.getValue()).map((meta) => (meta.id === id ? { ...meta, ...patch } : meta)),
-  );
-}
-
-/** The PDF as base64, for handing to a content script (messages carry JSON, not Blobs). */
+/**
+ * A resume version's PDF as base64, for handing to a content script (messages carry JSON, not Blobs). Downloaded
+ * when the copy here is missing or older than Outbox's; offline, the last copy.
+ */
 export async function readResume(id: string): Promise<{ name: string; type: string; base64: string } | null> {
-  const meta = (await resumesItem.getValue()).find((item) => item.id === id);
-  if (!meta) return null;
-  const blob = await run<Blob | undefined>(
-    'readonly',
-    (store) => store.get(id) as IDBRequest<Blob | undefined>,
-  );
-  if (!blob) return null;
-  const bytes = new Uint8Array(await blob.arrayBuffer());
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += 0x8000)
-    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  return { name: meta.fileName, type: blob.type || 'application/pdf', base64: btoa(binary) };
+  const [snapshot, kept] = await Promise.all([
+    loadSnapshot().catch(() => null),
+    run<Copy | undefined>('readonly', (store) => store.get(id) as IDBRequest<Copy | undefined>),
+  ]);
+  const version = snapshot?.resumes.find((resume) => resume.id === id);
+  let copy = kept;
+  if (snapshot && !version?.file) return null;
+  if (version?.file && kept?.uploadedAt !== version.file.uploadedAt) {
+    try {
+      copy = {
+        label: version.name,
+        fileName: version.file.name,
+        uploadedAt: version.file.uploadedAt,
+        blob: await downloadResume(id),
+      };
+      const fresh = copy;
+      await run('readwrite', (store) => store.put(fresh, id));
+    } catch {
+      // Outbox couldn't be reached just now: the last copy, if there is one.
+    }
+  }
+  if (!copy) return null;
+  const bytes = new Uint8Array(await copy.blob.arrayBuffer());
+  return { name: copy.fileName, type: 'application/pdf', base64: bytesToBase64(bytes) };
+}
+
+/** Drops every copy; Outbox keeps the PDFs. */
+export async function clearResumeCopies(): Promise<void> {
+  await run('readwrite', (store) => store.clear());
 }

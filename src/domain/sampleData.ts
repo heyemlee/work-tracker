@@ -143,8 +143,8 @@ export function createSampleData(now: Date): SampleData {
     { id: 'acc_school', label: 'School', email: 'me@school.example.edu', color: 'teal', createdAt: created },
   ];
   const resumes: ResumeVersion[] = [
-    { id: 'res_sde', name: 'SDE-v3', createdAt: created },
-    { id: 'res_agent', name: 'Agent-v2', createdAt: created },
+    { id: 'res_sde', name: 'SDE-v3', createdAt: created, file: null },
+    { id: 'res_agent', name: 'Agent-v2', createdAt: created, file: null },
   ];
 
   const companies: Company[] = [];

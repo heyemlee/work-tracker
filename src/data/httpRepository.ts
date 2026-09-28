@@ -1,6 +1,7 @@
 import type { SavedProfile } from '../domain/profile';
 import type { QuickAddResult, Repository } from '../domain/repository';
-import type { Id, Snapshot, TimelineEvent } from '../domain/types';
+import { bytesToBase64 } from '../domain/resumes';
+import type { Id, ResumeFile, Snapshot, TimelineEvent } from '../domain/types';
 
 export class UnauthorizedError extends Error {
   constructor() {
@@ -34,6 +35,9 @@ export async function request<T>(method: Method, path: string, body?: unknown): 
 }
 
 const at = (id: Id) => encodeURIComponent(id);
+
+/** Where a resume's PDF opens in the browser's own viewer. */
+export const resumeFileUrl = (id: Id) => `/api/resumes/${at(id)}/file`;
 
 /** The Repository contract over the Worker's REST API. */
 export function createHttpRepository(): Repository {
@@ -69,6 +73,18 @@ export function createHttpRepository(): Repository {
       return id;
     },
     deleteResume: (id) => request<void>('DELETE', `/resumes/${at(id)}`),
+    saveResumeFile: (id, file) => request<ResumeFile>('PUT', `/resumes/${at(id)}/file`, file),
+    loadResumeFile: async (id) => {
+      const response = await fetch(resumeFileUrl(id), { credentials: 'same-origin' });
+      if (response.status === 401) throw new UnauthorizedError();
+      if (response.status === 404) return null;
+      if (!response.ok) throw new HttpError(response.status, response.statusText);
+      const name = /filename\*=UTF-8''([^;]+)/.exec(response.headers.get('Content-Disposition') ?? '')?.[1];
+      return {
+        name: name ? decodeURIComponent(name) : 'resume.pdf',
+        data: bytesToBase64(new Uint8Array(await response.arrayBuffer())),
+      };
+    },
 
     saveChannel: async ({ id, name }) => {
       if (!id) return create('/channels', { name });

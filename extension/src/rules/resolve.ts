@@ -112,6 +112,6 @@ export function date(
 }
 
 export function file(key: string, resumeId: string | null, field: ScannedField): Resolution {
-  if (!resumeId) return empty(key, field, 'no resume PDF on the options page');
+  if (!resumeId) return empty(key, field, 'no resume PDF on Outbox');
   return done(key, { type: 'file', resumeId });
 }

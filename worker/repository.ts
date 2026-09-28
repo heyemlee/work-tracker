@@ -15,6 +15,7 @@ import { normalizeCompanyName } from '../src/domain/companies';
 import { ConflictError, NotFoundError } from '../src/domain/errors';
 import { profileSchema } from '../src/domain/profile';
 import type { Repository } from '../src/domain/repository';
+import { base64Size } from '../src/domain/resumes';
 import type {
   Account,
   Application,
@@ -43,6 +44,10 @@ const toResume = (row: typeof t.resumes.$inferSelect): ResumeVersion => ({
   id: row.id,
   name: row.name,
   createdAt: row.createdAt,
+  file:
+    row.fileName !== null && row.fileSize !== null && row.fileUploadedAt !== null
+      ? { name: row.fileName, size: row.fileSize, uploadedAt: row.fileUploadedAt }
+      : null,
 });
 
 const toChannel = (row: typeof t.channels.$inferSelect): Channel => ({
@@ -436,8 +441,39 @@ export function createD1Repository(db: Db, userId: Id, clock: Clock = systemCloc
     },
 
     async deleteResume(id) {
-      // Applications keep their row; resume_id is cleared by ON DELETE SET NULL.
+      // Applications keep their row; resume_id is cleared by ON DELETE SET NULL, and the PDF goes by cascade.
       await db.delete(t.resumes).where(and(eq(t.resumes.id, id), eq(t.resumes.userId, userId)));
+    },
+
+    async saveResumeFile(id, { name, data }) {
+      const owned = await db
+        .select({ id: t.resumes.id })
+        .from(t.resumes)
+        .where(and(eq(t.resumes.id, id), eq(t.resumes.userId, userId)))
+        .get();
+      if (!owned) throw new NotFoundError('Resume', id);
+      const file = { name, size: base64Size(data), uploadedAt: clock.now() };
+      await commit([
+        db
+          .insert(t.resumeFiles)
+          .values({ resumeId: id, data })
+          .onConflictDoUpdate({ target: t.resumeFiles.resumeId, set: { data } }),
+        db
+          .update(t.resumes)
+          .set({ fileName: file.name, fileSize: file.size, fileUploadedAt: file.uploadedAt })
+          .where(and(eq(t.resumes.id, id), eq(t.resumes.userId, userId))),
+      ]);
+      return file;
+    },
+
+    async loadResumeFile(id) {
+      const row = await db
+        .select({ name: t.resumes.fileName, data: t.resumeFiles.data })
+        .from(t.resumeFiles)
+        .innerJoin(t.resumes, eq(t.resumes.id, t.resumeFiles.resumeId))
+        .where(and(eq(t.resumeFiles.resumeId, id), eq(t.resumes.userId, userId)))
+        .get();
+      return row?.name ? { name: row.name, data: row.data } : null;
     },
 
     async saveChannel({ id, name }) {
