@@ -7,15 +7,18 @@
   "engines": {
     "node": ">=22"
   },
+  "workspaces": [
+    "extension"
+  ],
   "scripts": {
     "dev": "vite",
     "dev:local": "VITE_DATA=local vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "deploy": "npm run build && wrangler deploy",
-    "typecheck": "tsc -b",
+    "typecheck": "tsc -b && npm run typecheck -w extension",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "vitest run && npm test -w extension",
     "test:watch": "vitest",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -23,7 +26,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply outbox --local",
     "db:migrate:remote": "wrangler d1 migrations apply outbox --remote",
-    "auth:schema": "npx --yes auth@1.7.5 generate --config scripts/auth-schema.config.ts --output worker/db/auth-schema.ts --yes"
+    "auth:schema": "npx --yes auth@1.7.5 generate --config scripts/auth-schema.config.ts --output worker/db/auth-schema.ts --yes",
+    "ext:dev": "npm run dev -w extension",
+    "ext:build": "npm run build -w extension"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.7.5",

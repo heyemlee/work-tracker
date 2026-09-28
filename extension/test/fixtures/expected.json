@@ -1,0 +1,1506 @@
+{
+ "greenhouse/discord.html": [
+  [
+   "First Name",
+   "Alex"
+  ],
+  [
+   "Last Name",
+   "Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Location (City)",
+   "Santa Clara, CA"
+  ],
+  [
+   "Resume/CV",
+   "resume"
+  ],
+  [
+   "LinkedIn Profile",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "Website",
+   "https://github.com/alexchen"
+  ],
+  [
+   "How did you hear about this job?",
+   "LinkedIn"
+  ],
+  [
+   "Are you legally authorized to work in the United States for our Company?",
+   "Yes"
+  ],
+  [
+   "Are you currently located in the US?",
+   "Yes"
+  ],
+  [
+   "Are you currently based in or willing to relocate to the Bay Area for this position?",
+   "Yes"
+  ],
+  [
+   "Gender",
+   "Decline To Self Identify"
+  ],
+  [
+   "Veteran Status",
+   "I don't wish to answer"
+  ]
+ ],
+ "greenhouse/anthropic.html": [
+  [
+   "First Name",
+   "Alex"
+  ],
+  [
+   "Last Name",
+   "Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Resume/CV",
+   "resume"
+  ],
+  [
+   "Website",
+   "https://github.com/alexchen"
+  ],
+  [
+   "When is the earliest you would want to start working with us?",
+   "Two weeks after an offer"
+  ],
+  [
+   "Do you have any deadlines or timeline considerations we should be aware of?",
+   "No"
+  ],
+  [
+   "AI Policy for Application",
+   "Yes"
+  ],
+  [
+   "LinkedIn Profile",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "What is the address from which you plan on working? If you would need to relocate, please type \"relocating\".",
+   "Santa Clara, CA"
+  ],
+  [
+   "Have you ever interviewed at Anthropic before?",
+   "No"
+  ],
+  [
+   "Will you now or will you in the future require employment visa sponsorship to work in the country in which the job you're applying for is located?",
+   "Yes"
+  ],
+  [
+   "Do you require visa sponsorship?",
+   "Yes"
+  ],
+  [
+   "AI Policy for Application",
+   "Yes"
+  ]
+ ],
+ "greenhouse/figma.html": [
+  [
+   "First Name",
+   "Alex"
+  ],
+  [
+   "Last Name",
+   "Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Location (City)",
+   "Santa Clara, CA"
+  ],
+  [
+   "Resume/CV",
+   "resume"
+  ],
+  [
+   "LinkedIn Profile",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "Other Website",
+   "https://github.com/alexchen"
+  ],
+  [
+   "From where do you intend to work?",
+   "Santa Clara, CA"
+  ],
+  [
+   "Preferred First Name",
+   "Al"
+  ],
+  [
+   "Are you authorized to work in the country for which you applied?",
+   "Yes"
+  ],
+  [
+   "Have you ever worked for Figma before, as an employee or a contractor/consultant?",
+   "No"
+  ],
+  [
+   "Gender",
+   "Decline To Self Identify"
+  ],
+  [
+   "Veteran Status",
+   "I don't wish to answer"
+  ]
+ ],
+ "greenhouse/stripe-embed.html": [
+  [
+   "First Name",
+   "Alex"
+  ],
+  [
+   "Last Name",
+   "Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Location (City)",
+   "Santa Clara, CA"
+  ],
+  [
+   "Resume/CV",
+   "resume"
+  ],
+  [
+   "Please select the country where you currently reside.",
+   "US"
+  ],
+  [
+   "Are you authorized to work in the location(s) you selected in your previous response?",
+   "Yes"
+  ],
+  [
+   "Will you require Stripe to sponsor you for a work permit now or in the future for the location(s) you selected in in your previous response?",
+   "Yes"
+  ],
+  [
+   "This is a hybrid role based in a Stripe office, are you comfortable with this model?",
+   "Yes, I intend to work on a hybrid basis from a Stripe office."
+  ],
+  [
+   "Have you ever been employed by Stripe or a Stripe affiliate?",
+   "No"
+  ],
+  [
+   "Who is your current or previous employer?",
+   "Acme AI"
+  ],
+  [
+   "What is your current or previous job title?",
+   "AI Engineer"
+  ],
+  [
+   "Do you opt-in to receive WhatsApp messages from Stripe Recruiting?",
+   "No"
+  ],
+  [
+   "If located in the US, in what city and state do you reside?",
+   "Santa Clara, CA"
+  ],
+  [
+   "Gender",
+   "Decline To Self Identify"
+  ],
+  [
+   "Veteran Status",
+   "I don't wish to answer"
+  ],
+  [
+   "Please select the country or countries you anticipate working in for the role in which you are applying.",
+   "United States"
+  ]
+ ],
+ "lever/palantir.html": [
+  [
+   "Resume/CV",
+   "resume"
+  ],
+  [
+   "Full name",
+   "Alex Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Current location",
+   "Santa Clara, CA"
+  ],
+  [
+   "Current company",
+   "Acme AI"
+  ],
+  [
+   "LinkedIn URL",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "GitHub URL",
+   "https://github.com/alexchen"
+  ],
+  [
+   "Portfolio URL",
+   "https://github.com/alexchen"
+  ],
+  [
+   "Preferred Name | What would you like us to call you?",
+   "Al"
+  ],
+  [
+   "Which university are you currently attending or did you last attend? Please select \"Other (School Not Listed)\" if your school is not listed.",
+   "Santa Clara University"
+  ],
+  [
+   "Please tell us how you heard about this opportunity.",
+   "LinkedIn"
+  ],
+  [
+   "How many years of relevant, post college work experience do you have?",
+   "2"
+  ],
+  [
+   "Language Skill(s) (Check all that apply)",
+   "English | Mandarin"
+  ],
+  [
+   "Are you legally authorized to work in the country for which you are applying?",
+   "No"
+  ],
+  [
+   "Will you now or in the future require sponsorship for employment visa status (e.g., H-1B, etc.)?",
+   "Yes"
+  ],
+  [
+   "Do you currently hold an active UK security clearance?",
+   "No"
+  ],
+  [
+   "Are you eligible to obtain the security clearance specified in the job description? Please see https://www.gov.uk/government/publications/united-kingdom-security-vetting-clearance-levels for further details on security clearance requirements.",
+   "No"
+  ],
+  [
+   "As part of our interview process, we may use AI notetakers to transcribe conversations for accuracy and efficiency. Please see our candidate privacy policy for more information on how we process your data. Your decision to opt in or out of this tooling will not impact your candidacy.",
+   "Yes, I consent"
+  ],
+  [
+   "Palantir Technologies has my consent to contact me about future job opportunities.",
+   "checked"
+  ]
+ ],
+ "lever/spotify-80c3a1cd-3f98-49e5-88d1-b45fca349d7f.html": [
+  [
+   "Resume/CV",
+   "resume"
+  ],
+  [
+   "Full name",
+   "Alex Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Current location",
+   "Santa Clara, CA"
+  ],
+  [
+   "Current company",
+   "Acme AI"
+  ],
+  [
+   "LinkedIn URL",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "GitHub URL",
+   "https://github.com/alexchen"
+  ],
+  [
+   "Portfolio URL",
+   "https://github.com/alexchen"
+  ],
+  [
+   "Other website",
+   "https://github.com/alexchen"
+  ],
+  [
+   "What is your location?",
+   "United States"
+  ],
+  [
+   "Have you ever been previously employed by Spotify?",
+   "No"
+  ],
+  [
+   "What best describes your gender?",
+   "Prefer not to disclose"
+  ],
+  [
+   "What is your race/ethnicity?:",
+   "Prefer not to disclose"
+  ],
+  [
+   "Are you a veteran/have you served in the military?",
+   "Prefer not to disclose"
+  ],
+  [
+   "What best describes your gender?",
+   "Prefer not to disclose"
+  ],
+  [
+   "What gender do you identify with?",
+   "Choose Not to Disclose"
+  ],
+  [
+   "What best describes your gender?",
+   "Prefer not to disclose"
+  ],
+  [
+   "What best describes your ethnicity?",
+   "Prefer not to disclose"
+  ],
+  [
+   "Spotify has my consent to contact me about future job opportunities.",
+   "checked"
+  ]
+ ],
+ "lever/spotify-faffd837-edbc-42f8-b4bf-14e1658c18e6.html": [
+  [
+   "Resume/CV",
+   "resume"
+  ],
+  [
+   "Full name",
+   "Alex Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Current location",
+   "Santa Clara, CA"
+  ],
+  [
+   "Current company",
+   "Acme AI"
+  ],
+  [
+   "LinkedIn URL",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "GitHub URL",
+   "https://github.com/alexchen"
+  ],
+  [
+   "Portfolio URL",
+   "https://github.com/alexchen"
+  ],
+  [
+   "Other website",
+   "https://github.com/alexchen"
+  ],
+  [
+   "What is your location?",
+   "United States"
+  ],
+  [
+   "Have you ever been previously employed by Spotify?",
+   "No"
+  ],
+  [
+   "What best describes your gender?",
+   "Prefer not to disclose"
+  ],
+  [
+   "What is your race/ethnicity?:",
+   "Prefer not to disclose"
+  ],
+  [
+   "Are you a veteran/have you served in the military?",
+   "Prefer not to disclose"
+  ],
+  [
+   "What best describes your gender?",
+   "Prefer not to disclose"
+  ],
+  [
+   "What gender do you identify with?",
+   "Choose Not to Disclose"
+  ],
+  [
+   "What best describes your gender?",
+   "Prefer not to disclose"
+  ],
+  [
+   "What best describes your ethnicity?",
+   "Prefer not to disclose"
+  ],
+  [
+   "Spotify has my consent to contact me about future job opportunities.",
+   "checked"
+  ]
+ ],
+ "ashby/notion.html": [
+  [
+   "We work from our offices on Mondays, Tuesdays, and Thursdays (Anchor Days). If you need an accommodation, we’ll partner with you and explore reasonable options consistent with applicable law. Are you able to commit to working from one of our offices on Anchor Days each week?",
+   "Yes"
+  ],
+  [
+   "Will you now or in the future require Notion to sponsor an immigration case in order to employ you?",
+   "Yes"
+  ],
+  [
+   "Full Name",
+   "Alex Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Location",
+   "Santa Clara, CA"
+  ],
+  [
+   "Resume",
+   "resume"
+  ],
+  [
+   "LinkedIn Profile",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "What pronouns would you like our team to use when addressing you?",
+   "Prefer not to say"
+  ],
+  [
+   "How did you hear about this opportunity? (select all that apply)",
+   "LinkedIn"
+  ],
+  [
+   "Gender",
+   "Decline to self-identify"
+  ],
+  [
+   "Race",
+   "Decline to self-identify"
+  ]
+ ],
+ "greenhouse/zscaler.html": [
+  [
+   "First Name",
+   "Alex"
+  ],
+  [
+   "Last Name",
+   "Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Resume/CV",
+   "resume"
+  ],
+  [
+   "Website",
+   "https://github.com/alexchen"
+  ],
+  [
+   "LinkedIn Profile",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "How did you learn about this job?",
+   "Linkedin"
+  ],
+  [
+   "Do you have the legal right to work in the country where you are applying to work?",
+   "Yes"
+  ],
+  [
+   "Do you require a work permit, visa or additional right to work support for the country where you are applying to work?",
+   "Yes"
+  ],
+  [
+   "In what city and state is your primary residence? (e.g. San Jose, CA)",
+   "Santa Clara, CA"
+  ],
+  [
+   "Do you currently work for, or have you previously worked for Zscaler?",
+   "No, I have never worked for Zscaler"
+  ],
+  [
+   "Current Company",
+   "Acme AI"
+  ],
+  [
+   "Current Title",
+   "AI Engineer"
+  ],
+  [
+   "Have you been involved in procurement or contract award activities involving Zscaler as a government employee or official?",
+   "No"
+  ],
+  [
+   "Gender",
+   "Decline To Self Identify"
+  ],
+  [
+   "Veteran Status",
+   "I don't wish to answer"
+  ],
+  [
+   "Zscaler Confidential Information",
+   "checked"
+  ],
+  [
+   "Zscaler Privacy Policy",
+   "checked"
+  ]
+ ],
+ "greenhouse/intercom.html": [
+  [
+   "First Name",
+   "Alex"
+  ],
+  [
+   "Last Name",
+   "Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Resume/CV",
+   "resume"
+  ],
+  [
+   "Are you authorised to work in the country in which this role is located? (Fin sponsors immigration for some roles so we encourage you to still apply if you require sponsorship.)",
+   "My current work authorisation requires sponsorship or renewal now or in the future."
+  ],
+  [
+   "Current Location",
+   "US - California (San Francisco Metro)"
+  ],
+  [
+   "Current or most recent company?",
+   "Acme AI"
+  ],
+  [
+   "Have you previously worked for Fin (formerly Intercom) or Salesforce?",
+   "No"
+  ],
+  [
+   "LinkedIn Profile",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "Website",
+   "https://github.com/alexchen"
+  ],
+  [
+   "How did you hear about this job?",
+   "Job Board"
+  ],
+  [
+   "Please email me about future job openings",
+   "Yes"
+  ],
+  [
+   "We use an AI Notetaker to record our interviews. This allows us to capture notes accurately while interviewers can focus on engaging discussions. The data processed will include video and audio recordings and transcripts. The recording will take place only if you give your consent. Please note that opting-in or out will not impact our recruiting decisions. Do you consent to having your interview(s) recorded for the entirety of the interview process?",
+   "Yes"
+  ],
+  [
+   "US Export Control laws 2026: Are you a citizen, national or permanent resident of Iran, Cuba, North Korea or Syria?",
+   "No"
+  ],
+  [
+   "Point of Data Transfer",
+   "checked"
+  ]
+ ],
+ "greenhouse/scaleai.html": [
+  [
+   "First Name",
+   "Alex"
+  ],
+  [
+   "Last Name",
+   "Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Location (City)",
+   "Santa Clara, CA"
+  ],
+  [
+   "Resume/CV",
+   "resume"
+  ],
+  [
+   "LinkedIn Profile",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "Website",
+   "https://github.com/alexchen"
+  ],
+  [
+   "What country are you located in?",
+   "United States"
+  ],
+  [
+   "Are you fluent or proficient in Arabic?",
+   "No"
+  ],
+  [
+   "Are you currently bound by any agreements with a current or former employer that may restrict your ability to work for Scale AI or perform the duties of the position for which you are applying? This includes, but is not limited to, non-compete agreements, non-solicitation agreements, confidentiality or non-disclosure agreements, or any other contractual obligations that could limit your employment activities.",
+   "No"
+  ],
+  [
+   "Are you legally authorized to work in the country where the job is located?",
+   "No"
+  ],
+  [
+   "Will you now or in the future require company sponsorship to retain or extend your work authorization in the country where the job is located?",
+   "Yes"
+  ],
+  [
+   "Who is your current or most recent employer?",
+   "Acme AI"
+  ],
+  [
+   "What is your current or more recent job title?",
+   "AI Engineer"
+  ]
+ ],
+ "greenhouse/samsara-embed.html": [
+  [
+   "First Name",
+   "Alex"
+  ],
+  [
+   "Last Name",
+   "Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Location (City)",
+   "Santa Clara, CA"
+  ],
+  [
+   "Resume/CV",
+   "resume"
+  ],
+  [
+   "Samsara will not provide relocation assistance for this role. Do you require relocation assistance?",
+   "No"
+  ],
+  [
+   "Will you now or in the future require Samsara to commence (“sponsor”) an immigration case in order to employ you?",
+   "Yes"
+  ],
+  [
+   "Are you currently legally authorized to work in the country in which this job is based (e.g. you are a citizen, you have a visa, etc.)?",
+   "Yes"
+  ],
+  [
+   "Preferred First Name",
+   "Al"
+  ],
+  [
+   "Preferred Last Name",
+   "Chen"
+  ],
+  [
+   "LinkedIn Profile",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "At Samsara, we encourage employees to bring their whole selves to work (this includes applicants too!) Feel free to share your preferred name and pronouns (she/her, they/them, he/him, ze/zir etc.).",
+   "Al"
+  ],
+  [
+   "Processing of Personal Data",
+   "Acknowledge/Confirm"
+  ],
+  [
+   "What is the zip code of your primary residence?",
+   "95050"
+  ],
+  [
+   "Most Recent Employer",
+   "Acme AI"
+  ],
+  [
+   "Have you previously worked at Samsara?",
+   "No"
+  ],
+  [
+   "How did you hear about this opportunity?",
+   "LinkedIn Jobs"
+  ],
+  [
+   "Where have you learned about Samsara? Select all that apply.",
+   "LinkedIn"
+  ],
+  [
+   "AI Policy for Interviewers",
+   "Yes"
+  ]
+ ],
+ "greenhouse/brex-embed.html": [
+  [
+   "First Name",
+   "Alex"
+  ],
+  [
+   "Last Name",
+   "Chen"
+  ],
+  [
+   "Preferred First Name",
+   "Al"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Resume/CV",
+   "resume"
+  ],
+  [
+   "LinkedIn Profile",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "Website",
+   "https://github.com/alexchen"
+  ],
+  [
+   "LinkedIn Profile",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "Website or GitHub",
+   "https://github.com/alexchen"
+  ],
+  [
+   "How did you hear about us?",
+   "LinkedIn"
+  ],
+  [
+   "This role requires in-office work three days per week (Mon, Wed, Thurs). Do you acknowledge and agree to this requirement?",
+   "Yes, I’m currently located here"
+  ],
+  [
+   "What country are you based in?",
+   "USA"
+  ],
+  [
+   "Are you authorized to work in the stated location of this role?",
+   "Yes"
+  ],
+  [
+   "If you're not authorized to work at the stated location, what sponsorship would you require for the role?",
+   "F-1 STEM OPT; H-1B sponsorship needed in the future"
+  ],
+  [
+   "Do you currently live in, or plan to relocate to, the specified location to meet this in-office requirement?",
+   "Yes, I live here"
+  ],
+  [
+   "Do you consent to Brex processing your personal information for the purpose of assessing your candidacy for this position in accordance with Brex’s Applicant Privacy Policy?",
+   "Consent"
+  ],
+  [
+   "Do you currently, or have you previously, worked at Capital One or a company acquired by Capital One as an employee, contractor, consultant, or temp? (For example Capital One Bank, N.A., Capital One Services, Inc., Chevy Chase Bank, Discover, Hibernia, ING Direct, North Fork Bank)",
+   "No"
+  ],
+  [
+   "Gender",
+   "Decline To Self Identify"
+  ],
+  [
+   "Veteran Status",
+   "I don't wish to answer"
+  ]
+ ],
+ "greenhouse/rubrik-embed.html": [
+  [
+   "First Name",
+   "Alex"
+  ],
+  [
+   "Last Name",
+   "Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Location (City)",
+   "Santa Clara, CA"
+  ],
+  [
+   "Resume/CV",
+   "resume"
+  ],
+  [
+   "LinkedIn Profile",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "Website",
+   "https://github.com/alexchen"
+  ],
+  [
+   "What is your Legal Name?",
+   "Alex Chen"
+  ],
+  [
+   "How did you hear about this job?",
+   "LinkedIn"
+  ],
+  [
+   "How many years of work experience do you have?",
+   "2 - 3 Years"
+  ],
+  [
+   "Please Review the NDA and indicate your agreement by typing your full name below",
+   "Alex Chen"
+  ],
+  [
+   "I acknowledge that I have read Rubrik’s Candidate Privacy Notice and understand that the information I submit as part of this application will be used in accordance with this policy.",
+   "Yes"
+  ],
+  [
+   "What is your current job title?",
+   "AI Engineer"
+  ],
+  [
+   "What is the name of your current employer?",
+   "Acme AI"
+  ],
+  [
+   "What is your home Zip Code?",
+   "95050"
+  ],
+  [
+   "Are you currently or have you ever been employed by Rubrik or contracted to provide services to Rubrik?",
+   "I have never been employed by Rubrik or contracted to provide services to Rubrik"
+  ],
+  [
+   "Are you legally authorized to work in the United States?",
+   "Yes"
+  ],
+  [
+   "Will you now or in the future require sponsorship for an employment visa?",
+   "Yes"
+  ],
+  [
+   "Gender",
+   "Decline To Self Identify"
+  ],
+  [
+   "Veteran Status",
+   "I don't wish to answer"
+  ]
+ ],
+ "lever/shieldai.html": [
+  [
+   "Resume/CV",
+   "resume"
+  ],
+  [
+   "Full name",
+   "Alex Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Current location",
+   "Santa Clara, CA"
+  ],
+  [
+   "Current company",
+   "Acme AI"
+  ],
+  [
+   "LinkedIn URL",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "GitHub URL",
+   "https://github.com/alexchen"
+  ],
+  [
+   "Portfolio URL",
+   "https://github.com/alexchen"
+  ],
+  [
+   "Other website",
+   "https://github.com/alexchen"
+  ],
+  [
+   "If yes, what type of sponsorship?",
+   "F-1 STEM OPT; H-1B sponsorship needed in the future"
+  ],
+  [
+   "Please state your full legal name:",
+   "Alex Chen"
+  ],
+  [
+   "What full time job(s) are you applying for?",
+   "Ground Control Station (GCS) Software Engineer (R3963)"
+  ],
+  [
+   "Are you local to or willing to relocate?",
+   "Yes"
+  ],
+  [
+   "Gender",
+   "Decline to self-identify"
+  ],
+  [
+   "Veteran status",
+   "I decline to self-identify for protected veteran status"
+  ],
+  [
+   "Disability status",
+   "I do not want to answer"
+  ],
+  [
+   "Name",
+   "Alex Chen"
+  ],
+  [
+   "Date",
+   "2026-09-27"
+  ],
+  [
+   "Are you authorized to work in the United States?",
+   "Yes"
+  ],
+  [
+   "Will you require sponsorship for employment now or in the future?",
+   "Yes"
+  ],
+  [
+   "This position may require access to information and technology that is subject to export controls, such as EAR. Are you any of the following?",
+   "Other"
+  ],
+  [
+   "How did you hear about us?",
+   "LinkedIn Post"
+  ],
+  [
+   "Race",
+   "Decline to self-identify"
+  ]
+ ],
+ "lever/wealthfront.html": [
+  [
+   "Which location are you applying for?",
+   "Palo Alto, CA"
+  ],
+  [
+   "Resume/CV",
+   "resume"
+  ],
+  [
+   "Full name",
+   "Alex Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Current location",
+   "Santa Clara, CA"
+  ],
+  [
+   "Current company",
+   "Acme AI"
+  ],
+  [
+   "LinkedIn URL",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "Portfolio URL",
+   "https://github.com/alexchen"
+  ],
+  [
+   "Other website",
+   "https://github.com/alexchen"
+  ],
+  [
+   "Highest Education Completed?",
+   "Master's Degree"
+  ],
+  [
+   "What was your major field of study?",
+   "Computer Science"
+  ],
+  [
+   "What university did you attend?",
+   "Santa Clara University"
+  ],
+  [
+   "Gender",
+   "Decline to self-identify"
+  ],
+  [
+   "Race",
+   "Decline to self-identify"
+  ],
+  [
+   "Veteran status",
+   "Decline to self-identify"
+  ],
+  [
+   "How did you hear about us?",
+   "LinkedIn Job Postings"
+  ],
+  [
+   "Do you now, or will you in the future, require sponsorship for employment visa status (e.g., H-1B visa status, etc.) to work legally for Wealthfront in the United States?",
+   "Yes"
+  ]
+ ],
+ "lever/zoox.html": [
+  [
+   "Resume/CV",
+   "resume"
+  ],
+  [
+   "Full name",
+   "Alex Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Current location",
+   "Santa Clara, CA"
+  ],
+  [
+   "Current company",
+   "Acme AI"
+  ],
+  [
+   "LinkedIn URL",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "Other website",
+   "https://github.com/alexchen"
+  ],
+  [
+   "Do you require sponsorship, or will you require sponsorship in the future for employment authorization in the United States?",
+   "Yes"
+  ],
+  [
+   "Gender",
+   "Decline to self-identify"
+  ],
+  [
+   "Race",
+   "Decline to self-identify"
+  ],
+  [
+   "Veteran status",
+   "Decline to self-identify"
+  ],
+  [
+   "Are you currently enrolled in a 2-year or 4-year college or university program pursuing a degree or certificate in Software Engineering, Computer Science, Systems Engineering, Mechanical Engineering, Electrical Engineering, or a related field?",
+   "No"
+  ]
+ ],
+ "ashby/openai.html": [
+  [
+   "Are you authorized to work in the country where the job is located?",
+   "Yes"
+  ],
+  [
+   "Will you now or in the future require sponsorship for employment visa status in this country?",
+   "Yes"
+  ],
+  [
+   "Are you able to work from our US office three days per week?",
+   "Yes"
+  ],
+  [
+   "Legal Name",
+   "Alex Chen"
+  ],
+  [
+   "Preferred Name (if applicable)",
+   "Al"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Resume",
+   "resume"
+  ],
+  [
+   "Phone Number",
+   "+1 408-555-0100"
+  ],
+  [
+   "LinkedIn",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "Where are you currently located?",
+   "Santa Clara, CA"
+  ],
+  [
+   "When can you start a new role?",
+   "Two weeks after an offer"
+  ],
+  [
+   "How many years of industry experience do you have?",
+   "2"
+  ],
+  [
+   "Applicant Arbitration Agreement Acknowledgement",
+   "checked"
+  ],
+  [
+   "I hereby certify that I have not knowingly withheld any information that might adversely affect my chances for employment and that the answers given by me are true and correct to the best of my knowledge. I further certify that I, the undersigned applicant, have personally completed this application. I understand that, to the extent permitted by applicable law, any omission or misstatement of material fact on this application or on any document used to secure employment shall be grounds for rejection of this application or for immediate discharge if I am employed, regardless of the time elapsed before discovery.",
+   "checked"
+  ],
+  [
+   "Gender",
+   "Decline to self-identify"
+  ],
+  [
+   "Race",
+   "Decline to self-identify"
+  ],
+  [
+   "Veteran Status",
+   "I decline to self-identify for protected veteran status"
+  ]
+ ],
+ "ashby/replit.html": [
+  [
+   "Are you able to work from our Foster City, CA HQ 3 days per week?",
+   "Yes"
+  ],
+  [
+   "If not currently in the Bay Area, are you willing to relocate near our Foster City, CA Office?",
+   "Yes"
+  ],
+  [
+   "Are you at least 18 years of age?",
+   "Yes"
+  ],
+  [
+   "Are you legally authorized to work in the United States?",
+   "Yes"
+  ],
+  [
+   "Will you now, or in the future, require sponsorship for employment visa status (e.g. H-1B visa status)?",
+   "Yes"
+  ],
+  [
+   "Full Name",
+   "Alex Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone Number",
+   "+1 408-555-0100"
+  ],
+  [
+   "Resume",
+   "resume"
+  ],
+  [
+   "Linkedin Profile URL",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "Portfolio URL",
+   "https://github.com/alexchen"
+  ],
+  [
+   "Github Profile URL",
+   "https://github.com/alexchen"
+  ],
+  [
+   "Location",
+   "Santa Clara, CA"
+  ],
+  [
+   "How many years of relevant professional experience do you have?",
+   "1-2 years"
+  ],
+  [
+   "Gender",
+   "Decline to self-identify"
+  ],
+  [
+   "Race",
+   "Decline to self-identify"
+  ],
+  [
+   "Veteran Status",
+   "I decline to self-identify for protected veteran status"
+  ]
+ ],
+ "ashby/sierra.html": [
+  [
+   "Legal First Name",
+   "Alex"
+  ],
+  [
+   "Legal Last Name",
+   "Chen"
+  ],
+  [
+   "Preferred First & Last Name",
+   "Al Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "LinkedIn",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "Resume",
+   "resume"
+  ],
+  [
+   "Are you legally authorized to work in the United Kingdom?",
+   "No"
+  ],
+  [
+   "Will you now or in the future require visa sponsorship to work in the United Kingdom?",
+   "Yes"
+  ],
+  [
+   "We use Metaview, an AI notetaking tool, to streamline interviews by recoding and summarizing discussions, enabling interviewers to be fully present without manual notetaking. With your approval, it silently records notes during interviews. Can Metaview transcribe all your interviews?",
+   "Yes"
+  ],
+  [
+   "How did you hear about this opportunity?",
+   "LinkedIn"
+  ],
+  [
+   "By submitting, I acknowledge my personal data will be processed in accordance with Sierra’s Privacy Policy.",
+   "checked"
+  ],
+  [
+   "What is your gender identity?",
+   "I prefer not to answer"
+  ],
+  [
+   "Do you identify as transgender?",
+   "I prefer not to answer"
+  ],
+  [
+   "How do you identify your sexual orientation? Please select all that apply.",
+   "I prefer not to answer"
+  ],
+  [
+   "Which ethnicity(ies) do you identify with? Please select all that apply.",
+   "I prefer not to answer"
+  ]
+ ],
+ "ashby/ramp.html": [
+  [
+   "Legal Name",
+   "Alex Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone",
+   "+1 408-555-0100"
+  ],
+  [
+   "Where do you plan on working from (for payroll tax purposes)?",
+   "Santa Clara, CA"
+  ],
+  [
+   "Resume",
+   "resume"
+  ],
+  [
+   "LinkedIn Profile",
+   "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "Phone",
+   "Yes - I consent to receiving text messages"
+  ],
+  [
+   "What is your preferred start date?",
+   "Monday, October 12th"
+  ]
+ ],
+ "ashby/perplexity.html": [
+  [
+   "Will you now or in the future require sponsorship for employment visa status in the United Kingdom, Germany or Serbia?",
+   "Yes"
+  ],
+  [
+   "Name",
+   "Alex Chen"
+  ],
+  [
+   "Email",
+   "alex@example.com"
+  ],
+  [
+   "Phone Number",
+   "+1 408-555-0100"
+  ],
+  [
+   "Resume",
+   "resume"
+  ],
+  [
+   "Location",
+   "Santa Clara, CA"
+  ],
+  [
+   "Github/Project link?",
+   "https://github.com/alexchen"
+  ],
+  [
+   "I agree",
+   "checked"
+  ]
+ ]
+}

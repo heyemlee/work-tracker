@@ -4,7 +4,8 @@ A job-application tracker for one person applying to dozens of SWE / AI-agent ro
 same posting from several email accounts. Daily-use tool first, portfolio piece second.
 
 Status: design settled 2026-09-23 · Milestones 1–3 (prototype, MVP, README) done · Milestone 4 (agent v1) on
-hold. Deferred work is listed in [todo.md](todo.md).
+hold · Milestone 7 (autofill extension) built and waiting on the owner to install it, see [autofill.md](autofill.md).
+Deferred work is listed in [todo.md](todo.md).
 
 ## 1. Goals
 
@@ -149,6 +150,8 @@ The app has a single user, the owner. Everyone else only ever sees the sign-in s
 4. **Agent v1** — paste an email → classify, match, update; review queue; eval set.
 5. **Agent v2** — Gmail sync.
 6. _(Optional)_ conversational queries over the data.
+7. **Autofill extension** — a Chrome extension fills applications from a local profile, and each submission logs
+   itself to Outbox; see [autofill.md](autofill.md).
 
 Engineering: strict TypeScript, Vitest for domain logic, Playwright for core flows, GitHub Actions. Public GitHub
 repository.

@@ -55,6 +55,12 @@ describe('cleanLink', () => {
     );
   });
 
+  it('drops a bare question mark', () => {
+    expect(cleanLink('https://job-boards.greenhouse.io/discord/jobs/8811574002?')).toBe(
+      'https://job-boards.greenhouse.io/discord/jobs/8811574002',
+    );
+  });
+
   it('reduces a LinkedIn search to the posting it has open', () => {
     expect(cleanLink('https://www.linkedin.com/jobs/collections/recommended/?currentJobId=4012345678')).toBe(
       'https://www.linkedin.com/jobs/view/4012345678/',

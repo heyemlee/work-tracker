@@ -101,6 +101,8 @@ export function cleanLink(text: string): string | null {
     const lower = key.toLowerCase();
     if (lower.startsWith('utm_') || TRACKING_PARAMS.has(lower)) url.searchParams.delete(key);
   }
+  // A form that submits to its own page leaves a bare "?": the same posting.
+  if (url.searchParams.size === 0) url.search = '';
   // A LinkedIn search result names the posting it has open; keep just that posting.
   const linkedInJob = url.searchParams.get('currentJobId');
   if (isUnder(url.hostname, 'linkedin.com') && linkedInJob) {

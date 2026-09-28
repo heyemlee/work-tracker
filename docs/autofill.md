@@ -1,0 +1,185 @@
+# Outbox Autofill — Design
+
+A Chrome extension that fills job applications from a profile kept on the owner's machine and logs every submission
+to Outbox. Status: decided and built 2026-09-27, in one release without an MVP. What still waits on the owner is in
+[todo.md](todo.md).
+
+## 1. Goals
+
+- An application takes 30–60 seconds: open the form, pick the account, press Fill, check, Submit.
+- Every submission lands in Outbox with its account, channel, resume version and link, without typing it again.
+- Answers are accurate. Work-authorization questions follow fixed rules, never a model.
+
+Principles: rules first, AI for what rules can't place; the owner always presses Submit; the profile never leaves the
+machine.
+
+Non-goals: submitting on the owner's behalf; finding postings or applying in bulk; evading bot detection (simulated
+typing, fingerprint spoofing, CAPTCHA solving); automating LinkedIn, whose terms forbid it; storing portal passwords
+(Chrome's password manager does that).
+
+## 2. How it's used
+
+1. Open an application page. A card appears in the corner: the match check (green, yellow, red, with reasons), the
+   account to apply from — accounts that already applied to this posting are disabled — and the resume.
+2. Press **Fill** (or the shortcut). Recognized fields fill in about a second and the resume PDF is attached.
+3. Work through the card's checklist: confirm the work-authorization answers, edit the AI drafts, fill what's missing.
+4. Press Submit on the page.
+5. The extension sees the confirmation and logs the application to Outbox, with Undo.
+
+Workday runs over several pages: Fill once per page. On its sign-up page the extension fills the email and Chrome
+generates and saves the password. On LinkedIn the card only offers **Log to Outbox**. On other sites the card opens
+from the toolbar and fills what the field dictionary recognizes.
+
+## 3. Architecture
+
+```mermaid
+flowchart LR
+  subgraph chrome["Chrome"]
+    cs["Content script, every frame<br/>detect · read · fill · watch submit"]
+    card["Card, top frame<br/>shadow DOM"]
+    bg["Service worker<br/>storage · Outbox client · Claude client"]
+    opts["Options page<br/>profile · resumes · AI · answers"]
+  end
+  outbox[("tracker.haoyang.us/api")]
+  claude["Claude API"]
+  cs <--> bg
+  card <--> bg
+  opts <--> bg
+  bg --> outbox
+  bg --> claude
+```
+
+- **Content script in every frame of every site**, dormant unless the page is on a known applicant-tracking host or
+  the owner opens the card. Greenhouse, Lever and Ashby forms are often embedded in an iframe on a company's own
+  career site, so the form's frame and the card's frame can differ.
+- **Card** in the top frame, in a shadow root so the page's CSS can't reach it. Outbox's Liquid Glass styling,
+  English and Simplified Chinese.
+- **Service worker** holds the storage, talks to Outbox and to Claude, and queues logs while offline.
+- **Shared code.** The extension imports `src/domain` — link parsing (`postings.ts`), types, rows — so "already
+  applied" means the same thing in the extension and the app.
+- **Code** lives in `extension/`, an npm workspace built with WXT (Vite), React 19, Tailwind v4 and strict TypeScript.
+  It is installed unpacked (Developer mode); it is not published to the Chrome Web Store.
+
+## 4. Profile
+
+Kept in `chrome.storage.local`; resume PDFs in IndexedDB. Its source is `~/Desktop/job-search/autofill-profile.json`,
+imported on the options page — never stored in D1 or in git.
+
+| Section            | Contents                                                                                                  |
+| ------------------ | --------------------------------------------------------------------------------------------------------- |
+| Identity           | Legal first and last name, preferred name, pronouns                                                       |
+| Contact            | Phone, address, city, state, ZIP, country. The email comes from the account picked on the card            |
+| Links              | LinkedIn, GitHub, website                                                                                 |
+| Work authorization | Authorized to work in the US; sponsorship needed now; needed in the future; current status (F-1 STEM OPT) |
+| Education          | School, degree, field, dates, GPA (optional)                                                              |
+| Experience         | Company, title, location, dates, description — Workday asks for each entry                                |
+| Voluntary (EEO)    | Gender, Hispanic/Latino, race, veteran, disability; "decline" allowed for each                            |
+| Common answers     | How you heard, earliest start, salary expectation, relocation, on-site, previously employed, age 18+      |
+| Writing material   | Summary, STAR stories, approved snippets — grounding for free-text answers                                |
+| Resumes            | PDFs, each named after an Outbox resume version; one is the default                                       |
+
+## 5. Filling
+
+Each field goes through four layers and stops at the first that places it:
+
+1. **Applicant-tracking adapter** — Greenhouse, Lever, Ashby, Workday. Finds the fields and drives the widgets a plain
+   value can't set: react-select dropdowns, Ashby's yes/no buttons, Workday's dropdowns, typeaheads and repeatable
+   work and education sections.
+2. **Field dictionary** — label patterns mapped to profile keys. Works on any site.
+3. **Answer memory** — what the owner typed into a field the layers above missed, keyed by the normalized question
+   and reused next time. Captured at submit; editable on the options page.
+4. **AI fallback** — the remaining fields, as text (label, kind, options), go to Claude in one request per form.
+   Below a confidence threshold the field stays blank.
+
+**Critical questions are rules only**: authorization to work, sponsorship (now, in the future, either, and negated
+wordings like "do you not require…"), citizenship and visa status. They never reach the model; an ambiguous wording
+stays blank and turns red; every answer is marked for confirmation.
+
+The checklist sorts fields into **filled**, **confirm**, **AI draft** (blue until edited or confirmed) and
+**missing** (yellow); clicking an entry scrolls to its field. Values are set so React sees them: the native value
+setter plus `input` and `change` events, clicks for radios, checkboxes and options, and a `DataTransfer` for the
+resume's file input.
+
+| System     | Hosts                                                          | Notes                                                      |
+| ---------- | -------------------------------------------------------------- | ---------------------------------------------------------- |
+| Greenhouse | `job-boards.greenhouse.io`, `boards.greenhouse.io`, EU, embeds | react-select dropdowns; embeds read the job from page data |
+| Lever      | `jobs.lever.co`, EU                                            | Plain HTML form; a thank-you page after submit             |
+| Ashby      | `jobs.ashbyhq.com`, embeds                                     | React; yes/no buttons; posting from `window.__appData`     |
+| Workday    | `*.myworkdayjobs.com`, `*.myworkdaysite.com`                   | One Fill per page; built from `data-automation-id` names   |
+| LinkedIn   | `linkedin.com/jobs`                                            | No filling: Log to Outbox                                  |
+| Other      | Any                                                            | Dictionary only; card opened from the toolbar              |
+
+**The job's country** comes from the posting's location: a US state or city anywhere in it means the US ("San
+Francisco; London"), otherwise the country or large city abroad it names ("Belgrade" is Serbia; "Dublin, CA" stays
+American). It decides the "authorized to work in the country where the job is located" questions, and marks
+relocation and office questions for a job abroad as the owner's call.
+
+**When a page fills badly**, the card's "This page didn't fill right" saves the form's structure — labels, kinds,
+options, what each layer did — without any values. Those snapshots become test fixtures. Workday's adapter is built
+from its `data-automation-id` conventions, not from a saved form, so its first real pages are the ones to snapshot.
+
+## 6. AI
+
+- Claude is called from the service worker with `@anthropic-ai/sdk` — not through the Worker, so the free Workers
+  plan is enough. The owner's API key stays in `chrome.storage.local`; the monthly spend limit is set in the Anthropic
+  Console.
+- **Model:** Claude Opus 5 by default, Claude Sonnet 5 selectable; the free-text eval decides whether to switch.
+  Server-side refusal fallback is on.
+- **Field fallback:** one structured-output request per form listing the unplaced fields; each answer comes back with
+  a confidence.
+- **Free-text drafts** ("Why this company?") are grounded in real material: the resume, STAR stories, approved
+  snippets, and one specific detail from the posting. Style rules keep them short and plain (no "passionate",
+  "thrilled", "leverage"…). The owner's edited finals become examples for later drafts. Optional questions are
+  skipped by default.
+- Page text is data, never instructions, and critical questions never reach the model.
+- **Cost estimate** at 30 applications a day: about $20 a month on Opus 5, under $10 on Sonnet 5.
+
+## 7. Match check
+
+Shown before filling. It warns and never blocks.
+
+| Signal                                                                                            | Level  |
+| ------------------------------------------------------------------------------------------------- | ------ |
+| US citizenship, security clearance, export-control "U.S. person", or an explicit "no sponsorship" | Red    |
+| 5+ years required; Senior, Staff, Principal, Lead or Manager titles                               | Yellow |
+| No H-1B approvals on record for the company                                                       | Yellow |
+| Three or more postings at this company in the last 30 days (from Outbox)                          | Yellow |
+| New-grad or early-career signals, H-1B history                                                    | Green  |
+
+H-1B history is a compact table built from the USCIS H-1B Employer Data Hub files for fiscal years 2021–2023 (82,000
+employers, bundled with the extension) and matched by normalized company name.
+
+**Duplicate hint.** Ashby and Workday merge candidates by name and contact details, so picking a second account for
+a posting there shows a note. It is a note, not a block.
+
+## 8. Logging to Outbox
+
+- On a detected submission the service worker sends a quick add: company, title, link, the existing job when the
+  link or company and title match (`findSamePosting`), the account, channel "Company site", and the resume version.
+  The toast offers Undo (`/quick-add/undo`). While offline the log waits in a queue.
+- **Sign-in:** requests carry Outbox's session cookie (the extension has host permission). If Chrome doesn't send it,
+  a content script on the Outbox tab reads the session token from `/api/auth/get-session`, and the service worker
+  sends it as a bearer token (Better Auth's `bearer` plugin). If both fail, the card asks the owner to open Outbox.
+- In development the extension can point at `http://localhost:5180`, where the dev bypass signs requests in.
+
+## 9. Privacy
+
+The profile, resumes, remembered answers and API key stay on the machine. Outbox receives only what it already
+stores. Claude receives field labels and options, the profile parts a question needs, and the posting's text for
+drafts — never voluntary (EEO) answers or work-authorization questions. Form snapshots carry no values.
+
+## 10. Testing
+
+- **Unit** (Vitest, happy-dom): the dictionary, the critical-question rules, the match scan, the setters, each adapter
+  on fixtures, submission detection.
+- **Fixtures:** 22 public application pages saved as served — 10 Greenhouse (4 of them embedded on a company's
+  site), 6 Lever, and 6 Ashby rendered in Chromium — plus 646 questions from about 115 public postings, whose
+  answers are snapshot-tested. Workday's forms sit behind sign-in, so they come from the owner's snapshots.
+- **Fill accuracy** — answers correct over answers expected, and required fields filled, per system — is reported,
+  gated in CI, and quoted in the README. Every expected answer was checked by hand. With rules only: Greenhouse
+  172/172 (87% of required fields filled), Lever 115/115 (79%), Ashby 78/78 (77%).
+- **End to end** (Playwright): the built extension in Chromium against fixtures served on the real hosts through
+  request interception, logging to a mock Outbox: Greenhouse and Lever fill → submit → logged, Ashby fill.
+- **Free-text eval** (`npm run eval -w extension`): each model drafts the same 20 essay questions through the
+  extension's own `draftAnswer`, and a report puts the drafts side by side with flags for banned phrases and
+  numbers the material never states. A run costs about $1, so the owner starts each one.

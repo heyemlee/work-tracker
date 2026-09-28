@@ -1,0 +1,605 @@
+{
+  "discord": {
+    "question_38344893002": [
+      "Yes",
+      "No"
+    ],
+    "question_38344894002": [
+      "Yes",
+      "No"
+    ],
+    "question_38344895002": [
+      "Yes",
+      "No"
+    ],
+    "disability_status": [
+      "I do not want to answer",
+      "No, I do not have a disability and have not had one in the past",
+      "Yes, I have a disability, or have had one in the past"
+    ],
+    "veteran_status": [
+      "I don't wish to answer",
+      "I identify as one or more of the classifications of a protected veteran",
+      "I am not a protected veteran"
+    ],
+    "race": [
+      "Decline To Self Identify",
+      "Two or More Races",
+      "Native Hawaiian or Other Pacific Islander",
+      "White",
+      "Hispanic or Latino",
+      "Black or African American",
+      "Asian",
+      "American Indian or Alaskan Native"
+    ],
+    "gender": [
+      "Decline To Self Identify",
+      "Female",
+      "Male"
+    ]
+  },
+  "anthropic": {
+    "question_18335656008": [
+      "Yes",
+      "No"
+    ],
+    "question_18289498008": [
+      "Yes",
+      "No"
+    ],
+    "question_18289501008": [
+      "Yes",
+      "No"
+    ],
+    "question_18335700008": [
+      "Yes",
+      "No"
+    ],
+    "question_18289507008": [
+      "Yes",
+      "No"
+    ],
+    "question_18289509008": [
+      "Yes",
+      "No"
+    ],
+    "question_18289504008": [
+      "Yes",
+      "No"
+    ],
+    "question_18289503008": [
+      "Yes",
+      "No"
+    ],
+    "question_18335670008": [
+      "Yes",
+      "No"
+    ]
+  },
+  "figma": {
+    "question_20052613004": [
+      "she/her/hers",
+      "he/him/his",
+      "they/them/theirs",
+      "self-describe"
+    ],
+    "question_20052617004": [
+      "Yes",
+      "No"
+    ],
+    "question_20052618004": [
+      "Yes",
+      "No"
+    ],
+    "veteran_status": [
+      "I don't wish to answer",
+      "I identify as one or more of the classifications of a protected veteran",
+      "I am not a protected veteran"
+    ],
+    "race": [
+      "Decline To Self Identify",
+      "Two or More Races",
+      "Native Hawaiian or Other Pacific Islander",
+      "White",
+      "Hispanic or Latino",
+      "Black or African American",
+      "Asian",
+      "American Indian or Alaskan Native"
+    ],
+    "gender": [
+      "Decline To Self Identify",
+      "Female",
+      "Male"
+    ]
+  },
+  "stripe-embed": {
+    "question_67940962": [
+      "Australia",
+      "Belgium",
+      "Brazil",
+      "Canada",
+      "Egypt",
+      "France",
+      "Germany",
+      "India",
+      "Indonesia",
+      "Ireland",
+      "Israel",
+      "Italy",
+      "Japan",
+      "Malaysia",
+      "Mexico",
+      "New Zealand",
+      "Poland",
+      "Portugal",
+      "Romania",
+      "Singapore",
+      "South Korea",
+      "Spain",
+      "Sweden",
+      "Switzerland",
+      "Taiwan",
+      "Thailand",
+      "The Netherlands",
+      "UAE",
+      "UK",
+      "US",
+      "Other"
+    ],
+    "question_67940963[]": [
+      "Australia",
+      "Belgium",
+      "Brazil",
+      "Canada",
+      "France",
+      "Germany",
+      "India",
+      "Indonesia",
+      "Ireland",
+      "Israel",
+      "Italy",
+      "Japan",
+      "Luxembourg",
+      "Malaysia",
+      "Mexico",
+      "New Zealand",
+      "Poland",
+      "Portugal",
+      "Romania",
+      "Singapore",
+      "South Korea",
+      "Spain",
+      "Sweden",
+      "Switzerland",
+      "Taiwan",
+      "Thailand",
+      "The Netherlands",
+      "UAE",
+      "UK",
+      "US"
+    ],
+    "question_67940964": [
+      "Yes",
+      "No"
+    ],
+    "question_67940965": [
+      "Yes",
+      "No"
+    ],
+    "question_67940966": [
+      "Yes, I intend to work on a hybrid basis from a Stripe office.",
+      "No, I want to work remotely."
+    ],
+    "question_67940967": [
+      "Yes",
+      "No"
+    ],
+    "question_67940971": [
+      "Yes",
+      "No"
+    ],
+    "veteran_status": [
+      "I don't wish to answer",
+      "I identify as one or more of the classifications of a protected veteran",
+      "I am not a protected veteran"
+    ],
+    "race": [
+      "Decline To Self Identify",
+      "Two or More Races",
+      "Native Hawaiian or Other Pacific Islander",
+      "White",
+      "Hispanic or Latino",
+      "Black or African American",
+      "Asian",
+      "American Indian or Alaskan Native"
+    ],
+    "gender": [
+      "Decline To Self Identify",
+      "Female",
+      "Male"
+    ]
+  },
+  "zscaler": {
+    "question_12904577007[]": [
+      "BuiltIn",
+      "Glassdoor",
+      "Google search",
+      "Indeed",
+      "Linkedin",
+      "Referral",
+      "Zscaler Careers Page",
+      "Zscaler Talent Team",
+      "Other"
+    ],
+    "question_12904579007": [
+      "Yes",
+      "No"
+    ],
+    "question_12904580007": [
+      "Yes",
+      "No"
+    ],
+    "question_12904583007": [
+      "Yes, I currently work for Zscaler",
+      "Yes, I have previously worked for Zscaler",
+      "No, I have never worked for Zscaler"
+    ],
+    "question_12904586007[]": [
+      "I Agree"
+    ],
+    "question_12904587007[]": [
+      "I Agree"
+    ],
+    "question_12904588007": [
+      "Yes",
+      "No"
+    ],
+    "question_12990681007": [
+      "Yes",
+      "No"
+    ],
+    "question_12990682007": [
+      "Yes",
+      "No"
+    ],
+    "question_12990683007": [
+      "Yes",
+      "No"
+    ],
+    "gender": [
+      "Male",
+      "Female",
+      "Decline To Self Identify"
+    ],
+    "race": [
+      "American Indian or Alaskan Native",
+      "Asian",
+      "Black or African American",
+      "Hispanic or Latino",
+      "White",
+      "Native Hawaiian or Other Pacific Islander",
+      "Two or More Races",
+      "Decline To Self Identify"
+    ],
+    "veteran_status": [
+      "I am not a protected veteran",
+      "I identify as one or more of the classifications of a protected veteran",
+      "I don't wish to answer"
+    ]
+  },
+  "intercom": {
+    "question_65701123": [
+      "I am authorised to work in the country which this role is located (citizen, permanent resident etc)",
+      "My current work authorisation requires sponsorship or renewal now or in the future.",
+      "My authorisation to work in this country is unknown"
+    ],
+    "question_65701124": [
+      "Australia",
+      "Brazil",
+      "England",
+      "Finland",
+      "France",
+      "Germany",
+      "Greece",
+      "India",
+      "Ireland",
+      "Italy",
+      "Netherlands",
+      "New Zealand",
+      "Portugal",
+      "Russia",
+      "Spain",
+      "Sweden",
+      "Turkey",
+      "EMEA - Other",
+      "APAC - Other",
+      "US - California (San Francisco Metro)",
+      "US - California (San Francisco Non-Metro)",
+      "US - Colorado",
+      "US - Florida",
+      "US - Illinois (Chicago Metro)",
+      "US - Illinois (Chicago Non-Metro)",
+      "US - Massachusetts",
+      "US - New York",
+      "US - North Carolina",
+      "US - Texas",
+      "US - Washington",
+      "US - Other"
+    ],
+    "question_65701125": [
+      "Yes",
+      "No"
+    ],
+    "question_65701127": [
+      "Yes",
+      "No"
+    ],
+    "question_65701130": [
+      "Job Board",
+      "Social Media",
+      "Intercom Website",
+      "Intercom Event",
+      "Industry Event",
+      "Employee Referral",
+      "Recruiter Outreach",
+      "University / Campus",
+      "Podcasts / Media",
+      "Online Community",
+      "Other"
+    ],
+    "question_65701133": [
+      "Yes",
+      "No"
+    ],
+    "question_65701134": [
+      "Yes",
+      "No"
+    ],
+    "question_65701135[]": [
+      "Acknowledge"
+    ],
+    "question_66782762": [
+      "Yes",
+      "No"
+    ],
+    "question_69107152": [
+      "Yes",
+      "No"
+    ],
+    "question_69107157": [
+      "N/A",
+      "Yes",
+      "No"
+    ],
+    "question_69107166": [
+      "N/A",
+      "Iran, Cuba, Syria or North Korea",
+      "The additional country (NOT Iran, Cuba, Syria or North Korea"
+    ]
+  },
+  "scaleai": {
+    "question_8362420005": [
+      "Yes",
+      "No"
+    ],
+    "question_8362421005": [
+      "Yes",
+      "No"
+    ],
+    "question_8362423005": [
+      "Yes",
+      "No"
+    ],
+    "question_8362424005": [
+      "Yes",
+      "No"
+    ]
+  },
+  "samsara-embed": {
+    "question_68567982": [
+      "0-1 years",
+      "2-4 years",
+      "4-5 years",
+      "6+ years"
+    ],
+    "question_68567983": [
+      "Yes",
+      "No"
+    ],
+    "question_68474794": [
+      "Yes",
+      "No"
+    ],
+    "question_68474795": [
+      "Yes",
+      "No"
+    ],
+    "question_68567984": [
+      "Yes",
+      "No"
+    ],
+    "question_68474797": [
+      "Acknowledge/Confirm"
+    ],
+    "question_68474800": [
+      "Yes, as a full-time employee",
+      "Yes, as a contractor",
+      "No"
+    ],
+    "question_68474801": [
+      "Samsara Careers Site",
+      "LinkedIn Jobs",
+      "LinkedIn Post",
+      "LinkedIn InMail / Message from a Recruiter or Hiring Manager",
+      "Direct Email / Call/ Text from a Recruiter or Hiring Manager",
+      "Indeed / Glassdoor",
+      "Reddit Ad",
+      "BuiltIn",
+      "RepVue",
+      "Women in Sales Club",
+      "Wellfound",
+      "Just Join IT",
+      "Industry Conference or Event",
+      "Samsara Hosted Event",
+      "Instahyre",
+      "Naukri",
+      "University / Campus Recruiting",
+      "School Alumni Job Board or LinkedIn Group",
+      "Company Alumni Job Board or LinkedIn Group",
+      "Hardware FYI"
+    ],
+    "question_68474802[]": [
+      "LinkedIn",
+      "Samsara blog or website",
+      "News or press coverage",
+      "Podcast",
+      "Industry event or conference",
+      "Word of mouth (friend, family, or colleague)",
+      "A current Samsara employee",
+      "Glassdoor or Blind",
+      "X / Twitter",
+      "Instagram",
+      "Facebook",
+      "YouTube",
+      "Tiktok",
+      "Other",
+      "I wasn't familiar with Samsara before applying"
+    ],
+    "question_68474804": [
+      "Yes",
+      "No"
+    ]
+  },
+  "brex-embed": {
+    "question_37096606002": [
+      "Career Page",
+      "Referral",
+      "LinkedIn",
+      "Social Media (Instagram, X)",
+      "Glassdoor",
+      "RepVue",
+      "Brex Blog / Employee Stories",
+      "Brex Video / Ad",
+      "Event / Conference",
+      "News / Media / Podcast",
+      "Other"
+    ],
+    "question_37096608002": [
+      "Yes, I’m currently located here",
+      "Yes, I’d relocate prior to the start of the role",
+      "No, I’m not located nearby"
+    ],
+    "question_37096609002": [
+      "Brazil",
+      "Canada",
+      "USA",
+      "Netherlands",
+      "United Kingdom",
+      "Other"
+    ],
+    "question_37096610002": [
+      "Yes",
+      "No"
+    ],
+    "question_37096612002": [
+      "Yes, I live here",
+      "Yes, I plan to relocate",
+      "No"
+    ],
+    "question_37096613002": [
+      "Consent"
+    ],
+    "question_37096614002": [
+      "Yes",
+      "No"
+    ],
+    "gender": [
+      "Male",
+      "Female",
+      "Decline To Self Identify"
+    ],
+    "race": [
+      "American Indian or Alaskan Native",
+      "Asian",
+      "Black or African American",
+      "Hispanic or Latino",
+      "White",
+      "Native Hawaiian or Other Pacific Islander",
+      "Two or More Races",
+      "Decline To Self Identify"
+    ],
+    "veteran_status": [
+      "I am not a protected veteran",
+      "I identify as one or more of the classifications of a protected veteran",
+      "I don't wish to answer"
+    ]
+  },
+  "rubrik-embed": {
+    "question_67031783": [
+      "Company Website",
+      "LinkedIn",
+      "Glassdoor",
+      "Indeed",
+      "We Work Remotely",
+      "Github",
+      "Employee Referral",
+      "Other"
+    ],
+    "question_67031784": [
+      "0 - 1 Years",
+      "1 - 2 Years",
+      "2 - 3 Years",
+      "3 - 4 Years",
+      "4 - 7 Years",
+      "7 - 15 Years",
+      "Over 15 Years"
+    ],
+    "question_67031785": [
+      "C",
+      "C++",
+      "Python",
+      "Java",
+      "Golang",
+      "Scala",
+      "Other"
+    ],
+    "question_67031788": [
+      "Yes"
+    ],
+    "question_67685394": [
+      "I have never been employed by Rubrik or contracted to provide services to Rubrik",
+      "I am currently a full/part-time employee for Rubrik",
+      "I am a currently a contractor for Rubrik",
+      "I was previously a full/part-time employee for Rubrik",
+      "I was previously a contractor for Rubrik"
+    ],
+    "question_67961874": [
+      "Yes",
+      "No"
+    ],
+    "question_67961876": [
+      "Yes",
+      "No"
+    ],
+    "gender": [
+      "Male",
+      "Female",
+      "Decline To Self Identify"
+    ],
+    "race": [
+      "American Indian or Alaskan Native",
+      "Asian",
+      "Black or African American",
+      "Hispanic or Latino",
+      "White",
+      "Native Hawaiian or Other Pacific Islander",
+      "Two or More Races",
+      "Decline To Self Identify"
+    ],
+    "veteran_status": [
+      "I am not a protected veteran",
+      "I identify as one or more of the classifications of a protected veteran",
+      "I don't wish to answer"
+    ]
+  }
+}

@@ -1,5 +1,9 @@
 node_modules
 dist
+
+# Extension build output and generated types
+extension/.output
+extension/.wxt
 coverage
 *.local
 *.tsbuildinfo
@@ -14,3 +18,11 @@ coverage
 
 # Real (anonymized) emails used for local evals never leave this machine
 evals/private/
+
+# End-to-end output
+extension/e2e/output
+extension/test-results
+extension/playwright-report
+
+# Free-text eval reports (may contain the owner's profile)
+extension/evals

@@ -61,6 +61,40 @@ npx wrangler secret put OWNER_EMAILS           # the Google account(s) allowed i
 
 Secrets apply immediately. Only emails in `OWNER_EMAILS` can create an account; anyone else is turned away.
 
+## Autofill extension
+
+The extension is loaded unpacked in Chrome; it isn't published to the Chrome Web Store.
+
+1. Build it:
+
+   ```bash
+   npm run ext:build   # writes extension/.output/chrome-mv3
+   ```
+
+2. In Chrome, open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and pick
+   `extension/.output/chrome-mv3`. After each rebuild, press the reload arrow on the extension's card.
+3. Open the extension's options page (**Details → Extension options**). Under **Profile**, import
+   `~/Desktop/job-search/autofill-profile.json` and fill in whatever **Still empty** lists. After editing the
+   file, import it again.
+4. Under **Resumes**, add the PDFs and link each to the Outbox resume version it stands for.
+5. Under **Outbox**, keep the address (`https://tracker.haoyang.us`, or `http://localhost:5180` while
+   developing), sign in to Outbox in the same Chrome profile, and press **Check**. Logging uses Outbox's session
+   cookie. If Chrome withholds it, the extension borrows the session of an open Outbox tab as a bearer token,
+   which needs a Worker deployed with the `bearer` plugin (step 3 above, from this version on).
+6. For AI, create a key in the [Anthropic Console](https://console.anthropic.com), set a monthly spend limit
+   there, paste the key under **AI** and press **Save**. Without a key the rules still fill every field they
+   can; the rest are listed for you.
+
+The card opens on application pages; `Alt+Shift+F` fills (change it at `chrome://extensions/shortcuts`). On
+other sites, click the toolbar icon.
+
+The free-text eval drafts 20 essay questions with each model and writes a side-by-side report to
+`extension/evals/`. A run costs about $1:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-… EVAL_PROFILE=~/Desktop/job-search/autofill-profile.json npm run eval -w extension
+```
+
 ## Local development
 
 ```bash

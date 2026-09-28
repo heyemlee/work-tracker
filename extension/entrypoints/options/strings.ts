@@ -1,0 +1,131 @@
+const en = {
+  title: 'Outbox Autofill',
+  subtitle: 'Fills job applications from a profile on this machine, and logs each submission to Outbox.',
+  profile: 'Profile',
+  profileHelp:
+    'Import ~/Desktop/job-search/autofill-profile.json. It stays in this browser; import again after editing it.',
+  import: 'Import JSON',
+  imported: 'Imported {file} on {date}',
+  noProfile: 'No profile yet.',
+  missing: 'Still empty:',
+  invalid: 'The file doesn’t match the profile format:',
+  clear: 'Remove',
+  resumes: 'Resumes',
+  resumesHelp: 'PDFs to attach. Link each to the Outbox resume version it stands for, so logs record it.',
+  addResume: 'Add PDF',
+  outboxVersion: 'Outbox version',
+  none: 'None',
+  outbox: 'Outbox',
+  outboxHelp: 'Where Outbox runs. Sign in there in this browser.',
+  check: 'Check',
+  connected: 'Connected: {n} accounts',
+  signedOut: 'Not signed in. Open Outbox and sign in.',
+  unreachable: 'Can’t reach it: {detail}',
+  open: 'Open Outbox',
+  queued: '{n} logs waiting to be sent',
+  ai: 'AI',
+  aiHelp:
+    'Claude drafts free-text answers and settles fields the rules can’t place. Work-authorization and EEO questions never reach it.',
+  aiEnabled: 'Use AI',
+  apiKey: 'Anthropic API key',
+  apiKeyHelp:
+    'Create one at console.anthropic.com and set a monthly spend limit there. Stored only in this browser.',
+  save: 'Save',
+  saved: 'Saved',
+  keyOk: 'The key works.',
+  keyBad: 'The key didn’t work: {detail}',
+  model: 'Model',
+  usage: 'Spend',
+  usageLine: '{day}: ${cost} ({tokens} tokens)',
+  usageMonth: 'This month: ${cost}',
+  memory: 'Remembered answers',
+  memoryHelp: 'What you typed where the rules had nothing. Used for the same question next time.',
+  noMemory: 'Nothing yet.',
+  delete: 'Delete',
+  snapshots: 'Form snapshots',
+  snapshotsHelp:
+    'Saved with “This page didn’t fill right”: the form’s structure, never its values. Export them to improve the extension.',
+  noSnapshots: 'None yet.',
+  export: 'Export',
+  settings: 'Settings',
+  language: 'Language',
+  auto: 'Follow the browser',
+  limit: 'Warn after this many postings at one company in 30 days',
+  data: 'Data',
+  exportAll: 'Export everything (without the API key)',
+  deleteAll: 'Delete everything',
+  confirmDelete:
+    'Delete the profile, resumes, remembered answers, snapshots and the API key from this browser?',
+  fields: '{n} fields',
+};
+
+type Key = keyof typeof en;
+
+const zh: Record<Key, string> = {
+  title: 'Outbox Autofill',
+  subtitle: '用本机的档案填写求职申请，并把每次提交记录到 Outbox。',
+  profile: '档案',
+  profileHelp:
+    '导入 ~/Desktop/job-search/autofill-profile.json。档案只存在这个浏览器里；改完文件后重新导入。',
+  import: '导入 JSON',
+  imported: '已于 {date} 导入 {file}',
+  noProfile: '还没有档案。',
+  missing: '还空着：',
+  invalid: '文件格式不对：',
+  clear: '移除',
+  resumes: '简历',
+  resumesHelp: '要上传的 PDF。每份对应 Outbox 里的一个简历版本，记录时会一起写进去。',
+  addResume: '添加 PDF',
+  outboxVersion: 'Outbox 版本',
+  none: '无',
+  outbox: 'Outbox',
+  outboxHelp: 'Outbox 的地址。请在这个浏览器里登录 Outbox。',
+  check: '检查',
+  connected: '已连接：{n} 个账号',
+  signedOut: '未登录。请打开 Outbox 登录。',
+  unreachable: '连不上：{detail}',
+  open: '打开 Outbox',
+  queued: '{n} 条记录等待发送',
+  ai: 'AI',
+  aiHelp: 'Claude 负责起草问答题、处理规则认不出的字段。工作授权和 EEO 题永远不会发给它。',
+  aiEnabled: '使用 AI',
+  apiKey: 'Anthropic API key',
+  apiKeyHelp: '在 console.anthropic.com 创建，并在那里设置每月花费上限。只存在这个浏览器里。',
+  save: '保存',
+  saved: '已保存',
+  keyOk: 'Key 可以用。',
+  keyBad: 'Key 不可用：{detail}',
+  model: '模型',
+  usage: '花费',
+  usageLine: '{day}：${cost}（{tokens} tokens）',
+  usageMonth: '本月：${cost}',
+  memory: '记住的回答',
+  memoryHelp: '规则填不了、你自己填的答案。下次遇到同样的问题会自动填。',
+  noMemory: '暂时没有。',
+  delete: '删除',
+  snapshots: '表单快照',
+  snapshotsHelp: '点“这页没填好”时保存的表单结构，不含任何填写内容。导出后可以用来改进扩展。',
+  noSnapshots: '暂时没有。',
+  export: '导出',
+  settings: '设置',
+  language: '语言',
+  auto: '跟随浏览器',
+  limit: '30 天内同一家公司投到第几个岗位时提醒',
+  data: '数据',
+  exportAll: '导出全部（不含 API key）',
+  deleteAll: '清空全部',
+  confirmDelete: '要从这个浏览器删除档案、简历、记住的回答、快照和 API key 吗？',
+  fields: '{n} 个字段',
+};
+
+export type Strings = (key: Key, values?: Record<string, string | number>) => string;
+
+export function strings(language: 'en' | 'zh'): Strings {
+  const table = language === 'zh' ? zh : en;
+  return (key, values) => {
+    let text: string = table[key];
+    for (const [name, value] of Object.entries(values ?? {}))
+      text = text.replaceAll(`{${name}}`, String(value));
+    return text;
+  };
+}

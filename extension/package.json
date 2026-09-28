@@ -1,0 +1,36 @@
+{
+  "name": "outbox-autofill",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Fills job applications from a profile kept on this machine and logs each submission to Outbox.",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt build --mode development",
+    "build": "wxt build",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run",
+    "postinstall": "wxt prepare",
+    "e2e": "wxt build && playwright test",
+    "eval": "RUN_EVAL=1 vitest run test/eval-drafts.test.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.47.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@wxt-dev/module-react": "^1.2.2",
+    "happy-dom": "^20.14.5",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.1",
+    "wxt": "^0.21.4"
+  }
+}

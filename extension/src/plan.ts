@@ -1,0 +1,302 @@
+import type { Hint, PlannedField, ScannedField, Source } from './model';
+import { latestEducation } from './profile/profile';
+import type { Education, Experience } from './profile/schema';
+import { answerAuth, classifyAuth, postingCountry } from './rules/authorization';
+import { findRule, RULES } from './rules/common';
+import { answerConsent, isConsent } from './rules/consent';
+import type { RuleContext } from './rules/context';
+import { classifyEeo, eeoWant } from './rules/eeo';
+import { classifyFreeText } from './rules/freeText';
+import { recall, type MemoryEntry } from './rules/memory';
+import { choose, date, empty, isTextKind, text, yesNo, type Resolution } from './rules/resolve';
+import { norm } from './text';
+
+/**
+ * Decides what goes into each field. Layers, first match wins:
+ *
+ * 1. Repeatable entries and adapter hints — the page named the field.
+ * 2. Work authorization — rules only, always marked for confirmation.
+ * 3. Voluntary self-identification (EEO) — from the profile.
+ * 4. Answers the owner typed last time for the same question.
+ * 5. Acknowledgements — filled, marked for confirmation.
+ * 6. The field dictionary.
+ * 7. Free-text questions — drafted by AI when required, skipped when optional.
+ *
+ * Whatever is left is `missing`; the service worker may hand those to AI.
+ */
+export function planForm(
+  fields: readonly ScannedField[],
+  ctx: RuleContext,
+  memory: readonly MemoryEntry[],
+): PlannedField[] {
+  return fields.map((field) => planField(field, ctx, memory));
+}
+
+export function planField(
+  field: ScannedField,
+  ctx: RuleContext,
+  memory: readonly MemoryEntry[],
+): PlannedField {
+  const { resolution, source } = resolve(field, ctx, memory);
+  // A field the page already filled (a parsed resume, a Workday profile) is kept when there's nothing better.
+  if (!resolution.answer && field.filled && resolution.status !== 'draft') {
+    return {
+      fieldId: field.id,
+      status: 'filled',
+      answer: null,
+      source: null,
+      key: resolution.key,
+      note: 'already filled',
+      critical: resolution.critical,
+    };
+  }
+  return {
+    fieldId: field.id,
+    status: resolution.status,
+    answer: resolution.answer,
+    source: resolution.answer ? source : null,
+    key: resolution.key,
+    note: resolution.note,
+    critical: resolution.critical,
+  };
+}
+
+function resolve(
+  field: ScannedField,
+  ctx: RuleContext,
+  memory: readonly MemoryEntry[],
+): { resolution: Resolution; source: Source } {
+  const rule = (resolution: Resolution) => ({ resolution, source: 'rule' as const });
+
+  if (field.entry && field.hint) {
+    const entry = resolveEntry(field, ctx);
+    if (entry) return rule(entry);
+  }
+  if (field.hint) {
+    const hinted = resolveHint(field.hint, field, ctx);
+    if (hinted) return rule(hinted);
+  }
+
+  const auth = classifyAuth(field.label, field.description);
+  if (auth) return rule(resolveAuth(auth, field, ctx));
+
+  const eeo = classifyEeo(field.label);
+  if (eeo && field.kind !== 'textarea') return rule(choose(`eeo.${eeo}`, field, eeoWant(eeo, ctx.profile)));
+
+  const remembered = recall(memory, field);
+  if (remembered) {
+    return {
+      resolution: {
+        status: 'filled',
+        answer: remembered.answer,
+        key: 'memory',
+        note: 'your answer last time',
+        critical: false,
+      },
+      source: 'memory',
+    };
+  }
+
+  if (isConsent(field)) return rule(answerConsent(field, ctx.profile));
+
+  const found = findRule(field);
+  if (found) return rule(found.answer(field, ctx));
+
+  const freeText = classifyFreeText(field);
+  if (freeText) {
+    if (freeText === 'additional' || (freeText === 'coverLetter' && !field.required)) {
+      return rule(empty(`text.${freeText}`, field, freeText === 'coverLetter' ? 'cover letter' : null));
+    }
+    return rule(
+      field.required
+        ? { status: 'draft', answer: null, key: `text.${freeText}`, note: null, critical: false }
+        : {
+            status: 'skipped',
+            answer: null,
+            key: `text.${freeText}`,
+            note: 'optional: left for you',
+            critical: false,
+          },
+    );
+  }
+
+  return rule({
+    status: field.required ? 'missing' : 'skipped',
+    answer: null,
+    key: 'unknown',
+    note: null,
+    critical: false,
+  });
+}
+
+function resolveAuth(
+  kind: NonNullable<ReturnType<typeof classifyAuth>>,
+  field: ScannedField,
+  ctx: RuleContext,
+): Resolution {
+  const country = postingCountry(ctx.posting?.location ?? null) ?? 'United States';
+  const result = answerAuth(kind, field.label, field.kind, ctx.profile, field.options, country);
+  const options = { status: 'confirm' as const, critical: true, note: result.note };
+  const key = `auth.${kind}`;
+  if (result.text !== null) return text(key, field, result.text, [], options);
+  if (!result.question) return { status: 'missing', answer: null, key, note: result.note, critical: true };
+  const { answer } = result.question;
+  if (field.kind === 'checkbox' || isTextKind(field.kind)) {
+    return answer
+      ? yesNo(key, field, answer === 'yes', options)
+      : { status: 'missing', answer: null, key, note: result.note, critical: true };
+  }
+  // "Select all that apply" export-control lists take a single "None of the above".
+  const single = field.kind === 'multi' ? { ...field, kind: 'radio' as const } : field;
+  const resolution = choose(key, single, { kind: 'auth', question: result.question }, options);
+  return resolution.answer ? resolution : { ...resolution, status: 'missing', critical: true };
+}
+
+const HINT_RULE_KEYS: Partial<Record<Hint, string>> = {
+  'name.first': 'name.first',
+  'name.last': 'name.last',
+  'name.full': 'name.full',
+  'name.preferred': 'name.preferred',
+  email: 'email',
+  phone: 'phone',
+  'phone.country': 'phone.country',
+  'phone.type': 'phone.type',
+  location: 'location',
+  'address.line1': 'address.line1',
+  'address.city': 'address.city',
+  'address.state': 'address.state',
+  'address.zip': 'address.zip',
+  'address.country': 'address.country',
+  'links.linkedin': 'links.linkedin',
+  'links.github': 'links.github',
+  'links.website': 'links.website',
+  'links.twitter': 'links.twitter',
+  website: 'links.website',
+  'current.company': 'current.company',
+  'current.title': 'current.title',
+  resume: 'resume',
+  coverLetter: 'coverLetter',
+  pronouns: 'pronouns',
+  howHeard: 'howHeard',
+  'education.school': 'education.school',
+  'education.degree': 'education.degree',
+  'education.field': 'education.field',
+  'education.gpa': 'education.gpa',
+};
+
+function resolveHint(hint: Hint, field: ScannedField, ctx: RuleContext): Resolution | null {
+  if (hint.startsWith('eeo.')) {
+    const eeo = hint.slice(4) as 'gender' | 'hispanic' | 'race' | 'veteran' | 'disability';
+    return choose(hint, field, eeoWant(eeo, ctx.profile));
+  }
+  // Ashby's name field keeps its hint when a form relabels it "Preferred First & Last Name".
+  const relabeled = hint === 'name.full' && /\bpreferred\b/.test(norm(field.label));
+  const key = relabeled ? 'name.preferred' : HINT_RULE_KEYS[hint];
+  const rule = key ? RULES.find((candidate) => candidate.key === key) : undefined;
+  return rule ? rule.answer(field, ctx) : null;
+}
+
+/** Newest first, the order Workday's "Add" buttons fill in. */
+const jobsNewestFirst = (jobs: readonly Experience[]) =>
+  [...jobs].sort((a, b) => b.start.localeCompare(a.start));
+
+function resolveEntry(field: ScannedField, ctx: RuleContext): Resolution | null {
+  const { entry, hint } = field;
+  if (!entry || !hint) return null;
+  const key = `${hint}#${entry.index}`;
+  if (entry.kind === 'experience') {
+    const job = jobsNewestFirst(ctx.profile.experience)[entry.index];
+    if (!job) return empty(key, field);
+    switch (hint) {
+      case 'experience.title':
+        return text(key, field, job.title);
+      case 'experience.company':
+        return text(key, field, job.company);
+      case 'experience.location':
+        return text(key, field, job.location);
+      case 'experience.current':
+        return yesNo(key, field, job.end === null);
+      case 'experience.start':
+        return date(key, field, `${job.start}-01`, job.start);
+      case 'experience.end':
+        return job.end
+          ? date(key, field, `${job.end}-01`, job.end)
+          : empty(key, { ...field, required: false });
+      case 'experience.description':
+        return text(key, field, job.description);
+      default:
+        return null;
+    }
+  }
+  if (entry.kind === 'education') {
+    const schools = [...ctx.profile.education].sort((a: Education, b: Education) =>
+      (b.end ?? '9999').localeCompare(a.end ?? '9999'),
+    );
+    const school = schools[entry.index] ?? (entry.index === 0 ? latestEducation(ctx.profile) : null);
+    if (!school) return empty(key, field);
+    switch (hint) {
+      case 'education.school':
+        return text(key, field, school.school, ['Other']);
+      case 'education.degree':
+        return text(key, field, school.degree, degreeWords(school.level));
+      case 'education.field':
+        return text(key, field, school.field);
+      case 'education.gpa':
+        return text(key, field, school.gpa);
+      case 'education.start':
+        return school.start
+          ? date(key, field, `${school.start}-01`, school.start.slice(0, 4))
+          : empty(key, field);
+      case 'education.end':
+        return school.end ? date(key, field, `${school.end}-01`, school.end.slice(0, 4)) : empty(key, field);
+      default:
+        return null;
+    }
+  }
+  return null;
+}
+
+function degreeWords(level: Education['level']): string[] {
+  const words: Record<Education['level'], string[]> = {
+    'high-school': ['High School'],
+    associate: ["Associate's Degree", 'Associate'],
+    bachelor: ["Bachelor's Degree", "Bachelor's", 'Bachelor', 'BS'],
+    master: ["Master's Degree", "Master's", 'Master', 'MS'],
+    doctorate: ['Doctorate', 'PhD'],
+    other: ['Other'],
+  };
+  return words[level];
+}
+
+/** Counts for the card's summary line. */
+export function summarize(plan: readonly PlannedField[]): Record<PlannedField['status'], number> {
+  const counts = { filled: 0, confirm: 0, draft: 0, missing: 0, skipped: 0 };
+  for (const field of plan) counts[field.status]++;
+  return counts;
+}
+
+/** Fields worth sending to the AI fallback: required, unplaced, not critical, not free text. */
+export function aiCandidates(fields: readonly ScannedField[], plan: readonly PlannedField[]): ScannedField[] {
+  const byId = new Map(plan.map((entry) => [entry.fieldId, entry]));
+  return fields.filter((field) => {
+    const entry = byId.get(field.id);
+    // Unknown questions, and dictionary matches whose options held no answer ("San Fransisco" for a Bay Area city).
+    const open = entry?.key === 'unknown' || entry?.note === 'no matching option';
+    return (
+      entry?.status === 'missing' &&
+      open &&
+      !entry.critical &&
+      field.kind !== 'file' &&
+      norm(field.label) !== ''
+    );
+  });
+}
+
+/** Free-text questions waiting for a draft. */
+export function draftCandidates(
+  fields: readonly ScannedField[],
+  plan: readonly PlannedField[],
+): ScannedField[] {
+  const byId = new Map(plan.map((entry) => [entry.fieldId, entry]));
+  return fields.filter((field) => byId.get(field.id)?.status === 'draft' && !byId.get(field.id)?.answer);
+}

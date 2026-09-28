@@ -1,5 +1,6 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { betterAuth } from 'better-auth';
+import { bearer } from 'better-auth/plugins/bearer';
 import type { Db } from './db';
 import * as authSchema from './db/auth-schema';
 
@@ -27,6 +28,9 @@ export function createAuth(env: Env, db: Db) {
           },
         }
       : undefined,
+    // The Autofill extension sends the session token as a bearer token when Chrome won't attach the cookie to its
+    // requests; the token is the one the cookie carries, read by the extension from /api/auth/get-session.
+    plugins: [bearer()],
     databaseHooks: {
       user: {
         create: {

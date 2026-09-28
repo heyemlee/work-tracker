@@ -6,7 +6,14 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig([
-  globalIgnores(['dist', 'coverage', '.wrangler', 'worker-configuration.d.ts']),
+  globalIgnores([
+    'dist',
+    'coverage',
+    '.wrangler',
+    'worker-configuration.d.ts',
+    'extension/.output',
+    'extension/.wxt',
+  ]),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

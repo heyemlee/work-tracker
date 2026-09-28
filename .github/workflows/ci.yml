@@ -18,6 +18,10 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run format:check
-      # Includes the repository contract against an in-memory D1 (workerd).
+      # Includes the repository contract against an in-memory D1 (workerd), and the extension's unit tests.
       - run: npm test
       - run: npm run build
+      # The autofill extension, end to end: fills saved application pages in Chromium and logs to a mock Outbox.
+      - run: npx playwright install --with-deps chromium
+        working-directory: extension
+      - run: npm run e2e -w extension

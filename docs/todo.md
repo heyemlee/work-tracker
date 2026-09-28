@@ -2,6 +2,115 @@
 
 Work that is deferred or not done yet. Decisions and their reasons live in [design.md](design.md).
 
+## Autofill extension (decided and built 2026-09-27)
+
+One release with everything below, no MVP. Design: [autofill.md](autofill.md).
+
+### Foundation
+
+- [x] `extension/` as an npm workspace: WXT, React 19, Tailwind v4, strict TypeScript; `src/domain` shared through an
+      alias.
+- [x] Root scripts and CI run the extension's typecheck, lint, format check, tests, build and end-to-end tests.
+- [x] Storage: `chrome.storage.local` for the profile, settings, remembered answers and usage; IndexedDB for resume
+      PDFs.
+- [x] Typed messages between the frames' content scripts, the card, the options page and the service worker.
+
+### Profile and resumes
+
+- [x] Profile schema (zod, versioned).
+- [x] Draft `~/Desktop/job-search/autofill-profile.json` from the resume and `profile.md`.
+- [x] Options page: import and validate the profile, list what's missing.
+- [x] Options page: add resume PDFs, name each after an Outbox resume version, pick the default.
+
+### Reading the page
+
+- [x] Detect the applicant-tracking system from the host and the DOM, embedded iframes included, and whether the
+      page is an application form.
+- [x] Read the posting: company, title, link, location, description — from the page's own data where the form
+      doesn't show them (Greenhouse embeds, Ashby).
+- [x] Extract fields: label, kind, options, required, section, repeatable group.
+
+### Filling
+
+- [x] Setters React sees: text, textarea, select, radio, checkbox, custom dropdowns, typeaheads, dates, file upload.
+- [x] Field dictionary: contact, links, education, experience, preferences, common questions.
+- [x] Critical questions by rule only: authorization, sponsorship (now / future / either, negated wordings),
+      citizenship, visa status, export control. Ambiguous → blank and red. The job's country comes from the
+      posting's location, cities abroad included.
+- [x] Voluntary (EEO) answers matched across wordings: gender, Hispanic/Latino, race, veteran, disability.
+- [x] Answer memory: capture typed answers at submit, reuse them by normalized question, edit them on the options
+      page.
+- [x] Greenhouse adapter: job boards, legacy boards, embeds.
+- [x] Lever adapter.
+- [x] Ashby adapter.
+- [x] Workday adapter: sign-up email, My Information, My Experience (repeatable work and education), Application
+      Questions, Voluntary Disclosures, Self Identify. Built from Workday's `data-automation-id` conventions; real
+      pages still to check (see below).
+- [x] Generic adapter: dictionary only, card opened from the toolbar.
+
+### Card
+
+- [x] Shadow-DOM card in the top frame: Outbox's Liquid Glass, English and Chinese.
+- [x] Match status; account picker with already-applied accounts disabled and the duplicate hint on Ashby and
+      Workday; resume picker; Fill button and shortcut.
+- [x] Checklist (filled, confirm, AI draft, missing); click to jump to a field.
+- [x] "This page didn't fill right": save the form's structure without values.
+- [x] LinkedIn and other job pages: Log to Outbox only.
+
+### Match check
+
+- [x] Description scan: citizenship, clearance, export control, no sponsorship → red.
+- [x] Seniority and years → yellow; new-grad signals → green.
+- [x] Three or more postings at the company in 30 days → yellow.
+- [x] H-1B history: a compact table built from the USCIS H-1B Employer Data Hub (FY2021–2023), matched by
+      normalized company name.
+
+### AI
+
+- [x] Claude client in the service worker: `@anthropic-ai/sdk`, the owner's key, Opus 5 by default, Sonnet 5
+      selectable, refusal fallback.
+- [x] Field fallback: one structured-output request per form, confidence threshold, never critical questions.
+- [x] Free-text drafts grounded in the resume, stories, approved snippets and the description; style rules; the
+      owner's edited finals as examples; optional questions skipped.
+- [x] Usage and cost per day on the options page.
+- [x] Free-text eval: 20 questions, Opus 5 vs Sonnet 5, through the extension's own `draftAnswer`
+      (`npm run eval -w extension`). Runs cost money, so the owner starts each.
+
+### Logging to Outbox
+
+- [x] Detect a submission on Greenhouse, Lever, Ashby and Workday.
+- [x] Quick add with the link, account, channel (Company site) and resume version; Undo; offline queue.
+- [x] Sign-in: session cookie first; bearer token from an open Outbox tab as the fallback (Better Auth `bearer`
+      plugin on the Worker).
+
+### Quality and docs
+
+- [x] Fixtures: 22 public application pages (10 Greenhouse, 6 Lever, 6 Ashby), saved as served, plus a corpus of 646
+      questions.
+- [x] Fill-accuracy report per system, gated in CI: every hand-checked answer right; 87% / 79% / 77% of required
+      fields filled on Greenhouse / Lever / Ashby with rules only.
+- [x] Unit tests for every module above.
+- [x] Playwright: the built extension in Chromium against the fixtures (request interception) and a mock Outbox.
+- [x] README section; installing the extension in [deploy.md](deploy.md). A card screenshot waits for a real
+      application: on saved pages the dropdowns can't open.
+
+### Waiting on the owner
+
+- [ ] Review the profile draft: phone, address and ZIP, citizenship, salary expectation, earliest start date,
+      relocation, languages, EEO answers, and years of experience (computed as 2 from full-time and contract
+      work).
+- [ ] Load the extension: `npm run ext:build`, then `chrome://extensions` → Developer mode → Load unpacked →
+      `extension/.output/chrome-mv3`.
+- [ ] Create an Anthropic API key in the Console with a monthly spend limit, and paste it on the options page.
+- [ ] Run the free-text eval once (about $1) and choose Opus 5 or Sonnet 5 from its report.
+- [ ] On each Workday page, press "This page didn't fill right" once: Workday's forms are behind sign-in, so these
+      snapshots are its only fixtures.
+- [ ] Before the extension logs to production: deploy the Worker with job links (migration 0002 is already applied
+      remotely) and the `bearer` plugin.
+- [ ] Optional: Simplify's free version until the extension is installed; afterwards turn it off on Greenhouse,
+      Lever and Ashby.
+- [ ] Optional: three to five STAR stories with `my-interview-prep`, to ground free-text answers.
+
 ## On hold (decided 2026-09-24)
 
 - [ ] **Workers Paid ($5/month).** Staying on the free plan for now. The free plan allows 10 ms of CPU per
