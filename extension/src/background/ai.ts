@@ -94,7 +94,17 @@ interface AskParams {
   schema?: Record<string, unknown>;
 }
 
+/** A model's reply: its text, or why there's none. */
+interface Reply {
+  text: string | null;
+  why: string | null;
+}
+
 async function ask(params: AskParams): Promise<string | null> {
+  return (await request(params)).text;
+}
+
+async function request(params: AskParams): Promise<Reply> {
   const settings = await getSettings();
   if (settings.provider === 'openai') return askOpenAI(params, settings);
   const { anthropic, model } = await client();
@@ -140,13 +150,15 @@ async function ask(params: AskParams): Promise<string | null> {
     ],
   });
   await recordUsage(message, model);
-  if (message.stop_reason === 'refusal' || message.stop_reason === 'max_tokens') return null;
+  if (message.stop_reason === 'refusal') return { text: null, why: 'the model declined' };
+  if (message.stop_reason === 'max_tokens')
+    return { text: null, why: 'the answer was cut off at the token limit' };
   const text = message.content
     .filter((block): block is Extract<typeof block, { type: 'text' }> => block.type === 'text')
     .map((block) => block.text)
     .join('')
     .trim();
-  return text || null;
+  return text ? { text, why: null } : { text: null, why: 'the answer was empty' };
 }
 
 /** `https://api.kabi.pro` → `https://api.kabi.pro/v1`; an address with a path is used as given. */
@@ -168,7 +180,7 @@ type ChatBody = Record<string, unknown>;
  * they accept, so a request refused for `max_completion_tokens` or for structured output is sent again without it;
  * the prompt still asks for JSON.
  */
-async function askOpenAI(params: AskParams, settings: Settings): Promise<string | null> {
+async function askOpenAI(params: AskParams, settings: Settings): Promise<Reply> {
   const key = await openaiKey();
   if (!settings.openaiModel.trim()) throw new Error('Choose a model on the options page');
   const content: unknown[] = [];
@@ -192,6 +204,8 @@ async function askOpenAI(params: AskParams, settings: Settings): Promise<string 
       { role: 'user', content },
     ],
     max_completion_tokens: params.maxTokens,
+    // Reasoning models spend output tokens thinking; low effort leaves room for the answer and answers sooner.
+    reasoning_effort: params.effort,
     ...(params.schema
       ? {
           response_format: {
@@ -207,11 +221,11 @@ async function askOpenAI(params: AskParams, settings: Settings): Promise<string 
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(90_000),
+      signal: AbortSignal.timeout(150_000),
     });
     if (!response.ok) {
       const detail = (await response.text()).slice(0, 400);
-      const retry = response.status === 400 && attempt < 2 ? relaxed(body, detail) : null;
+      const retry = response.status === 400 && attempt < 3 ? relaxed(body, detail) : null;
       if (retry) {
         body = retry;
         continue;
@@ -224,15 +238,12 @@ async function askOpenAI(params: AskParams, settings: Settings): Promise<string 
     };
     await addUsage(data.usage?.prompt_tokens ?? 0, data.usage?.completion_tokens ?? 0, 0);
     const choice = data.choices?.[0];
-    if (!choice || choice.message?.refusal || choice.finish_reason === 'length') return null;
+    if (!choice) return { text: null, why: 'the endpoint returned no answer' };
+    if (choice.message?.refusal) return { text: null, why: `the model declined: ${choice.message.refusal}` };
+    if (choice.finish_reason === 'length')
+      return { text: null, why: 'the answer was cut off at the token limit' };
     const text = (choice.message?.content ?? '').trim();
-    // Without structured output some models wrap the JSON in a code fence.
-    return (
-      text
-        .replace(/^```(?:json)?\s*/i, '')
-        .replace(/\s*```$/, '')
-        .trim() || null
-    );
+    return text ? { text, why: null } : { text: null, why: 'the answer was empty' };
   }
 }
 
@@ -241,6 +252,11 @@ function relaxed(body: ChatBody, detail: string): ChatBody | null {
   if (/max_completion_tokens/i.test(detail) && 'max_completion_tokens' in body) {
     const { max_completion_tokens: limit, ...rest } = body;
     return { ...rest, max_tokens: limit };
+  }
+  if (/reasoning_effort/i.test(detail) && 'reasoning_effort' in body) {
+    const rest = { ...body };
+    delete rest.reasoning_effort;
+    return rest;
   }
   if (/response_format|json_schema/i.test(detail) && 'response_format' in body) {
     const rest = { ...body };
@@ -371,23 +387,63 @@ function fitTo(text: string, limit: number): string {
 }
 
 /** Reads a resume PDF (base64) into the parts of a profile it settles. Null when the model can't. */
-export async function parseResume(pdf: string, pdfText = ''): Promise<ResumeFacts | null> {
-  const text = await ask({
+/**
+ * The JSON object in a model's answer, whatever surrounds it (a code fence, a sentence), made to fit the resume
+ * schema's shape: nulls dropped, numbers as text ("GPA 3.9"), and a skills line split into a list.
+ */
+export function looseResumeJson(text: string): unknown {
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start < 0 || end <= start) throw new Error('no JSON object in it');
+  const tidy = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.filter((item) => item !== null).map(tidy);
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    if (!value || typeof value !== 'object') return value;
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, item]) => item !== null)
+        .map(([key, item]) => [
+          key,
+          (key === 'skills' || key === 'languages') && typeof item === 'string'
+            ? item
+                .split(/[,;\n]/)
+                .map((part) => part.trim())
+                .filter(Boolean)
+            : tidy(item),
+        ]),
+    );
+  };
+  return tidy(JSON.parse(text.slice(start, end + 1)));
+}
+
+/** Reads a resume PDF (base64, with its text when the page could read it) into the parts of a profile it settles. */
+export async function parseResume(pdf: string, pdfText = ''): Promise<ResumeFacts> {
+  const reply = await request({
     system: RESUME_SYSTEM,
     pdf,
     pdfText,
     prompt: 'Read this resume into the schema.',
     effort: 'low',
-    maxTokens: 8000,
+    maxTokens: 16000,
     schema: RESUME_SCHEMA,
   });
-  if (!text) return null;
+  if (!reply.text) throw new Error(`The model gave no answer: ${reply.why ?? 'unknown reason'}.`);
+  const start = `Its answer began: ${reply.text.slice(0, 160)}`;
+  let json: unknown;
   try {
-    const parsed = resumeFactsSchema.safeParse(JSON.parse(text));
-    return parsed.success ? parsed.data : null;
-  } catch {
-    return null;
+    json = looseResumeJson(reply.text);
+  } catch (error) {
+    throw new Error(
+      `The model's answer wasn't JSON (${error instanceof Error ? error.message : error}). ${start}`,
+      { cause: error },
+    );
   }
+  const parsed = resumeFactsSchema.safeParse(json);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    throw new Error(`The model's answer didn't fit (${issue?.path.join('.')}: ${issue?.message}). ${start}`);
+  }
+  return parsed.data;
 }
 
 /** A tiny request to check the key works, for the options page. */

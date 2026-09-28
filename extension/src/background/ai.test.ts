@@ -197,11 +197,26 @@ describe('parseResume', () => {
     expect(request.output_config.format.schema.required).toContain('experience');
   });
 
-  it('returns nothing when the model declines or answers badly', async () => {
+  it('says why it has nothing: declined, cut off, not JSON', async () => {
     create.mockResolvedValue(reply('', 'refusal'));
-    expect(await parseResume('JVBERi0xLjQK')).toBeNull();
-    create.mockResolvedValue(reply('not json'));
-    expect(await parseResume('JVBERi0xLjQK')).toBeNull();
+    await expect(parseResume('JVBERi0xLjQK')).rejects.toThrow(/no answer: the model declined/);
+    create.mockResolvedValue(reply('{"name": {"first": "Al', 'max_tokens'));
+    await expect(parseResume('JVBERi0xLjQK')).rejects.toThrow(/cut off/);
+    create.mockResolvedValue(reply('Sorry, I can only see an image.'));
+    await expect(parseResume('JVBERi0xLjQK')).rejects.toThrow(/wasn't JSON.*Sorry, I can only see/);
+  });
+
+  it('reads an answer loosely: wrapped in prose, nulls, numbers, a skills line', async () => {
+    create.mockResolvedValue(
+      reply(
+        'Here is the JSON:\n```json\n{"name":{"first":"Alex","last":"Chen","preferred":null},"phone":null,' +
+          '"education":[{"school":"MIT","gpa":3.9,"start":null}],"skills":"Python, Go; SQL"}\n```',
+      ),
+    );
+    const facts = await parseResume('JVBERi0xLjQK');
+    expect(facts.name).toEqual({ first: 'Alex', last: 'Chen', preferred: '' });
+    expect(facts.education[0]).toMatchObject({ school: 'MIT', gpa: '3.9', start: '' });
+    expect(facts.skills).toEqual(['Python', 'Go', 'SQL']);
   });
 });
 
@@ -248,6 +263,7 @@ describe('an OpenAI-compatible provider', () => {
     expect(new Headers(init.headers).get('Authorization')).toBe('Bearer sk-proxy');
     const body = JSON.parse(String(init.body));
     expect(body.model).toBe('gpt-5.6-terra');
+    expect(body.reasoning_effort).toBe('low');
     expect(body.response_format).toMatchObject({ type: 'json_schema', json_schema: { strict: true } });
     expect(JSON.stringify(body)).not.toMatch(/F-1|STEM OPT|sponsor|veteran/i);
     const [today] = await usageItem.getValue();
@@ -276,6 +292,7 @@ describe('an OpenAI-compatible provider', () => {
     fetchMock
       .mockResolvedValueOnce(answer('Unsupported parameter: max_completion_tokens', 400))
       .mockResolvedValueOnce(answer('response_format json_schema is not supported', 400))
+      .mockResolvedValueOnce(answer('Unrecognized request argument supplied: reasoning_effort', 400))
       .mockResolvedValueOnce(answer(JSON.stringify({ answers: [] })));
     expect(await answerFields(questions, makeProfile(), null, '2026-09-27')).toEqual([]);
     const bodies = fetchMock.mock.calls.map((call) =>
@@ -285,6 +302,7 @@ describe('an OpenAI-compatible provider', () => {
     expect(bodies[1].max_completion_tokens).toBeUndefined();
     expect(bodies[2].response_format).toBeUndefined();
     expect(bodies[2].messages[0].content).toMatch(/Reply with JSON only/);
+    expect(bodies[3].reasoning_effort).toBeUndefined();
   });
 
   it('needs its own key, and lists the models the endpoint offers', async () => {

@@ -24,7 +24,6 @@ export async function readResumeForOutbox(
   if (ready !== 'ready') return { ok: false, error: ready, detail: '' };
   try {
     const facts = await parseResume(pdf, text);
-    if (!facts) return { ok: false, error: 'failed', detail: 'The model could not read it.' };
     // An empty answer means the model never saw the resume, not that the resume is empty.
     const read = facts.name.first || facts.name.last || facts.education.length || facts.experience.length;
     if (!read)
