@@ -116,12 +116,12 @@ One release with everything below, no MVP. Design: [autofill.md](autofill.md).
 - [ ] Run the free-text eval once (about $1) and choose Opus 5 or Sonnet 5 from its report.
 - [ ] On each Workday page, press "This page didn't fill right" once: Workday's forms are behind sign-in, so these
       snapshots are its only fixtures.
-- [ ] Before using the extension with production: `npm run db:migrate:remote` (migration 0003, the profile table),
+- [x] Before using the extension with production: `npm run db:migrate:remote` (migration 0003, the profile table),
       then deploy the Worker with job links, the profile API and the `bearer` plugin.
-- [ ] Apply migration 0004 (resume PDFs) with `npm run db:migrate:remote`, deploy the Worker, and reload the
-      rebuilt extension.
-- [ ] Upload each resume PDF in Outbox's resumes panel: PDFs added on the extension's options page are cleared
-      by this version.
+- [x] Migration 0004 (resume PDFs) applied remotely and the Worker deployed, 2026-09-28.
+- [ ] Rebuild the extension (`npm run ext:build`), reload it on `chrome://extensions`, and upload each resume PDF
+      in Outbox's resumes panel: this version clears PDFs added on the options page. Until then the installed
+      extension keeps attaching its own copies.
 - [ ] Optional: Simplify's free version until the extension is installed; afterwards turn it off on Greenhouse,
       Lever and Ashby.
 - [ ] Optional: three to five STAR stories with `my-interview-prep`, to ground free-text answers.
