@@ -112,6 +112,16 @@ export function closeCombobox(input: HTMLElement): void {
 }
 
 /**
+ * After a pick, closes a menu that stayed open, as a person would by clicking away: Workday's prompts keep their
+ * list up after a choice. A menu that closed itself is left alone.
+ */
+async function closeIfOpen(input: HTMLElement): Promise<void> {
+  await sleep(150);
+  const box = listboxFor(input);
+  if (box && !isHidden(box) && optionsIn(box).length > 0) closeCombobox(input);
+}
+
+/**
  * Opens the combobox, lets `choose` pick among the option texts, and clicks the choice. Returns the chosen text,
  * or null when nothing fit (the menu is closed again untouched).
  */
@@ -130,7 +140,7 @@ export async function pickFromCombobox(
   }
   target.scrollIntoView?.({ block: 'nearest' });
   clickLikeAPerson(target);
-  await sleep(30);
+  await closeIfOpen(input);
   return choice;
 }
 
@@ -168,6 +178,6 @@ export async function pickFromTypeahead(
   const target = choice === null ? undefined : options[texts.indexOf(choice)];
   if (!target) return null;
   clickLikeAPerson(target);
-  await sleep(30);
+  await closeIfOpen(input);
   return choice;
 }

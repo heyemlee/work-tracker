@@ -60,3 +60,39 @@ describe('picking the United States', () => {
     );
   });
 });
+
+describe('phone fields', () => {
+  const plan = (label: string, required: boolean) =>
+    planForm(
+      [
+        {
+          id: '0:1',
+          label,
+          description: '',
+          kind: 'tel',
+          options: [],
+          required,
+          hint: null,
+          section: '',
+          entry: null,
+          filled: false,
+          maxLength: null,
+        },
+      ],
+      {
+        profile: makeProfile(),
+        email: 'alex@example.com',
+        resumeId: null,
+        posting: null,
+        today: '2026-09-28',
+        appliedBefore: false,
+      },
+      [],
+    )[0];
+
+  it('fills the number and leaves the extension empty', () => {
+    expect(plan('Phone Number', true)?.answer).toEqual({ type: 'text', text: '+1 408-555-0100' });
+    expect(plan('Phone Extension', false)).toMatchObject({ status: 'skipped', answer: null });
+    expect(plan('Ext.', false)?.answer).toBeNull();
+  });
+});

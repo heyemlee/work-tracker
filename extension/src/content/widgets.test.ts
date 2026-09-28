@@ -1,0 +1,53 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+import { pickFromCombobox, pickFromTypeahead } from './widgets';
+
+const OPTIONS = ['United States Minor Outlying Islands (+1)', 'United States of America (+1)'];
+
+/** A search box with its list. `stays` keeps the list open after a pick, as Workday's prompts do. */
+function dropdown(stays: boolean) {
+  document.body.innerHTML = `
+    <input id="search" aria-controls="list">
+    <div id="list" role="listbox">${OPTIONS.map((text) => `<div role="option">${text}</div>`).join('')}</div>`;
+  const input = document.querySelector<HTMLInputElement>('#search')!;
+  const list = document.querySelector<HTMLElement>('#list')!;
+  const escapes: string[] = [];
+  for (const option of list.querySelectorAll<HTMLElement>('[role="option"]')) {
+    option.addEventListener('click', () => {
+      input.dataset.picked = option.textContent ?? '';
+      if (!stays) list.remove();
+    });
+  }
+  input.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    escapes.push(event.key);
+    list.hidden = true;
+  });
+  input.focus();
+  return { input, list, escapes };
+}
+
+const america = (texts: string[]) =>
+  texts.find((text) => text.startsWith('United States of America')) ?? null;
+
+describe('after picking from a dropdown', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('closes a list that stays open, as clicking away would', async () => {
+    const { input, list, escapes } = dropdown(true);
+    expect(await pickFromTypeahead(input, 'United States of America', america)).toBe(
+      'United States of America (+1)',
+    );
+    expect(input.dataset.picked).toBe('United States of America (+1)');
+    expect(escapes).toEqual(['Escape']);
+    expect(list.hidden).toBe(true);
+    expect(document.activeElement).not.toBe(input);
+  });
+
+  it('leaves alone a list that closed itself', async () => {
+    const { input, escapes } = dropdown(false);
+    expect(await pickFromCombobox(input, america)).toBe('United States of America (+1)');
+    expect(escapes).toEqual([]);
+  });
+});

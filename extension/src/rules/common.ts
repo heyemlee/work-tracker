@@ -289,6 +289,14 @@ export const RULES: readonly Rule[] = [
     answer: (field) =>
       text('phone.type', field, 'Mobile', ['Cell', 'Cell Phone', 'Mobile Phone', 'Personal']),
   },
+  // "Phone Extension" is an office line's; a mobile number has none, so it stays empty.
+  {
+    key: 'phone.extension',
+    test: /\bext(ension)?\b/,
+    not: /country|code/,
+    kinds: ['text', 'tel', 'number'],
+    answer: (field) => empty('phone.extension', field),
+  },
   {
     key: 'phone',
     test: /^(phone|mobile|cell|telephone)|(phone|mobile|cell|contact) number|^your phone|^primary phone/,
