@@ -225,7 +225,8 @@ export async function readTab(tabId: number, url: string): Promise<CardState> {
       })
     : null;
   const session = await updateSession(tabId, url, (current) => {
-    const samePage = current.url === url;
+    // Workday keeps one address across its steps: the step's name tells them apart.
+    const samePage = current.url === url && current.step === found.step;
     // Another posting in this tab starts over; its confirmation page (same posting) keeps the log and its Undo.
     const samePosting = Boolean(
       current.posting && found.posting && linkKey(found.posting.url) === linkKey(current.posting.url),

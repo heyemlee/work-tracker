@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronRight, Settings, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
+import { adapterFor } from '../../content/adapters';
 import { toBackground, type CardState, type ChecklistItem } from '../../messages';
 import type { FieldStatus } from '../../model';
 import { getSettings } from '../../storage';
@@ -105,11 +106,14 @@ export function Card({ startOpen }: { startOpen: boolean }) {
       return undefined;
     };
     browser.runtime.onMessage.addListener(listener);
-    // Workday moves between steps without loading a page: read again when the address changes.
-    let href = location.href;
+    // Workday moves between steps without loading a page, often at the same address:
+    // read again when the address or the step changes.
+    const where = () => `${location.href}\n${adapterFor(location.href).step?.(document) ?? ''}`;
+    let seen = where();
     const timer = setInterval(() => {
-      if (location.href !== href) {
-        href = location.href;
+      const now = where();
+      if (now !== seen) {
+        seen = now;
         refresh();
       }
     }, 1000);
