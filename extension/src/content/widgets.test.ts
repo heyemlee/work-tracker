@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { pickFromCombobox, pickFromTypeahead } from './widgets';
+import { clickAway, pickFromCombobox, pickFromTypeahead } from './widgets';
 
 const OPTIONS = ['United States Minor Outlying Islands (+1)', 'United States of America (+1)'];
 
@@ -49,5 +49,25 @@ describe('after picking from a dropdown', () => {
     const { input, escapes } = dropdown(false);
     expect(await pickFromCombobox(input, america)).toBe('United States of America (+1)');
     expect(escapes).toEqual([]);
+  });
+});
+
+describe('clicking away', () => {
+  it('closes a Workday-style popup that listens for presses outside it, with no listbox role to spot', async () => {
+    document.body.innerHTML = `
+      <div id="prompt"><input id="search"></div>
+      <div id="popup"><div data-automation-id="promptOption">United States of America (+1)</div></div>`;
+    const input = document.querySelector<HTMLInputElement>('#search')!;
+    const popup = document.querySelector<HTMLElement>('#popup')!;
+    const option = popup.querySelector<HTMLElement>('[data-automation-id="promptOption"]')!;
+    option.addEventListener('click', () => (input.dataset.picked = option.textContent ?? ''));
+    // Workday closes its popups on a mousedown anywhere outside them.
+    document.addEventListener('mousedown', (event) => {
+      if (!popup.contains(event.target as Node)) popup.remove();
+    });
+    input.focus();
+    clickAway(input);
+    expect(document.querySelector('#popup')).toBeNull();
+    expect(document.activeElement).not.toBe(input);
   });
 });

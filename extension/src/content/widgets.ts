@@ -112,13 +112,31 @@ export function closeCombobox(input: HTMLElement): void {
 }
 
 /**
+ * Clicks somewhere neutral, as a person does to close a popup: Workday's prompts stay open after a choice and close
+ * on a press outside them, which the page listens for on the document. Escape and a blur follow for other widgets.
+ */
+export function clickAway(input: HTMLElement): void {
+  const doc = input.ownerDocument;
+  const view = doc.defaultView ?? window;
+  const away = doc.body;
+  const at = { bubbles: true, cancelable: true, view, clientX: 1, clientY: 1, button: 0 };
+  away.dispatchEvent(new PointerEvent('pointerdown', { ...at, pointerType: 'mouse' }));
+  away.dispatchEvent(new MouseEvent('mousedown', at));
+  away.dispatchEvent(new PointerEvent('pointerup', { ...at, pointerType: 'mouse' }));
+  away.dispatchEvent(new MouseEvent('mouseup', at));
+  away.dispatchEvent(new MouseEvent('click', at));
+  key(input, 'Escape');
+  input.blur();
+}
+
+/**
  * After a pick, closes a menu that stayed open, as a person would by clicking away: Workday's prompts keep their
  * list up after a choice. A menu that closed itself is left alone.
  */
 async function closeIfOpen(input: HTMLElement): Promise<void> {
   await sleep(150);
   const box = listboxFor(input);
-  if (box && !isHidden(box) && optionsIn(box).length > 0) closeCombobox(input);
+  if (box && !isHidden(box) && optionsIn(box).length > 0) clickAway(input);
 }
 
 /**
@@ -160,6 +178,8 @@ export async function pickFromTypeahead(
   input: HTMLInputElement,
   query: string,
   choose: (texts: string[]) => string | null,
+  /** Close the list afterwards whether or not it looks open: Workday's prompts don't mark theirs. */
+  alwaysClose = false,
 ): Promise<string | null> {
   setNativeValue(input, query);
   const options = await waitFor(() => {
@@ -178,6 +198,9 @@ export async function pickFromTypeahead(
   const target = choice === null ? undefined : options[texts.indexOf(choice)];
   if (!target) return null;
   clickLikeAPerson(target);
-  await closeIfOpen(input);
+  if (alwaysClose) {
+    await sleep(150);
+    clickAway(input);
+  } else await closeIfOpen(input);
   return choice;
 }

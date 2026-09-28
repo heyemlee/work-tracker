@@ -209,6 +209,7 @@ export async function applyAnswer(
             resolveChoice(texts, want, null) ??
             texts.find((text) => norm(text).startsWith(norm(search))) ??
             null,
+          handle.type === 'prompt',
         );
         if (choice) return { ok: true, value: choice };
         // No suggestion: a plain text field keeps what was typed; a prompt must pick one.
