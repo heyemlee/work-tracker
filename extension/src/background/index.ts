@@ -13,6 +13,7 @@ import {
   submitConfirmed,
   undo,
 } from './card';
+import { fromOutbox, readiness, readResumeForOutbox } from './bridge';
 import { flushQueue, syncProfile } from './outbox';
 import { dropSession } from './session';
 
@@ -49,6 +50,10 @@ export function startBackground(): void {
       const url = sender.tab?.url ?? '';
       if (message.type === 'outbox:session') return outboxTokenItem.setValue(message.token);
       if (message.type === 'resume:read') return readResume(message.resumeId);
+      if (message.type === 'bridge:status' || message.type === 'resume:parse') {
+        if (!fromOutbox(sender.url)) return undefined;
+        return message.type === 'bridge:status' ? readiness() : readResumeForOutbox(message.pdf);
+      }
       if (tabId === undefined) return undefined;
       switch (message.type) {
         case 'frame:hello':

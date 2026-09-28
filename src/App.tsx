@@ -23,6 +23,7 @@ import { Composer } from './ui/Composer';
 import { DetailPanel } from './ui/DetailPanel';
 import { JobList } from './ui/JobList';
 import { Button } from './ui/primitives';
+import { ProfilePanel } from './ui/ProfilePanel';
 import { SettingsDialog } from './ui/SettingsDialog';
 import { SignIn } from './ui/SignIn';
 import { StatsRow } from './ui/StatsRow';
@@ -99,6 +100,7 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<Id | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [composing, setComposing] = useState(false);
 
   const rows = useMemo(() => buildRows(snapshot), [snapshot]);
@@ -113,7 +115,7 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
   const shown = counts[filter];
 
   // N opens the quick-add panel, except over the settings dialog.
-  useHotkey('n', () => !settingsOpen && setComposing(true));
+  useHotkey('n', () => !settingsOpen && !profileOpen && setComposing(true));
 
   return (
     <div style={{ '--reserve': `${selected && wide ? PANEL_RESERVE : 0}px` } as CSSProperties}>
@@ -123,6 +125,7 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
         query={query}
         onQuery={setQuery}
         onOpenSettings={() => setSettingsOpen(true)}
+        onOpenProfile={() => setProfileOpen(true)}
         onCompose={() => setComposing(true)}
       />
 
@@ -187,6 +190,7 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
       <Toaster />
       <DetailPanel row={selected} snapshot={snapshot} today={today} onClose={() => setSelectedId(null)} />
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} snapshot={snapshot} />
+      <ProfilePanel open={profileOpen} onOpenChange={setProfileOpen} />
       <TweakPanel />
     </div>
   );

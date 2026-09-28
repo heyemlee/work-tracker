@@ -1,3 +1,5 @@
+import type { ExtensionReadiness, ParseError } from '@domain/bridge';
+import type { ResumeFacts } from '@domain/profile';
 import type { QuickAddResult } from '@domain/repository';
 import type { AccountColor } from '@domain/types';
 import { browser, type Browser } from 'wxt/browser';
@@ -80,6 +82,13 @@ export interface ToBackground {
   'resume:read': {
     request: { resumeId: string };
     response: { name: string; type: string; base64: string } | null;
+  };
+  /** From Outbox's page, through its content script: can a resume be read? */
+  'bridge:status': { request: Record<string, never>; response: ExtensionReadiness };
+  /** From Outbox's page: read this resume PDF (base64) with the owner's key. */
+  'resume:parse': {
+    request: { pdf: string };
+    response: { ok: true; facts: ResumeFacts } | { ok: false; error: ParseError; detail: string };
   };
 }
 

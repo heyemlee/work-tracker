@@ -1,18 +1,16 @@
 import clsx from 'clsx';
-import { ChevronRight, Download, LogOut, Plus, RotateCcw, Trash2, X } from 'lucide-react';
+import { Download, LogOut, Plus, RotateCcw, Trash2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Dialog, Popover } from 'radix-ui';
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { signOut } from '../data/auth';
-import { localRepository, useCurrentUser, useProfile, useRepository } from '../data/store';
-import { missingItems } from '../domain/profile';
+import { localRepository, useCurrentUser, useRepository } from '../data/store';
 import { toCsv } from '../domain/csv';
 import { toIsoDate } from '../domain/dates';
 import { ACCOUNT_COLORS, type Account, type AccountColor, type Snapshot } from '../domain/types';
 import { channelName, useI18n } from '../i18n/context';
 import { updatePrefs, usePrefs, type Locale, type ThemePref } from '../state/prefs';
 import { useLiquidGlass } from './glass/useLiquidGlass';
-import { ProfileEditor } from './ProfileEditor';
 import { Button, IconButton, Switch } from './primitives';
 import { SegmentedControl } from './SegmentedControl';
 
@@ -61,7 +59,6 @@ function SettingsBody({ snapshot }: { snapshot: Snapshot }) {
   const run = useRepository();
   const paneRef = useRef<HTMLDivElement>(null);
   const glass = useLiquidGlass(paneRef, { radius: 28, bevel: 18 });
-  const [view, setView] = useState<'settings' | 'profile'>('settings');
   const usedAccounts = useMemo(
     () => new Set(snapshot.applications.map((a) => a.accountId)),
     [snapshot.applications],
@@ -83,125 +80,87 @@ function SettingsBody({ snapshot }: { snapshot: Snapshot }) {
       className="glass glass-strong flex min-h-0 w-full flex-col overflow-hidden rounded-[inherit]"
     >
       {glass.filter}
-      {view === 'profile' ? (
-        <ProfileEditor onBack={() => setView('settings')} />
-      ) : (
-        <>
-          <header className="flex items-center justify-between px-6 pt-5 pb-3">
-            <Dialog.Title className="text-[22px] font-semibold tracking-[-0.02em]">
-              {t('settings.title')}
-            </Dialog.Title>
-            <Dialog.Close asChild>
-              <IconButton label={t('detail.close')} className="-mr-2">
-                <X className="size-[18px]" />
+      <header className="flex items-center justify-between px-6 pt-5 pb-3">
+        <Dialog.Title className="text-[22px] font-semibold tracking-[-0.02em]">
+          {t('settings.title')}
+        </Dialog.Title>
+        <Dialog.Close asChild>
+          <IconButton label={t('detail.close')} className="-mr-2">
+            <X className="size-[18px]" />
+          </IconButton>
+        </Dialog.Close>
+      </header>
+
+      <div className="scroll-area min-h-0 flex-1 space-y-7 px-6 pt-2 pb-6">
+        <Group title={t('settings.accounts')} hint={t('settings.accountsHint')}>
+          {snapshot.accounts.map((account) => (
+            <AccountRow key={account.id} account={account} inUse={usedAccounts.has(account.id)} />
+          ))}
+          {adding ? (
+            <NewAccountRow color={newColor} onSave={addAccount} onDone={() => setAdding(false)} />
+          ) : (
+            <AddButton onClick={() => setAdding(true)}>{t('settings.addAccount')}</AddButton>
+          )}
+        </Group>
+
+        <Group title={t('settings.resumes')}>
+          {snapshot.resumes.map((resume) => (
+            <Row key={resume.id}>
+              <TextInput
+                value={resume.name}
+                label={t('settings.resumes')}
+                onCommit={(name) => void run((repo) => repo.saveResume({ id: resume.id, name }))}
+              />
+              <IconButton
+                label={t('settings.delete')}
+                onClick={() => void run((repo) => repo.deleteResume(resume.id))}
+                className="size-8 text-fg-3 hover:text-danger"
+              >
+                <Trash2 className="size-4" />
               </IconButton>
-            </Dialog.Close>
-          </header>
+            </Row>
+          ))}
+          <AddButton onClick={() => void run((repo) => repo.saveResume({ name: t('settings.newResume') }))}>
+            {t('settings.addResume')}
+          </AddButton>
+        </Group>
 
-          <div className="scroll-area min-h-0 flex-1 space-y-7 px-6 pt-2 pb-6">
-            <Group title={t('settings.accounts')} hint={t('settings.accountsHint')}>
-              {snapshot.accounts.map((account) => (
-                <AccountRow key={account.id} account={account} inUse={usedAccounts.has(account.id)} />
-              ))}
-              {adding ? (
-                <NewAccountRow color={newColor} onSave={addAccount} onDone={() => setAdding(false)} />
+        <Group title={t('settings.channels')}>
+          {snapshot.channels.map((channel) => (
+            <Row key={channel.id}>
+              {channel.builtin ? (
+                <>
+                  <span className="flex-1 px-2.5 text-[14px]">{channelName(channel, t)}</span>
+                  <span className="pr-2 text-[12px] text-fg-3">{t('settings.builtin')}</span>
+                </>
               ) : (
-                <AddButton onClick={() => setAdding(true)}>{t('settings.addAccount')}</AddButton>
-              )}
-            </Group>
-
-            <Group title={t('settings.resumes')}>
-              {snapshot.resumes.map((resume) => (
-                <Row key={resume.id}>
+                <>
                   <TextInput
-                    value={resume.name}
-                    label={t('settings.resumes')}
-                    onCommit={(name) => void run((repo) => repo.saveResume({ id: resume.id, name }))}
+                    value={channel.name}
+                    label={t('settings.channels')}
+                    onCommit={(name) => void run((repo) => repo.saveChannel({ id: channel.id, name }))}
                   />
                   <IconButton
                     label={t('settings.delete')}
-                    onClick={() => void run((repo) => repo.deleteResume(resume.id))}
+                    onClick={() => void run((repo) => repo.deleteChannel(channel.id))}
                     className="size-8 text-fg-3 hover:text-danger"
                   >
                     <Trash2 className="size-4" />
                   </IconButton>
-                </Row>
-              ))}
-              <AddButton
-                onClick={() => void run((repo) => repo.saveResume({ name: t('settings.newResume') }))}
-              >
-                {t('settings.addResume')}
-              </AddButton>
-            </Group>
+                </>
+              )}
+            </Row>
+          ))}
+          <AddButton onClick={() => void run((repo) => repo.saveChannel({ name: t('settings.newChannel') }))}>
+            {t('settings.addChannel')}
+          </AddButton>
+        </Group>
 
-            <Group title={t('settings.channels')}>
-              {snapshot.channels.map((channel) => (
-                <Row key={channel.id}>
-                  {channel.builtin ? (
-                    <>
-                      <span className="flex-1 px-2.5 text-[14px]">{channelName(channel, t)}</span>
-                      <span className="pr-2 text-[12px] text-fg-3">{t('settings.builtin')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <TextInput
-                        value={channel.name}
-                        label={t('settings.channels')}
-                        onCommit={(name) => void run((repo) => repo.saveChannel({ id: channel.id, name }))}
-                      />
-                      <IconButton
-                        label={t('settings.delete')}
-                        onClick={() => void run((repo) => repo.deleteChannel(channel.id))}
-                        className="size-8 text-fg-3 hover:text-danger"
-                      >
-                        <Trash2 className="size-4" />
-                      </IconButton>
-                    </>
-                  )}
-                </Row>
-              ))}
-              <AddButton
-                onClick={() => void run((repo) => repo.saveChannel({ name: t('settings.newChannel') }))}
-              >
-                {t('settings.addChannel')}
-              </AddButton>
-            </Group>
-
-            <Group title={t('profile.title')} hint={t('profile.hint')}>
-              <ProfileRow onOpen={() => setView('profile')} />
-            </Group>
-
-            <Group title={t('settings.general')}>
-              <GeneralSettings snapshot={snapshot} />
-            </Group>
-          </div>
-        </>
-      )}
+        <Group title={t('settings.general')}>
+          <GeneralSettings snapshot={snapshot} />
+        </Group>
+      </div>
     </div>
-  );
-}
-
-function ProfileRow({ onOpen }: { onOpen: () => void }) {
-  const { t } = useI18n();
-  const { data, isPending } = useProfile();
-  const missing = data ? missingItems(data.profile).length : 0;
-  const status = isPending
-    ? null
-    : !data
-      ? t('profile.none')
-      : missing
-        ? t('profile.missingCount', { n: missing })
-        : t('profile.complete');
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="flex min-h-10 w-full items-center gap-2 rounded-[14px] bg-fill py-2 pr-2 pl-3 text-left transition-colors hover:bg-fill-2"
-    >
-      <span className="flex-1 text-[14px]">{status ?? ' '}</span>
-      <span className="text-[13px] text-fg-2">{t('profile.edit')}</span>
-      <ChevronRight className="size-4 text-fg-3" aria-hidden="true" />
-    </button>
   );
 }
 

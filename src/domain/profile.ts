@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Expected YYYY-MM');
+const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+const month = z.string().regex(MONTH, 'Expected YYYY-MM');
 const text = z.string().trim().default('');
 
 export const EEO_GENDERS = ['male', 'female', 'nonbinary', 'decline'] as const;
@@ -15,11 +16,20 @@ export const EEO_RACES = [
 ] as const;
 export const EEO_YES_NO = ['yes', 'no', 'decline'] as const;
 export const EEO_VETERAN = ['not', 'protected', 'decline'] as const;
+export const EDUCATION_LEVELS = [
+  'high-school',
+  'associate',
+  'bachelor',
+  'master',
+  'doctorate',
+  'other',
+] as const;
+export const JOB_TYPES = ['full-time', 'part-time', 'internship', 'contract'] as const;
 
 export const educationSchema = z.object({
   school: z.string().trim().min(1),
   degree: text,
-  level: z.enum(['high-school', 'associate', 'bachelor', 'master', 'doctorate', 'other']).default('other'),
+  level: z.enum(EDUCATION_LEVELS).default('other'),
   field: text,
   start: month.nullable().default(null),
   end: month.nullable().default(null),
@@ -34,7 +44,7 @@ export const experienceSchema = z.object({
   start: month,
   /** Null while the job is current. */
   end: month.nullable().default(null),
-  type: z.enum(['full-time', 'part-time', 'internship', 'contract']).default('full-time'),
+  type: z.enum(JOB_TYPES).default('full-time'),
   description: text,
 });
 
@@ -214,4 +224,162 @@ export function missingItems(profile: Profile): MissingItem[] {
   if (profile.education.length === 0) missing.push('education');
   if (profile.experience.length === 0) missing.push('experience');
   return missing;
+}
+
+/**
+ * What a resume settles, as the extension's model reads it from the PDF. Dates are YYYY-MM or empty; what a resume
+ * never says (work authorization, EEO, preferences) isn't here.
+ */
+export const resumeFactsSchema = z.object({
+  name: z.object({ first: text, last: text, preferred: text }).prefault({}),
+  phone: text,
+  location: z.object({ city: text, state: text, country: text }).prefault({}),
+  links: z.object({ linkedin: text, github: text, website: text }).prefault({}),
+  education: z
+    .array(
+      z.object({
+        school: text,
+        degree: text,
+        level: z.enum(EDUCATION_LEVELS).catch('other'),
+        field: text,
+        start: text,
+        end: text,
+        gpa: text,
+        location: text,
+      }),
+    )
+    .default([]),
+  experience: z
+    .array(
+      z.object({
+        company: text,
+        title: text,
+        location: text,
+        start: text,
+        /** Empty for a current job. */
+        end: text,
+        type: z.enum(JOB_TYPES).catch('full-time'),
+        description: text,
+      }),
+    )
+    .default([]),
+  skills: z.array(z.string().trim()).default([]),
+  languages: z.array(z.string().trim()).default([]),
+  summary: text,
+});
+
+export type ResumeFacts = z.output<typeof resumeFactsSchema>;
+
+/** Which parts of a read resume go into the profile. */
+export interface ResumeParts {
+  contact: boolean;
+  education: boolean;
+  experience: boolean;
+  skills: boolean;
+  summary: boolean;
+}
+
+export type ContactField =
+  'first' | 'last' | 'preferred' | 'phone' | 'city' | 'state' | 'linkedin' | 'github' | 'website';
+
+/** The contact details and links a resume fills: only those the profile leaves empty. */
+export function resumeContact(
+  profile: Profile,
+  facts: ResumeFacts,
+): { field: ContactField; value: string }[] {
+  const pairs: [ContactField, string, string][] = [
+    ['first', profile.name.first, facts.name.first],
+    ['last', profile.name.last, facts.name.last],
+    ['preferred', profile.name.preferred, facts.name.preferred],
+    ['phone', profile.phone, facts.phone],
+    ['city', profile.address.city, facts.location.city],
+    ['state', profile.address.state, facts.location.state],
+    ['linkedin', profile.links.linkedin, facts.links.linkedin],
+    ['github', profile.links.github, facts.links.github],
+    ['website', profile.links.website, facts.links.website],
+  ];
+  return pairs
+    .filter(([, current, found]) => !current.trim() && found.trim())
+    .map(([field, , value]) => ({ field, value: value.trim() }));
+}
+
+/** Words a list doesn't have yet, ignoring case: new skills or languages from a resume. */
+export function resumeAdditions(current: readonly string[], found: readonly string[]): string[] {
+  const seen = new Set(current.map((item) => item.trim().toLowerCase()));
+  return found.filter((item) => {
+    const key = item.trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+const monthOrNull = (value: string) => (MONTH.test(value) ? value : null);
+
+/**
+ * Puts a read resume into a profile. Contact details and links fill only empty fields; education and work experience
+ * are replaced by the resume's; skills and languages gain what's new; the summary fills an empty one. A job whose
+ * start the resume doesn't date keeps it empty, so saving asks for it.
+ */
+export function applyResume(profile: Profile, facts: ResumeFacts, parts: ResumeParts): Profile {
+  let next = profile;
+  if (parts.contact) {
+    const fill: Partial<Record<ContactField, string>> = Object.fromEntries(
+      resumeContact(profile, facts).map(({ field, value }) => [field, value]),
+    );
+    next = {
+      ...next,
+      name: {
+        ...next.name,
+        first: fill.first ?? next.name.first,
+        last: fill.last ?? next.name.last,
+        preferred: fill.preferred ?? next.name.preferred,
+      },
+      phone: fill.phone ?? next.phone,
+      address: {
+        ...next.address,
+        city: fill.city ?? next.address.city,
+        state: fill.state ?? next.address.state,
+      },
+      links: {
+        ...next.links,
+        linkedin: fill.linkedin ?? next.links.linkedin,
+        github: fill.github ?? next.links.github,
+        website: fill.website ?? next.links.website,
+      },
+    };
+  }
+  const schools = facts.education.filter((school) => school.school);
+  if (parts.education && schools.length) {
+    next = {
+      ...next,
+      education: schools.map((school) => ({
+        ...school,
+        start: monthOrNull(school.start),
+        end: monthOrNull(school.end),
+      })),
+    };
+  }
+  const jobs = facts.experience.filter((job) => job.company);
+  if (parts.experience && jobs.length) {
+    next = {
+      ...next,
+      experience: jobs.map((job) => ({
+        ...job,
+        start: monthOrNull(job.start) ?? '',
+        end: monthOrNull(job.end),
+      })),
+    };
+  }
+  if (parts.skills) {
+    next = {
+      ...next,
+      skills: [...next.skills, ...resumeAdditions(next.skills, facts.skills)],
+      languages: [...next.languages, ...resumeAdditions(next.languages, facts.languages)],
+    };
+  }
+  if (parts.summary && !next.writing.summary.trim() && facts.summary) {
+    next = { ...next, writing: { ...next.writing, summary: facts.summary } };
+  }
+  return next;
 }

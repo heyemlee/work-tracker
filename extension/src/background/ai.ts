@@ -2,7 +2,16 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { BetaMessage } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import { z } from 'zod';
 import type { FieldKind, Posting } from '../model';
-import { DRAFT_SYSTEM, FIELD_SCHEMA, FIELD_SYSTEM, material, postingBlock } from '../ai/prompts';
+import { resumeFactsSchema, type ResumeFacts } from '@domain/profile';
+import {
+  DRAFT_SYSTEM,
+  FIELD_SCHEMA,
+  FIELD_SYSTEM,
+  material,
+  postingBlock,
+  RESUME_SCHEMA,
+  RESUME_SYSTEM,
+} from '../ai/prompts';
 import type { Profile } from '../profile/schema';
 import { apiKeyItem, getSettings, usageItem, type FinalAnswer, type Model } from '../storage';
 import { norm, overlap } from '../text';
@@ -60,7 +69,10 @@ async function recordUsage(message: BetaMessage, model: Model): Promise<void> {
  */
 async function ask(params: {
   system: string;
-  material: string;
+  /** The applicant's material, cached across a day's requests. */
+  material?: string;
+  /** A PDF to read, as base64. */
+  pdf?: string;
   prompt: string;
   effort: 'low' | 'medium';
   maxTokens: number;
@@ -81,9 +93,29 @@ async function ask(params: {
       {
         role: 'user',
         content: [
+          ...(params.pdf
+            ? [
+                {
+                  type: 'document' as const,
+                  source: {
+                    type: 'base64' as const,
+                    media_type: 'application/pdf' as const,
+                    data: params.pdf,
+                  },
+                },
+              ]
+            : []),
           // The applicant's material repeats across a day's requests; caching it makes each later one cheaper.
-          { type: 'text', text: params.material, cache_control: { type: 'ephemeral' } },
-          { type: 'text', text: params.prompt },
+          ...(params.material
+            ? [
+                {
+                  type: 'text' as const,
+                  text: params.material,
+                  cache_control: { type: 'ephemeral' as const },
+                },
+              ]
+            : []),
+          { type: 'text' as const, text: params.prompt },
         ],
       },
     ],
@@ -204,6 +236,25 @@ function fitTo(text: string, limit: number): string {
   const room = text.slice(0, limit + 1);
   const end = Math.max(...['. ', '! ', '? ', '.\n', '!\n', '?\n'].map((stop) => room.lastIndexOf(stop)));
   return end >= limit / 2 ? text.slice(0, end + 1) : text.slice(0, limit);
+}
+
+/** Reads a resume PDF (base64) into the parts of a profile it settles. Null when the model can't. */
+export async function parseResume(pdf: string): Promise<ResumeFacts | null> {
+  const text = await ask({
+    system: RESUME_SYSTEM,
+    pdf,
+    prompt: 'Read this resume into the schema.',
+    effort: 'low',
+    maxTokens: 8000,
+    schema: RESUME_SCHEMA,
+  });
+  if (!text) return null;
+  try {
+    const parsed = resumeFactsSchema.safeParse(JSON.parse(text));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
 }
 
 /** A tiny request to check the key works, for the options page. */

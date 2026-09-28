@@ -29,8 +29,8 @@ follows Apple's Liquid Glass.
 
 ## Autofill extension
 
-A Chrome extension in [`extension/`](extension) fills job applications from a profile the owner edits in
-Outbox's settings, then logs each submission to Outbox. It never presses Submit: the owner checks every answer first.
+A Chrome extension in [`extension/`](extension) fills job applications from a profile the owner keeps in Outbox,
+started from their resume PDF, then logs each submission to Outbox. It never presses Submit: the owner checks every answer first.
 
 - **Rules first.** Adapters for Greenhouse, Lever, Ashby and Workday read the form and drive its widgets, and
   a field dictionary answers the questions most forms repeat. Work authorization (sponsorship now or later,

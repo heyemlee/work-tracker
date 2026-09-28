@@ -1,9 +1,10 @@
-import { Plus, Search, Settings2, X } from 'lucide-react';
+import { IdCard, Plus, Search, Settings2, X } from 'lucide-react';
 import { useRef } from 'react';
+import { useProfile } from '../data/store';
+import { emptyProfile, missingItems } from '../domain/profile';
 import { FILTERS, type Filter } from '../domain/rows';
 import { useHotkey } from '../hooks/useHotkey';
 import { useI18n } from '../i18n/context';
-import { updatePrefs } from '../state/prefs';
 import { useLiquidGlass } from './glass/useLiquidGlass';
 import { Brand, IconButton } from './primitives';
 import { SegmentedControl } from './SegmentedControl';
@@ -39,11 +40,23 @@ interface ToolbarProps {
   query: string;
   onQuery: (query: string) => void;
   onOpenSettings: () => void;
+  onOpenProfile: () => void;
   onCompose: () => void;
 }
 
-export function Toolbar({ filter, onFilter, query, onQuery, onOpenSettings, onCompose }: ToolbarProps) {
-  const { t, locale } = useI18n();
+export function Toolbar({
+  filter,
+  onFilter,
+  query,
+  onQuery,
+  onOpenSettings,
+  onOpenProfile,
+  onCompose,
+}: ToolbarProps) {
+  const { t } = useI18n();
+  const profile = useProfile();
+  // A dot on the profile button until the profile has what most forms ask for.
+  const missing = profile.isPending ? 0 : missingItems(profile.data?.profile ?? emptyProfile()).length;
   const paneRef = useRef<HTMLDivElement>(null);
   const glass = useLiquidGlass(paneRef, { radius: 22, bevel: 14 });
   const searchInput = useRef<HTMLInputElement>(null);
@@ -92,10 +105,21 @@ export function Toolbar({ filter, onFilter, query, onQuery, onOpenSettings, onCo
             )}
           </label>
           <IconButton
-            label={locale === 'en' ? '切换到中文' : 'Switch to English'}
-            onClick={() => updatePrefs({ locale: locale === 'en' ? 'zh' : 'en' })}
+            label={
+              missing
+                ? `${t('toolbar.profile')} · ${t('profile.missingCount', { n: missing })}`
+                : t('toolbar.profile')
+            }
+            onClick={onOpenProfile}
+            className="relative"
           >
-            <span className="text-[13px] font-semibold">{locale === 'en' ? '中' : 'EN'}</span>
+            <IdCard className="size-[18px]" />
+            {missing > 0 && (
+              <span
+                className="absolute top-2 right-2 size-2 rounded-full bg-accent ring-2 ring-canvas"
+                aria-hidden="true"
+              />
+            )}
           </IconButton>
           <IconButton label={t('toolbar.settings')} onClick={onOpenSettings}>
             <Settings2 className="size-[18px]" />

@@ -61,6 +61,8 @@ rejected, it displays the furthest rejected one, dimmed. Filters use the rollup.
 - **Detail** — a glass side panel on desktop, a bottom sheet on mobile: per-account stage control, rejected
   toggle, apply with another account, the posting's link, notes, timeline.
 - **Settings** — accounts (an email address and a color each), resume versions, channels, language, CSV export.
+- **Autofill profile** — its own panel from the toolbar's profile button (where a language toggle used to be); see
+  [autofill.md](autofill.md).
 - English (default) and Simplified Chinese. Installable as a PWA.
 
 ## 4. Visual design

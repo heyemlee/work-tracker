@@ -19,8 +19,12 @@ One release with everything below, no MVP. Design: [autofill.md](autofill.md).
 
 - [x] Profile schema (zod, versioned).
 - [x] Draft `~/Desktop/job-search/autofill-profile.json` from the resume and `profile.md`.
-- [x] Edit the profile on Outbox (Settings → Autofill profile), stored in D1 and synced by the extension
-      (decided 2026-09-27, replacing the JSON import on the options page).
+- [x] Edit the profile on Outbox, stored in D1 and synced by the extension (decided 2026-09-27, replacing the JSON
+      import on the options page).
+- [x] Its own panel from the toolbar's profile button (in place of the language toggle, which Settings already has):
+      a section list on wide screens, collapsible sections on phones, dots where something is still empty.
+- [x] Fill from a resume PDF: read by the extension with the owner's key, previewed, contact details only where
+      empty; never work authorization, EEO or preferences.
 - [x] Options page: import and validate the profile, list what's missing.
 - [x] Options page: add resume PDFs, name each after an Outbox resume version, pick the default.
 
@@ -98,9 +102,10 @@ One release with everything below, no MVP. Design: [autofill.md](autofill.md).
 
 ### Waiting on the owner
 
-- [ ] On Outbox, Settings → Autofill profile: import `~/Desktop/job-search/autofill-profile.json` once, then check
-      phone, address and ZIP, citizenship, salary expectation, earliest start date, relocation, languages, EEO
-      answers, and years of experience (computed as 2 from full-time and contract work).
+- [ ] On Outbox, open the profile panel (toolbar): fill from the resume PDF or import
+      `~/Desktop/job-search/autofill-profile.json` once, then check phone, address and ZIP, citizenship, salary
+      expectation, earliest start date, relocation, languages, EEO answers, and years of experience (computed as 2
+      from full-time and contract work).
 - [ ] Load the extension: `npm run ext:build`, then `chrome://extensions` → Developer mode → Load unpacked →
       `extension/.output/chrome-mv3`.
 - [ ] Create an Anthropic API key in the Console with a monthly spend limit, and paste it on the options page.

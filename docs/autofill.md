@@ -62,11 +62,22 @@ flowchart LR
 
 ## 4. Profile
 
-Edited on Outbox under **Settings → Autofill profile** (decided 2026-09-27, replacing the earlier local JSON file) and
-stored with the owner's account in D1 as one JSON document (`profiles` table), validated by the shared schema in
-`src/domain/profile.ts` on every save. The page can import the old `autofill-profile.json` once. The extension copies
-it into `chrome.storage.local` whenever it reads a page or fills, so filling works offline from the last copy. Resume
-PDFs, the API key and remembered answers stay in the extension; they never go to Outbox. Nothing is in git.
+Edited on Outbox in its own panel, opened from the profile button in the toolbar (decided 2026-09-27, replacing the
+earlier local JSON file): a list of sections beside the form on wide screens, collapsible sections on phones, and a dot
+on the toolbar button and on each section while something most forms ask for is still empty. Stored with the owner's
+account in D1 as one JSON document (`profiles` table), validated by the shared schema in `src/domain/profile.ts` on
+every save. The panel can import the old `autofill-profile.json` once. The extension copies the profile into
+`chrome.storage.local` whenever it reads a page or fills, so filling works offline from the last copy. Resume PDFs, the
+API key and remembered answers stay in the extension; they never go to Outbox. Nothing is in git.
+
+**From a resume.** A new profile starts from the resume, as Simplify and similar tools do. "Fill from resume" hands
+the PDF to the extension through its content script on Outbox (`src/domain/bridge.ts`, `window.postMessage` limited to
+the page's own window and origin); the service worker reads it with the owner's key (Claude, structured output into
+`resumeFactsSchema`) and hands back only the facts. The panel then lists what would change for the owner to pick
+from: contact details and links fill only empty fields, education and work experience are replaced, new skills and
+languages are added, and the summary fills an empty one (`applyResume`). Nothing is saved until Save. Work
+authorization, EEO and the common answers are never taken from a resume. A read costs a few cents; without the
+extension, or without its key, the panel says what's missing.
 
 | Section            | Contents                                                                                                  |
 | ------------------ | --------------------------------------------------------------------------------------------------------- |
@@ -168,7 +179,8 @@ a posting there shows a note. It is a note, not a block.
 ## 9. Privacy
 
 The profile is stored in the owner's own D1 database behind Google sign-in limited to their account, and copied into
-the browser that fills. Resumes, remembered answers and the API key stay on the machine. Claude receives field labels and options, the profile parts a question needs, and the posting's text for
+the browser that fills. Resumes, remembered answers and the API key stay on the machine; a resume PDF goes to Claude
+only when the owner asks the profile panel to read it. Claude receives field labels and options, the profile parts a question needs, and the posting's text for
 drafts — never voluntary (EEO) answers or work-authorization questions. Form snapshots carry no values.
 
 ## 10. Testing

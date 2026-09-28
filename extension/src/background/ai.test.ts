@@ -10,7 +10,7 @@ vi.mock('@anthropic-ai/sdk', () => ({
   },
 }));
 
-const { answerFields, draftAnswer, NoApiKey } = await import('./ai');
+const { answerFields, draftAnswer, NoApiKey, parseResume } = await import('./ai');
 
 function reply(text: string, stop = 'end_turn') {
   return {
@@ -158,5 +158,44 @@ describe('draftAnswer', () => {
     );
     expect(draft).toHaveLength(2000);
     expect(JSON.stringify(create.mock.calls[0]?.[0])).toContain('No character limit.');
+  });
+});
+
+describe('parseResume', () => {
+  beforeEach(async () => {
+    create.mockReset();
+    await apiKeyItem.setValue('sk-ant-test');
+  });
+
+  it('sends the PDF with the schema, and reads the answer loosely', async () => {
+    create.mockResolvedValue(
+      reply(
+        JSON.stringify({
+          name: { first: 'Alex', last: 'Chen', preferred: '' },
+          education: [{ school: 'Santa Clara University', level: 'masters' }],
+          experience: [
+            { company: 'Acme AI', title: 'AI Engineer', start: '2025-06', end: '', type: 'full-time' },
+          ],
+          skills: ['Python'],
+        }),
+      ),
+    );
+    const facts = await parseResume('JVBERi0xLjQK');
+    expect(facts?.name.first).toBe('Alex');
+    expect(facts?.education[0]?.level).toBe('other');
+    const request = create.mock.calls[0]?.[0];
+    expect(request.messages[0].content[0]).toEqual({
+      type: 'document',
+      source: { type: 'base64', media_type: 'application/pdf', data: 'JVBERi0xLjQK' },
+    });
+    expect(request.output_config.format.type).toBe('json_schema');
+    expect(request.output_config.format.schema.required).toContain('experience');
+  });
+
+  it('returns nothing when the model declines or answers badly', async () => {
+    create.mockResolvedValue(reply('', 'refusal'));
+    expect(await parseResume('JVBERi0xLjQK')).toBeNull();
+    create.mockResolvedValue(reply('not json'));
+    expect(await parseResume('JVBERi0xLjQK')).toBeNull();
   });
 });

@@ -1,238 +1,139 @@
-import { useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { ChevronLeft, ChevronRight, Plus, Trash2, Upload } from 'lucide-react';
-import { useRef, useState, type ReactNode } from 'react';
-import { PROFILE_KEY, useProfile, useRepository } from '../data/store';
+import { Plus, Trash2 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import {
+  EDUCATION_LEVELS,
   EEO_GENDERS,
   EEO_RACES,
   EEO_VETERAN,
   EEO_YES_NO,
-  emptyProfile,
-  missingItems,
-  parseProfile,
-  profileSchema,
+  JOB_TYPES,
   type Education,
   type Experience,
   type Profile,
-  type SavedProfile,
 } from '../domain/profile';
 import { useI18n } from '../i18n/context';
 import type { MessageKey } from '../i18n/messages';
-import { showToast } from '../state/toasts';
-import { Button, IconButton, Switch } from './primitives';
+import { Switch } from './primitives';
+import type { ProfileSection } from './profileSections';
 
-const LEVELS: Education['level'][] = ['high-school', 'associate', 'bachelor', 'master', 'doctorate', 'other'];
-const JOB_TYPES: Experience['type'][] = ['full-time', 'part-time', 'internship', 'contract'];
 const OPT: Profile['workAuthorization']['opt'][] = ['none', 'opt', 'stem'];
+const ANSWER_SWITCHES = [
+  'relocate',
+  'onsite',
+  'over18',
+  'nonCompete',
+  'governmentOfficial',
+  'relativeOfGovernmentOfficial',
+  'securityClearance',
+  'contactCurrentEmployer',
+  'emailOptIn',
+  'smsOptIn',
+] as const;
 
-type Section = 'name' | 'address' | 'links' | 'workAuthorization' | 'eeo' | 'answers' | 'writing';
+type Part = 'name' | 'address' | 'links' | 'workAuthorization' | 'eeo' | 'answers' | 'writing';
+export type Update = (change: (profile: Profile) => Profile) => void;
 
-/** The autofill profile, edited as a draft and saved as a whole. */
-export function ProfileEditor({ onBack }: { onBack: () => void }) {
-  const { data, isPending } = useProfile();
-  if (isPending) return <div className="flex-1" />;
-  // A save replaces the stored profile; the editor restarts from it.
-  return <Editor key={data?.updatedAt ?? 'new'} saved={data ?? null} onBack={onBack} />;
-}
-
-function Editor({ saved, onBack }: { saved: SavedProfile | null; onBack: () => void }) {
-  const { t, locale } = useI18n();
-  const run = useRepository();
-  const queryClient = useQueryClient();
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [draft, setDraft] = useState<Profile>(() => saved?.profile ?? emptyProfile());
-  const [dirty, setDirty] = useState(false);
-  const [errors, setErrors] = useState<string[]>([]);
-  const [saving, setSaving] = useState(false);
-
-  const update = (change: (profile: Profile) => Profile) => {
-    setDraft(change);
-    setDirty(true);
-  };
-  const patch = <S extends Section>(section: S, fields: Partial<Profile[S]>) =>
-    update((profile) => ({ ...profile, [section]: { ...profile[section], ...fields } }));
-
-  const save = async () => {
-    const parsed = profileSchema.safeParse(draft);
-    if (!parsed.success) {
-      setErrors(parsed.error.issues.map((issue) => describeIssue(issue, t)));
-      return;
-    }
-    setSaving(true);
-    const result = await run((repo) => repo.saveProfile(parsed.data));
-    setSaving(false);
-    if (!result) return;
-    setErrors([]);
-    showToast({ message: t('profile.saved') });
-    queryClient.setQueryData(PROFILE_KEY, result);
-  };
-
-  const importFile = async (file: File) => {
-    let json: unknown;
-    try {
-      json = JSON.parse(await file.text());
-    } catch {
-      setErrors([t('profile.importInvalid'), file.name]);
-      return;
-    }
-    const parsed = parseProfile(json);
-    if (!parsed.ok) {
-      setErrors([t('profile.importInvalid'), ...parsed.errors]);
-      return;
-    }
-    setErrors([]);
-    update(() => parsed.profile);
-  };
-
-  const missing = missingItems(draft);
-  const updated =
-    saved &&
-    new Intl.DateTimeFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(saved.updatedAt));
+/** The fields of one section of the profile. */
+export function SectionBody({
+  section,
+  draft,
+  update,
+}: {
+  section: ProfileSection;
+  draft: Profile;
+  update: Update;
+}) {
+  const { t } = useI18n();
+  const patch = <P extends Part>(part: P, fields: Partial<Profile[P]>) =>
+    update((profile) => ({ ...profile, [part]: { ...profile[part], ...fields } }));
   const { name, address, links, workAuthorization: auth, eeo, answers, writing } = draft;
   const eeoLabel = (value: string) => t(`profile.eeo.${value}` as MessageKey);
 
-  return (
-    <>
-      <header className="flex items-center gap-1 px-4 pt-4 pb-2">
-        <IconButton label={t('profile.back')} onClick={onBack}>
-          <ChevronLeft className="size-5" />
-        </IconButton>
-        <div className="min-w-0 flex-1">
-          <h2 className="truncate text-[20px] font-semibold tracking-[-0.02em]">{t('profile.title')}</h2>
-          {updated && <p className="text-[12px] text-fg-3">{t('profile.updated', { date: updated })}</p>}
-        </div>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="application/json,.json"
-          className="hidden"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = '';
-            if (file) void importFile(file);
-          }}
-        />
-        <Button variant="ghost" onClick={() => fileRef.current?.click()}>
-          <Upload className="size-3.5" aria-hidden="true" />
-          {t('profile.import')}
-        </Button>
-        <Button variant="primary" disabled={!dirty || saving} onClick={() => void save()}>
-          {t('profile.save')}
-        </Button>
-      </header>
+  switch (section) {
+    case 'basics':
+      return (
+        <Grid>
+          <Text
+            label={t('profile.f.first')}
+            value={name.first}
+            onChange={(first) => patch('name', { first })}
+          />
+          <Text label={t('profile.f.last')} value={name.last} onChange={(last) => patch('name', { last })} />
+          <Text
+            label={t('profile.f.preferred')}
+            value={name.preferred}
+            onChange={(preferred) => patch('name', { preferred })}
+          />
+          <Text
+            label={t('profile.f.pronouns')}
+            value={name.pronouns}
+            onChange={(pronouns) => patch('name', { pronouns })}
+          />
+          <Text
+            label={t('profile.f.pronunciation')}
+            value={name.pronunciation}
+            onChange={(pronunciation) => patch('name', { pronunciation })}
+          />
+          <Text
+            label={t('profile.f.phone')}
+            type="tel"
+            value={draft.phone}
+            onChange={(phone) => update((profile) => ({ ...profile, phone }))}
+          />
+        </Grid>
+      );
 
-      <div className="scroll-area min-h-0 flex-1 space-y-2 px-6 pt-1 pb-6">
-        <p className="text-[12px] text-fg-3">{t('profile.hint')}</p>
-        {missing.length > 0 && (
-          <p className="text-[13px] text-fg-2">
-            {t('profile.missing', {
-              items: missing
-                .map((item) => t(`profile.missing.${item}` as MessageKey))
-                .join(locale === 'zh' ? '、' : ', '),
-            })}
-          </p>
-        )}
-        {errors.length > 0 && (
-          <div role="alert" className="rounded-[14px] bg-danger/10 px-3 py-2 text-[13px] text-danger">
-            <p className="font-medium">
-              {errors[0] === t('profile.importInvalid') ? errors[0] : t('profile.invalid')}
-            </p>
-            <ul className="mt-1 list-disc pl-5">
-              {errors
-                .filter((error) => error !== t('profile.importInvalid'))
-                .map((error) => (
-                  <li key={error}>{error}</li>
-                ))}
-            </ul>
-          </div>
-        )}
+    case 'address':
+      return (
+        <Grid>
+          <Text
+            wide
+            label={t('profile.f.line1')}
+            value={address.line1}
+            onChange={(line1) => patch('address', { line1 })}
+          />
+          <Text
+            label={t('profile.f.city')}
+            value={address.city}
+            onChange={(city) => patch('address', { city })}
+          />
+          <Text
+            label={t('profile.f.state')}
+            value={address.state}
+            onChange={(state) => patch('address', { state })}
+          />
+          <Text
+            label={t('profile.f.zip')}
+            value={address.zip}
+            onChange={(zip) => patch('address', { zip })}
+          />
+          <Text
+            label={t('profile.f.country')}
+            value={address.country}
+            onChange={(country) => patch('address', { country })}
+          />
+        </Grid>
+      );
 
-        <Block title={t('profile.s.basics')} open>
-          <Grid>
+    case 'links':
+      return (
+        <Grid>
+          {(['linkedin', 'github', 'website', 'twitter'] as const).map((key) => (
             <Text
-              label={t('profile.f.first')}
-              value={name.first}
-              onChange={(first) => patch('name', { first })}
+              key={key}
+              type="url"
+              label={t(`profile.f.${key}`)}
+              value={links[key]}
+              onChange={(value) => patch('links', { [key]: value })}
             />
-            <Text
-              label={t('profile.f.last')}
-              value={name.last}
-              onChange={(last) => patch('name', { last })}
-            />
-            <Text
-              label={t('profile.f.preferred')}
-              value={name.preferred}
-              onChange={(preferred) => patch('name', { preferred })}
-            />
-            <Text
-              label={t('profile.f.pronouns')}
-              value={name.pronouns}
-              onChange={(pronouns) => patch('name', { pronouns })}
-            />
-            <Text
-              label={t('profile.f.pronunciation')}
-              value={name.pronunciation}
-              onChange={(pronunciation) => patch('name', { pronunciation })}
-            />
-            <Text
-              label={t('profile.f.phone')}
-              type="tel"
-              value={draft.phone}
-              onChange={(phone) => update((profile) => ({ ...profile, phone }))}
-            />
-          </Grid>
-        </Block>
+          ))}
+        </Grid>
+      );
 
-        <Block title={t('profile.s.address')}>
-          <Grid>
-            <Text
-              wide
-              label={t('profile.f.line1')}
-              value={address.line1}
-              onChange={(line1) => patch('address', { line1 })}
-            />
-            <Text
-              label={t('profile.f.city')}
-              value={address.city}
-              onChange={(city) => patch('address', { city })}
-            />
-            <Text
-              label={t('profile.f.state')}
-              value={address.state}
-              onChange={(state) => patch('address', { state })}
-            />
-            <Text
-              label={t('profile.f.zip')}
-              value={address.zip}
-              onChange={(zip) => patch('address', { zip })}
-            />
-            <Text
-              label={t('profile.f.country')}
-              value={address.country}
-              onChange={(country) => patch('address', { country })}
-            />
-          </Grid>
-        </Block>
-
-        <Block title={t('profile.s.links')}>
-          <Grid>
-            {(['linkedin', 'github', 'website', 'twitter'] as const).map((key) => (
-              <Text
-                key={key}
-                type="url"
-                label={t(`profile.f.${key}`)}
-                value={links[key]}
-                onChange={(value) => patch('links', { [key]: value })}
-              />
-            ))}
-          </Grid>
-        </Block>
-
-        <Block title={t('profile.s.auth')}>
+    case 'auth':
+      return (
+        <>
           <Note>{t('profile.authNote')}</Note>
           <Grid>
             <List
@@ -268,9 +169,12 @@ function Editor({ saved, onBack }: { saved: SavedProfile | null; onBack: () => v
             checked={auth.sponsorshipFuture}
             onChange={(sponsorshipFuture) => patch('workAuthorization', { sponsorshipFuture })}
           />
-        </Block>
+        </>
+      );
 
-        <Block title={t('profile.s.education')} count={draft.education.length}>
+    case 'education':
+      return (
+        <>
           {draft.education.map((school, index) => {
             const set = (fields: Partial<Education>) =>
               update((profile) => ({
@@ -299,7 +203,7 @@ function Editor({ saved, onBack }: { saved: SavedProfile | null; onBack: () => v
                   <Choice
                     label={t('profile.f.level')}
                     value={school.level}
-                    options={LEVELS.map((value) => ({ value, label: t(`profile.level.${value}`) }))}
+                    options={EDUCATION_LEVELS.map((value) => ({ value, label: t(`profile.level.${value}`) }))}
                     onChange={(level) => set({ level })}
                   />
                   <Text
@@ -350,9 +254,12 @@ function Editor({ saved, onBack }: { saved: SavedProfile | null; onBack: () => v
           >
             {t('profile.addEducation')}
           </Add>
-        </Block>
+        </>
+      );
 
-        <Block title={t('profile.s.experience')} count={draft.experience.length}>
+    case 'experience':
+      return (
+        <>
           {draft.experience.map((job, index) => {
             const set = (fields: Partial<Experience>) =>
               update((profile) => ({
@@ -395,7 +302,7 @@ function Editor({ saved, onBack }: { saved: SavedProfile | null; onBack: () => v
                   />
                   <Month
                     label={t('profile.f.start')}
-                    value={job.start}
+                    value={job.start || null}
                     onChange={(start) => set({ start: start ?? '' })}
                   />
                   <Month label={t('profile.f.endCurrent')} value={job.end} onChange={(end) => set({ end })} />
@@ -430,26 +337,30 @@ function Editor({ saved, onBack }: { saved: SavedProfile | null; onBack: () => v
           >
             {t('profile.addExperience')}
           </Add>
-        </Block>
+        </>
+      );
 
-        <Block title={t('profile.s.skills')}>
-          <Grid>
-            <List
-              wide
-              label={t('profile.f.skills')}
-              value={draft.skills}
-              onChange={(skills) => update((profile) => ({ ...profile, skills }))}
-            />
-            <List
-              wide
-              label={t('profile.f.languages')}
-              value={draft.languages}
-              onChange={(languages) => update((profile) => ({ ...profile, languages }))}
-            />
-          </Grid>
-        </Block>
+    case 'skills':
+      return (
+        <Grid>
+          <List
+            wide
+            label={t('profile.f.skills')}
+            value={draft.skills}
+            onChange={(skills) => update((profile) => ({ ...profile, skills }))}
+          />
+          <List
+            wide
+            label={t('profile.f.languages')}
+            value={draft.languages}
+            onChange={(languages) => update((profile) => ({ ...profile, languages }))}
+          />
+        </Grid>
+      );
 
-        <Block title={t('profile.s.eeo')}>
+    case 'eeo':
+      return (
+        <>
           <Note>{t('profile.eeoNote')}</Note>
           <Grid>
             <Choice
@@ -483,9 +394,12 @@ function Editor({ saved, onBack }: { saved: SavedProfile | null; onBack: () => v
               onChange={(disability) => patch('eeo', { disability })}
             />
           </Grid>
-        </Block>
+        </>
+      );
 
-        <Block title={t('profile.s.answers')}>
+    case 'answers':
+      return (
+        <>
           <Grid>
             <Text
               label={t('profile.f.salary')}
@@ -528,20 +442,7 @@ function Editor({ saved, onBack }: { saved: SavedProfile | null; onBack: () => v
               onChange={(timeline) => patch('answers', { timeline })}
             />
           </Grid>
-          {(
-            [
-              'relocate',
-              'onsite',
-              'over18',
-              'nonCompete',
-              'governmentOfficial',
-              'relativeOfGovernmentOfficial',
-              'securityClearance',
-              'contactCurrentEmployer',
-              'emailOptIn',
-              'smsOptIn',
-            ] as const
-          ).map((key) => (
+          {ANSWER_SWITCHES.map((key) => (
             <Toggle
               key={key}
               label={t(`profile.f.${key}`)}
@@ -549,9 +450,12 @@ function Editor({ saved, onBack }: { saved: SavedProfile | null; onBack: () => v
               onChange={(value) => patch('answers', { [key]: value })}
             />
           ))}
-        </Block>
+        </>
+      );
 
-        <Block title={t('profile.s.writing')}>
+    case 'writing':
+      return (
+        <>
           <Note>{t('profile.writingNote')}</Note>
           <Area
             label={t('profile.f.summary')}
@@ -610,55 +514,9 @@ function Editor({ saved, onBack }: { saved: SavedProfile | null; onBack: () => v
           <Add onClick={() => patch('writing', { snippets: [...writing.snippets, ''] })}>
             {t('profile.addSnippet')}
           </Add>
-        </Block>
-      </div>
-    </>
-  );
-}
-
-const ENTRY_FIELDS: Record<string, MessageKey> = { title: 'profile.f.jobTitle', text: 'profile.f.storyText' };
-
-/** "Legal first name is required", "Work experience 2 · Start isn’t valid". */
-function describeIssue(
-  issue: { path: PropertyKey[]; code: string },
-  t: (key: MessageKey, vars?: Record<string, string | number>) => string,
-) {
-  const [section, second, third] = issue.path.map(String);
-  const label = (key: string) => ENTRY_FIELDS[key] ?? (`profile.f.${key}` as MessageKey);
-  let field: string;
-  if ((section === 'education' || section === 'experience') && third)
-    field = `${t(`profile.s.${section}`)} ${Number(second) + 1} · ${t(label(third))}`;
-  else if (section === 'writing' && second === 'stories' && issue.path[3] !== undefined)
-    field = `${t('profile.f.stories')} ${Number(third) + 1} · ${t(label(String(issue.path[3])))}`;
-  else if (second && section !== 'education' && section !== 'experience') field = t(label(second));
-  else field = issue.path.join('.');
-  return t(issue.code === 'too_small' ? 'profile.required' : 'profile.badValue', { field });
-}
-
-function Block({
-  title,
-  count,
-  open,
-  children,
-}: {
-  title: string;
-  count?: number;
-  open?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <details open={open} className="group rounded-[18px] bg-fill/60">
-      <summary className="flex h-11 cursor-pointer list-none items-center gap-2 px-3.5 text-[14px] font-medium select-none [&::-webkit-details-marker]:hidden">
-        <ChevronRight
-          className="size-4 text-fg-3 transition-transform group-open:rotate-90"
-          aria-hidden="true"
-        />
-        <span className="flex-1">{title}</span>
-        {count !== undefined && <span className="text-[12px] text-fg-3">{count}</span>}
-      </summary>
-      <div className="space-y-2 px-3.5 pb-3.5">{children}</div>
-    </details>
-  );
+        </>
+      );
+  }
 }
 
 function Grid({ children }: { children: ReactNode }) {
@@ -789,7 +647,7 @@ function Choice<T extends string>({
 }: {
   label: string;
   value: T;
-  options: { value: T; label: string }[];
+  options: readonly { value: T; label: string }[];
   onChange: (value: T) => void;
 }) {
   return (
@@ -878,15 +736,17 @@ function Toggle({
 function Entry({ onRemove, children }: { onRemove: () => void; children: ReactNode }) {
   const { t } = useI18n();
   return (
-    <div className="relative space-y-2 rounded-[16px] bg-fill p-3 pt-2">
+    <div className="space-y-2 rounded-[16px] bg-fill p-3 pt-2">
       <div className="flex justify-end">
-        <IconButton
-          label={t('profile.remove')}
+        <button
+          type="button"
+          aria-label={t('profile.remove')}
+          title={t('profile.remove')}
           onClick={onRemove}
-          className="size-7 text-fg-3 hover:text-danger"
+          className="grid size-7 place-items-center rounded-full text-fg-3 transition-colors hover:bg-fill-2 hover:text-danger"
         >
           <Trash2 className="size-3.5" />
-        </IconButton>
+        </button>
       </div>
       {children}
     </div>
