@@ -4,25 +4,33 @@ import {
   MAX_RESUME_BASE64,
   MAX_RESUME_TEXT,
   type ExtensionMessage,
-  type ExtensionReadiness,
 } from '@domain/bridge';
-import type { ToBackground } from '../messages';
+import type { BridgeStatus, ToBackground } from '../messages';
 
 export interface BridgeBackend {
-  readiness(): Promise<ExtensionReadiness | undefined>;
+  status(): Promise<BridgeStatus | undefined>;
   parse(pdf: string, text: string): Promise<ToBackground['resume:parse']['response'] | undefined>;
+  openOptions(): Promise<void>;
 }
 
 /**
- * Answers Outbox's page, which can't reach the extension itself: whether a resume can be read, and the read resume.
- * Only messages from this window and origin count. Returns a function that stops listening.
+ * Answers Outbox's page, which can't reach the extension itself: whether a resume can be read (and the version, and
+ * whether an application was logged, for its setup checklist), the read resume, and opening the settings where the
+ * key goes. Only messages from this window and origin count. Returns a function that stops listening.
  */
 export function startBridge(win: Window, backend: BridgeBackend): () => void {
   const origin = win.location.origin;
   const post = (message: ExtensionMessage) => win.postMessage(message, origin);
   const hello = () =>
-    backend.readiness().then(
-      (readiness) => post({ source: FROM_EXTENSION, type: 'hello', readiness: readiness ?? 'no-key' }),
+    backend.status().then(
+      (status) =>
+        post({
+          source: FROM_EXTENSION,
+          type: 'hello',
+          readiness: status?.readiness ?? 'no-key',
+          version: status?.version ?? '',
+          logged: status?.logged ?? false,
+        }),
       () => undefined,
     );
 
@@ -37,6 +45,7 @@ export function startBridge(win: Window, backend: BridgeBackend): () => void {
     } | null;
     if (!data || data.source !== FROM_PAGE) return;
     if (data.type === 'ping') void hello();
+    if (data.type === 'open-options') void backend.openOptions().catch(() => undefined);
     if (data.type !== 'parse-resume' || typeof data.id !== 'string' || typeof data.pdf !== 'string') return;
     const id = data.id;
     const fail = (error: 'too-large' | 'failed' | 'no-key' | 'ai-off', detail = '') =>

@@ -1,4 +1,4 @@
-import { CircleCheck, Ellipsis, FileText, RotateCcw, X } from 'lucide-react';
+import { Bookmark, CircleCheck, Ellipsis, FileText, RotateCcw, X } from 'lucide-react';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { browser } from 'wxt/browser';
 import { adapterFor } from '../../content/adapters';
@@ -226,6 +226,14 @@ export function Card({ startOpen }: { startOpen: boolean }) {
         if (next?.logged) setLoggedHere(true);
       })
       .catch(() => undefined);
+  const save = () =>
+    void toBackground('card:save', {})
+      .then(apply)
+      .catch(() => undefined);
+  const undo = () =>
+    void toBackground('card:undo', {})
+      .then(apply)
+      .catch(() => undefined);
   const close = (
     <button className="icon-button" onClick={() => setOpen(false)} aria-label={t('close')} title={t('close')}>
       <X size={14} />
@@ -269,17 +277,35 @@ export function Card({ startOpen }: { startOpen: boolean }) {
               {t('relog')}
             </button>
           ) : (
-            <button
-              className="secondary"
-              onClick={() =>
-                void toBackground('card:undo', {})
-                  .then(apply)
-                  .catch(() => undefined)
-              }
-            >
+            <button className="secondary" onClick={undo}>
               {t('undo')}
             </button>
           )}
+          {close}
+        </div>
+        {state.error && <div className="body">{noticeLine}</div>}
+      </div>
+    );
+  }
+
+  // Saved for later from a posting: Undo, as after a log.
+  if (state.saved && !state.hasForm) {
+    const { undone } = state.saved;
+    return (
+      <div className="card glass" role="dialog" aria-label="Outbox Autofill">
+        <div className="done">
+          {undone ? (
+            <RotateCcw size={16} className="done-icon" />
+          ) : (
+            <CircleCheck size={18} className="done-icon ok" />
+          )}
+          <div className="done-text">
+            <div className="done-title">{undone ? t('undone') : t('savedDone')}</div>
+            {posting && <div className="done-posting">{posting}</div>}
+          </div>
+          <button className="secondary" onClick={undone ? save : undo}>
+            {undone ? t('save') : t('undo')}
+          </button>
           {close}
         </div>
         {state.error && <div className="body">{noticeLine}</div>}
@@ -314,8 +340,12 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   const filled = state.checklist.filter((item) => item.status === 'filled').length;
   const waiting = state.checklist.filter((item) => TAGS[item.status]).length;
 
+  // On a posting without a form, saving and logging are buttons of their own (below). LinkedIn keeps its log
+  // button for every posting, applied to or not: its Easy Apply happens right there.
+  const postingPage =
+    !state.hasForm && Boolean(state.posting?.company) && (linkedin || state.tracked !== 'applied');
   const menu = [
-    ...(canLog && !linkedin ? [{ label: t('log'), run: log }] : []),
+    ...(canLog && !linkedin && !postingPage ? [{ label: t('log'), run: log }] : []),
     ...(state.hasForm
       ? [
           {
@@ -362,11 +392,38 @@ export function Card({ startOpen }: { startOpen: boolean }) {
           )}
         </div>
       );
-  } else if (linkedin && canLog) {
-    main = (
-      <button className="primary" onClick={log}>
-        {t('log')}
+  } else if (postingPage) {
+    // A posting without a form yet: save it for later, or say it was applied to. On LinkedIn, applying happens right
+    // there (Easy Apply), so logging comes first.
+    const saveButton =
+      state.tracked !== null ? null : (
+        <button className={linkedin ? 'secondary' : 'primary'} onClick={save}>
+          <Bookmark size={14} />
+          {t('save')}
+        </button>
+      );
+    const logButton = canLog && (
+      <button className={linkedin || !saveButton ? 'primary' : 'secondary'} onClick={log}>
+        {linkedin ? t('log') : t('markApplied')}
       </button>
+    );
+    main = (
+      <>
+        {state.tracked === 'saved' && <div className="hint">{t('alreadySaved')}</div>}
+        <div className="actions">
+          {linkedin ? (
+            <>
+              {logButton}
+              {saveButton}
+            </>
+          ) : (
+            <>
+              {saveButton}
+              {logButton}
+            </>
+          )}
+        </div>
+      </>
     );
   }
 

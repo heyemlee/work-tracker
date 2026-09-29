@@ -4,9 +4,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Dialog, Popover } from 'radix-ui';
 import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { signOut } from '../data/auth';
+import { downloadCsv } from '../data/export';
 import { localRepository, useCurrentUser, useRepository } from '../data/store';
-import { toCsv } from '../domain/csv';
-import { toIsoDate } from '../domain/dates';
 import { ACCOUNT_COLORS, type Account, type AccountColor, type Snapshot } from '../domain/types';
 import { channelName, useI18n } from '../i18n/context';
 import { updatePrefs, usePrefs, type Locale, type ThemePref } from '../state/prefs';
@@ -342,23 +341,13 @@ function ColorPicker({ value, onChange }: { value: AccountColor; onChange: (colo
   );
 }
 
-function downloadCsv(snapshot: Snapshot) {
-  // The BOM makes Excel read the file as UTF-8, which matters for non-Latin company names.
-  const blob = new Blob(['﻿', toCsv(snapshot)], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `outbox-${toIsoDate(new Date())}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
-}
-
 function GeneralSettings({ snapshot }: { snapshot: Snapshot }) {
   const { t } = useI18n();
   const run = useRepository();
   const locale = usePrefs((p) => p.locale);
   const theme = usePrefs((p) => p.theme);
   const hideRejected = usePrefs((p) => p.hideRejected);
+  const goal = usePrefs((p) => p.dailyGoal);
   const { data: user } = useCurrentUser();
   // Sample data can be restored in the local prototype; the owner's app has real data.
   const resetSample = localRepository ? () => run(async () => localRepository?.resetSampleData()) : null;
@@ -392,6 +381,24 @@ function GeneralSettings({ snapshot }: { snapshot: Snapshot }) {
           ]}
           value={theme}
           onChange={(value) => updatePrefs({ theme: value })}
+        />
+      </Row>
+      <Row className="justify-between gap-4 py-2 pr-2 pl-3">
+        <label htmlFor="settings-goal" className="min-w-0">
+          <span className="block text-[14px]">{t('settings.goal')}</span>
+          <span className="block text-[12px] text-fg-3">{t('settings.goalHint')}</span>
+        </label>
+        <input
+          id="settings-goal"
+          type="number"
+          min={1}
+          max={500}
+          defaultValue={goal ?? ''}
+          onChange={(event) => {
+            const value = Number.parseInt(event.target.value, 10);
+            updatePrefs({ dailyGoal: Number.isFinite(value) && value > 0 ? value : null });
+          }}
+          className="h-8 w-20 shrink-0 rounded-[10px] bg-fill-2 px-2.5 text-right text-[14px] outline-none"
         />
       </Row>
       <Row className="justify-between py-2 pr-2 pl-3">

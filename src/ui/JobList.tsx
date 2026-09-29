@@ -3,6 +3,7 @@ import { Bookmark, ChevronRight } from 'lucide-react';
 import { memo, useMemo } from 'react';
 import { indexBy } from '../domain/collections';
 import { diffDays, type GroupKey } from '../domain/dates';
+import { isNoReply } from '../domain/insights';
 import type { JobRow, RowGroup } from '../domain/rows';
 import type { Account, Id, IsoDate } from '../domain/types';
 import { useI18n, type I18n } from '../i18n/context';
@@ -91,6 +92,10 @@ const JobRowItem = memo(function JobRowItem({
     row.sortDate >= today
       ? formatTime(row.sortTime, locale)
       : t('age.days', { n: diffDays(today, row.sortDate) });
+  const live = row.applications.filter((application) => !application.rejected);
+  // Faded like a rejection when every live application has gone unanswered for 30 days.
+  const quiet =
+    row.rejected || (live.length > 0 && live.every((application) => isNoReply(application, today)));
 
   return (
     <div
@@ -110,10 +115,10 @@ const JobRowItem = memo(function JobRowItem({
       )}
     >
       {!first && <span aria-hidden="true" className="absolute top-0 right-0 left-16 h-px bg-hairline" />}
-      <span className={clsx('[grid-area:avatar]', row.rejected && 'opacity-50')}>
+      <span className={clsx('[grid-area:avatar]', quiet && 'opacity-50')}>
         <CompanyAvatar name={row.company.name} />
       </span>
-      <span className={clsx('min-w-0 [grid-area:text]', row.rejected && 'opacity-50')}>
+      <span className={clsx('min-w-0 [grid-area:text]', quiet && 'opacity-50')}>
         <span className="block truncate text-[15px] font-semibold tracking-[-0.01em]">
           {row.company.name}
         </span>
@@ -129,7 +134,12 @@ const JobRowItem = memo(function JobRowItem({
           row.applications.map((application) => {
             const account = accountsById.get(application.accountId);
             return account ? (
-              <ApplicationChip key={application.id} application={application} account={account} />
+              <ApplicationChip
+                key={application.id}
+                application={application}
+                account={account}
+                noReply={isNoReply(application, today)}
+              />
             ) : null;
           })
         )}

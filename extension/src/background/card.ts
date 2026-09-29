@@ -19,6 +19,7 @@ import {
   finalsItem,
   getSettings,
   lastUsedItem,
+  loggedItem,
   memoryItem,
   profileItem,
   snapshotsItem,
@@ -156,6 +157,8 @@ export async function cardState(session: TabSession, outbox?: OutboxState): Prom
       !applied.has(session.accountId),
     checklist: checklist(session),
     logged: session.logged,
+    saved: session.saved,
+    tracked: job ? (job.applications.length > 0 ? 'applied' : 'saved') : null,
     ai: !settings.aiEnabled
       ? 'off'
       : !key
@@ -243,6 +246,7 @@ export async function readTab(tabId: number, url: string): Promise<CardState> {
       results: samePage ? current.results : {},
       phase: samePage ? current.phase : 'idle',
       logged: samePosting ? current.logged : null,
+      saved: samePosting ? current.saved : null,
       submittedAt: samePosting ? current.submittedAt : null,
       captured: samePosting ? current.captured : [],
       error: null,
@@ -511,6 +515,7 @@ export async function logApplication(tabId: number, url: string, manual: boolean
       error: result ? null : 'queued',
       jobId: result?.jobId ?? session.jobId,
     }));
+    if (result && input.accountIds.length > 0) await loggedItem.setValue(true);
   } catch {
     session = await updateSession(tabId, url, () => ({ error: 'signedOut' }));
   }
@@ -518,12 +523,55 @@ export async function logApplication(tabId: number, url: string, manual: boolean
   return cardState(session);
 }
 
+/**
+ * Saves a posting for later: a job on Outbox with no applications, which shows as Saved there. A posting Outbox
+ * already tracks isn't saved twice.
+ */
+export async function saveJob(tabId: number, url: string): Promise<CardState> {
+  let session = (await getSession(tabId)) ?? (await updateSession(tabId, url, () => ({})));
+  const posting = session.posting;
+  if (!posting?.company) {
+    session = await updateSession(tabId, url, () => ({ error: 'noCompany' }));
+    return cardState(session);
+  }
+  const outbox = await outboxState(true);
+  if (matchedJob(outbox.snapshot, session)) return cardState(session, outbox);
+  const input: QuickAddInput = {
+    companyName: posting.company,
+    title: posting.title,
+    url: posting.url,
+    jobId: null,
+    accountIds: [],
+    channelId: null,
+    resumeId: null,
+    appliedAt: today(),
+  };
+  try {
+    const result = await quickAddOrQueue(input);
+    session = await updateSession(tabId, url, () => ({
+      saved: result ? { result, undone: false } : null,
+      error: result ? null : 'queued',
+      jobId: result?.jobId ?? session.jobId,
+    }));
+  } catch {
+    session = await updateSession(tabId, url, () => ({ error: 'signedOut' }));
+  }
+  await pushState(session);
+  return cardState(session);
+}
+
+/** Takes back the card's last log, or else its save. */
 export async function undo(tabId: number, url: string): Promise<CardState> {
   let session = await getSession(tabId);
   if (session?.logged && !session.logged.undone) {
     await undoQuickAdd(session.logged.result);
     session = await updateSession(tabId, url, (current) => ({
       logged: current.logged ? { ...current.logged, undone: true } : null,
+    }));
+  } else if (session?.saved && !session.saved.undone) {
+    await undoQuickAdd(session.saved.result);
+    session = await updateSession(tabId, url, (current) => ({
+      saved: current.saved ? { ...current.saved, undone: true } : null,
     }));
   }
   return cardState(session ?? (await updateSession(tabId, url, () => ({}))));

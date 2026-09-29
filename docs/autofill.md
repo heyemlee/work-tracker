@@ -23,7 +23,8 @@ typing, fingerprint spoofing, CAPTCHA solving); automating LinkedIn, whose terms
    the match check (green, yellow, red; yellow and red give their two main reasons), then the account to apply from —
    accounts that already applied to this posting are disabled — and the resume, in one row. With a single account or
    resume the card names it instead of offering a choice. A posting whose form isn't showing yet opens the card too,
-   for its match check.
+   for its match check and two buttons: **Save for later**, which adds it to Outbox as a saved job, and **Mark as
+   applied**. A posting Outbox already saved says so when it's opened again.
 2. Press **Fill** (or the shortcut). Recognized fields fill in about a second and the resume PDF is attached.
 3. Work through what the card lists: confirm the work-authorization answers, edit the AI drafts, fill what's missing.
    Fields that filled fine are counted, not listed.
@@ -37,7 +38,8 @@ right", the settings — is in its ⋯ menu.
 
 Workday runs over several pages: Fill once per page. It draws each page's fields a while after the page loads, so
 the card opens when they appear. On its sign-up page the extension fills the email and Chrome generates and saves
-the password. On LinkedIn the card only offers **Log to Outbox**. On other sites the card opens by itself on a form
+the password. On LinkedIn the card leads with **Log to Outbox**, since Easy Apply happens right there, with Save for
+later beside it. On other sites the card opens by itself on a form
 with a resume upload and a name or email field — not on a job board's own apply flow, such as LinkedIn's or Indeed's
 — or from the toolbar, and fills what the field dictionary recognizes. Closed, the card stays closed on that page;
 the toolbar button brings it back.
@@ -86,8 +88,7 @@ every save. The panel can import the old `autofill-profile.json` once. The exten
 `chrome.storage.local` whenever it reads a page or fills, so filling works offline from the last copy. The API key and
 remembered answers stay in the extension; they never go to Outbox. Nothing is in git.
 
-**Resumes** (decided 2026-09-28, replacing PDFs added on the options page) are uploaded on Outbox, in their own panel
-from the toolbar: one PDF per resume version, up to 1.4 MB, stored in D1 as base64 (`resume_files`, apart from the
+**Resumes** (decided 2026-09-28, replacing PDFs added on the options page) are uploaded on Outbox, on their own page: one PDF per resume version, up to 1.4 MB, stored in D1 as base64 (`resume_files`, apart from the
 version so the snapshot never reads it). Base64 rather than a blob: D1 hands a blob to the Worker as an array of
 numbers, which costs more CPU than the free plan allows, and a row holds at most 2 MB. `GET /api/resumes/:id/file`
 serves the PDF itself, so the panel opens it with a plain link. The card lists the versions that have a PDF; on Fill
@@ -97,7 +98,7 @@ and the profile is read from it.
 
 **From a resume.** A new profile starts from the resume, as Simplify and similar tools do. "Fill from resume" picks
 one of the stored resumes (or uploads a new PDF, which becomes a version too), and "Fill profile" on a resume in the
-resumes panel opens this panel reading it. The page hands the PDF to the extension through its content script on Outbox (`src/domain/bridge.ts`, `window.postMessage` limited to
+resumes page opens the profile page reading it. The setup guide's fourth step reads one the same way. The page hands the PDF to the extension through its content script on Outbox (`src/domain/bridge.ts`, `window.postMessage` limited to
 the page's own window and origin); the service worker reads it with the owner's key (Claude, structured output into
 `resumeFactsSchema`) and hands back only the facts. The panel then lists what would change for the owner to pick
 from: contact details and links fill only empty fields, education and work experience are replaced, new skills and
@@ -202,6 +203,10 @@ a posting there shows a note. It is a note, not a block.
 - On a detected submission the service worker sends a quick add: company, title, link, the existing job when the
   link or company and title match (`findSamePosting`), the account, channel "Company site", and the resume version.
   The card shrinks to "Logged to Outbox" with Undo (`/quick-add/undo`). While offline the log waits in a queue.
+- **Save for later** on a posting sends a quick add with no account, which Outbox shows as a saved job, with Undo
+  the same way. The first log with an account is remembered (`local:logged`): Outbox's setup checklist asks the
+  extension, over the page bridge, whether it has logged an application yet, along with its version and whether it
+  can read resumes. The bridge also opens the extension's settings when the setup guide asks, for the API key.
 - **Sign-in:** requests carry Outbox's session cookie (the extension has host permission). If Chrome doesn't send it,
   a content script on the Outbox tab reads the session token from `/api/auth/get-session`, and the service worker
   sends it as a bearer token (Better Auth's `bearer` plugin). If both fail, the card asks the owner to open Outbox.

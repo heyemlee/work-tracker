@@ -1,7 +1,8 @@
 import type { ExtensionReadiness } from '@domain/bridge';
+import { browser } from 'wxt/browser';
 import { OUTBOX_MATCHES } from '../hosts';
-import type { ToBackground } from '../messages';
-import { aiKey, getSettings } from '../storage';
+import type { BridgeStatus, ToBackground } from '../messages';
+import { aiKey, getSettings, loggedItem } from '../storage';
 import { NoApiKey, parseResume } from './ai';
 
 /** Only Outbox's own pages may ask the extension to spend the owner's key. */
@@ -13,6 +14,12 @@ export async function readiness(): Promise<ExtensionReadiness> {
   const [key, settings] = await Promise.all([aiKey(), getSettings()]);
   if (!settings.aiEnabled) return 'ai-off';
   return key ? 'ready' : 'no-key';
+}
+
+/** What Outbox's page shows about the extension: whether it can read resumes, its version, and whether it logged. */
+export async function bridgeStatus(): Promise<BridgeStatus> {
+  const [ready, logged] = await Promise.all([readiness(), loggedItem.getValue()]);
+  return { readiness: ready, version: browser.runtime.getManifest().version, logged };
 }
 
 /** Reads a resume for Outbox's profile page. */

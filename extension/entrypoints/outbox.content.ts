@@ -5,16 +5,18 @@ import { toBackground } from '../src/messages';
 
 /**
  * On Outbox itself. Reads the session token (a same-origin request, so the cookie goes along) and hands it to the
- * service worker, for when Chrome doesn't send the cookie with the extension's own requests. And answers the
- * profile page, which asks the extension to read a resume with the owner's key.
+ * service worker, for when Chrome doesn't send the cookie with the extension's own requests. And answers Outbox's
+ * pages: the profile asks it to read a resume with the owner's key, the setup guide how it's doing and to open its
+ * settings.
  */
 export default defineContentScript({
   matches: OUTBOX_MATCHES,
   runAt: 'document_idle',
   async main(ctx) {
     const stop = startBridge(window, {
-      readiness: () => toBackground('bridge:status', {}),
+      status: () => toBackground('bridge:status', {}),
       parse: (pdf, text) => toBackground('resume:parse', { pdf, text }),
+      openOptions: () => toBackground('card:options', {}),
     });
     ctx.onInvalidated(stop);
     try {

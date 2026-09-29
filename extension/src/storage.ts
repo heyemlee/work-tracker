@@ -94,6 +94,8 @@ export const usageItem = storage.defineItem<UsageDay[]>('local:usage', { fallbac
 export const snapshotsItem = storage.defineItem<FormSnapshot[]>('local:snapshots', { fallback: [] });
 export const outboxTokenItem = storage.defineItem<string | null>('local:outboxToken', { fallback: null });
 export const pendingLogsItem = storage.defineItem<PendingLog[]>('local:pendingLogs', { fallback: [] });
+/** An application has been logged to Outbox from this browser at least once; Outbox's setup checklist asks. */
+export const loggedItem = storage.defineItem<boolean>('local:logged', { fallback: false });
 /** The account and the Outbox resume version picked last. */
 export const lastUsedItem = storage.defineItem<{ accountId: string | null; resumeId: string | null }>(
   'local:lastUsed',

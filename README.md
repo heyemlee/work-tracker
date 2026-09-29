@@ -20,8 +20,16 @@ follows Apple's Liquid Glass.
   `Enter`. Typing a company you've applied to before offers its postings, and accounts that already applied
   can't be picked twice. Or paste the posting's link: the company fills itself in, and a link you've already
   tracked opens its posting, ready for the next account. Adds and deletes can be undone.
-- **A list you can scan.** Grouped by day, with today's and this week's counts, active OAs, offers, status
-  filters, search (`/`), and a switch to hide rejections. Every change lands on the posting's timeline.
+- **A list you can scan.** Grouped by day, with today's count against a daily goal, the last 7 days, active OAs
+  and the 30-day OA rate, status filters with counts, search (`/`), and a switch to hide rejections. An
+  application still at Applied after 30 days reads _No reply_ and fades. Every change lands on the posting's
+  timeline.
+- **Numbers that say what works.** An Insights page shows the funnel from applied to OA to offer, applications per
+  day against the goal, and the OA rate of each resume version, account and channel, for 7 days, 30 days or
+  everything.
+- **Set up in a few minutes.** A first-run guide walks through the emails you apply with, your resumes, the
+  extension and its key, reading a resume into your profile, and the answers no resume holds. A checklist on the
+  home page keeps what's left, until the extension logs your first application.
 - **Liquid Glass.** Blur, saturation, and a specular rim in every browser, with real refraction (an SVG
   displacement map) in Chromium. Light and dark follow the system; reduced motion and reduced transparency are
   honored.
@@ -43,7 +51,8 @@ started from their resume PDF, then logs each submission to Outbox. It never pre
   approvals (USCIS, FY2021–2023), and how many of its postings the owner applied to in the last 30 days. It
   warns and never blocks.
 - **It logs itself.** When the confirmation page loads, the application lands in Outbox with its account,
-  channel, resume version and link, and can be undone.
+  channel, resume version and link, and can be undone. On a posting you'll apply to later, **Save for later** adds
+  it to Outbox as a saved job.
 
 Fill accuracy on 22 saved application pages, using rules only (no AI). Every expected answer was checked by
 hand:

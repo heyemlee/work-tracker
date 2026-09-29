@@ -32,12 +32,23 @@ function MenuOption({
   );
 }
 
-/** One account's application on a job. Click to change its stage or mark it rejected, without opening the job. */
-export function ApplicationChip({ application, account }: { application: Application; account: Account }) {
+/**
+ * One account's application on a job. Click to change its stage or mark it rejected, without opening the job. One
+ * still at Applied after 30 days reads No reply.
+ */
+export function ApplicationChip({
+  application,
+  account,
+  noReply = false,
+}: {
+  application: Application;
+  account: Account;
+  noReply?: boolean;
+}) {
   const { t, locale } = useI18n();
   const run = useRepository();
   const [open, setOpen] = useState(false);
-  const stageLabel = t(`status.${application.stage}`);
+  const stageLabel = noReply ? t('noReply') : t(`status.${application.stage}`);
   const statusLabel = application.rejected ? `${stageLabel}, ${t('status.rejected')}` : stageLabel;
   const name = accountName(account, t);
 
@@ -52,7 +63,7 @@ export function ApplicationChip({ application, account }: { application: Applica
         <button
           type="button"
           className="chip"
-          data-status={application.rejected ? 'rejected' : application.stage}
+          data-status={application.rejected ? 'rejected' : noReply ? 'noreply' : application.stage}
           aria-label={t('chip.changeStatus', { account: name, status: statusLabel })}
           onClick={stop}
           onKeyDown={stop}

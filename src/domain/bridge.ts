@@ -13,6 +13,8 @@ export type ParseError = 'no-key' | 'ai-off' | 'too-large' | 'failed';
 
 export type PageMessage =
   | { source: typeof FROM_PAGE; type: 'ping' }
+  /** Opens the extension's settings, where its AI key goes. */
+  | { source: typeof FROM_PAGE; type: 'open-options' }
   | {
       source: typeof FROM_PAGE;
       type: 'parse-resume';
@@ -23,7 +25,15 @@ export type PageMessage =
     };
 
 export type ExtensionMessage =
-  | { source: typeof FROM_EXTENSION; type: 'hello'; readiness: ExtensionReadiness }
+  | {
+      source: typeof FROM_EXTENSION;
+      type: 'hello';
+      readiness: ExtensionReadiness;
+      /** Absent from builds before 2026-09-28, as is `logged`. */
+      version?: string;
+      /** It has logged an application to Outbox at least once. */
+      logged?: boolean;
+    }
   | { source: typeof FROM_EXTENSION; type: 'parse-result'; id: string; facts: unknown }
   | { source: typeof FROM_EXTENSION; type: 'parse-error'; id: string; error: ParseError; detail: string };
 

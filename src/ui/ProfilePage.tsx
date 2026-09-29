@@ -1,19 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { ChevronRight, FileText, LoaderCircle, Upload, X } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
-import { Dialog, Popover } from 'radix-ui';
+import { ChevronRight, FileText, LoaderCircle, Upload } from 'lucide-react';
+import { Popover } from 'radix-ui';
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react';
-import {
-  ExtensionError,
-  readResumeWithExtension,
-  useExtension,
-  type ExtensionState,
-} from '../data/extension';
+import { ExtensionError, readResumeWithExtension, useExtension } from '../data/extension';
 import { formatSize, loadResumePdf, resumeProblem, uploadResume } from '../data/resumes';
 import { PROFILE_KEY, useProfile, useRepository } from '../data/store';
 import {
   applyResume,
+  completeness,
   emptyProfile,
   missingItems,
   parseProfile,
@@ -30,123 +25,49 @@ import type { Id, ResumeVersion } from '../domain/types';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useI18n } from '../i18n/context';
 import type { MessageKey } from '../i18n/messages';
+import { navigate, PAGE_PATHS, setLeaveGuard } from '../state/router';
 import { showToast } from '../state/toasts';
-import { useLiquidGlass } from './glass/useLiquidGlass';
-import { Button, IconButton } from './primitives';
+import { Button } from './primitives';
+import { describeIssue, extensionText } from './profileText';
 import { SectionBody } from './ProfileFields';
 import { PROFILE_SECTIONS, SECTION_OF_MISSING, type ProfileSection } from './profileSections';
 
-type Translate = (key: MessageKey, vars?: Record<string, string | number>) => string;
-
-interface ProfilePanelProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+interface ProfilePageProps {
   /** The stored resume versions, to read one of them into the profile. */
   resumes: ResumeVersion[];
-  /** A stored resume to read as soon as the panel opens. */
+  /** A stored resume to read as soon as the page opens, from the resumes page. */
   readFirst: Id | null;
 }
 
-/** The autofill profile, in its own panel opened from the toolbar. Edited as a draft and saved as a whole. */
-export function ProfilePanel({ open, onOpenChange, resumes, readFirst }: ProfilePanelProps) {
-  const { t } = useI18n();
-  const dirty = useRef(false);
-  const change = (next: boolean) => {
-    if (!next && dirty.current && !window.confirm(t('profile.discard'))) return;
-    if (!next) dirty.current = false;
-    onOpenChange(next);
-  };
-
+/** The profile the extension fills applications from, on its own page. Edited as a draft and saved as a whole. */
+export function ProfilePage({ resumes, readFirst }: ProfilePageProps) {
+  const { data, isPending } = useProfile();
   return (
-    <Dialog.Root open={open} onOpenChange={change}>
-      <AnimatePresence>
-        {open && (
-          <Dialog.Portal forceMount>
-            <Dialog.Overlay asChild forceMount>
-              <motion.div
-                className="fixed inset-0 z-50 bg-black/20 dark:bg-black/50"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              />
-            </Dialog.Overlay>
-            <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center p-3">
-              <Dialog.Content asChild forceMount aria-describedby={undefined}>
-                <motion.div
-                  className="pointer-events-auto flex h-[min(880px,calc(100dvh-24px))] w-full max-w-[960px] min-w-0 rounded-[28px] outline-none"
-                  initial={{ scale: 0.96, y: 8 }}
-                  animate={{ scale: 1, y: 0 }}
-                  exit={{ scale: 0.97, y: 6, transition: { duration: 0.15 } }}
-                  transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
-                >
-                  <PanelBody
-                    resumes={resumes}
-                    readFirst={readFirst}
-                    onDirty={(value) => {
-                      dirty.current = value;
-                    }}
-                    onClose={() => change(false)}
-                  />
-                </motion.div>
-              </Dialog.Content>
-            </div>
-          </Dialog.Portal>
-        )}
-      </AnimatePresence>
-    </Dialog.Root>
+    <main className="mx-auto w-full max-w-[1040px] px-4 pt-[100px] pb-32 sm:px-6 md:pb-24">
+      {/* A save replaces the stored profile; the editor restarts from it. */}
+      {!isPending && (
+        <Editor key={data?.updatedAt ?? 'new'} saved={data ?? null} resumes={resumes} readFirst={readFirst} />
+      )}
+    </main>
   );
 }
 
 interface EditorProps {
   resumes: ResumeVersion[];
   readFirst: Id | null;
-  onDirty: (dirty: boolean) => void;
-  onClose: () => void;
 }
 
-function PanelBody(props: EditorProps) {
-  const paneRef = useRef<HTMLDivElement>(null);
-  const glass = useLiquidGlass(paneRef, { radius: 28, bevel: 18 });
-  const { data, isPending } = useProfile();
-  return (
-    <div
-      ref={paneRef}
-      style={glass.style}
-      className="glass glass-strong flex min-h-0 w-full flex-col overflow-hidden rounded-[inherit]"
-    >
-      {glass.filter}
-      {/* A save replaces the stored profile; the editor restarts from it. */}
-      {!isPending && <Editor key={data?.updatedAt ?? 'new'} saved={data ?? null} {...props} />}
-    </div>
-  );
-}
+/** Room left above a section when jumping to it, for the floating toolbar. */
+const TOOLBAR_CLEARANCE = 92;
 
-/** Why the extension can't read a resume right now, or why it couldn't. */
-function extensionText(t: Translate, reason: ExtensionState | ExtensionError): string {
-  if (reason instanceof ExtensionError) {
-    return reason.code === 'failed'
-      ? t('profile.ext.failed', { detail: reason.detail || reason.code })
-      : t(`profile.ext.${reason.code}`);
-  }
-  if (reason === 'no-key' || reason === 'ai-off') return t(`profile.ext.${reason}`);
-  return t('profile.ext.missing');
-}
-
-function Editor({
-  saved,
-  resumes,
-  readFirst,
-  onDirty,
-  onClose,
-}: EditorProps & { saved: SavedProfile | null }) {
+function Editor({ saved, resumes, readFirst }: EditorProps & { saved: SavedProfile | null }) {
   const { t, locale } = useI18n();
   const run = useRepository();
   const queryClient = useQueryClient();
-  const extension = useExtension();
+  const { state: extension } = useExtension();
   const wide = useMediaQuery('(min-width: 768px)');
   const jsonRef = useRef<HTMLInputElement>(null);
   const resumeRef = useRef<HTMLInputElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Partial<Record<ProfileSection, HTMLElement | null>>>({});
   const [draft, setDraft] = useState<Profile>(() => saved?.profile ?? emptyProfile());
   const [dirty, setDirty] = useState(false);
@@ -157,10 +78,20 @@ function Editor({
   const [review, setReview] = useState<ResumeFacts | null>(null);
   const [active, setActive] = useState<ProfileSection>('basics');
 
-  const markDirty = (value: boolean) => {
-    setDirty(value);
-    onDirty(value);
-  };
+  const markDirty = (value: boolean) => setDirty(value);
+
+  // Unsaved edits: leaving the page, or the tab, asks first.
+  const leaveMessage = t('profile.leave');
+  useEffect(() => {
+    if (!dirty) return;
+    setLeaveGuard(() => window.confirm(leaveMessage));
+    const beforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener('beforeunload', beforeUnload);
+    return () => {
+      setLeaveGuard(null);
+      window.removeEventListener('beforeunload', beforeUnload);
+    };
+  }, [dirty, leaveMessage]);
   const update = (change: (profile: Profile) => Profile) => {
     setDraft(change);
     markDirty(true);
@@ -170,7 +101,7 @@ function Editor({
     const parsed = profileSchema.safeParse(draft);
     if (!parsed.success) {
       setErrors(parsed.error.issues.map((issue) => describeIssue(issue, t)));
-      scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     setSaving(true);
@@ -206,7 +137,7 @@ function Editor({
     setErrors([]);
     try {
       setReview(await readResumeWithExtension(file));
-      scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       setNotice(error instanceof ExtensionError ? extensionText(t, error) : String(error));
     } finally {
@@ -243,9 +174,11 @@ function Editor({
     await readResume(file);
   };
 
-  // Opened from the resumes panel: read that resume once the extension has answered.
+  // Opened from the resumes page: read that resume once the extension has answered, then drop it from the address
+  // so a reload doesn't read it again.
   const started = useRef(false);
   const readFirstNow = useEffectEvent((id: Id) => {
+    navigate(PAGE_PATHS.profile, { replace: true });
     if (canRead()) void readStored(id);
   });
   useEffect(() => {
@@ -256,20 +189,25 @@ function Editor({
 
   const jump = (section: ProfileSection) => {
     const target = sectionRefs.current[section];
-    scrollRef.current?.scrollTo({ top: (target?.offsetTop ?? 0) - 12, behavior: 'smooth' });
+    if (target instanceof HTMLDetailsElement) target.open = true;
+    const top = (target?.getBoundingClientRect().top ?? 0) + window.scrollY - TOOLBAR_CLEARANCE;
+    window.scrollTo({ top, behavior: 'smooth' });
     setActive(section);
   };
-  // The section list follows the scroll: the last section whose top has passed is the current one.
-  const followScroll = () => {
-    const container = scrollRef.current;
-    if (!container || !wide) return;
-    let current: ProfileSection = PROFILE_SECTIONS[0];
-    for (const section of PROFILE_SECTIONS) {
-      const element = sectionRefs.current[section];
-      if (element && element.offsetTop - 24 <= container.scrollTop) current = section;
-    }
-    setActive(current);
-  };
+  // The section list follows the scroll: the last section whose top has passed under the toolbar is the current one.
+  useEffect(() => {
+    if (!wide) return;
+    const follow = () => {
+      let current: ProfileSection = PROFILE_SECTIONS[0];
+      for (const section of PROFILE_SECTIONS) {
+        const element = sectionRefs.current[section];
+        if (element && element.getBoundingClientRect().top <= TOOLBAR_CLEARANCE + 24) current = section;
+      }
+      setActive(current);
+    };
+    window.addEventListener('scroll', follow, { passive: true });
+    return () => window.removeEventListener('scroll', follow);
+  }, [wide]);
 
   const missing = missingItems(draft);
   const incomplete = new Set(missing.map((item) => SECTION_OF_MISSING[item]));
@@ -291,12 +229,10 @@ function Editor({
 
   return (
     <>
-      <header className="flex items-center gap-1.5 px-5 pt-4 pb-3">
+      <header className="flex flex-wrap items-end gap-x-3 gap-y-3">
         <div className="min-w-0 flex-1">
-          <Dialog.Title className="truncate text-[20px] font-semibold tracking-[-0.02em]">
-            {t('profile.title')}
-          </Dialog.Title>
-          <p className="truncate text-[12px] text-fg-3">
+          <h1 className="text-[28px] font-semibold tracking-[-0.025em]">{t('profile.title')}</h1>
+          <p className="mt-1 text-[14px] text-fg-2">
             {updated ? t('profile.updated', { date: updated }) : t('profile.hint')}
           </p>
         </div>
@@ -322,65 +258,60 @@ function Editor({
             if (file) void importJson(file);
           }}
         />
-        <ResumeButton
-          variant="ghost"
-          resumes={resumes}
-          disabled={reading}
-          title={t('profile.fromResume')}
-          canRead={canRead}
-          onRead={(id) => void readStored(id)}
-          onUpload={() => resumeRef.current?.click()}
-        >
-          {resumeIcon}
-          <span className="max-sm:hidden">{reading ? t('profile.reading') : t('profile.fromResume')}</span>
-        </ResumeButton>
-        <Button variant="ghost" onClick={() => jsonRef.current?.click()} title={t('profile.import')}>
-          <Upload className="size-3.5" aria-hidden="true" />
-          <span className="max-sm:hidden">{t('profile.import')}</span>
-        </Button>
-        <Button variant="primary" disabled={!dirty || saving} onClick={() => void save()}>
-          {t('profile.save')}
-        </Button>
-        <IconButton label={t('profile.close')} onClick={onClose} className="-mr-2">
-          <X className="size-[18px]" />
-        </IconButton>
+        <div className="flex items-center gap-1.5">
+          <ResumeButton
+            variant="secondary"
+            resumes={resumes}
+            disabled={reading}
+            title={t('profile.fromResume')}
+            canRead={canRead}
+            onRead={(id) => void readStored(id)}
+            onUpload={() => resumeRef.current?.click()}
+          >
+            {resumeIcon}
+            {reading ? t('profile.reading') : t('profile.fromResume')}
+          </ResumeButton>
+          <Button variant="ghost" onClick={() => jsonRef.current?.click()} title={t('profile.import')}>
+            <Upload className="size-3.5" aria-hidden="true" />
+            <span className="max-sm:hidden">{t('profile.import')}</span>
+          </Button>
+          <Button variant="primary" disabled={!dirty || saving} onClick={() => void save()}>
+            {t('profile.save')}
+          </Button>
+        </div>
       </header>
 
-      <div className="flex min-h-0 flex-1">
-        {wide && (
-          <nav
-            aria-label={t('profile.title')}
-            className="w-[188px] shrink-0 space-y-0.5 overflow-y-auto px-3 pb-6"
-          >
-            {PROFILE_SECTIONS.map((section) => (
-              <button
-                key={section}
-                type="button"
-                onClick={() => jump(section)}
-                aria-current={active === section ? 'true' : undefined}
-                className={clsx(
-                  'flex h-9 w-full items-center gap-2 rounded-[12px] px-3 text-left text-[14px] transition-colors',
-                  active === section
-                    ? 'bg-fill-2 font-medium text-fg'
-                    : 'text-fg-2 hover:bg-fill hover:text-fg',
-                )}
-              >
-                <span className="min-w-0 flex-1 truncate">{t(`profile.s.${section}`)}</span>
-                {incomplete.has(section) && (
-                  <span className="size-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
-                )}
-              </button>
-            ))}
-          </nav>
-        )}
+      <div className="mt-6 gap-6 md:grid md:grid-cols-[232px_minmax(0,1fr)] md:items-start">
+        <aside className="space-y-3 md:sticky md:top-[92px]">
+          <Completeness draft={draft} onJump={jump} />
+          {wide && (
+            <nav aria-label={t('profile.title')} className="card space-y-0.5 p-1.5">
+              {PROFILE_SECTIONS.map((section) => (
+                <button
+                  key={section}
+                  type="button"
+                  onClick={() => jump(section)}
+                  aria-current={active === section ? 'true' : undefined}
+                  className={clsx(
+                    'flex h-9 w-full items-center gap-2 rounded-[12px] px-3 text-left text-[14px] transition-colors',
+                    active === section
+                      ? 'bg-fill-2 font-medium text-fg'
+                      : 'text-fg-2 hover:bg-fill hover:text-fg',
+                  )}
+                >
+                  <span className="min-w-0 flex-1 truncate">{t(`profile.s.${section}`)}</span>
+                  {incomplete.has(section) && (
+                    <span className="size-1.5 shrink-0 rounded-full bg-[var(--st-oa)]" aria-hidden="true" />
+                  )}
+                </button>
+              ))}
+            </nav>
+          )}
+        </aside>
 
-        <div
-          ref={scrollRef}
-          onScroll={followScroll}
-          className="scroll-area relative min-h-0 flex-1 space-y-3 px-5 pb-8 md:pl-2"
-        >
+        <div className="mt-3 space-y-3 md:mt-0">
           {!saved && !dirty && !review && (
-            <div className="rounded-[18px] bg-fill p-4">
+            <div className="card p-4">
               <p className="text-[15px] font-semibold">{t('profile.startTitle')}</p>
               <p className="mt-1 text-[13px] text-fg-2">{t('profile.startBody')}</p>
               <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -420,7 +351,7 @@ function Editor({
           )}
 
           {notice && (
-            <p role="status" className="rounded-[14px] bg-fill px-3 py-2 text-[13px] text-fg-2">
+            <p role="status" className="card px-4 py-3 text-[13px] text-fg-2">
               {notice}
             </p>
           )}
@@ -440,16 +371,6 @@ function Editor({
             </div>
           )}
 
-          {missing.length > 0 && (
-            <p className="px-1 text-[13px] text-fg-2">
-              {t('profile.missing', {
-                items: missing
-                  .map((item) => t(`profile.missing.${item}` as MessageKey))
-                  .join(locale === 'zh' ? '、' : ', '),
-              })}
-            </p>
-          )}
-
           {PROFILE_SECTIONS.map((section) => (
             <Block
               key={section}
@@ -457,7 +378,7 @@ function Editor({
               title={t(`profile.s.${section}`)}
               count={counts[section]}
               missing={incomplete.has(section)}
-              open={section === 'basics'}
+              open={section === 'basics' || incomplete.has(section)}
               register={(element) => {
                 sectionRefs.current[section] = element;
               }}
@@ -468,6 +389,60 @@ function Editor({
         </div>
       </div>
     </>
+  );
+}
+
+/** The share of what forms ask that the profile answers, and each blank as a link to where it's filled in. */
+function Completeness({ draft, onJump }: { draft: Profile; onJump: (section: ProfileSection) => void }) {
+  const { t } = useI18n();
+  const score = completeness(draft);
+  const missing = missingItems(draft);
+  const radius = 18;
+  const circumference = 2 * Math.PI * radius;
+
+  return (
+    <div className="card p-4">
+      <div className="flex items-center gap-3">
+        <svg viewBox="0 0 44 44" className="size-11 shrink-0 -rotate-90" aria-hidden="true">
+          <circle cx="22" cy="22" r={radius} fill="none" strokeWidth="5" className="stroke-fill-2" />
+          {score > 0 && (
+            <circle
+              cx="22"
+              cy="22"
+              r={radius}
+              fill="none"
+              strokeWidth="5"
+              strokeLinecap="round"
+              className="stroke-accent transition-[stroke-dasharray] duration-500"
+              strokeDasharray={`${(score / 100) * circumference} ${circumference}`}
+            />
+          )}
+        </svg>
+        <div className="min-w-0">
+          <p className="text-[20px] font-semibold tracking-[-0.02em]">
+            {t('profile.completeness', { n: score })}
+          </p>
+          <p className="text-[12px] text-fg-2">
+            {missing.length ? t('profile.completenessHint', { n: missing.length }) : t('profile.complete')}
+          </p>
+        </div>
+      </div>
+      {missing.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {missing.map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => onJump(SECTION_OF_MISSING[item])}
+              className="chip"
+              data-status="oa"
+            >
+              {t(`profile.missing.${item}` as MessageKey)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -491,24 +466,25 @@ function Block({
 }) {
   if (wide) {
     return (
-      <section ref={register}>
-        <h3 className="mb-1.5 flex items-center gap-2 px-1 pt-1 text-[13px] font-semibold text-fg-2">
+      <section ref={register} className="card scroll-mt-[92px] p-4">
+        <h2 className="mb-3 flex items-center gap-2 text-[15px] font-semibold">
           {title}
           {count !== undefined && <span className="font-normal text-fg-3">{count}</span>}
-        </h3>
-        <div className="space-y-2 rounded-[18px] bg-fill/60 p-3.5">{children}</div>
+          {missing && <span className="size-1.5 rounded-full bg-[var(--st-oa)]" aria-hidden="true" />}
+        </h2>
+        <div className="space-y-2">{children}</div>
       </section>
     );
   }
   return (
-    <details ref={register} open={open} className="group rounded-[18px] bg-fill/60">
+    <details ref={register} open={open} className="card group">
       <summary className="flex h-11 cursor-pointer list-none items-center gap-2 px-3.5 text-[14px] font-medium select-none [&::-webkit-details-marker]:hidden">
         <ChevronRight
           className="size-4 text-fg-3 transition-transform group-open:rotate-90"
           aria-hidden="true"
         />
         <span className="flex-1">{title}</span>
-        {missing && <span className="size-1.5 rounded-full bg-accent" aria-hidden="true" />}
+        {missing && <span className="size-1.5 rounded-full bg-[var(--st-oa)]" aria-hidden="true" />}
         {count !== undefined && <span className="text-[12px] text-fg-3">{count}</span>}
       </summary>
       <div className="space-y-2 px-3.5 pb-3.5">{children}</div>
@@ -533,7 +509,7 @@ function ResumeButton({
   canRead: () => boolean;
   onRead: (id: Id) => void;
   onUpload: () => void;
-  variant: 'primary' | 'ghost';
+  variant: 'primary' | 'secondary' | 'ghost';
   disabled: boolean;
   title?: string;
   children: ReactNode;
@@ -607,16 +583,20 @@ const ALL_PARTS: ResumeParts = {
 };
 
 /** What a read resume would change, for the owner to pick from before it touches the draft. */
-function ResumeReview({
+export function ResumeReview({
   draft,
   facts,
   onApply,
   onCancel,
+  applyLabel,
 }: {
   draft: Profile;
   facts: ResumeFacts;
   onApply: (parts: ResumeParts) => void;
-  onCancel: () => void;
+  /** Leaves the cancel button out, where the page has its own way on. */
+  onCancel?: () => void;
+  /** What the apply button says. */
+  applyLabel?: string;
 }) {
   const { t } = useI18n();
   const [parts, setParts] = useState<ResumeParts>(ALL_PARTS);
@@ -672,7 +652,7 @@ function ResumeReview({
   const chosen = rows.some((row) => parts[row.part]);
 
   return (
-    <section aria-label={t('profile.review.title')} className="rounded-[18px] bg-fill p-4">
+    <section aria-label={t('profile.review.title')} className="card p-4">
       <p className="text-[15px] font-semibold">{t('profile.review.title')}</p>
       <p className="mt-0.5 text-[12px] text-fg-3">
         {rows.length ? t('profile.review.hint') : t('profile.review.nothing')}
@@ -701,29 +681,13 @@ function ResumeReview({
         ))}
       </div>
       <div className="mt-3 flex justify-end gap-2">
-        <Button onClick={onCancel}>{t('profile.review.cancel')}</Button>
+        {onCancel && <Button onClick={onCancel}>{t('profile.review.cancel')}</Button>}
         {rows.length > 0 && (
           <Button variant="primary" disabled={!chosen} onClick={() => onApply(parts)}>
-            {t('profile.review.apply')}
+            {applyLabel ?? t('profile.review.apply')}
           </Button>
         )}
       </div>
     </section>
   );
-}
-
-const ENTRY_FIELDS: Record<string, MessageKey> = { title: 'profile.f.jobTitle', text: 'profile.f.storyText' };
-
-/** "Legal first name is required", "Work experience 2 · Start isn’t valid". */
-function describeIssue(issue: { path: PropertyKey[]; code: string }, t: Translate) {
-  const [section, second, third] = issue.path.map(String);
-  const label = (key: string) => ENTRY_FIELDS[key] ?? (`profile.f.${key}` as MessageKey);
-  let field: string;
-  if ((section === 'education' || section === 'experience') && third)
-    field = `${t(`profile.s.${section}`)} ${Number(second) + 1} · ${t(label(third))}`;
-  else if (section === 'writing' && second === 'stories' && issue.path[3] !== undefined)
-    field = `${t('profile.f.stories')} ${Number(third) + 1} · ${t(label(String(issue.path[3])))}`;
-  else if (second && section !== 'education' && section !== 'experience') field = t(label(second));
-  else field = issue.path.join('.');
-  return t(issue.code === 'too_small' ? 'profile.required' : 'profile.badValue', { field });
 }

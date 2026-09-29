@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyResume,
+  completeness,
   emptyProfile,
+  MISSING_WEIGHTS,
   missingItems,
   resumeAdditions,
   resumeContact,
@@ -107,5 +109,19 @@ describe('reading a resume into the profile', () => {
     expect(loose.education[0]?.level).toBe('other');
     expect(loose.experience).toEqual([]);
     expect(loose.name.first).toBe('');
+  });
+});
+
+describe('completeness', () => {
+  it('weighs blanks to a total of 100', () => {
+    expect(Object.values(MISSING_WEIGHTS).reduce((sum, weight) => sum + weight, 0)).toBe(100);
+  });
+
+  it('goes from 0 for an empty profile up as blanks fill in', () => {
+    const profile = emptyProfile();
+    expect(completeness(profile)).toBe(0);
+    profile.workAuthorization.citizenship = ['China'];
+    profile.phone = '(555) 010-0199';
+    expect(completeness(profile)).toBe(30);
   });
 });

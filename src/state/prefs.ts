@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import type { Nudge } from '../domain/setup';
 import type { Id, Snapshot } from '../domain/types';
 
 export type Locale = 'en' | 'zh';
@@ -25,12 +26,25 @@ export interface LastUsed {
   resumeId: Id | null;
 }
 
+/** What the first-run guide and the home page's checklist remember in this browser. */
+export interface SetupPrefs extends Nudge {
+  /** The guide was finished or put off, so it no longer opens by itself. */
+  guideSeen: boolean;
+  /** The extension was ready on Outbox once: the checklist keeps that step done on devices without it. */
+  extensionReady: boolean;
+  /** The extension reported logging an application once. */
+  extensionLogged: boolean;
+}
+
 export interface Prefs {
   locale: Locale;
   theme: ThemePref;
   hideRejected: boolean;
   tweaks: Tweaks;
   lastUsed: LastUsed;
+  /** Applications a day to aim for; null shows no goal. */
+  dailyGoal: number | null;
+  setup: SetupPrefs;
 }
 
 export const DEFAULT_TWEAKS: Tweaks = { accent: 'mono', blur: 20, tint: 1, refraction: true, glow: 1 };
@@ -41,6 +55,8 @@ const DEFAULTS: Prefs = {
   hideRejected: false,
   tweaks: DEFAULT_TWEAKS,
   lastUsed: { accountIds: [], channelId: 'ch_company_site', resumeId: null },
+  dailyGoal: 30,
+  setup: { hides: 0, hiddenUntil: null, guideSeen: false, extensionReady: false, extensionLogged: false },
 };
 
 // Also read by the pre-paint theme script in index.html.
@@ -56,6 +72,7 @@ function load(): Prefs {
       ...saved,
       tweaks: { ...DEFAULTS.tweaks, ...saved.tweaks },
       lastUsed: { ...DEFAULTS.lastUsed, ...saved.lastUsed },
+      setup: { ...DEFAULTS.setup, ...saved.setup },
     };
   } catch {
     return DEFAULTS;
@@ -81,6 +98,10 @@ export function updatePrefs(update: Partial<Prefs> | ((prefs: Prefs) => Partial<
 
 export function updateTweaks(patch: Partial<Tweaks>): void {
   updatePrefs((prefs) => ({ tweaks: { ...prefs.tweaks, ...patch } }));
+}
+
+export function updateSetup(patch: Partial<SetupPrefs>): void {
+  updatePrefs((prefs) => ({ setup: { ...prefs.setup, ...patch } }));
 }
 
 function subscribe(listener: () => void) {

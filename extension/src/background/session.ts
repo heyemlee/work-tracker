@@ -28,6 +28,7 @@ export interface TabSession {
   submittedAt: string | null;
   captured: CapturedAnswer[];
   logged: { result: QuickAddResult; undone: boolean; manual: boolean } | null;
+  saved: { result: QuickAddResult; undone: boolean } | null;
 }
 
 const key = (tabId: number) => `session:tab-${tabId}` as const;
@@ -54,6 +55,7 @@ export function emptySession(tabId: number, url: string): TabSession {
     submittedAt: null,
     captured: [],
     logged: null,
+    saved: null,
   };
 }
 

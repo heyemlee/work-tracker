@@ -8,84 +8,39 @@ import {
   RefreshCw,
   Trash2,
   Upload,
-  X,
 } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
-import { Dialog } from 'radix-ui';
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { resumeFileUrl } from '../data/httpRepository';
 import { formatSize, loadResumePdf, resumeProblem, uploadResume } from '../data/resumes';
 import { localRepository, useRepository } from '../data/store';
 import { toIsoDate } from '../domain/dates';
+import { breakdown, percent, type Share } from '../domain/insights';
 import { versionName } from '../domain/resumes';
 import type { Id, ResumeVersion, Snapshot } from '../domain/types';
 import { useI18n } from '../i18n/context';
 import { formatShortDate } from '../i18n/format';
+import { usePrefs } from '../state/prefs';
+import { navigate, PAGE_PATHS } from '../state/router';
 import { showToast } from '../state/toasts';
-import { useLiquidGlass } from './glass/useLiquidGlass';
 import { Button, IconButton } from './primitives';
-
-interface ResumesPanelProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  snapshot: Snapshot;
-  /** Reads a stored resume into the autofill profile. */
-  onFillProfile: (id: Id) => void;
-}
-
-/** The resumes, in their own panel from the toolbar: upload each version once, and every other part uses it. */
-export function ResumesPanel({ open, onOpenChange, snapshot, onFillProfile }: ResumesPanelProps) {
-  return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <AnimatePresence>
-        {open && (
-          <Dialog.Portal forceMount>
-            <Dialog.Overlay asChild forceMount>
-              <motion.div
-                className="fixed inset-0 z-50 bg-black/20 dark:bg-black/50"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              />
-            </Dialog.Overlay>
-            <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center p-3">
-              <Dialog.Content asChild forceMount aria-describedby={undefined}>
-                <motion.div
-                  className="pointer-events-auto flex max-h-[min(780px,calc(100dvh-24px))] w-full max-w-[640px] min-w-0 rounded-[28px] outline-none"
-                  initial={{ scale: 0.96, y: 8 }}
-                  animate={{ scale: 1, y: 0 }}
-                  exit={{ scale: 0.97, y: 6, transition: { duration: 0.15 } }}
-                  transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
-                >
-                  <PanelBody snapshot={snapshot} onFillProfile={onFillProfile} />
-                </motion.div>
-              </Dialog.Content>
-            </div>
-          </Dialog.Portal>
-        )}
-      </AnimatePresence>
-    </Dialog.Root>
-  );
-}
 
 const hasFiles = (event: DragEvent) => event.dataTransfer?.types.includes('Files') ?? false;
 
-function PanelBody({ snapshot, onFillProfile }: Omit<ResumesPanelProps, 'open' | 'onOpenChange'>) {
+/** The resumes, on their own page: upload each version once, and every other part uses it. */
+export function ResumesPage({ snapshot }: { snapshot: Snapshot }) {
   const { t } = useI18n();
   const run = useRepository();
-  const paneRef = useRef<HTMLDivElement>(null);
-  const glass = useLiquidGlass(paneRef, { radius: 28, bevel: 18 });
+  const defaultId = usePrefs((p) => p.lastUsed.resumeId);
   const fileRef = useRef<HTMLInputElement>(null);
   // The version a picked file replaces; null adds new versions.
   const replacing = useRef<ResumeVersion | null>(null);
   const [busy, setBusy] = useState<Id | 'new' | null>(null);
   const [dragging, setDragging] = useState(false);
-  const uses = useMemo(() => {
-    const counts = new Map<Id, number>();
-    for (const { resumeId } of snapshot.applications)
-      if (resumeId) counts.set(resumeId, (counts.get(resumeId) ?? 0) + 1);
-    return counts;
-  }, [snapshot.applications]);
+  // How often each version went out, and how many of those reached an OA.
+  const shares = useMemo(
+    () => new Map(breakdown(snapshot.applications, 'resumeId').map((share) => [share.key, share])),
+    [snapshot.applications],
+  );
 
   const upload = async (files: File[], replace: ResumeVersion | null) => {
     for (const file of files) {
@@ -106,8 +61,7 @@ function PanelBody({ snapshot, onFillProfile }: Omit<ResumesPanelProps, 'open' |
     }
   };
 
-  // While the panel is open the whole window takes a dropped PDF: one dropped beside the panel would otherwise open
-  // in Outbox's place. Enter and leave fire for every element crossed, so a count tells when the drag left the window.
+  // The whole window takes a dropped PDF: one dropped beside the list would otherwise open in Outbox's place. Enter and leave fire for every element crossed, so a count tells when the drag left the window.
   const dropped = useEffectEvent((files: File[]) => void upload(files, null));
   useEffect(() => {
     let depth = 0;
@@ -150,7 +104,7 @@ function PanelBody({ snapshot, onFillProfile }: Omit<ResumesPanelProps, 'open' |
   };
 
   const remove = (resume: ResumeVersion) => {
-    const used = uses.get(resume.id) ?? 0;
+    const used = shares.get(resume.id)?.sent ?? 0;
     const question = used
       ? t('resumes.confirmDeleteUsed', { name: resume.name, n: used })
       : t('resumes.confirmDelete', { name: resume.name });
@@ -158,12 +112,7 @@ function PanelBody({ snapshot, onFillProfile }: Omit<ResumesPanelProps, 'open' |
   };
 
   return (
-    <div
-      ref={paneRef}
-      style={glass.style}
-      className="glass glass-strong relative flex min-h-0 w-full flex-col overflow-hidden rounded-[inherit]"
-    >
-      {glass.filter}
+    <main className="mx-auto w-full max-w-[1040px] px-4 pt-[100px] pb-32 sm:px-6 md:pb-24">
       <input
         ref={fileRef}
         type="file"
@@ -175,12 +124,10 @@ function PanelBody({ snapshot, onFillProfile }: Omit<ResumesPanelProps, 'open' |
           if (files.length) void upload(files, replacing.current);
         }}
       />
-      <header className="flex items-center gap-1.5 px-6 pt-5 pb-3">
+      <header className="flex flex-wrap items-end gap-3">
         <div className="min-w-0 flex-1">
-          <Dialog.Title className="text-[22px] font-semibold tracking-[-0.02em]">
-            {t('resumes.title')}
-          </Dialog.Title>
-          <p className="text-[12px] text-fg-3">{t('resumes.hint')}</p>
+          <h1 className="text-[28px] font-semibold tracking-[-0.025em]">{t('resumes.title')}</h1>
+          <p className="mt-1 text-[14px] text-fg-2">{t('resumes.hint')}</p>
         </div>
         {snapshot.resumes.length > 0 && (
           <Button variant="primary" onClick={() => pick(null)} disabled={busy === 'new'}>
@@ -189,25 +136,18 @@ function PanelBody({ snapshot, onFillProfile }: Omit<ResumesPanelProps, 'open' |
             ) : (
               <Upload className="size-3.5" aria-hidden="true" />
             )}
-            <span className="max-sm:hidden">
-              {busy === 'new' ? t('resumes.uploading') : t('resumes.upload')}
-            </span>
+            {busy === 'new' ? t('resumes.uploading') : t('resumes.upload')}
           </Button>
         )}
-        <Dialog.Close asChild>
-          <IconButton label={t('resumes.close')} className="-mr-2">
-            <X className="size-[18px]" />
-          </IconButton>
-        </Dialog.Close>
       </header>
 
-      <div className="scroll-area min-h-0 flex-1 px-6 pt-1 pb-6">
+      <div className="mt-6">
         {snapshot.resumes.length === 0 ? (
           <button
             type="button"
             onClick={() => pick(null)}
             disabled={busy === 'new'}
-            className="flex w-full flex-col items-center rounded-[22px] border-2 border-dashed border-hairline px-6 py-12 text-center transition-colors hover:bg-fill"
+            className="flex w-full flex-col items-center rounded-[22px] border-2 border-dashed border-hairline px-6 py-16 text-center transition-colors hover:bg-fill"
           >
             <span className="grid size-12 place-items-center rounded-full bg-fill">
               {busy === 'new' ? (
@@ -224,16 +164,19 @@ function PanelBody({ snapshot, onFillProfile }: Omit<ResumesPanelProps, 'open' |
           </button>
         ) : (
           <>
-            <ul className="space-y-1.5">
+            <ul className="grid gap-3 sm:grid-cols-2">
               {snapshot.resumes.map((resume) => (
                 <ResumeRow
                   key={resume.id}
                   resume={resume}
-                  uses={uses.get(resume.id) ?? 0}
+                  share={shares.get(resume.id) ?? null}
+                  isDefault={resume.id === defaultId}
                   busy={busy === resume.id}
                   onRename={(name) => void run((repo) => repo.saveResume({ id: resume.id, name }))}
                   onUpload={() => pick(resume)}
-                  onFillProfile={() => onFillProfile(resume.id)}
+                  onFillProfile={() =>
+                    navigate(`${PAGE_PATHS.profile}?read=${encodeURIComponent(resume.id)}`)
+                  }
                   onDelete={() => remove(resume)}
                 />
               ))}
@@ -244,17 +187,18 @@ function PanelBody({ snapshot, onFillProfile }: Omit<ResumesPanelProps, 'open' |
       </div>
 
       {dragging && (
-        <div className="pointer-events-none absolute inset-2 grid place-items-center rounded-[22px] border-2 border-dashed border-accent bg-accent/10 text-[15px] font-semibold text-accent">
+        <div className="pointer-events-none fixed inset-3 z-40 grid place-items-center rounded-[28px] border-2 border-dashed border-accent bg-accent/10 text-[15px] font-semibold text-accent backdrop-blur-sm">
           {t('resumes.drop')}
         </div>
       )}
-    </div>
+    </main>
   );
 }
 
 function ResumeRow({
   resume,
-  uses,
+  share,
+  isDefault,
   busy,
   onRename,
   onUpload,
@@ -262,7 +206,8 @@ function ResumeRow({
   onDelete,
 }: {
   resume: ResumeVersion;
-  uses: number;
+  share: Share | null;
+  isDefault: boolean;
   busy: boolean;
   onRename: (name: string) => void;
   onUpload: () => void;
@@ -271,60 +216,70 @@ function ResumeRow({
 }) {
   const { t, locale } = useI18n();
   const { file } = resume;
-  const details = [
-    ...(file
-      ? [
-          file.name,
-          formatSize(file.size),
-          t('resumes.uploaded', { date: formatShortDate(toIsoDate(new Date(file.uploadedAt)), locale) }),
-        ]
-      : [t('resumes.noFile')]),
-    ...(uses ? [uses === 1 ? t('resumes.usedOne') : t('resumes.usedMany', { n: uses })] : []),
-  ];
+  const details = file
+    ? [
+        file.name,
+        formatSize(file.size),
+        t('resumes.uploaded', { date: formatShortDate(toIsoDate(new Date(file.uploadedAt)), locale) }),
+      ]
+    : [t('resumes.noFile')];
+  const rate = share ? percent(share.oa, share.sent) : null;
+  const used =
+    share && rate !== null
+      ? t(share.sent === 1 ? 'resumes.statsOne' : 'resumes.stats', {
+          n: share.sent,
+          rate: `${rate.toFixed(rate > 0 && rate < 10 ? 1 : 0)}%`,
+        })
+      : null;
 
   return (
-    <li className="flex min-h-16 items-center gap-2 rounded-[18px] bg-fill py-2 pr-1.5 pl-2 sm:gap-3 sm:pl-3">
-      <span
-        className={clsx(
-          'grid size-10 shrink-0 place-items-center rounded-[12px] max-sm:hidden',
-          file ? 'bg-accent/12 text-accent' : 'bg-fill-2 text-fg-3',
-        )}
-      >
-        {busy ? (
-          <LoaderCircle className="size-[18px] animate-spin" aria-hidden="true" />
-        ) : (
-          <FileText className="size-[18px]" aria-hidden="true" />
-        )}
-      </span>
-      <div className="min-w-0 flex-1">
-        <input
-          key={resume.name}
-          defaultValue={resume.name}
-          aria-label={t('resumes.name')}
-          maxLength={60}
-          onBlur={(event) => {
-            const next = event.target.value.trim();
-            if (!next) event.target.value = resume.name;
-            else if (next !== resume.name) onRename(next);
-          }}
-          onKeyDown={(event) => event.key === 'Enter' && event.currentTarget.blur()}
-          className="-ml-1.5 h-7 w-full min-w-0 rounded-[8px] bg-transparent px-1.5 text-[15px] font-medium outline-none focus:bg-fill-2"
-        />
-        <p className={clsx('truncate text-[12px]', file ? 'text-fg-3' : 'text-accent')}>
-          {details.join(' · ')}
-        </p>
+    <li className="card flex flex-col gap-3 p-4">
+      <div className="flex items-start gap-3">
+        <span
+          className={clsx(
+            'grid size-11 shrink-0 place-items-center rounded-[12px]',
+            file ? 'bg-accent/12 text-accent' : 'bg-fill-2 text-fg-3',
+          )}
+        >
+          {busy ? (
+            <LoaderCircle className="size-5 animate-spin" aria-hidden="true" />
+          ) : (
+            <FileText className="size-5" aria-hidden="true" />
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <input
+              key={resume.name}
+              defaultValue={resume.name}
+              aria-label={t('resumes.name')}
+              maxLength={60}
+              onBlur={(event) => {
+                const next = event.target.value.trim();
+                if (!next) event.target.value = resume.name;
+                else if (next !== resume.name) onRename(next);
+              }}
+              onKeyDown={(event) => event.key === 'Enter' && event.currentTarget.blur()}
+              className="-ml-1.5 h-7 w-full min-w-0 rounded-[8px] bg-transparent px-1.5 text-[16px] font-semibold outline-none focus:bg-fill-2"
+            />
+            {isDefault && (
+              <span className="shrink-0 rounded-full bg-fill-2 px-2 py-0.5 text-[11px] font-semibold text-fg-2">
+                {t('resumes.default')}
+              </span>
+            )}
+          </div>
+          <p className={clsx('truncate text-[12px]', file ? 'text-fg-3' : 'text-accent')}>
+            {details.join(' · ')}
+          </p>
+          {used && <p className="mt-1.5 text-[13px]">{used}</p>}
+        </div>
       </div>
-      <div className="flex shrink-0 items-center">
+      <div className="flex items-center gap-1">
         {file ? (
           <>
-            <Button
-              variant="ghost"
-              onClick={onFillProfile}
-              title={t('resumes.fillHint')}
-              className="max-sm:px-2.5"
-            >
+            <Button onClick={onFillProfile} title={t('resumes.fillHint')}>
               <IdCard className="size-4" aria-hidden="true" />
-              <span className="max-sm:hidden">{t('resumes.fill')}</span>
+              {t('resumes.fill')}
             </Button>
             <OpenPdf resume={resume} />
             <IconButton label={t('resumes.replace')} onClick={onUpload} disabled={busy}>
@@ -337,7 +292,11 @@ function ResumeRow({
             {t('resumes.addFile')}
           </Button>
         )}
-        <IconButton label={t('resumes.delete')} onClick={onDelete} className="text-fg-3 hover:text-danger">
+        <IconButton
+          label={t('resumes.delete')}
+          onClick={onDelete}
+          className="ml-auto text-fg-3 hover:text-danger"
+        >
           <Trash2 className="size-4" />
         </IconButton>
       </div>

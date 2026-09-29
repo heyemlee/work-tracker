@@ -1,39 +1,26 @@
-import { AtSign, Send } from 'lucide-react';
 import { MotionConfig } from 'motion/react';
-import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { UnauthorizedError } from './data/httpRepository';
 import { localRepository, useCurrentUser, useSnapshot } from './data/store';
-import {
-  buildRows,
-  computeStats,
-  countByFilter,
-  filterRows,
-  groupRows,
-  searchRows,
-  type Filter,
-} from './domain/rows';
+import { buildRows } from './domain/rows';
 import type { Id, Snapshot } from './domain/types';
 import { useHotkey } from './hooks/useHotkey';
-import { useMediaQuery } from './hooks/useMediaQuery';
 import { useThemeSync } from './hooks/useThemeSync';
-import { useToday } from './hooks/useToday';
 import { useI18n } from './i18n/context';
-import { usePrefs } from './state/prefs';
+import { getPrefs } from './state/prefs';
+import { navigate, PAGE_PATHS, useLocation } from './state/router';
+import { ApplicationsPage } from './ui/ApplicationsPage';
 import { Composer } from './ui/Composer';
-import { DetailPanel } from './ui/DetailPanel';
-import { JobList } from './ui/JobList';
+import { Guide } from './ui/Guide';
+import { InsightsPage } from './ui/InsightsPage';
 import { Button } from './ui/primitives';
-import { ProfilePanel } from './ui/ProfilePanel';
-import { ResumesPanel } from './ui/ResumesPanel';
+import { ProfilePage } from './ui/ProfilePage';
+import { ResumesPage } from './ui/ResumesPage';
 import { SettingsDialog } from './ui/SettingsDialog';
 import { SignIn } from './ui/SignIn';
-import { StatsRow } from './ui/StatsRow';
-import { FilterControl, Toolbar } from './ui/Toolbar';
 import { Toaster } from './ui/Toaster';
+import { TabBar, Toolbar } from './ui/Toolbar';
 import { TweakPanel } from './ui/TweakPanel';
-
-/** Width the open inspector takes from the page on wide screens: panel + its margin. */
-const PANEL_RESERVE = 444;
 
 export function App() {
   useThemeSync();
@@ -57,27 +44,6 @@ function Gate() {
   return snapshot.data ? <Workspace snapshot={snapshot.data} /> : null;
 }
 
-function EmptyState({
-  icon,
-  title,
-  body,
-  action,
-}: {
-  icon: ReactNode;
-  title: string;
-  body: string;
-  action?: ReactNode;
-}) {
-  return (
-    <div className="py-20 text-center">
-      <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-fill">{icon}</div>
-      <h2 className="mt-4 text-[17px] font-semibold">{title}</h2>
-      <p className="mx-auto mt-1 max-w-[420px] text-[14px] text-fg-2">{body}</p>
-      {action}
-    </div>
-  );
-}
-
 function LoadError({ onRetry }: { onRetry: () => void }) {
   const { t } = useI18n();
   return (
@@ -93,128 +59,78 @@ function LoadError({ onRetry }: { onRetry: () => void }) {
 }
 
 function Workspace({ snapshot }: { snapshot: Snapshot }) {
-  const { t } = useI18n();
-  const today = useToday();
-  const hideRejected = usePrefs((p) => p.hideRejected);
-  const wide = useMediaQuery('(min-width: 1180px)');
-  const [filter, setFilter] = useState<Filter>('all');
+  const { page, params } = useLocation();
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<Id | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [resumesOpen, setResumesOpen] = useState(false);
-  // A stored resume the profile panel reads as it opens.
-  const [resumeToRead, setResumeToRead] = useState<Id | null>(null);
   const [composing, setComposing] = useState(false);
-
   const rows = useMemo(() => buildRows(snapshot), [snapshot]);
-  const searched = useMemo(
-    () => searchRows(rows, { query, hideRejected, accounts: snapshot.accounts }),
-    [rows, query, hideRejected, snapshot.accounts],
-  );
-  const counts = useMemo(() => countByFilter(searched), [searched]);
-  const groups = useMemo(() => groupRows(filterRows(searched, filter), today), [searched, filter, today]);
-  const stats = useMemo(() => computeStats(snapshot.applications, today), [snapshot.applications, today]);
-  const selected = selectedId ? (rows.find((row) => row.job.id === selectedId) ?? null) : null;
-  const shown = counts[filter];
 
-  // N opens the quick-add panel, except over the settings dialog.
-  useHotkey('n', () => !settingsOpen && !profileOpen && !resumesOpen && setComposing(true));
+  // A new owner, with nothing set up yet, starts in the guide; once finished or put off, it waits in the menu.
+  useEffect(() => {
+    const fresh = snapshot.accounts.length === 0 && snapshot.jobs.length === 0;
+    if (fresh && !getPrefs().setup.guideSeen && page === 'applications')
+      navigate(PAGE_PATHS.welcome, { replace: true });
+    // Only as Outbox opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // N opens the quick-add panel anywhere but the guide and over the settings dialog.
+  useHotkey('n', () => !settingsOpen && page !== 'welcome' && setComposing(true));
+
+  const composer = (
+    <Composer
+      open={composing}
+      onOpenChange={setComposing}
+      snapshot={snapshot}
+      rows={rows}
+      onOpenJob={(id) => {
+        setComposing(false);
+        setSelectedId(id);
+        navigate(PAGE_PATHS.applications);
+      }}
+      onOpenSettings={() => {
+        setComposing(false);
+        setSettingsOpen(true);
+      }}
+    />
+  );
+
+  if (page === 'welcome')
+    return (
+      <>
+        <Guide snapshot={snapshot} step={Number(params.get('step') ?? 1)} />
+        <Toaster />
+      </>
+    );
 
   return (
-    <div style={{ '--reserve': `${selected && wide ? PANEL_RESERVE : 0}px` } as CSSProperties}>
+    <>
       <Toolbar
-        filter={filter}
-        onFilter={setFilter}
+        page={page}
         query={query}
         onQuery={setQuery}
-        onOpenSettings={() => setSettingsOpen(true)}
-        onOpenResumes={() => setResumesOpen(true)}
-        onOpenProfile={() => setProfileOpen(true)}
         onCompose={() => setComposing(true)}
-      />
-
-      <main className="pr-(--reserve) transition-[padding] duration-300 ease-out">
-        <div className="mx-auto w-full max-w-[1040px] px-4 pt-[100px] pb-24 sm:px-6">
-          <StatsRow stats={stats} today={today} />
-
-          <div className="mt-10 mb-3 flex flex-wrap items-center gap-3">
-            <div className="md:hidden">
-              <FilterControl filter={filter} onFilter={setFilter} layoutId="filter-inline" size="sm" />
-            </div>
-            <p className="hidden px-1 text-[13px] text-fg-2 md:block">
-              {shown === 1 ? t('list.jobsOne') : t('list.jobsMany', { count: shown })}
-            </p>
-          </div>
-
-          {groups.length > 0 ? (
-            <JobList
-              groups={groups}
-              accounts={snapshot.accounts}
-              today={today}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-            />
-          ) : rows.length > 0 ? (
-            <p className="py-16 text-center text-[14px] text-fg-2">{t('list.noMatch')}</p>
-          ) : snapshot.accounts.length === 0 ? (
-            <EmptyState
-              icon={<AtSign className="size-6 text-fg-2" aria-hidden="true" />}
-              title={t('onboarding.title')}
-              body={t('onboarding.body')}
-              action={
-                <Button variant="primary" className="mt-5" onClick={() => setSettingsOpen(true)}>
-                  {t('onboarding.action')}
-                </Button>
-              }
-            />
-          ) : (
-            <EmptyState
-              icon={<Send className="size-6 text-fg-2" aria-hidden="true" />}
-              title={t('list.emptyTitle')}
-              body={t('list.emptyBody')}
-            />
-          )}
-        </div>
-      </main>
-
-      <Composer
-        open={composing}
-        onOpenChange={setComposing}
+        onOpenSettings={() => setSettingsOpen(true)}
         snapshot={snapshot}
-        rows={rows}
-        onOpenJob={(id) => {
-          setComposing(false);
-          setSelectedId(id);
-        }}
-        onOpenSettings={() => {
-          setComposing(false);
-          setSettingsOpen(true);
-        }}
       />
+      {page === 'applications' && (
+        <ApplicationsPage
+          snapshot={snapshot}
+          rows={rows}
+          query={query}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+        />
+      )}
+      {page === 'resumes' && <ResumesPage snapshot={snapshot} />}
+      {page === 'profile' && <ProfilePage resumes={snapshot.resumes} readFirst={params.get('read')} />}
+      {page === 'insights' && <InsightsPage snapshot={snapshot} />}
+      <TabBar page={page} onCompose={() => setComposing(true)} />
+      {composer}
       <Toaster />
-      <DetailPanel row={selected} snapshot={snapshot} today={today} onClose={() => setSelectedId(null)} />
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} snapshot={snapshot} />
-      <ResumesPanel
-        open={resumesOpen}
-        onOpenChange={setResumesOpen}
-        snapshot={snapshot}
-        onFillProfile={(id) => {
-          setResumesOpen(false);
-          setResumeToRead(id);
-          setProfileOpen(true);
-        }}
-      />
-      <ProfilePanel
-        open={profileOpen}
-        onOpenChange={(open) => {
-          setProfileOpen(open);
-          if (!open) setResumeToRead(null);
-        }}
-        resumes={snapshot.resumes}
-        readFirst={resumeToRead}
-      />
       <TweakPanel />
-    </div>
+    </>
   );
 }

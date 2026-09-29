@@ -8,13 +8,14 @@ import {
   focus,
   logApplication,
   readTab,
+  saveJob,
   select,
   snapshot,
   submitAttempt,
   submitConfirmed,
   undo,
 } from './card';
-import { fromOutbox, readiness, readResumeForOutbox } from './bridge';
+import { bridgeStatus, fromOutbox, readResumeForOutbox } from './bridge';
 import { forgetTab, openCard, showForm } from './inject';
 import { flushQueue, syncProfile } from './outbox';
 import { dropSession } from './session';
@@ -29,7 +30,7 @@ export function startBackground(): void {
       if (message.type === 'bridge:status' || message.type === 'resume:parse') {
         if (!fromOutbox(sender.url)) return undefined;
         return message.type === 'bridge:status'
-          ? readiness()
+          ? bridgeStatus()
           : readResumeForOutbox(message.pdf, message.text);
       }
       if (tabId === undefined) return undefined;
@@ -53,6 +54,8 @@ export function startBackground(): void {
           return snapshot(tabId).then((saved) => ({ saved }));
         case 'card:log':
           return logApplication(tabId, url, true);
+        case 'card:save':
+          return saveJob(tabId, url);
         case 'card:undo':
           return undo(tabId, url);
         case 'card:options':

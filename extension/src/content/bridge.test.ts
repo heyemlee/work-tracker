@@ -17,8 +17,9 @@ function page(backend: Partial<BridgeBackend> = {}) {
     { origin = ORIGIN, source = win as unknown }: { origin?: string; source?: unknown } = {},
   ) => target.dispatchEvent(Object.assign(new Event('message'), { data, origin, source }));
   startBridge(win, {
-    readiness: async () => 'ready',
+    status: async () => ({ readiness: 'ready', version: '0.1.0', logged: false }),
     parse: async () => ({ ok: false, error: 'failed', detail: 'unset' }),
+    openOptions: async () => undefined,
     ...backend,
   });
   return { posted, send };
@@ -27,14 +28,28 @@ function page(backend: Partial<BridgeBackend> = {}) {
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe('the bridge to Outbox’s page', () => {
-  it('says hello on start and when pinged', async () => {
-    const { posted, send } = page({ readiness: async () => 'no-key' });
+  it('says hello on start and when pinged, with its version and whether it has logged', async () => {
+    const { posted, send } = page({
+      status: async () => ({ readiness: 'no-key', version: '0.2.0', logged: true }),
+    });
     send({ source: FROM_PAGE, type: 'ping' });
     await settle();
-    expect(posted).toEqual([
-      { source: FROM_EXTENSION, type: 'hello', readiness: 'no-key' },
-      { source: FROM_EXTENSION, type: 'hello', readiness: 'no-key' },
-    ]);
+    const hello = {
+      source: FROM_EXTENSION,
+      type: 'hello',
+      readiness: 'no-key',
+      version: '0.2.0',
+      logged: true,
+    };
+    expect(posted).toEqual([hello, hello]);
+  });
+
+  it('opens its settings when the page asks', async () => {
+    const openOptions = vi.fn(async () => undefined);
+    const { send } = page({ openOptions });
+    send({ source: FROM_PAGE, type: 'open-options' });
+    await settle();
+    expect(openOptions).toHaveBeenCalledOnce();
   });
 
   it('reads a resume and answers with the same id', async () => {

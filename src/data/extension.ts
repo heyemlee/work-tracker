@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import {
   FROM_EXTENSION,
   FROM_PAGE,
@@ -11,6 +11,7 @@ import {
 } from '../domain/bridge';
 import { resumeFactsSchema, type ResumeFacts } from '../domain/profile';
 import { bytesToBase64 } from '../domain/resumes';
+import { getPrefs, updateSetup } from '../state/prefs';
 import { pdfText } from './pdfText';
 
 /** Whether the autofill extension runs on this page, and whether it can read a resume. */
@@ -36,26 +37,79 @@ function fromExtension(event: MessageEvent): ExtensionMessage | null {
 
 const send = (message: PageMessage) => window.postMessage(message, window.location.origin);
 
-export function useExtension(): ExtensionState {
-  const [state, setState] = useState<ExtensionState>('checking');
+export interface ExtensionInfo {
+  state: ExtensionState;
+  /** The extension's version, from builds that say it. */
+  version: string | null;
+  /** It has logged an application to Outbox at least once. */
+  logged: boolean;
+}
+
+// One shared view of the extension for every part of the page, kept fresh by asking again whenever Outbox is
+// looked at again: the owner may have just installed it, or added its key, in another tab.
+let info: ExtensionInfo = { state: 'checking', version: null, logged: false };
+const listeners = new Set<() => void>();
+let started = false;
+let awaiting = 0;
+
+function set(next: ExtensionInfo) {
+  info = next;
+  for (const listener of listeners) listener();
+}
+
+/** Asks the extension to say hello. Silence means it isn't running on this page. */
+function check() {
+  send({ source: FROM_PAGE, type: 'ping' });
+  window.clearTimeout(awaiting);
+  awaiting = window.setTimeout(() => {
+    if (info.state !== 'missing') set({ ...info, state: 'missing' });
+  }, 1500);
+}
+
+function start() {
+  if (started) return;
+  started = true;
+  window.addEventListener('message', (event) => {
+    const message = fromExtension(event);
+    if (message?.type !== 'hello') return;
+    window.clearTimeout(awaiting);
+    set({ state: message.readiness, version: message.version ?? null, logged: message.logged ?? false });
+    // Remembered, so the setup checklist keeps these done on devices without the extension.
+    const { setup } = getPrefs();
+    if (message.readiness === 'ready' && !setup.extensionReady) updateSetup({ extensionReady: true });
+    if (message.logged && !setup.extensionLogged) updateSetup({ extensionLogged: true });
+  });
+  window.addEventListener('focus', check);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) check();
+  });
+  check();
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/**
+ * Whether the autofill extension runs on this page and can read a resume. With `watch`, it asks every couple of
+ * seconds, for a page that waits on the owner to install it or add a key.
+ */
+export function useExtension({ watch = false }: { watch?: boolean } = {}): ExtensionInfo {
   useEffect(() => {
-    const onMessage = (event: MessageEvent) => {
-      const message = fromExtension(event);
-      if (message?.type === 'hello') setState(message.readiness);
-    };
-    window.addEventListener('message', onMessage);
-    send({ source: FROM_PAGE, type: 'ping' });
-    // The content script answers within moments; silence means it isn't installed here.
-    const timer = window.setTimeout(
-      () => setState((current) => (current === 'checking' ? 'missing' : current)),
-      1500,
-    );
-    return () => {
-      window.removeEventListener('message', onMessage);
-      window.clearTimeout(timer);
-    };
-  }, []);
-  return state;
+    start();
+    if (!watch) return;
+    const timer = window.setInterval(check, 2000);
+    return () => window.clearInterval(timer);
+  }, [watch]);
+  return useSyncExternalStore(subscribe, () => info);
+}
+
+/** Opens the extension's settings page in a new tab. Does nothing without the extension. */
+export function openExtensionOptions(): void {
+  send({ source: FROM_PAGE, type: 'open-options' });
 }
 
 /** Has the extension read a resume PDF with the owner's key. Takes up to a minute or so. */

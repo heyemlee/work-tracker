@@ -226,6 +226,24 @@ export function missingItems(profile: Profile): MissingItem[] {
   return missing;
 }
 
+/** How much each blank weighs against the profile's completeness: what forms ask most weighs most. Sums to 100. */
+export const MISSING_WEIGHTS: Record<MissingItem, number> = {
+  phone: 10,
+  'address.city': 5,
+  'address.zip': 5,
+  'links.linkedin': 10,
+  'workAuthorization.citizenship': 20,
+  'answers.salary': 10,
+  'answers.earliestStart': 10,
+  education: 15,
+  experience: 15,
+};
+
+/** From 0 to 100: how much of what applications commonly ask the profile can answer. */
+export function completeness(profile: Profile): number {
+  return 100 - missingItems(profile).reduce((sum, item) => sum + MISSING_WEIGHTS[item], 0);
+}
+
 /**
  * What a resume settles, as the extension's model reads it from the PDF. Dates are YYYY-MM or empty; what a resume
  * never says (work authorization, EEO, preferences) isn't here.

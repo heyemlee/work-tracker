@@ -1,5 +1,5 @@
 import { groupBy, indexBy } from './collections';
-import { groupKeyFor, localDateOf, startOfWeek, type GroupKey } from './dates';
+import { groupKeyFor, localDateOf, type GroupKey } from './dates';
 import { rollup } from './stages';
 import type { Account, Application, Company, IsoDate, IsoDateTime, Job, JobStatus, Snapshot } from './types';
 
@@ -110,22 +110,4 @@ export function groupRows(rows: readonly JobRow[], today: IsoDate): RowGroup[] {
     else groups.push({ key, rows: [row] });
   }
   return groups;
-}
-
-export interface Stats {
-  today: number;
-  week: number;
-  oa: number;
-}
-
-/** Counts applications (not jobs): one posting applied to from two accounts is two applications. */
-export function computeStats(applications: readonly Application[], today: IsoDate): Stats {
-  const weekStart = startOfWeek(today);
-  const stats: Stats = { today: 0, week: 0, oa: 0 };
-  for (const app of applications) {
-    if (app.appliedAt === today) stats.today += 1;
-    if (app.appliedAt >= weekStart && app.appliedAt <= today) stats.week += 1;
-    if (!app.rejected && app.stage === 'oa') stats.oa += 1;
-  }
-  return stats;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRows, computeStats, countByFilter, filterRows, groupRows, searchRows } from './rows';
+import { buildRows, countByFilter, filterRows, groupRows, searchRows } from './rows';
 import { account, application, company, job, snapshot } from './testing';
 
 const accounts = [account('a', 'A'), account('b', 'B')];
@@ -71,11 +71,5 @@ describe('groupRows', () => {
       ['yesterday', ['j3']],
       ['lastWeek', ['j1']],
     ]);
-  });
-});
-
-describe('computeStats', () => {
-  it('counts applications, not jobs', () => {
-    expect(computeStats(data.applications, '2026-09-23')).toEqual({ today: 1, week: 1, oa: 1 });
   });
 });

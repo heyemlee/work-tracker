@@ -1,33 +1,68 @@
-import type { Stats } from '../domain/rows';
+import type { ReactNode } from 'react';
+import { percent, type Stats } from '../domain/insights';
 import type { IsoDate } from '../domain/types';
 import { useI18n } from '../i18n/context';
 import { formatCount, formatLongDate } from '../i18n/format';
 
 /** The day's headline numbers. Values stay in primary ink; a status dot beside the label carries the color. */
-export function StatsRow({ stats, today }: { stats: Stats; today: IsoDate }) {
+export function StatsRow({ stats, today, goal }: { stats: Stats; today: IsoDate; goal: number | null }) {
   const { t, locale } = useI18n();
-  const items = [
-    { key: 'today', label: t('stats.today'), value: stats.today, status: null },
-    { key: 'week', label: t('stats.week'), value: stats.week, status: null },
-    { key: 'oa', label: t('stats.oa'), value: stats.oa, status: 'oa' },
-  ] as const;
+  const rate = percent(stats.month.oa, stats.month.sent);
 
   return (
     <section>
       <p className="text-[13px] font-medium text-fg-2">{formatLongDate(today, locale)}</p>
-      <dl className="mt-3 grid grid-cols-3 gap-x-6 gap-y-5">
-        {items.map((item) => (
-          <div key={item.key} className="min-w-0">
-            <dt className="flex items-center gap-1.5 truncate text-[13px] text-fg-2">
-              {item.status && <span className="dot" style={{ background: `var(--st-${item.status})` }} />}
-              {item.label}
-            </dt>
-            <dd className="mt-1 text-[34px] leading-[1.1] font-semibold tracking-[-0.025em]">
-              {formatCount(item.value, locale)}
-            </dd>
-          </div>
-        ))}
+      <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
+        <Stat label={t('stats.today')}>
+          <Value>{formatCount(stats.today, locale)}</Value>
+          {goal !== null && <span className="text-[15px] text-fg-3">/ {formatCount(goal, locale)}</span>}
+          {goal !== null && (
+            <span
+              role="progressbar"
+              aria-label={t('stats.goalProgress')}
+              aria-valuenow={stats.today}
+              aria-valuemin={0}
+              aria-valuemax={goal}
+              className="mt-2 block h-1 w-full max-w-[160px] basis-full overflow-hidden rounded-full bg-fill-2"
+            >
+              <span
+                className="block h-full rounded-full bg-accent transition-[width] duration-500"
+                style={{ width: `${Math.min(100, (stats.today / Math.max(goal, 1)) * 100)}%` }}
+              />
+            </span>
+          )}
+        </Stat>
+        <Stat label={t('stats.week')}>
+          <Value>{formatCount(stats.week, locale)}</Value>
+        </Stat>
+        <Stat label={t('stats.oa')} dot="oa">
+          <Value>{formatCount(stats.oa, locale)}</Value>
+        </Stat>
+        <Stat label={t('stats.rate')}>
+          <Value>{rate === null ? '–' : `${rate.toFixed(rate > 0 && rate < 10 ? 1 : 0)}%`}</Value>
+          {stats.month.sent > 0 && (
+            <span className="text-[13px] text-fg-3 tabular-nums">
+              {t('stats.rateOf', { oa: stats.month.oa, sent: stats.month.sent })}
+            </span>
+          )}
+        </Stat>
       </dl>
     </section>
   );
+}
+
+function Stat({ label, dot, children }: { label: string; dot?: 'oa'; children: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <dt className="flex items-center gap-1.5 truncate text-[13px] text-fg-2">
+        {dot && <span className="dot" style={{ background: `var(--st-${dot})` }} />}
+        {label}
+      </dt>
+      <dd className="mt-1 flex flex-wrap items-baseline gap-x-1.5">{children}</dd>
+    </div>
+  );
+}
+
+function Value({ children }: { children: ReactNode }) {
+  return <span className="text-[34px] leading-[1.1] font-semibold tracking-[-0.025em]">{children}</span>;
 }

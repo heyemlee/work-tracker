@@ -7,6 +7,14 @@ import type { Answer, Ats, FieldStatus, FrameScan, PlannedField, Posting, Source
 import type { MatchReport } from './match/report';
 import type { FormSnapshot } from './storage';
 
+/** What Outbox's page learns when it asks after the extension. */
+export interface BridgeStatus {
+  readiness: ExtensionReadiness;
+  version: string;
+  /** An application has been logged from this browser at least once. */
+  logged: boolean;
+}
+
 /** One line of the card's checklist. */
 export interface ChecklistItem {
   fieldId: string;
@@ -55,6 +63,10 @@ export interface CardState {
   duplicateHint: boolean;
   checklist: ChecklistItem[];
   logged: { result: QuickAddResult; undone: boolean; manual: boolean } | null;
+  /** Saved for later from this card: a job with no applications yet. */
+  saved: { result: QuickAddResult; undone: boolean } | null;
+  /** Whether Outbox already tracks this posting, and how far it got. */
+  tracked: 'saved' | 'applied' | null;
   ai: 'off' | 'noKey' | 'ready' | 'busy' | 'failed';
   error: string | null;
 }
@@ -82,6 +94,8 @@ export interface ToBackground {
   'card:focus': { request: { fieldId: string }; response: void };
   'card:snapshot': { request: Record<string, never>; response: { saved: number } };
   'card:log': { request: Record<string, never>; response: CardState };
+  /** Saves the posting for later: a job on Outbox with no applications. */
+  'card:save': { request: Record<string, never>; response: CardState };
   'card:undo': { request: Record<string, never>; response: CardState };
   'card:options': { request: Record<string, never>; response: void };
   'submit:attempt': { request: { answers: CapturedAnswer[] }; response: void };
@@ -91,8 +105,8 @@ export interface ToBackground {
     request: { resumeId: string };
     response: { name: string; type: string; base64: string } | null;
   };
-  /** From Outbox's page, through its content script: can a resume be read? */
-  'bridge:status': { request: Record<string, never>; response: ExtensionReadiness };
+  /** From Outbox's page, through its content script: can a resume be read, and what the setup checklist asks. */
+  'bridge:status': { request: Record<string, never>; response: BridgeStatus };
   /** From Outbox's page: read this resume PDF (base64) with the owner's key. */
   'resume:parse': {
     request: { pdf: string; text: string };

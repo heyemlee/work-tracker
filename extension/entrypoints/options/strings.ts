@@ -67,8 +67,8 @@ const zh: Record<Key, string> = {
   signIn: '去登录',
   unreachable: '连不上：{detail}',
   retry: '重试',
-  profile: '档案',
-  noProfile: '还没有档案',
+  profile: '资料',
+  noProfile: '还没有资料',
   edit: '编辑',
   fillIn: '去填写',
   missing: '还缺 {n} 项',
@@ -111,7 +111,7 @@ const zh: Record<Key, string> = {
   data: '数据',
   exportAll: '导出全部（不含 API key）',
   deleteAll: '清空全部',
-  confirmDelete: '要从这个浏览器删除档案、简历副本、记住的回答、快照和 API key 吗？',
+  confirmDelete: '要从这个浏览器删除资料、简历副本、记住的回答、快照和 API key 吗？',
 };
 
 export type Strings = (key: Key, values?: Record<string, string | number>) => string;

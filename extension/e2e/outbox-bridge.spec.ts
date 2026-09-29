@@ -36,7 +36,9 @@ test('answers Outbox’s page: whether it can read a resume, and why not', async
   // The seeded settings have AI turned off.
   await expect
     .poll(replies)
-    .toContainEqual({ source: 'outbox-autofill', type: 'hello', readiness: 'ai-off' });
+    .toContainEqual(
+      expect.objectContaining({ source: 'outbox-autofill', type: 'hello', readiness: 'ai-off' }),
+    );
 
   await worker.evaluate(async () => {
     const { chrome } = globalThis as unknown as {
@@ -52,7 +54,9 @@ test('answers Outbox’s page: whether it can read a resume, and why not', async
   await ask({ type: 'ping' });
   await expect
     .poll(replies)
-    .toContainEqual({ source: 'outbox-autofill', type: 'hello', readiness: 'no-key' });
+    .toContainEqual(
+      expect.objectContaining({ source: 'outbox-autofill', type: 'hello', readiness: 'no-key' }),
+    );
 
   await ask({ type: 'parse-resume', id: 'r1', pdf: 'JVBERi0xLjQK' });
   await expect.poll(replies).toContainEqual({

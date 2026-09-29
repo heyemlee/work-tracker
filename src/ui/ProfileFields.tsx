@@ -519,7 +519,7 @@ export function SectionBody({
   }
 }
 
-function Grid({ children }: { children: ReactNode }) {
+export function Grid({ children }: { children: ReactNode }) {
   return <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{children}</div>;
 }
 
@@ -553,7 +553,7 @@ function Field({
   );
 }
 
-function Text({
+export function Text({
   label,
   value,
   onChange,
@@ -716,7 +716,7 @@ function Count({
   );
 }
 
-function Toggle({
+export function Toggle({
   label,
   checked,
   onChange,

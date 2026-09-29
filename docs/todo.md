@@ -2,6 +2,55 @@
 
 Work that is deferred or not done yet. Decisions and their reasons live in [design.md](design.md).
 
+## Redesign (decided and built 2026-09-28)
+
+After a look at Jobright, Simplify, Teal and Huntr: labelled pages, a first-run guide, and numbers that say what
+works. Still the single column and the floating glass toolbar; still the owner's own app. One release.
+
+### Navigation and pages
+
+- [x] Pages with their own addresses: Applications `/`, Resumes `/resumes`, Profile `/profile`, Insights
+      `/insights`, the guide `/welcome`. Leaving the profile with unsaved edits asks first.
+- [x] Toolbar: Applications · Resumes · Profile · Insights, labelled, the profile's blanks counted on its tab;
+      search; the extension's status as a dot (connected, needs a key, not installed) that explains itself; New;
+      an account menu with Settings, language, CSV export, the setup guide and sign-out.
+- [x] The status filter moves above the list, with a count on each segment.
+- [x] Phones: a glass tab bar at the bottom and a round New button beside it.
+- [x] Profile page, from the panel: a completeness score weighted by what forms ask, each blank a link to its
+      section.
+- [x] Resumes page, from the panel: each version's uses and OA rate, and which one new applications default to.
+- [x] Settings stays a dialog and gains the daily goal.
+
+### First run
+
+- [x] A guide at `/welcome`, six steps, each skippable: emails, resumes, the extension and its key, reading a
+      resume into the profile, work authorization with preferences and EEO, done (with the daily goal). It opens
+      by itself for an owner with no accounts and no jobs, and from the account menu.
+- [x] Setup checklist on the home page: the guide's steps, ending with the first application logged by the
+      extension. Hiding it once hides it for 7 days, twice for good.
+
+### Numbers
+
+- [x] Stats row: today against the daily goal (30 by default, none if left empty), the last 7 days, active OAs,
+      and the OA rate over 30 days.
+- [x] Insights page, for 7 days, 30 days or everything: the funnel, applications per day against the goal, and the
+      OA rate by resume version, account and channel.
+- [x] No reply: an application still at Applied after 30 days, shown faded and counted apart. Worked out, not
+      stored.
+
+### Extension
+
+- [x] Bridge: Outbox can open the extension's settings, and learns its version and whether it has logged an
+      application.
+- [x] Card on a posting without a form: Save for later (a saved job) and Mark as applied; LinkedIn keeps Mark as
+      applied first. A saved posting says so when it's opened again. Undo.
+
+### Quality and docs
+
+- [x] Unit tests for the new domain code, the bridge and saving from the card; the extension's e2e specs pass.
+- [x] design.md, autofill.md and the README describe the new pages and the guide.
+- [ ] Deploy after the owner's go-ahead (shown locally first).
+
 ## Autofill extension (decided and built 2026-09-27)
 
 One release with everything below, no MVP. Design: [autofill.md](autofill.md).
@@ -150,7 +199,8 @@ One release with everything below, no MVP. Design: [autofill.md](autofill.md).
 
 ## Backlog
 
-- [ ] Split the bundle (537 kB, 170 kB gzipped): lazy-load the settings dialog and the tweak panel.
+- [ ] Split the bundle (746 kB, 229 kB gzipped since the redesign): lazy-load the pages other than Applications,
+      the settings dialog and the tweak panel.
 - [ ] Playwright tests for the core flows: sign-in screen, quick add, stage change.
 - [ ] Keep the scripts that captured the README screenshots and animation in the repository, so the media can
       be regenerated after UI changes.

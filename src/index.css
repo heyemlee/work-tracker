@@ -348,6 +348,11 @@
   .chip[data-status='rejected'] .chip-status {
     text-decoration: line-through;
   }
+  /* No reply: still at Applied after 30 days. Grey like a saved job, since nothing is moving. */
+  .chip[data-status='noreply'] {
+    --chip-fg: var(--st-saved);
+    --chip-bg: var(--st-saved-bg);
+  }
 
   .dot {
     width: 7px;

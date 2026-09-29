@@ -4,7 +4,8 @@ A job-application tracker for one person applying to dozens of SWE / AI-agent ro
 same posting from several email accounts. Daily-use tool first, portfolio piece second.
 
 Status: design settled 2026-09-23 · Milestones 1–3 (prototype, MVP, README) done · Milestone 4 (agent v1) on
-hold · Milestone 7 (autofill extension) built and waiting on the owner to install it, see [autofill.md](autofill.md).
+hold · Milestone 7 (autofill extension) built and waiting on the owner to install it, see [autofill.md](autofill.md)
+· Redesigned 2026-09-28 after Jobright, Simplify, Teal and Huntr: labelled pages, a first-run guide, insights.
 Deferred work is listed in [todo.md](todo.md).
 
 ## 1. Goals
@@ -37,7 +38,8 @@ Company 1─n Job 1─n Application 1─n Event
 
 **Stages are fixed.** An application moves Applied → OA → Offer. _Saved_ is not an application stage: it is a
 job with no applications yet. _Rejected_ is a flag rather than a stage, so "rejected after OA" keeps its stage.
-There is no "ghosted" state; the UI shows age instead ("Applied · 23d").
+There is no stored "ghosted" state: an application still at Applied 30 days after it went out reads _No reply_,
+worked out from its date, so a late answer only needs its stage changed.
 
 **Rollup.** A job displays the furthest stage among its non-rejected applications; if every application is
 rejected, it displays the furthest rejected one, dimmed. Filters use the rollup.
@@ -46,11 +48,26 @@ rejected, it displays the furthest rejected one, dimmed. Filters use the rollup.
 
 ## 3. UX
 
+- **Pages** — Applications `/`, Resumes `/resumes`, Profile `/profile` and Insights `/insights`, each with its own
+  address, as labelled tabs in the floating toolbar (a glass tab bar at the bottom on phones, with a round New
+  button beside it). The toolbar also holds search, the extension's status as a dot (connected, needs its key, not
+  installed; click for what to do), New, and an account menu: Settings, language, CSV export, the setup guide,
+  sign-out. Jobright's sidebar was the alternative; a sidebar was tried and dropped on 2026-09-24, and Simplify
+  gets by with a top bar alone.
+- **First run** — a guide at `/welcome`, six steps, each skippable: the emails applied with, the resumes, the
+  extension and its key (checked live), a resume read into the profile, the answers no resume holds (work
+  authorization, preferences, EEO — rules only, never AI), done (with a daily goal). It opens by itself for an
+  owner with no accounts and no jobs. On the home page a checklist tracks the same steps and ends with the first
+  application the extension logs; hidden once, it's back a week later, hidden twice it stays hidden.
 - **Main view** — a list grouped by date (Today / Yesterday / This week / Earlier), one row per job. Each account
-  that applied is a chip showing its own status. Rejected jobs are dimmed; one click hides them. Accounts are
-  shown by their email address everywhere, since that's what tells them apart.
-- **Header** — a KPI row (applied today, this week, active OAs, offers), a segmented control
-  `All · Saved · Applied · OA · Offer`, and search.
+  that applied is a chip showing its own status. Rejected jobs are dimmed, and so are jobs whose applications got
+  no reply in 30 days; one click hides rejected ones. Accounts are shown by their email address everywhere, since
+  that's what tells them apart.
+- **Header** — a KPI row (applied today against the daily goal, the last 7 days, active OAs, the OA rate over 30
+  days), then a segmented control `All · Saved · Applied · OA · Offer` with a count on each.
+- **Insights** — for 7 days, 30 days or everything: the funnel (applied → OA → offer, with the rest split into
+  rejected, no reply and still waiting), applications per day against the goal, and the OA rate by resume version,
+  account and channel. Small samples are marked. Everything is worked out from the snapshot; nothing is stored.
 - **Composer (quick add)** — a glass panel over the list, opened from the toolbar's New button or `N` (a bottom
   sheet on phones). Company → `Tab` → title → account chips → `Enter`; the panel closes and a toast offers Undo.
   Selecting N accounts creates N applications; selecting none saves the job. Typing a company lists its existing
@@ -60,12 +77,14 @@ rejected, it displays the furthest rejected one, dimmed. Filters use the rollup.
   a link that's already tracked attaches to its job, so applying from another account is paste, pick, `Enter`.
 - **Detail** — a glass side panel on desktop, a bottom sheet on mobile: per-account stage control, rejected
   toggle, apply with another account, the posting's link, notes, timeline.
-- **Settings** — accounts (an email address and a color each), channels, language, CSV export.
-- **Resumes** — their own panel from the toolbar's document button: upload a PDF (or drop it), and it becomes a
-  version named after the file. Each can be renamed, opened, replaced, deleted, or read into the autofill profile.
+- **Settings** — a dialog: accounts (an email address and a color each), channels, language, the daily goal, CSV
+  export.
+- **Resumes** — their own page: upload a PDF (or drop it), and it becomes a version named after the file. Each can
+  be renamed, opened, replaced, deleted, or read into the profile, and shows how often it went out and its OA rate.
   The extension attaches these PDFs, so each version is uploaded once, here.
-- **Autofill profile** — its own panel from the toolbar's profile button (where a language toggle used to be); see
-  [autofill.md](autofill.md).
+- **Profile** — its own page: a completeness score weighted by what forms ask most, each blank a link to its
+  section, and the sections the extension fills from; see [autofill.md](autofill.md). Leaving with unsaved edits
+  asks first.
 - English (default) and Simplified Chinese. Installable as a PWA.
 
 ## 4. Visual design
