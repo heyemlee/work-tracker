@@ -22,10 +22,8 @@ test('fills a Greenhouse application and logs it to Outbox after the owner submi
 
   const card = page.locator('outbox-autofill');
   await expect(card.getByText('Senior Full-Stack Software Engineer, Developer Success')).toBeVisible();
-  await expect(card.getByRole('button', { name: /alex@example\.com/ })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  // One account on Outbox: the card names it rather than offering a choice.
+  await expect(card.getByText('alex@example.com')).toBeVisible();
 
   await card.getByRole('button', { name: /^Fill/ }).click();
   await expect(page.locator('#first_name')).toHaveValue('Alex');
@@ -37,9 +35,9 @@ test('fills a Greenhouse application and logs it to Outbox after the owner submi
   expect(await page.locator('#resume').evaluate((input: HTMLInputElement) => input.files?.[0]?.name)).toBe(
     'Alex_Chen_Resume.pdf',
   );
-  // The saved page runs no React, so its dropdowns never open: they land in "Fill these yourself".
-  await expect(card.getByText(/^Filled · \d+/)).toBeVisible({ timeout: 45_000 });
-  await expect(card.getByText(/^Fill these yourself · \d+/)).toBeVisible();
+  // The saved page runs no React, so its dropdowns never open: they're listed for the owner to fill.
+  await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });
+  await expect(card.getByText('Fill', { exact: true }).first()).toBeVisible();
   await page.screenshot({ path: 'e2e/output/greenhouse-filled.png' });
   await page.locator('outbox-autofill .card').screenshot({ path: 'e2e/output/card.png' });
 

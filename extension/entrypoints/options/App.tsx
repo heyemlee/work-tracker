@@ -1,4 +1,5 @@
 import type { Snapshot } from '@domain/types';
+import { ChevronDown, X } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import type { WxtStorageItem } from 'wxt/utils/storage';
 import { checkKey, listOpenAIModels } from '../../src/background/ai';
@@ -42,150 +43,149 @@ function download(name: string, data: unknown) {
   URL.revokeObjectURL(url);
 }
 
-function Section({ title, help, children }: { title: string; help?: string; children: ReactNode }) {
+const detail = (error: unknown) => (error instanceof Error ? error.message : String(error));
+const when = (iso: string) =>
+  new Date(iso).toLocaleString(undefined, {
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+
+const muted = 'text-[#6e6e73] dark:text-[#a1a1a6]';
+const warn = 'text-[#8a590b] dark:text-[#edbe72]';
+const bad = 'text-[#d70015] dark:text-[#ff6961]';
+const good = 'text-[#23703a] dark:text-[#88d59e]';
+const card =
+  'rounded-2xl border border-black/[0.07] bg-white p-5 shadow-[0_1px_2px_rgb(0_0_0/0.04)] dark:border-white/10 dark:bg-[#1c1c1e]';
+const button =
+  'h-8 flex-none rounded-lg bg-black/[0.05] px-3 text-[13px] font-medium hover:bg-black/[0.085] disabled:opacity-40 dark:bg-white/10 dark:hover:bg-white/15';
+const iconButton = `grid h-7 w-7 flex-none place-items-center rounded-full ${muted} hover:bg-black/[0.05] dark:hover:bg-white/10`;
+const field =
+  'h-8 min-w-0 rounded-lg border border-black/10 bg-transparent px-2.5 text-[13px] dark:border-white/15';
+const input = `${field} w-full`;
+const select = 'h-8 rounded-lg border border-black/10 bg-transparent px-2 text-[13px] dark:border-white/15';
+const link = 'flex-none text-[13px] font-medium underline underline-offset-2';
+
+function Section({ title, aside, children }: { title: string; aside?: ReactNode; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-black/[0.07] bg-white p-5 shadow-[0_1px_2px_rgb(0_0_0/0.04)] dark:border-white/10 dark:bg-[#1c1c1e]">
-      <h2 className="text-[15px] font-semibold">{title}</h2>
-      {help && <p className="mt-1 text-[13px] text-[#6e6e73] dark:text-[#a1a1a6]">{help}</p>}
-      <div className="mt-4 space-y-3">{children}</div>
+    <section className={card}>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[15px] font-semibold">{title}</h2>
+        {aside}
+      </div>
+      <div className="mt-3 space-y-2">{children}</div>
     </section>
   );
 }
 
-const button =
-  'h-8 rounded-lg bg-black/[0.05] px-3 text-[13px] font-medium hover:bg-black/[0.085] dark:bg-white/10 dark:hover:bg-white/15';
-const primary =
-  'h-8 rounded-lg bg-[#1d1d1f] px-3 text-[13px] font-medium text-white dark:bg-[#f5f5f7] dark:text-[#1c1c1e]';
-const input =
-  'h-8 w-full rounded-lg border border-black/10 bg-transparent px-2.5 text-[13px] dark:border-white/15';
+/** A label, what it's set to, and what to do about it. */
+function Row({ label, action, children }: { label: string; action?: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex min-h-8 items-center gap-3 text-[13px]">
+      <span className={`w-20 flex-none ${muted}`}>{label}</span>
+      <div className="min-w-0 flex-1">{children}</div>
+      {action}
+    </div>
+  );
+}
 
-function ProfileSection({ s, settings }: { s: Strings; settings: Settings }) {
+type Connection =
+  | { state: 'checking' }
+  | { state: 'connected'; accounts: number }
+  | { state: 'signedOut' }
+  | { state: 'unreachable'; detail: string };
+
+/** Outbox, and what this browser copies from it: the profile and the resumes. Checked when the page opens. */
+function StatusSection({ s, settings }: { s: Strings; settings: Settings }) {
   const profile = useItem(profileItem);
   const source = useItem(profileSourceItem);
-  const [status, setStatus] = useState<string | null>(null);
-  const sync = () =>
-    syncProfile().then(
-      (saved) => setStatus(saved ? null : s('noProfileOnOutbox')),
-      (error: unknown) =>
-        setStatus(
-          error instanceof OutboxSignedOut
-            ? s('signedOut')
-            : s('unreachable', { detail: error instanceof Error ? error.message : String(error) }),
-        ),
-    );
-  // Fetches once when the page opens and whenever the address changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => void sync(), [settings.outboxUrl]);
-  const missing = profile ? missingItems(profile) : [];
-  const when = (iso: string) => new Date(iso).toLocaleString();
-  return (
-    <Section title={s('profile')} help={s('profileHelp')}>
-      {profile ? (
-        <p className="text-[13px]">
-          <strong>
-            {profile.name.first} {profile.name.last}
-          </strong>
-          {source && (
-            <> · {s('synced', { updated: when(source.updatedAt), synced: when(source.syncedAt) })}</>
-          )}
-        </p>
-      ) : (
-        <p className="text-[13px] text-[#6e6e73]">{s('noProfile')}</p>
-      )}
-      {missing.length > 0 && (
-        <p className="text-[13px] text-[#8a590b]">
-          {s('missing')} <code>{missing.join(', ')}</code>
-        </p>
-      )}
-      {status && <p className="text-[13px] text-[#6e6e73]">{status}</p>}
-      <div className="flex gap-2">
-        <button className={primary} onClick={() => void sync()}>
-          {s('syncNow')}
-        </button>
-        <a
-          className={`${button} inline-flex items-center`}
-          href={settings.outboxUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {s('editOnOutbox')}
-        </a>
-      </div>
-    </Section>
-  );
-}
-
-/** The resumes on Outbox the card can attach. They're uploaded there; this page only lists them. */
-function ResumesSection({ s, snapshot }: { s: Strings; snapshot: Snapshot | null }) {
-  const resumes = snapshot?.resumes.filter((resume) => resume.file) ?? [];
-  return (
-    <Section title={s('resumes')} help={s('resumesHelp')}>
-      {snapshot &&
-        (resumes.length ? (
-          resumes.map((resume) => (
-            <p key={resume.id} className="text-[13px]">
-              <strong>{resume.name}</strong> <span className="text-[#8a8a8e]">· {resume.file?.name}</span>
-            </p>
-          ))
-        ) : (
-          <p className="text-[13px] text-[#6e6e73]">{s('noResumes')}</p>
-        ))}
-    </Section>
-  );
-}
-
-function OutboxSection({
-  s,
-  settings,
-  onSnapshot,
-}: {
-  s: Strings;
-  settings: Settings;
-  onSnapshot: (snapshot: Snapshot | null) => void;
-}) {
-  const [url, setUrl] = useState(settings.outboxUrl);
-  const [status, setStatus] = useState<string | null>(null);
   const pending = useItem(pendingLogsItem) ?? [];
+  const [connection, setConnection] = useState<Connection>({ state: 'checking' });
+  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const check = () =>
     loadSnapshot(true).then(
-      (snapshot) => {
-        onSnapshot(snapshot);
-        setStatus(s('connected', { n: snapshot.accounts.length }));
+      (next) => {
+        setSnapshot(next);
+        setConnection({ state: 'connected', accounts: next.accounts.length });
         void flushQueue();
+        void syncProfile().catch(() => undefined);
       },
       (error: unknown) => {
-        onSnapshot(null);
-        setStatus(
+        setSnapshot(null);
+        setConnection(
           error instanceof OutboxSignedOut
-            ? s('signedOut')
-            : s('unreachable', { detail: error instanceof Error ? error.message : String(error) }),
+            ? { state: 'signedOut' }
+            : { state: 'unreachable', detail: detail(error) },
         );
       },
     );
-  // Checks once when the page opens and whenever the address changes.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const retry = () => {
+    setConnection({ state: 'checking' });
+    void check();
+  };
+  // Checks when the page opens and whenever the address changes.
   useEffect(() => void check(), [settings.outboxUrl]);
+  const onOutbox = (label: string) => (
+    <a className={link} href={settings.outboxUrl} target="_blank" rel="noreferrer">
+      {label}
+    </a>
+  );
+  const resumes = snapshot?.resumes.filter((resume) => resume.file) ?? [];
+  const missing = profile ? missingItems(profile).length : 0;
   return (
-    <Section title={s('outbox')} help={s('outboxHelp')}>
-      <div className="flex gap-2">
-        <input className={input} value={url} onChange={(event) => setUrl(event.target.value)} />
-        <button
-          className={primary}
-          onClick={() => void settingsItem.setValue({ ...settings, outboxUrl: url.replace(/\/$/, '') })}
-        >
-          {s('save')}
-        </button>
-        <button className={button} onClick={() => void check()}>
-          {s('check')}
-        </button>
-      </div>
-      {status && <p className="text-[13px]">{status}</p>}
-      {pending.length > 0 && (
-        <p className="text-[13px] text-[#8a590b]">{s('queued', { n: pending.length })}</p>
+    <Section title={s('status')}>
+      <Row
+        label="Outbox"
+        action={
+          connection.state === 'signedOut' ? (
+            onOutbox(s('signIn'))
+          ) : connection.state === 'unreachable' ? (
+            <button className={link} onClick={retry}>
+              {s('retry')}
+            </button>
+          ) : undefined
+        }
+      >
+        {connection.state === 'checking' && <span className={muted}>{s('checking')}</span>}
+        {connection.state === 'connected' && s('connected', { n: connection.accounts })}
+        {connection.state === 'signedOut' && <span className={warn}>{s('signedOut')}</span>}
+        {connection.state === 'unreachable' && (
+          <span className={bad}>{s('unreachable', { detail: connection.detail })}</span>
+        )}
+      </Row>
+      {profile !== undefined && (
+        <Row label={s('profile')} action={onOutbox(profile ? s('edit') : s('fillIn'))}>
+          {profile ? (
+            <p className="truncate">
+              {profile.name.first} {profile.name.last}
+              {missing > 0 && <span className={warn}> · {s('missing', { n: missing })}</span>}
+              {/* Offline, the copy here is what fills: say how old it is. */}
+              {source && connection.state !== 'connected' && connection.state !== 'checking' && (
+                <span className={muted}> · {s('copyFrom', { when: when(source.syncedAt) })}</span>
+              )}
+            </p>
+          ) : (
+            <span className={warn}>{s('noProfile')}</span>
+          )}
+        </Row>
       )}
-      <a className="text-[13px] underline" href={settings.outboxUrl} target="_blank" rel="noreferrer">
-        {s('open')}
-      </a>
+      {snapshot && (
+        <Row label={s('resumes')} action={onOutbox(s('manage'))}>
+          {resumes.length ? (
+            <p className="truncate" title={resumes.map((resume) => resume.name).join('\n')}>
+              {resumes.map((resume) => resume.name).join(', ')}
+            </p>
+          ) : (
+            <span className={warn}>{s('noResumes')}</span>
+          )}
+        </Row>
+      )}
+      {pending.length > 0 && (
+        <Row label={s('queue')}>
+          <span className={warn}>{s('queued', { n: pending.length })}</span>
+        </Row>
+      )}
     </Section>
   );
 }
@@ -196,153 +196,168 @@ function AiSection({ s, settings }: { s: Strings; settings: Settings }) {
   const key = useItem(keyItem) ?? '';
   const usage = useItem(usageItem) ?? [];
   const [draft, setDraft] = useState('');
-  const [baseUrl, setBaseUrl] = useState(settings.openaiBaseUrl);
   const [models, setModels] = useState<string[]>([]);
-  const [result, setResult] = useState<string | null>(null);
-  const month = new Date().toLocaleDateString('en-CA').slice(0, 7);
-  const monthCost = usage.filter((day) => day.day.startsWith(month)).reduce((sum, day) => sum + day.cost, 0);
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
   const save = (change: Partial<Settings>) => void settingsItem.setValue({ ...settings, ...change });
-  const fail = (error: unknown) =>
-    setResult(s('keyBad', { detail: error instanceof Error ? error.message : String(error) }));
+  const month = new Date().toLocaleDateString('en-CA').slice(0, 7);
+  const thisMonth = usage.filter((day) => day.day.startsWith(month));
+  const cost = thisMonth.reduce((sum, day) => sum + day.cost, 0);
+  const tokens = thisMonth.reduce((sum, day) => sum + day.inputTokens + day.outputTokens, 0);
+  const verify = () =>
+    checkKey().then((check) =>
+      setResult(
+        check.ok
+          ? { ok: true, text: s('keyOk') }
+          : { ok: false, text: s('keyBad', { detail: check.error ?? '' }) },
+      ),
+    );
+  // A key typed in is saved, then tried; with none typed, the saved key is tried.
+  const saveKey = async () => {
+    if (draft.trim()) {
+      await keyItem.setValue(draft.trim());
+      setDraft('');
+    }
+    await verify();
+  };
   return (
-    <Section title={s('ai')} help={s('aiHelp')}>
-      <label className="flex items-center gap-2 text-[13px]">
-        <input
-          type="checkbox"
-          checked={settings.aiEnabled}
-          onChange={(event) => save({ aiEnabled: event.target.checked })}
-        />
-        {s('aiEnabled')}
-      </label>
-      <label className="flex items-center gap-2 text-[13px]">
-        {s('provider')}
-        <select
-          className="h-8 rounded-lg border border-black/10 bg-transparent px-2 dark:border-white/15"
-          value={settings.provider}
-          onChange={(event) => {
-            setResult(null);
-            save({ provider: event.target.value as Settings['provider'] });
-          }}
-        >
-          <option value="openai">{s('providerOpenai')}</option>
-          <option value="anthropic">{s('providerAnthropic')}</option>
-        </select>
-      </label>
-      {openai && (
-        <div>
-          <p className="text-[13px] font-medium">{s('baseUrl')}</p>
-          <p className="text-[12px] text-[#6e6e73]">{s('baseUrlHelp')}</p>
-          <div className="mt-2 flex gap-2">
-            <input className={input} value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} />
-            <button className={button} onClick={() => save({ openaiBaseUrl: baseUrl.trim() })}>
-              {s('save')}
-            </button>
-          </div>
-        </div>
-      )}
-      <div>
-        <p className="text-[13px] font-medium">{openai ? s('openaiKey') : s('apiKey')}</p>
-        <p className="text-[12px] text-[#6e6e73]">{openai ? s('openaiKeyHelp') : s('apiKeyHelp')}</p>
-        <div className="mt-2 flex gap-2">
-          <input
-            className={input}
-            type="password"
-            autoComplete="off"
-            placeholder={key ? `••••${key.slice(-4)}` : openai ? 'sk-…' : 'sk-ant-…'}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-          />
-          <button
-            className={primary}
-            onClick={() => {
-              void keyItem.setValue(draft.trim());
-              setDraft('');
-              setResult(s('saved'));
-            }}
-          >
-            {s('save')}
-          </button>
-          <button
-            className={button}
-            disabled={!key}
-            onClick={() =>
-              void checkKey().then((check) =>
-                setResult(check.ok ? s('keyOk') : s('keyBad', { detail: check.error ?? '' })),
-              )
-            }
-          >
-            {s('check')}
-          </button>
-        </div>
-        {result && <p className="mt-1 text-[12px]">{result}</p>}
-      </div>
-      {openai ? (
-        <div className="flex flex-wrap items-center gap-2 text-[13px]">
-          {s('model')}
-          <input
-            className={`${input} max-w-[260px]`}
-            list="openai-models"
-            defaultValue={settings.openaiModel}
-            key={settings.openaiModel}
-            onBlur={(event) => {
-              const model = event.target.value.trim();
-              if (model !== settings.openaiModel) save({ openaiModel: model });
-            }}
-          />
-          <datalist id="openai-models">
-            {models.map((model) => (
-              <option key={model} value={model} />
-            ))}
-          </datalist>
-          <button
-            className={button}
-            disabled={!key}
-            onClick={() =>
-              void listOpenAIModels().then((found) => {
-                setModels(found);
-                setResult(s('modelsLoaded', { n: found.length }));
-              }, fail)
-            }
-          >
-            {s('loadModels')}
-          </button>
-        </div>
-      ) : (
+    <Section
+      title={s('ai')}
+      aside={
         <label className="flex items-center gap-2 text-[13px]">
-          {s('model')}
-          <select
-            className="h-8 rounded-lg border border-black/10 bg-transparent px-2 dark:border-white/15"
-            value={settings.model}
-            onChange={(event) => save({ model: event.target.value as Settings['model'] })}
-          >
-            <option value="claude-opus-5">Claude Opus 5</option>
-            <option value="claude-sonnet-5">Claude Sonnet 5</option>
-          </select>
+          <input
+            type="checkbox"
+            checked={settings.aiEnabled}
+            onChange={(event) => save({ aiEnabled: event.target.checked })}
+          />
+          {s('aiEnabled')}
         </label>
+      }
+    >
+      {!settings.aiEnabled ? (
+        <p className={`text-[13px] ${muted}`}>{s('aiOff')}</p>
+      ) : (
+        <>
+          <Row label={s('provider')}>
+            <select
+              className={select}
+              value={settings.provider}
+              onChange={(event) => {
+                setResult(null);
+                save({ provider: event.target.value as Settings['provider'] });
+              }}
+            >
+              <option value="openai">{s('providerOpenai')}</option>
+              <option value="anthropic">{s('providerAnthropic')}</option>
+            </select>
+          </Row>
+          {openai && (
+            <Row label={s('baseUrl')}>
+              <input
+                className={input}
+                defaultValue={settings.openaiBaseUrl}
+                key={settings.openaiBaseUrl}
+                placeholder="https://api.openai.com/v1"
+                onBlur={(event) => {
+                  const address = event.target.value.trim();
+                  if (address !== settings.openaiBaseUrl) save({ openaiBaseUrl: address });
+                }}
+              />
+            </Row>
+          )}
+          <Row label="API key">
+            <div className="flex gap-2">
+              <input
+                className={input}
+                type="password"
+                autoComplete="off"
+                placeholder={key ? `••••${key.slice(-4)}` : openai ? 'sk-…' : 'sk-ant-…'}
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') void saveKey();
+                }}
+              />
+              <button className={button} disabled={!draft.trim() && !key} onClick={() => void saveKey()}>
+                {draft.trim() ? s('save') : s('check')}
+              </button>
+            </div>
+          </Row>
+          {result && (
+            <Row label="">
+              <p className={`text-[12px] ${result.ok ? good : bad}`}>{result.text}</p>
+            </Row>
+          )}
+          <Row label={s('model')}>
+            {openai ? (
+              <div className="flex gap-2">
+                <input
+                  className={input}
+                  list="openai-models"
+                  defaultValue={settings.openaiModel}
+                  key={settings.openaiModel}
+                  onBlur={(event) => {
+                    const model = event.target.value.trim();
+                    if (model !== settings.openaiModel) save({ openaiModel: model });
+                  }}
+                />
+                <datalist id="openai-models">
+                  {models.map((model) => (
+                    <option key={model} value={model} />
+                  ))}
+                </datalist>
+                <button
+                  className={button}
+                  disabled={!key}
+                  onClick={() =>
+                    void listOpenAIModels().then(
+                      (found) => {
+                        setModels(found);
+                        setResult({ ok: true, text: s('modelsLoaded', { n: found.length }) });
+                      },
+                      (error: unknown) => setResult({ ok: false, text: detail(error) }),
+                    )
+                  }
+                >
+                  {s('loadModels')}
+                </button>
+              </div>
+            ) : (
+              <select
+                className={select}
+                value={settings.model}
+                onChange={(event) => save({ model: event.target.value as Settings['model'] })}
+              >
+                <option value="claude-opus-5">Claude Opus 5</option>
+                <option value="claude-sonnet-5">Claude Sonnet 5</option>
+              </select>
+            )}
+          </Row>
+          {/* An OpenAI-compatible endpoint's prices aren't known here: its tokens, not its cost. */}
+          <Row label={s('usage')}>
+            {openai
+              ? s('usageTokens', { tokens: tokens.toLocaleString() })
+              : s('usageCost', { cost: cost.toFixed(2) })}
+          </Row>
+        </>
       )}
-      <div className="text-[13px]">
-        <p className="font-medium">
-          {s('usage')} · {s('usageMonth', { cost: monthCost.toFixed(2) })}
-        </p>
-        {openai && <p className="text-[12px] text-[#6e6e73]">{s('costUntracked')}</p>}
-        <ul className="mt-1 text-[12px] text-[#6e6e73]">
-          {usage.slice(0, 7).map((day) => (
-            <li key={day.day}>
-              {s('usageLine', {
-                day: day.day,
-                cost: day.cost.toFixed(3),
-                tokens: (day.inputTokens + day.outputTokens).toLocaleString(),
-              })}
-            </li>
-          ))}
-        </ul>
-      </div>
     </Section>
   );
 }
 
-function MemorySection({ s }: { s: Strings }) {
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div>
+      <h3 className="text-[13px] font-semibold">{title}</h3>
+      <div className="mt-2 space-y-1">{children}</div>
+    </div>
+  );
+}
+
+/** Rarely needed: remembered answers, form snapshots, general settings and the data. Closed until opened. */
+function MoreSection({ s, settings }: { s: Strings; settings: Settings }) {
   const memory = useItem(memoryItem) ?? [];
+  const snapshots = useItem(snapshotsItem) ?? [];
+  const save = (change: Partial<Settings>) => void settingsItem.setValue({ ...settings, ...change });
   const shown = (answer: (typeof memory)[number]['answer']) =>
     answer.type === 'text'
       ? answer.text
@@ -353,95 +368,6 @@ function MemorySection({ s }: { s: Strings }) {
           : answer.type === 'check'
             ? String(answer.checked)
             : answer.type;
-  return (
-    <Section title={s('memory')} help={s('memoryHelp')}>
-      {memory.length === 0 && <p className="text-[13px] text-[#6e6e73]">{s('noMemory')}</p>}
-      {memory.map((entry) => (
-        <div key={entry.key} className="flex items-start gap-3 text-[13px]">
-          <div className="min-w-0 flex-1">
-            <p className="truncate">{entry.label}</p>
-            <p className="truncate text-[#6e6e73]">{shown(entry.answer)}</p>
-          </div>
-          <button
-            className={button}
-            onClick={() => void memoryItem.setValue(memory.filter((item) => item.key !== entry.key))}
-          >
-            {s('delete')}
-          </button>
-        </div>
-      ))}
-    </Section>
-  );
-}
-
-function SnapshotsSection({ s }: { s: Strings }) {
-  const snapshots = useItem(snapshotsItem) ?? [];
-  return (
-    <Section title={s('snapshots')} help={s('snapshotsHelp')}>
-      {snapshots.length === 0 && <p className="text-[13px] text-[#6e6e73]">{s('noSnapshots')}</p>}
-      {snapshots.map((shot) => (
-        <div key={shot.id} className="flex items-center gap-3 text-[13px]">
-          <span className="min-w-0 flex-1 truncate">
-            {shot.ats} · {shot.step ?? shot.url} · {s('fields', { n: shot.fields.length })} ·{' '}
-            {new Date(shot.at).toLocaleString()}
-          </span>
-          <button
-            className={button}
-            onClick={() => void snapshotsItem.setValue(snapshots.filter((item) => item.id !== shot.id))}
-          >
-            {s('delete')}
-          </button>
-        </div>
-      ))}
-      {snapshots.length > 0 && (
-        <button
-          className={primary}
-          onClick={() =>
-            download(`outbox-autofill-snapshots-${new Date().toISOString().slice(0, 10)}.json`, snapshots)
-          }
-        >
-          {s('export')}
-        </button>
-      )}
-    </Section>
-  );
-}
-
-function SettingsSection({ s, settings }: { s: Strings; settings: Settings }) {
-  return (
-    <Section title={s('settings')}>
-      <label className="flex items-center gap-2 text-[13px]">
-        {s('language')}
-        <select
-          className="h-8 rounded-lg border border-black/10 bg-transparent px-2 dark:border-white/15"
-          value={settings.language}
-          onChange={(event) =>
-            void settingsItem.setValue({ ...settings, language: event.target.value as Settings['language'] })
-          }
-        >
-          <option value="auto">{s('auto')}</option>
-          <option value="en">English</option>
-          <option value="zh">简体中文</option>
-        </select>
-      </label>
-      <label className="flex items-center gap-2 text-[13px]">
-        {s('limit')}
-        <input
-          className="h-8 w-16 rounded-lg border border-black/10 bg-transparent px-2 dark:border-white/15"
-          type="number"
-          min={1}
-          max={20}
-          value={settings.sameCompanyLimit}
-          onChange={(event) =>
-            void settingsItem.setValue({ ...settings, sameCompanyLimit: Number(event.target.value) || 3 })
-          }
-        />
-      </label>
-    </Section>
-  );
-}
-
-function DataSection({ s }: { s: Strings }) {
   const exportAll = async () =>
     download(`outbox-autofill-${new Date().toISOString().slice(0, 10)}.json`, {
       profile: await profileItem.getValue(),
@@ -468,37 +394,125 @@ function DataSection({ s }: { s: Strings }) {
     ]);
   };
   return (
-    <Section title={s('data')}>
-      <div className="flex gap-2">
-        <button className={button} onClick={() => void exportAll()}>
-          {s('exportAll')}
-        </button>
-        <button className={`${button} text-[#d70015]`} onClick={() => void deleteAll()}>
-          {s('deleteAll')}
-        </button>
+    <details className={`group ${card}`}>
+      <summary className="flex cursor-pointer list-none items-center justify-between text-[15px] font-semibold [&::-webkit-details-marker]:hidden">
+        {s('more')}
+        <ChevronDown size={16} className={`${muted} transition-transform group-open:rotate-180`} />
+      </summary>
+      <div className="mt-4 space-y-5">
+        <Group title={s('memory', { n: memory.length })}>
+          {memory.length === 0 && <p className={`text-[13px] ${muted}`}>{s('memoryHelp')}</p>}
+          {memory.map((entry) => (
+            <div key={entry.key} className="flex items-center gap-3 text-[13px]">
+              <p className="min-w-0 flex-1 truncate">
+                {entry.label} <span className={muted}>→ {shown(entry.answer)}</span>
+              </p>
+              <button
+                className={iconButton}
+                aria-label={s('delete')}
+                title={s('delete')}
+                onClick={() => void memoryItem.setValue(memory.filter((item) => item.key !== entry.key))}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </Group>
+
+        <Group title={s('snapshots', { n: snapshots.length })}>
+          {snapshots.length === 0 && <p className={`text-[13px] ${muted}`}>{s('snapshotsHelp')}</p>}
+          {snapshots.map((shot) => (
+            <div key={shot.id} className="flex items-center gap-3 text-[13px]">
+              <p className="min-w-0 flex-1 truncate">
+                {shot.ats} · {shot.step ?? shot.url}{' '}
+                <span className={muted}>
+                  · {s('fields', { n: shot.fields.length })} · {when(shot.at)}
+                </span>
+              </p>
+              <button
+                className={iconButton}
+                aria-label={s('delete')}
+                title={s('delete')}
+                onClick={() => void snapshotsItem.setValue(snapshots.filter((item) => item.id !== shot.id))}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+          {snapshots.length > 0 && (
+            <button
+              className={button}
+              onClick={() =>
+                download(`outbox-autofill-snapshots-${new Date().toISOString().slice(0, 10)}.json`, snapshots)
+              }
+            >
+              {s('export')}
+            </button>
+          )}
+        </Group>
+
+        <Group title={s('general')}>
+          <Row label={s('language')}>
+            <select
+              className={select}
+              value={settings.language}
+              onChange={(event) => save({ language: event.target.value as Settings['language'] })}
+            >
+              <option value="auto">{s('auto')}</option>
+              <option value="en">English</option>
+              <option value="zh">简体中文</option>
+            </select>
+          </Row>
+          <Row label={s('limit')}>
+            <div className="flex items-center gap-2">
+              <input
+                className={`${field} w-16`}
+                type="number"
+                min={1}
+                max={20}
+                value={settings.sameCompanyLimit}
+                onChange={(event) => save({ sameCompanyLimit: Number(event.target.value) || 3 })}
+              />
+              <span className={muted}>{s('limitHelp')}</span>
+            </div>
+          </Row>
+          <Row label="Outbox">
+            <input
+              className={input}
+              defaultValue={settings.outboxUrl}
+              key={settings.outboxUrl}
+              onBlur={(event) => {
+                const address = event.target.value.trim().replace(/\/$/, '');
+                if (address && address !== settings.outboxUrl) save({ outboxUrl: address });
+              }}
+            />
+          </Row>
+        </Group>
+
+        <Group title={s('data')}>
+          <div className="flex gap-2">
+            <button className={button} onClick={() => void exportAll()}>
+              {s('exportAll')}
+            </button>
+            <button className={`${button} ${bad}`} onClick={() => void deleteAll()}>
+              {s('deleteAll')}
+            </button>
+          </div>
+        </Group>
       </div>
-    </Section>
+    </details>
   );
 }
 
 export function App() {
   const settings = { ...DEFAULT_SETTINGS, ...(useItem(settingsItem) ?? {}) };
-  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const s = strings(resolveLanguage(settings.language));
   return (
-    <main className="mx-auto max-w-3xl space-y-5 px-6 py-10">
-      <header>
-        <h1 className="text-[22px] font-semibold">{s('title')}</h1>
-        <p className="mt-1 text-[14px] text-[#6e6e73] dark:text-[#a1a1a6]">{s('subtitle')}</p>
-      </header>
-      <ProfileSection s={s} settings={settings} />
-      <ResumesSection s={s} snapshot={snapshot} />
-      <OutboxSection s={s} settings={settings} onSnapshot={setSnapshot} />
+    <main className="mx-auto max-w-2xl space-y-4 px-6 py-10">
+      <h1 className="text-[22px] font-semibold">{s('title')}</h1>
+      <StatusSection s={s} settings={settings} />
       <AiSection s={s} settings={settings} />
-      <MemorySection s={s} />
-      <SnapshotsSection s={s} />
-      <SettingsSection s={s} settings={settings} />
-      <DataSection s={s} />
+      <MoreSection s={s} settings={settings} />
     </main>
   );
 }

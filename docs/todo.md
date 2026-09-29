@@ -64,6 +64,11 @@ One release with everything below, no MVP. Design: [autofill.md](autofill.md).
 - [x] Checklist (filled, confirm, AI draft, missing); click to jump to a field.
 - [x] "This page didn't fill right": save the form's structure without values.
 - [x] LinkedIn and other job pages: Log to Outbox only.
+- [x] Simplified (2026-09-28): the match check is a dot, with two reasons when yellow or red; account and resume
+      share one row and are named, not offered, when there's one; after Fill only what needs the owner is listed
+      (Check, AI, Fill), the rest counted; after submitting only "Logged to Outbox" with Undo; at most one notice,
+      with what to do; Log to Outbox, "This page didn't fill right" and Settings in a ⋯ menu. The options page is
+      Status, AI and a closed More.
 
 ### Match check
 
@@ -111,10 +116,10 @@ One release with everything below, no MVP. Design: [autofill.md](autofill.md).
       from full-time and contract work).
 - [ ] Load the extension: `npm run ext:build`, then `chrome://extensions` → Developer mode → Load unpacked →
       `extension/.output/chrome-mv3`.
-- [ ] Paste the API key for `https://api.kabi.pro` under AI on the options page and press Check (or pick
-      Anthropic and use a Console key with a monthly spend limit).
+- [ ] Paste the API key for `https://api.kabi.pro` under AI on the options page and press Save, which tries it
+      (or pick Anthropic and use a Console key with a monthly spend limit).
 - [ ] Run the free-text eval once (about $1) and choose Opus 5 or Sonnet 5 from its report.
-- [ ] On each Workday page, press "This page didn't fill right" once: Workday's forms are behind sign-in, so these
+- [ ] On each Workday page, pick "This page didn't fill right" in the card's ⋯ menu once: Workday's forms are behind sign-in, so these
       snapshots are its only fixtures.
 - [x] Before using the extension with production: `npm run db:migrate:remote` (migration 0003, the profile table),
       then deploy the Worker with job links, the profile API and the `bearer` plugin.

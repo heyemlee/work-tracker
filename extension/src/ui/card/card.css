@@ -95,19 +95,18 @@
 }
 
 .card {
-  width: 344px;
-  max-height: min(640px, calc(100vh - 32px));
+  width: 320px;
+  max-height: min(600px, calc(100vh - 32px));
   display: flex;
   flex-direction: column;
   border-radius: 20px;
-  overflow: hidden;
 }
 
 .head {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 14px 14px 10px 16px;
+  gap: 6px;
+  padding: 12px 12px 10px 16px;
 }
 
 .head-text {
@@ -124,8 +123,15 @@
 }
 
 .title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 14px;
   font-weight: 600;
+}
+
+.title span:last-child {
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -136,14 +142,18 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   scrollbar-width: thin;
   scrollbar-color: var(--fill-2) transparent;
 }
 
-/* A long checklist scrolls; the controls above it keep their size. */
+/* A long list scrolls; the controls above it keep their size. */
 .body > * {
   flex-shrink: 0;
+}
+
+.body:empty {
+  display: none;
 }
 
 .icon-button {
@@ -180,110 +190,159 @@
 .dot.green {
   background: var(--green);
 }
-.dot.blue {
-  background: var(--blue);
+
+.menu-wrap {
+  position: relative;
 }
 
-.match {
+.menu {
+  position: absolute;
+  right: 0;
+  z-index: 1;
+  min-width: 168px;
+  padding: 4px;
   border-radius: 12px;
-  padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
-.match.red {
+.menu.down {
+  top: calc(100% + 6px);
+}
+
+.menu.up {
+  bottom: calc(100% + 6px);
+}
+
+.menu button {
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: 13px/1.2 var(--font);
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.menu button:hover,
+.menu button:focus-visible {
+  background: var(--fill);
+  outline: none;
+}
+
+.reasons {
+  font-size: 12px;
+  margin-top: -4px;
+}
+
+.reasons.red {
+  color: var(--red);
+}
+.reasons.yellow {
+  color: var(--yellow);
+}
+
+.notice {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  border-radius: 10px;
+  padding: 7px 10px;
+}
+
+/* A model's error can run long: three lines, the rest on hover. */
+.notice > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.notice.error {
+  color: var(--red);
   background: var(--red-bg);
 }
-.match.yellow {
+
+.notice.warn {
+  color: var(--yellow);
   background: var(--yellow-bg);
 }
-.match.green {
-  background: var(--green-bg);
-}
 
-.match-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-}
-
-.signal {
-  display: flex;
-  gap: 6px;
-  align-items: baseline;
-  color: var(--fg-2);
-  font-size: 12px;
-}
-
-.signal .dot {
-  transform: translateY(-1px);
-  width: 6px;
-  height: 6px;
-}
-
-.label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--fg-2);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 6px;
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  max-width: 100%;
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 999px;
-  border: 0.5px solid var(--hairline);
-  background: var(--fill);
-  color: var(--fg);
-  font: 500 12px/1 var(--font);
+.notice-action {
+  flex: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font: 600 12px var(--font);
+  text-decoration: underline;
+  text-underline-offset: 2px;
   cursor: pointer;
 }
 
-.chip span {
+.pickers {
+  display: flex;
+  gap: 6px;
+}
+
+.picker {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  border-radius: 9px;
+  border: 0.5px solid transparent;
+  font-size: 12px;
+  color: var(--fg-2);
+}
+
+.picker.account {
+  flex-grow: 1.6;
+}
+
+.picker.choosable {
+  padding: 0 4px 0 8px;
+  border-color: var(--hairline);
+  background: var(--fill);
+  color: var(--fg);
+}
+
+.picker-icon {
+  flex: none;
+  color: var(--fg-3);
+}
+
+.picker select {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: 12px var(--font);
+  cursor: pointer;
+  outline: none;
+}
+
+.fixed {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.chip[aria-pressed='true'] {
-  background: var(--accent);
-  color: var(--on-accent);
-  border-color: transparent;
-}
-
-.chip:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-.chip small {
-  font-size: 10px;
-  opacity: 0.8;
-}
-
-.select {
-  width: 100%;
-  height: 30px;
-  border-radius: 9px;
-  border: 0.5px solid var(--hairline);
-  background: var(--fill);
-  color: var(--fg);
-  font: 13px var(--font);
-  padding: 0 8px;
+.hint {
+  font-size: 12px;
+  color: var(--fg-2);
 }
 
 .primary {
@@ -305,20 +364,20 @@
   cursor: default;
 }
 
-.primary kbd {
-  font: 500 11px var(--font);
-  opacity: 0.6;
-}
-
 .secondary {
-  height: 30px;
+  height: 28px;
   border: 0.5px solid var(--hairline);
-  border-radius: 10px;
+  border-radius: 9px;
   background: var(--fill);
   color: var(--fg);
   font: 500 12px var(--font);
   cursor: pointer;
   padding: 0 10px;
+  flex: none;
+}
+
+.secondary:hover {
+  background: var(--fill-2);
 }
 
 .link {
@@ -330,55 +389,40 @@
   padding: 0;
   text-decoration: underline;
   text-underline-offset: 2px;
+  flex: none;
 }
 
-.note {
+.link:hover {
+  color: var(--fg);
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   font-size: 12px;
   color: var(--fg-2);
 }
 
-.warn {
-  font-size: 12px;
-  color: var(--yellow);
-  background: var(--yellow-bg);
-  border-radius: 10px;
-  padding: 8px 10px;
+.summary > span {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 4px;
 }
 
-.error {
-  font-size: 12px;
-  color: var(--red);
-  background: var(--red-bg);
-  border-radius: 10px;
-  padding: 8px 10px;
-}
-
-.group {
+.items {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-}
-
-.group-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 2px;
-  cursor: pointer;
-  border: 0;
-  background: none;
-  color: var(--fg);
-  padding: 0;
-  text-align: left;
+  margin: -2px -8px 0;
 }
 
 .item {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 2px 8px;
-  padding: 5px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
   border-radius: 8px;
   cursor: pointer;
   border: 0;
@@ -394,47 +438,78 @@
 }
 
 .item-label {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.item-tag {
-  font-size: 10px;
-  color: var(--fg-3);
-}
-
 .item-value {
-  grid-column: 1 / -1;
+  flex: none;
+  max-width: 40%;
   color: var(--fg-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.item.critical .item-label {
+/* One width for every tag, so the labels after them line up. */
+.tag {
+  flex: none;
+  min-width: 34px;
+  text-align: center;
+  font-size: 11px;
   font-weight: 600;
+  line-height: 16px;
+  padding: 0 5px;
+  border-radius: 6px;
 }
 
-.toast {
+.tag.yellow {
+  color: var(--yellow);
+  background: var(--yellow-bg);
+}
+.tag.blue {
+  color: var(--blue);
+  background: var(--blue-bg);
+}
+.tag.red {
+  color: var(--red);
+  background: var(--red-bg);
+}
+
+.done {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 12px;
-  background: var(--green-bg);
+  gap: 10px;
+  padding: 12px 12px 12px 14px;
+}
+
+.done-icon {
+  flex: none;
+  color: var(--fg-2);
+}
+
+.done-icon.ok {
   color: var(--green);
-  font-weight: 600;
-  font-size: 12px;
 }
 
-.foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding-top: 2px;
+.done-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.done-title {
+  font-weight: 600;
+}
+
+.done-posting {
+  font-size: 12px;
+  color: var(--fg-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .spinner {
@@ -444,6 +519,12 @@
   border: 2px solid currentColor;
   border-right-color: transparent;
   animation: spin 0.8s linear infinite;
+}
+
+.spinner.small {
+  width: 10px;
+  height: 10px;
+  border-width: 1.5px;
 }
 
 @keyframes spin {

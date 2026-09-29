@@ -19,13 +19,21 @@ typing, fingerprint spoofing, CAPTCHA solving); automating LinkedIn, whose terms
 
 ## 2. How it's used
 
-1. Open an application page. Once the form is on the page, a card opens in the corner: the match check (green,
-   yellow, red, with reasons), the account to apply from — accounts that already applied to this posting are
-   disabled — and the resume. A posting whose form isn't showing yet opens the card too, for its match check.
+1. Open an application page. Once the form is on the page, a card opens in the corner: the posting with a dot for
+   the match check (green, yellow, red; yellow and red give their two main reasons), then the account to apply from —
+   accounts that already applied to this posting are disabled — and the resume, in one row. With a single account or
+   resume the card names it instead of offering a choice. A posting whose form isn't showing yet opens the card too,
+   for its match check.
 2. Press **Fill** (or the shortcut). Recognized fields fill in about a second and the resume PDF is attached.
-3. Work through the card's checklist: confirm the work-authorization answers, edit the AI drafts, fill what's missing.
+3. Work through what the card lists: confirm the work-authorization answers, edit the AI drafts, fill what's missing.
+   Fields that filled fine are counted, not listed.
 4. Press Submit on the page.
-5. The extension sees the confirmation and logs the application to Outbox, with Undo.
+5. The extension sees the confirmation and logs the application to Outbox. The card shrinks to that one line, with
+   Undo.
+
+The card shows only what applies. At most one notice sits above its controls, with what to do about it: sign in to
+Outbox, fill in the profile, add an API key. What's needed now and then — logging by hand, "This page didn't fill
+right", the settings — is in its ⋯ menu.
 
 Workday runs over several pages: Fill once per page. It draws each page's fields a while after the page loads, so
 the card opens when they appear. On its sign-up page the extension fills the email and Chrome generates and saves
@@ -42,7 +50,7 @@ flowchart LR
     cs["Content script, every frame<br/>detect · read · fill · watch submit"]
     card["Card, top frame<br/>shadow DOM"]
     bg["Service worker<br/>storage · Outbox client · Claude client"]
-    opts["Options page<br/>profile · AI · answers"]
+    opts["Options page<br/>status · AI · answers"]
   end
   outbox[("tracker.haoyang.us/api")]
   claude["Claude API"]
@@ -127,10 +135,10 @@ Each field goes through four layers and stops at the first that places it:
 wordings like "do you not require…"), citizenship and visa status. They never reach the model; an ambiguous wording
 stays blank and turns red; every answer is marked for confirmation.
 
-The checklist sorts fields into **filled**, **confirm**, **AI draft** (blue until edited or confirmed) and
-**missing** (yellow); clicking an entry scrolls to its field. Values are set so React sees them: the native value
-setter plus `input` and `change` events, clicks for radios, checkboxes and options, and a `DataTransfer` for the
-resume's file input.
+After filling, the card lists only the fields that need the owner, each tagged **Check** (work authorization,
+consents), **AI** (a draft to edit) or **Fill** (nothing to put there); the ones that filled are counted. Clicking an
+entry scrolls to its field. Values are set so React sees them: the native value setter plus `input` and `change`
+events, clicks for radios, checkboxes and options, and a `DataTransfer` for the resume's file input.
 
 | System     | Hosts                                                          | Notes                                                      |
 | ---------- | -------------------------------------------------------------- | ---------------------------------------------------------- |
@@ -146,7 +154,7 @@ Francisco; London"), otherwise the country or large city abroad it names ("Belgr
 American). It decides the "authorized to work in the country where the job is located" questions, and marks
 relocation and office questions for a job abroad as the owner's call.
 
-**When a page fills badly**, the card's "This page didn't fill right" saves the form's structure — labels, kinds,
+**When a page fills badly**, "This page didn't fill right" in the card's ⋯ menu saves the form's structure — labels, kinds,
 options, what each layer did — without any values. Those snapshots become test fixtures. Workday's adapter is built
 from its `data-automation-id` conventions, not from a saved form, so its first real pages are the ones to snapshot.
 
@@ -193,7 +201,7 @@ a posting there shows a note. It is a note, not a block.
 
 - On a detected submission the service worker sends a quick add: company, title, link, the existing job when the
   link or company and title match (`findSamePosting`), the account, channel "Company site", and the resume version.
-  The toast offers Undo (`/quick-add/undo`). While offline the log waits in a queue.
+  The card shrinks to "Logged to Outbox" with Undo (`/quick-add/undo`). While offline the log waits in a queue.
 - **Sign-in:** requests carry Outbox's session cookie (the extension has host permission). If Chrome doesn't send it,
   a content script on the Outbox tab reads the session token from `/api/auth/get-session`, and the service worker
   sends it as a bearer token (Better Auth's `bearer` plugin). If both fail, the card asks the owner to open Outbox.

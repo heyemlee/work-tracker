@@ -80,15 +80,16 @@ The extension is loaded unpacked in Chrome; it isn't published to the Chrome Web
    becomes a resume version. The extension downloads the one picked on its card.
 4. Press **Fill profile** on a resume (this needs step 6's API key), or import
    `~/Desktop/job-search/autofill-profile.json` once from the profile panel (the card icon), then fill whatever
-   **Still empty** lists and save. The extension fetches the profile before each fill; its options page
-   (**Details → Extension options**) shows the copy it holds and a **Sync now** button.
-5. Under **Outbox**, keep the address (`https://tracker.haoyang.us`, or `http://localhost:5180` while
-   developing), sign in to Outbox in the same Chrome profile, and press **Check**. Logging uses Outbox's session
-   cookie. If Chrome withholds it, the extension borrows the session of an open Outbox tab as a bearer token,
-   which needs a Worker deployed with the `bearer` plugin (step 3 above, from this version on).
+   **Still empty** lists and save. The extension fetches the profile before each fill, and whenever its options
+   page (**Details → Extension options**) opens; **Status** there shows whose profile it holds.
+5. Sign in to Outbox in the same Chrome profile; **Status** on the options page says whether the extension reaches
+   it. The address (`https://tracker.haoyang.us`, or `http://localhost:5180` while developing) is under **More**.
+   Logging uses Outbox's session cookie. If Chrome withholds it, the extension borrows the session of an open Outbox
+   tab as a bearer token, which needs a Worker deployed with the `bearer` plugin (step 3 above, from this version
+   on).
 6. For AI, under **AI** on the options page: the provider is **OpenAI-compatible** with the address
-   `https://api.kabi.pro` and model `gpt-5.6-terra` already filled in. Paste the key, press **Save**, then **Check**.
-   **Load models** lists what the endpoint offers if the model name differs. To use Claude instead, pick
+   `https://api.kabi.pro` and model `gpt-5.6-terra` already filled in. Paste the key and press **Save**, which also
+   tries it. **Load list** shows what the endpoint offers if the model name differs. To use Claude instead, pick
    **Anthropic**, and paste a key from the [Anthropic Console](https://console.anthropic.com) with a monthly spend
    limit. Without a key the rules still fill every field they can; the rest are listed for you.
 

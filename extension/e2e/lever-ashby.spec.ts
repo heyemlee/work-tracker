@@ -17,7 +17,7 @@ test('fills a Lever application, and logs it once the thank-you page loads', asy
 
   const card = page.locator('outbox-autofill');
   await card.getByRole('button', { name: /^Fill/ }).click();
-  await expect(card.getByText(/^Filled · \d+/)).toBeVisible({ timeout: 45_000 });
+  await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });
   await expect(page.locator('input[name="name"]')).toHaveValue('Alex Chen');
   await expect(page.locator('input[name="email"]')).toHaveValue('alex@example.com');
   await expect(page.locator('input[name="org"]')).toHaveValue('Acme AI');
@@ -32,7 +32,7 @@ test('fills a Lever application, and logs it once the thank-you page loads', asy
   );
   await expect(authorized).toBeChecked();
   await expect(sponsorship).toBeChecked();
-  await expect(card.getByText(/^Check these · \d+/)).toBeVisible();
+  await expect(card.getByText('Check', { exact: true }).first()).toBeVisible();
   expect(
     await page.locator('#resume-upload-input').evaluate((input: HTMLInputElement) => input.files?.length),
   ).toBe(1);
@@ -76,7 +76,7 @@ test('keeps what Lever read from the resume and what the owner typed, and fills 
 
   const card = page.locator('outbox-autofill');
   await card.getByRole('button', { name: /^Fill/ }).click();
-  await expect(card.getByText(/^Filled · \d+/)).toBeVisible({ timeout: 45_000 });
+  await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });
   await expect(page.locator('input[name="name"]')).toHaveValue('Alexander Chen');
   await expect(page.locator('input[name="org"]')).toHaveValue('Acme AI Labs');
   await expect(page.locator('input[name="phone"]')).toHaveValue('+1 408 555 0100');
@@ -98,7 +98,7 @@ test('fills an Ashby application: system fields, yes/no buttons, radio groups', 
   const card = page.locator('outbox-autofill');
   await expect(card.getByText('Software Engineer, Developer Platform')).toBeVisible();
   await card.getByRole('button', { name: /^Fill/ }).click();
-  await expect(card.getByText(/^Filled · \d+/)).toBeVisible({ timeout: 45_000 });
+  await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });
   await expect(page.locator('#_systemfield_name')).toHaveValue('Alex Chen');
   await expect(page.locator('#_systemfield_email')).toHaveValue('alex@example.com');
   await expect(page.getByLabel('LinkedIn Profile')).toHaveValue('https://www.linkedin.com/in/alex-chen');
