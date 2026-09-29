@@ -49,7 +49,7 @@ works. Still the single column and the floating glass toolbar; still the owner's
 
 - [x] Unit tests for the new domain code, the bridge and saving from the card; the extension's e2e specs pass.
 - [x] design.md, autofill.md and the README describe the new pages and the guide.
-- [ ] Deploy after the owner's go-ahead (shown locally first).
+- [x] Shown locally, then deployed on 2026-09-28 (version 23065acd). No migration: nothing stored changed.
 
 ## Autofill extension (decided and built 2026-09-27)
 
@@ -174,7 +174,7 @@ One release with everything below, no MVP. Design: [autofill.md](autofill.md).
       then deploy the Worker with job links, the profile API and the `bearer` plugin.
 - [x] Migration 0004 (resume PDFs) applied remotely and the Worker deployed, 2026-09-28.
 - [ ] Rebuild the extension (`npm run ext:build`), reload it on `chrome://extensions`, and upload each resume PDF
-      in Outbox's resumes panel: this version clears PDFs added on the options page. Until then the installed
+      in Outbox's Resumes page: this version clears PDFs added on the options page. Until then the installed
       extension keeps attaching its own copies.
 - [ ] Optional: Simplify's free version until the extension is installed; afterwards turn it off on Greenhouse,
       Lever and Ashby.
