@@ -33,6 +33,12 @@ export function formSnapshot(
   for (const textarea of copy.querySelectorAll('textarea')) textarea.textContent = '';
   for (const option of copy.querySelectorAll('option')) option.removeAttribute('selected');
   for (const shown of copy.querySelectorAll(SHOWS_VALUE)) shown.textContent = '';
+  // Workday's dropdown buttons carry the chosen option as their text, value and label.
+  for (const button of copy.querySelectorAll('button[aria-haspopup="listbox"]')) {
+    button.textContent = '';
+    button.setAttribute('value', '');
+    button.removeAttribute('aria-label');
+  }
   for (const element of copy.querySelectorAll('[aria-pressed="true"], [aria-checked="true"]')) {
     element.setAttribute(element.hasAttribute('aria-pressed') ? 'aria-pressed' : 'aria-checked', 'false');
   }

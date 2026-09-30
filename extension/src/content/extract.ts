@@ -45,10 +45,21 @@ function choiceLabel(input: HTMLInputElement): string {
   return text;
 }
 
+/** The element holds no form control but these: a question of its own, not a section of several. */
+function holdsOnly(element: Element, inputs: HTMLInputElement[]): boolean {
+  return [...element.querySelectorAll('input:not([type="hidden"]), select, textarea')].every((control) =>
+    inputs.includes(control as HTMLInputElement),
+  );
+}
+
 function groupLabel(inputs: HTMLInputElement[]): string {
   const first = inputs[0];
   if (!first) return '';
-  const labelledBy = first.closest('[role="radiogroup"], [role="group"]')?.getAttribute('aria-labelledby');
+  // A lone box inside a section ("Legal Name" around "I have a preferred name") is named by its own label.
+  const lone = inputs.length === 1 && first.type === 'checkbox';
+  const group = first.closest('[role="radiogroup"], [role="group"]');
+  const labelledBy =
+    group && !(lone && !holdsOnly(group, inputs)) ? group.getAttribute('aria-labelledby') : null;
   if (labelledBy) {
     const text = labelledBy
       .split(/\s+/)
@@ -57,7 +68,9 @@ function groupLabel(inputs: HTMLInputElement[]): string {
       .trim();
     if (text) return text;
   }
-  const legend = first.closest('fieldset')?.querySelector('legend');
+  const fieldset = first.closest('fieldset');
+  const legend =
+    fieldset && !(lone && !holdsOnly(fieldset, inputs)) ? fieldset.querySelector('legend') : null;
   if (legend) return textOf(legend);
   const container = questionContainer(first);
   // A container holding only this input's own label is a choice, not the question: look one level up.
@@ -131,21 +144,41 @@ export function isFilled(handle: Handle): boolean {
 }
 
 /**
+ * Names fields by their control, so a field keeps its id when the page is read again and a question that appeared
+ * in between gets a new one.
+ */
+export function fieldIds(): (control: Element) => string {
+  const known = new WeakMap<Element, string>();
+  let next = 0;
+  return (control) => {
+    let id = known.get(control);
+    if (id === undefined) {
+      id = `f${++next}`;
+      known.set(control, id);
+    }
+    return id;
+  };
+}
+
+/**
  * Finds the form's fields: labels, kinds, choices, and whether they're required. Adapters add what the generic
  * pass can't see (button groups, custom dropdowns) and name fields the page identifies outright.
  */
-export function extractFields(adapter: Adapter, doc: Document, frameId: number): Extraction {
+export function extractFields(
+  adapter: Adapter,
+  doc: Document,
+  frameId: number,
+  idOf: (control: Element) => string = fieldIds(),
+): Extraction {
   const fields: ScannedField[] = [];
   const handles = new Map<string, Handle>();
   const anchors = new Map<string, Element>();
   const form = adapter.form(doc);
   if (!form) return { fields, handles, anchors };
 
-  let next = 0;
   const covered = new Set<Element>();
   const add = (field: Omit<ScannedField, 'id'>, handle: Handle, anchor: Element) => {
-    const localId = `f${++next}`;
-    const id = `${frameId}:${localId}`;
+    const id = `${frameId}:${idOf(controlsOf(handle)[0] ?? anchor)}`;
     fields.push({ id, ...field });
     handles.set(id, handle);
     anchors.set(id, anchor);

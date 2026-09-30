@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import type { Want } from '../../model';
 import { planForm } from '../../plan';
+import { pickOption } from '../../rules/options';
 import { makeProfile } from '../../test/profiles';
+import { readAnswer } from '../apply';
 import { extractFields } from '../extract';
+import { formSnapshot } from '../snapshot';
 import { workday } from './workday';
 
 // Workday's forms sit behind a sign-in, so this page is built from its `data-automation-id` conventions rather than
@@ -117,5 +121,81 @@ describe('workday, after "Autofill with Resume"', () => {
     document.querySelector<HTMLInputElement>('#title-1')!.value = '';
     expect(await workday.prepare!(form, { experience: 3, education: 0 })).toBe(true);
     expect(added).toBe(1);
+  });
+});
+
+// From the owner's snapshots (values stripped): a questionnaire in Chinese, and "My Information" with its
+// preferred-name box inside the "Legal Name" section.
+const ZH_QUESTIONS = `
+<div data-automation-id="applyFlowPage">
+  <div data-automation-id="formField-q1"><label>Are you a citizen of the United States?<abbr>*</abbr></label>
+    <button aria-haspopup="listbox" type="button" value="" aria-label=" 选择一个 必需" id="primaryQuestionnaire--q1">选择一个</button></div>
+  <div data-automation-id="formField-q2"><label>您是否以任何身份为雷神技术公司或其任何业务工作？<abbr>*</abbr></label>
+    <button aria-haspopup="listbox" type="button" value="1d1eac2e" aria-label=" 否 必需" id="primaryQuestionnaire--q2">否</button></div>
+</div>`;
+
+const LEGAL_NAME = `
+<div data-automation-id="applyFlowPage">
+  <div role="group" aria-labelledby="Legal-Name-section"><h4 id="Legal-Name-section">Legal Name</h4>
+    <div data-automation-id="formField-legalName--firstName"><label for="first"><span>Given Name(s)<abbr>*</abbr></span></label><input type="text" id="first" name="legalName--firstName"></div>
+    <div data-automation-id="formField-preferredCheck"><label for="name--preferredCheck">I have a preferred name</label><input id="name--preferredCheck" type="checkbox" name="preferredCheck"></div>
+  </div>
+</div>`;
+
+describe('workday pages from snapshots', () => {
+  const ctx = {
+    profile: makeProfile(),
+    email: 'alex@example.com',
+    resumeId: null,
+    posting: null,
+    today: '2026-09-30',
+    appliedBefore: false,
+  };
+
+  it('reads a dropdown still prompting, in any language, as empty', () => {
+    document.body.innerHTML = ZH_QUESTIONS;
+    const { fields, handles } = extractFields(workday, document, 0);
+    const [citizen, worked] = fields;
+    expect(citizen).toMatchObject({ kind: 'combobox', filled: false });
+    expect(readAnswer(handles.get(citizen!.id)!)).toBeNull();
+    expect(worked).toMatchObject({ filled: true });
+    expect(readAnswer(handles.get(worked!.id)!)).toMatchObject({ type: 'choice', option: '否' });
+  });
+
+  it('answers yes or no where the options are 是 and 否', () => {
+    document.body.innerHTML = ZH_QUESTIONS;
+    const { fields } = extractFields(workday, document, 0);
+    const [entry] = planForm(fields.slice(0, 1), ctx, []);
+    expect(entry).toMatchObject({ key: 'auth.citizen', status: 'confirm' });
+    expect(pickOption(['是', '否'], (entry!.answer as { want: Want }).want)).toBe('否');
+  });
+
+  it('leaves "I have a preferred name" unticked without a preferred name', () => {
+    document.body.innerHTML = LEGAL_NAME;
+    const { fields } = extractFields(workday, document, 0);
+    const box = fields.find((field) => field.kind === 'checkbox');
+    expect(box?.label).toBe('I have a preferred name');
+    const plan = planForm(
+      fields,
+      { ...ctx, profile: makeProfile({ name: { first: 'Alex', last: 'Chen' } }) },
+      [],
+    );
+    expect(plan.find((entry) => entry.fieldId === box?.id)?.answer).toEqual({
+      type: 'check',
+      checked: false,
+    });
+    expect(planForm(fields, ctx, []).find((entry) => entry.fieldId === box?.id)?.answer).toEqual({
+      type: 'check',
+      checked: true,
+    });
+  });
+
+  it('keeps chosen dropdown values out of a snapshot', () => {
+    document.body.innerHTML = ZH_QUESTIONS;
+    const extraction = extractFields(workday, document, 0);
+    const shot = formSnapshot(workday, document, extraction, []);
+    expect(shot?.html).not.toContain('>否<');
+    expect(shot?.html).not.toContain('1d1eac2e');
+    expect(shot?.html).not.toContain('aria-label');
   });
 });

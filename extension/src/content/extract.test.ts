@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { attachedFile } from './extract';
+import { greenhouse } from './adapters/greenhouse';
+import { attachedFile, extractFields, fieldIds } from './extract';
 
 const upload = (markup: string) => {
   document.body.innerHTML = markup;
@@ -23,5 +24,27 @@ describe('attachedFile', () => {
       '<div class="field"><label>Resume</label><input type="file"><p>Accepted file types: pdf, doc, docx</p><p>Supported: .pdf, .docx</p><span>Upload .pdf</span><span class="filename"></span></div>',
     );
     expect(attachedFile(input)).toBeNull();
+  });
+});
+
+describe('extractFields', () => {
+  it("keeps a field's id when the page is read again, and gives a question that appeared a new one", () => {
+    document.body.innerHTML =
+      '<form id="application-form"><label for="a">First Name</label><input id="a"><label for="b">Hispanic or Latino?</label><select id="b"><option>Yes</option><option>No</option></select></form>';
+    const ids = fieldIds();
+    const before = extractFields(greenhouse, document, 0, ids).fields.map((field) => field.id);
+    // Answering "No" brings up the race question above the others.
+    document
+      .querySelector('form')!
+      .insertAdjacentHTML(
+        'afterbegin',
+        '<label for="c">Race</label><select id="c"><option>Asian</option></select>',
+      );
+    const after = extractFields(greenhouse, document, 0, ids).fields;
+    expect(after.filter((field) => before.includes(field.id)).map((field) => field.label)).toEqual([
+      'First Name',
+      'Hispanic or Latino?',
+    ]);
+    expect(after.find((field) => field.label === 'Race')?.id).not.toBeOneOf(before);
   });
 });

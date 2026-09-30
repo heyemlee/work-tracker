@@ -15,7 +15,9 @@ export function pickOption(options: readonly string[], want: Want): string | nul
   if (options.length === 0) return null;
   switch (want.kind) {
     case 'yes':
-      return exactly(options, 'yes') ?? options.find((option) => leads(option, 'yes')) ?? null;
+      return (
+        exactly(options, 'yes') ?? options.find((option) => leads(option, 'yes')) ?? affirmativeOfTwo(options)
+      );
     case 'no':
       return (
         exactly(options, 'no') ??
@@ -42,6 +44,19 @@ export function pickOption(options: readonly string[], want: Want): string | nul
     case 'auth':
       return pickAuthOption(options, want.question);
   }
+}
+
+/**
+ * Of two answers where only one says no ("I am willing to relocate" / "I am not willing to relocate"), the other.
+ * A "prefer not to answer" choice beside them doesn't count.
+ */
+function affirmativeOfTwo(options: readonly string[]): string | null {
+  const answers = options.filter((option) => !DECLINE.test(norm(option)));
+  if (answers.length !== 2) return null;
+  const saysNo = (option: string) => NEGATIVE.test(norm(option)) || /\b(not|never)\b/.test(norm(option));
+  const [first, second] = answers as [string, string];
+  if (saysNo(first) === saysNo(second)) return null;
+  return saysNo(first) ? second : first;
 }
 
 function exactly(options: readonly string[], word: string): string | null {

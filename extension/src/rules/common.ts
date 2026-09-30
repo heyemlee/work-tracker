@@ -1,6 +1,7 @@
 import { addDays } from '@domain/dates';
 import type { FieldKind, ScannedField } from '../model';
 import {
+  authFacts,
   cityState,
   fullName,
   interviewedAt,
@@ -117,6 +118,47 @@ const month = (value: string | null) => {
   return `${names[Number(number) - 1] ?? ''} ${year}`.trim();
 }; // prettier-ignore
 
+const SEASON_MONTHS: Record<string, number[]> = {
+  spring: [1, 2, 3, 4, 5, 6],
+  summer: [6, 7, 8],
+  fall: [8, 9, 10, 11, 12],
+  autumn: [8, 9, 10, 11, 12],
+  winter: [12, 1, 2],
+};
+
+/** "Fall" → its months, "June" → [6], none → the whole year. */
+const termMonths = (word: string | undefined): number[] =>
+  !word ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] : (SEASON_MONTHS[word] ?? [MONTHS.indexOf(word) + 1]);
+
+/**
+ * A yes-or-no question naming when a graduation must fall ("I confirm that my graduation date will be either Fall
+ * 2026 or Spring 2027", "between May 2026 and June 2027"), answered from the graduation month ("2025-06"). Null
+ * when the field isn't one.
+ */
+function graduatesInNamedTerms(field: ScannedField, end: string): boolean | null {
+  const label = norm(field.label);
+  const terms = [
+    ...label.matchAll(
+      new RegExp(`\\b(?:(${[...Object.keys(SEASON_MONTHS), ...MONTHS].join('|')}) )?(20\\d\\d)\\b`, 'g'),
+    ),
+  ].map((match) => ({ months: termMonths(match[1]), year: Number(match[2]) }));
+  if (terms.length === 0) return null;
+  const hasYesNo = field.options.some((option) => /^(yes|no)\b/.test(norm(option)));
+  const asksToConfirm =
+    field.kind === 'checkbox' ||
+    hasYesNo ||
+    (field.options.length === 0 &&
+      isChoiceKind(field.kind) &&
+      /^(i confirm|i certify|are you|will you|do you|is your|can you)\b/.test(label));
+  if (!asksToConfirm) return null;
+  const at = Number(end.slice(0, 4)) * 12 + Number(end.slice(5, 7));
+  const [from, to] = terms;
+  if (/\bbetween\b/.test(label) && from && to && terms.length === 2) {
+    return at >= from.year * 12 + Math.min(...from.months) && at <= to.year * 12 + Math.max(...to.months);
+  }
+  return terms.some((term) => term.months.some((month) => term.year * 12 + month === at));
+}
+
 /** Skills and domains: a years-of-experience question naming one needs judgment, not arithmetic. */
 const SKILL_WORDS =
   /python|java\b|javascript|typescript|react|\bgo\b|golang|c\+\+|\bc\b|rust|ruby|kotlin|swift|kubernetes|terraform|aws|gcp|azure|sql|machine learning|\bml\b|embedded|firmware|hardware|security|leadership|management|managing|infrastructure|devops|frontend|backend|mobile|ios|android|data|design|sales|with |in (a|an|the) /;
@@ -222,6 +264,8 @@ export const RULES: readonly Rule[] = [
     test: /preferred (first )?name|preferred full name|what (would you like|should we|do you want us to) (us to )?call you|nick ?name|name you (go by|prefer)|preferred first last name|goes by/,
     answer: (field, ctx) => {
       const { profile } = ctx;
+      // Workday's "I have a preferred name" box opens the preferred name fields.
+      if (field.kind === 'checkbox') return yesNo('name.preferred', field, Boolean(profile.name.preferred));
       if (!profile.name.preferred && !field.required) return empty('name.preferred', field);
       return text(
         'name.preferred',
@@ -464,7 +508,8 @@ export const RULES: readonly Rule[] = [
   // Moving and the office.
   {
     key: 'relocationAssistance',
-    test: /relocation (assistance|package|support|benefits?|bonus)|(require|need) relocation/,
+    // "Do you require relocation?", not "If this role requires relocation:", which asks whether they'd move.
+    test: /relocation (assistance|package|support|benefits?|bonus)|\byou (require|need) relocation/,
     answer: (field, ctx) => {
       const local = isLocal(ctx.posting?.location ?? null, ctx.profile.address.city);
       return local === true
@@ -555,6 +600,18 @@ export const RULES: readonly Rule[] = [
     key: 'backgroundCheck',
     test: /background check|drug (test|screen)/,
     answer: (field) => yesNo('backgroundCheck', field, true),
+  },
+  {
+    key: 'military',
+    test: /\bare you (currently )?(serving )?(in|on|a member of) (the )?(u s |united states )?(reserves?|national guard|armed forces|military|active duty)\b/,
+    not: /spouse|partner|dependent|family|child|parent|veteran/,
+    answer: (field, ctx) => {
+      // Serving in the US forces takes citizenship or a green card: someone on a visa isn't.
+      const facts = authFacts(ctx.profile, 'United States');
+      const onVisa =
+        !facts.citizenOrResident && (facts.opt || facts.sponsorshipNow || facts.sponsorshipFuture);
+      return onVisa ? yesNo('military', field, false) : empty('military', field);
+    },
   },
 
   // Messages.
@@ -726,10 +783,12 @@ export const RULES: readonly Rule[] = [
   },
   {
     key: 'education.graduation',
-    test: /graduat(ion|e|ed|ing) (date|year|month)|did you graduate|do you graduate|year of graduation|expected graduation|graduation|anticipate graduating|complete your degree|year (did|will) you (complete|finish)|degree (completion|conferral)/,
+    test: /graduat(ion|e|ed|ing) (date|year|month)|(did|do|will) you graduate|year of graduation|expected graduation|graduation|anticipate graduating|complete your degree|year (did|will) you (complete|finish)|degree (completion|conferral)/,
     answer: (field, ctx) => {
       const end = latestEducation(ctx.profile)?.end ?? null;
       if (!end) return empty('education.graduation', field);
+      const inTerms = graduatesInNamedTerms(field, end);
+      if (inTerms !== null) return yesNo('education.graduation', field, inTerms);
       if (isChoiceKind(field.kind)) {
         // Years ("2025"), month lists ("June"), year ranges ("2023-2026"); a graduate picks "Other" among future terms.
         const texts = [end.slice(0, 4), month(end), month(end).split(' ')[0] ?? ''];

@@ -106,3 +106,87 @@ test('fills an Ashby application: system fields, yes/no buttons, radio groups', 
   await expect(page.getByLabel('LinkedIn', { exact: true })).toBeChecked();
   await page.locator('outbox-autofill .card').screenshot({ path: 'e2e/output/ashby-card.png' });
 });
+
+// Ashby saves each answer to its server as it changes, and there saves that overlap overwrite each other: a form
+// filled all at once showed every answer, then reported some missing on submit. This stand-in saves the way Ashby
+// does (a text half a second after typing stops, a choice at once) to a server that loses overlapping saves.
+const SAVING_FORM = `<!doctype html><html><head><title>Software Engineer @ Acme</title></head><body>
+<h1>Software Engineer</h1>
+<div id="form"><div class="ashby-application-form-container">
+  <div class="ashby-application-form-field-entry" data-field-path="_systemfield_name">
+    <label class="ashby-application-form-question-title _required_1" for="_systemfield_name">Name</label>
+    <input id="_systemfield_name" name="_systemfield_name" type="text" required></div>
+  <div class="ashby-application-form-field-entry" data-field-path="_systemfield_email">
+    <label class="ashby-application-form-question-title _required_1" for="_systemfield_email">Email</label>
+    <input id="_systemfield_email" name="_systemfield_email" type="email" required></div>
+  <div class="ashby-application-form-field-entry" data-field-path="question_1">
+    <label class="ashby-application-form-question-title _required_1" for="question_1">LinkedIn Profile</label>
+    <input id="question_1" name="question_1" type="text" required></div>
+  <div class="ashby-application-form-field-entry" data-field-path="question_2">
+    <label class="ashby-application-form-question-title _required_1">Are you legally authorized to work in the US?</label>
+    <div class="ashby-application-form-input-yesno"><button type="button" aria-pressed="false" data-option="yes">Yes</button><button type="button" aria-pressed="false" data-option="no">No</button></div></div>
+  <div class="ashby-application-form-field-entry" data-field-path="question_3">
+    <label class="ashby-application-form-question-title _required_1">Do you now or will you in the future require sponsorship for work authorization in the US?</label>
+    <div class="ashby-application-form-input-yesno"><button type="button" aria-pressed="false" data-option="yes">Yes</button><button type="button" aria-pressed="false" data-option="no">No</button></div></div>
+  <div class="ashby-application-form-field-entry" data-field-path="question_4">
+    <label class="ashby-application-form-question-title _required_1">Are you able to work in the San Francisco office in SOMA? We default to being in-office 3 days a week.</label>
+    <div class="ashby-application-form-input-yesno"><button type="button" aria-pressed="false" data-option="yes">Yes</button><button type="button" aria-pressed="false" data-option="no">No</button></div></div>
+  <button class="ashby-application-form-submit-button" type="button">Submit Application</button>
+</div></div>
+<script>
+  const api = (op, body) => fetch('/api/non-user-graphql?op=' + op, { method: 'POST', body: JSON.stringify(body) });
+  api('ApiJobPosting', {});
+  const save = (path, value) => api('ApiSetFormValue', { path, value });
+  for (const input of document.querySelectorAll('input')) {
+    let timer;
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => save(input.name, input.value), 500);
+    });
+  }
+  for (const group of document.querySelectorAll('.ashby-application-form-input-yesno')) {
+    const path = group.closest('[data-field-path]').dataset.fieldPath;
+    for (const button of group.querySelectorAll('button')) {
+      button.addEventListener('click', () => {
+        for (const other of group.querySelectorAll('button')) other.setAttribute('aria-pressed', String(other === button));
+        save(path, button.dataset.option === 'yes');
+      });
+    }
+  }
+</script></body></html>`;
+
+test('fills an Ashby form one saved answer at a time, so none is lost', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  await serve(context, 'jobs.ashbyhq.com', SAVING_FORM, THANKS);
+  // Each save reads what the server holds, and writes it back with its answer a moment later.
+  let saved: Record<string, unknown> = {};
+  await context.route('https://jobs.ashbyhq.com/api/non-user-graphql**', async (route) => {
+    const body = JSON.parse(route.request().postData() ?? '{}') as { path?: string; value?: unknown };
+    if (body.path) {
+      const read = { ...saved };
+      await new Promise((done) => setTimeout(done, 250));
+      saved = { ...read, [body.path]: body.value };
+    }
+    await route.fulfill({ contentType: 'application/json', body: '{"data":{}}' });
+  });
+  const page = await context.newPage();
+  await page.goto('https://jobs.ashbyhq.com/acme/3f1c0d7e-8a53-4c1e-9d0b-2b7f6c1e0a11/application');
+
+  const card = page.locator('outbox-autofill');
+  await card.getByRole('button', { name: /^Fill/ }).click();
+  await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });
+  await expect
+    .poll(() => saved, { timeout: 5_000 })
+    .toEqual({
+      _systemfield_name: 'Alex Chen',
+      _systemfield_email: 'alex@example.com',
+      question_1: 'https://www.linkedin.com/in/alex-chen',
+      question_2: true,
+      question_3: true,
+      question_4: true,
+    });
+});

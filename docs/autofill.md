@@ -141,6 +141,12 @@ consents), **AI** (a draft to edit) or **Fill** (nothing to put there); the ones
 entry scrolls to its field. Values are set so React sees them: the native value setter plus `input` and `change`
 events, clicks for radios, checkboxes and options, and a `DataTransfer` for the resume's file input.
 
+An answer can bring up another question (Greenhouse asks for race once "Hispanic or Latino?" is answered), so after
+filling the page is read again and what appeared is filled too, twice at most; a field keeps its id across reads.
+Ashby saves each answer to its server as it changes, and saves that overlap there overwrite each other — a form
+filled all at once showed every answer and still reported some missing on submit — so on Ashby fields are filled one
+at a time, each save finished (seen in the page's network timeline) before the next.
+
 | System     | Hosts                                                          | Notes                                                      |
 | ---------- | -------------------------------------------------------------- | ---------------------------------------------------------- |
 | Greenhouse | `job-boards.greenhouse.io`, `boards.greenhouse.io`, EU, embeds | react-select dropdowns; embeds read the job from page data |

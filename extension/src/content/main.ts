@@ -4,7 +4,7 @@ import { adapterFor } from './adapters';
 import type { Handle } from './adapters/types';
 import { applyAnswer, readAnswer, type Applied } from './apply';
 import { sleep } from './dom';
-import { attachedFile, controlsOf, extractFields, isFilled, type Extraction } from './extract';
+import { attachedFile, controlsOf, extractFields, fieldIds, isFilled, type Extraction } from './extract';
 import { formSnapshot } from './snapshot';
 import { watchSubmission } from './submit';
 import { fileFromBase64, readComboboxOptions } from './widgets';
@@ -36,6 +36,8 @@ export function startContent(): void {
   const adapter = adapterFor(location.href);
   const top = window === window.top;
   let extraction: Extraction | null = null;
+  // A field keeps its id across reads of the page: fields that appear after filling are told apart as new.
+  const ids = fieldIds();
   // Controls this script filled: filling again may redo them. Any other value in the form is the page's, and stays.
   const wrote = new WeakSet<Element>();
   const ours = (handle: Handle) => controlsOf(handle).some((element) => wrote.has(element));
@@ -46,7 +48,7 @@ export function startContent(): void {
   ): Promise<FrameScan> {
     const form = adapter.form(document);
     if (form && prepare && adapter.prepare && (await adapter.prepare(form, prepare))) await sleep(300);
-    extraction = extractFields(adapter, document, frameId);
+    extraction = extractFields(adapter, document, frameId, ids);
     for (const field of extraction.fields) {
       const handle = extraction.handles.get(field.id);
       if (field.filled && handle && ours(handle)) field.filled = false;
@@ -83,11 +85,14 @@ export function startContent(): void {
         results[entry.fieldId] = { ok: true, value: shownValue(handle) };
         continue;
       }
+      const before = shownValue(handle);
       results[entry.fieldId] = await applyAnswer(handle, entry.answer, loadResume);
       if (!results[entry.fieldId]?.ok) continue;
       for (const element of controlsOf(handle)) wrote.add(element);
       if (entry.answer.type === 'file')
         await sleep(adapter.ats === 'lever' || adapter.ats === 'ashby' ? 2500 : 300);
+      // Filling a field again with what it holds changes nothing for the page to take in.
+      if (adapter.settle && (!before || shownValue(handle) !== before)) await adapter.settle();
     }
     return results;
   }

@@ -2,6 +2,7 @@ import type { Answer, Want } from '../model';
 import { pickOption } from '../rules/options';
 import { findOption, norm } from '../text';
 import type { Handle } from './adapters/types';
+import { holdsChoice } from './adapters/workday';
 import { sleep, textOf } from './dom';
 import {
   clickLikeAPerson,
@@ -142,7 +143,10 @@ export async function applyAnswer(
               ? answer.want.kind !== 'no' && answer.want.kind !== 'decline'
               : answer.type === 'choices'
                 ? answer.texts.length > 0
-                : true;
+                : // A box is ticked by a yes, never by some other text (a name meant for a name field).
+                  answer.type === 'text'
+                  ? /^(yes|true|checked)$/i.test(answer.text.trim())
+                  : true;
         setChecked(handle.element, checked);
         return { ok: true, value: checked ? 'checked' : 'unchecked' };
       }
@@ -267,6 +271,8 @@ export function readAnswer(handle: Handle): Answer | null {
       return texts.length ? { type: 'choices', texts } : null;
     }
     case 'combobox': {
+      // Workday's dropdown button: its text is the prompt until something is chosen.
+      if (handle.element.tagName === 'BUTTON' && !holdsChoice(handle.element)) return null;
       const container = handle.element.closest(
         '[class*="select__control"], [class*="container"], [data-automation-id^="formField-"]',
       );

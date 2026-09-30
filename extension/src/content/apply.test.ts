@@ -91,6 +91,15 @@ describe('applyAnswer', () => {
     expect(inputs.map((input) => input.checked)).toEqual([false, true, true]);
   });
 
+  it('ticks a lone box for a yes, never for other text', async () => {
+    html('<input type="checkbox" id="box">');
+    const element = $<HTMLInputElement>('#box');
+    await applyAnswer({ type: 'checkbox', element }, { type: 'text', text: 'Alex Chen' }, noFile);
+    expect(element.checked).toBe(false);
+    await applyAnswer({ type: 'checkbox', element }, { type: 'text', text: 'Yes' }, noFile);
+    expect(element.checked).toBe(true);
+  });
+
   it('writes a date into separate month and year boxes', async () => {
     html('<input id="m"><input id="y">');
     const month = $<HTMLInputElement>('#m');

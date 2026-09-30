@@ -20,6 +20,16 @@ const HINTS: Record<string, Hint> = {
   disability_status: 'eeo.disability',
 };
 
+/** The education section's dates, numbered per school: "start-month--0", "end-year--1". */
+const EDUCATION = /^(start-month|start-year|end-month|end-year)--(\d+)$/;
+
+const EDUCATION_HINTS: Record<string, Hint> = {
+  'start-month': 'education.start',
+  'start-year': 'education.start',
+  'end-month': 'education.end',
+  'end-year': 'education.end',
+};
+
 /** "Job Application for Software Engineer at Stripe" → ["Software Engineer", "Stripe"]. */
 function fromTitle(doc: Document): { title: string | null; company: string | null } {
   const match = /^Job Application for (.+) at (.+)$/.exec(doc.title.trim());
@@ -94,7 +104,13 @@ export const greenhouse: Adapter = {
     };
   },
 
-  hint: (control) => HINTS[control.id] ?? null,
+  hint: (control) => HINTS[control.id] ?? EDUCATION_HINTS[EDUCATION.exec(control.id)?.[1] ?? ''] ?? null,
+
+  // A school's dates are that school's, not "when can you start".
+  entry(control) {
+    const match = EDUCATION.exec(control.id);
+    return match ? { kind: 'education', index: Number(match[2]) } : null;
+  },
 
   kind(control): FieldKind | null {
     // The city field searches as you type; the rest of react-select's comboboxes are plain choices.

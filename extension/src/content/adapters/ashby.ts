@@ -1,6 +1,6 @@
 import { cleanLink } from '@domain/postings';
 import type { FieldKind, Hint, Posting } from '../../model';
-import { htmlText, jsonAfter, textOf } from '../dom';
+import { htmlText, jsonAfter, textOf, waitFor } from '../dom';
 import type { Adapter, CustomField } from './types';
 
 const PATH_HINTS: Record<string, Hint> = {
@@ -26,6 +26,22 @@ interface AppData {
   };
   organization?: { name?: string };
 }
+
+/** Saves of answers the page has finished, from its network timeline. */
+let saves = 0;
+let watching = false;
+
+function watchSaves(): void {
+  if (watching || typeof PerformanceObserver === 'undefined') return;
+  watching = true;
+  new PerformanceObserver((list) => {
+    for (const entry of list.getEntries()) if (/[?&]op=ApiSetFormValue/.test(entry.name)) saves++;
+  }).observe({ type: 'resource' });
+}
+
+/** The page talks to Ashby's API, as the live form does and a saved copy of it doesn't. */
+const live = () =>
+  performance.getEntriesByType('resource').some((entry) => entry.name.includes('/api/non-user-graphql'));
 
 /** Ashby renders in the browser from `window.__appData`, which the page ships as a script the content script can read. */
 function appData(doc: Document): AppData | null {
@@ -95,6 +111,26 @@ export const ashby: Adapter = {
   },
 
   submitButton: (doc) => doc.querySelector<HTMLElement>('.ashby-application-form-submit-button'),
+
+  // Ashby saves each answer to its server as it changes (a text half a second after the last keystroke, a choice at
+  // once), and saves that overlap there can overwrite each other: a form filled all at once loses answers it still
+  // shows, and the submission reports them missing. So one answer at a time, each saved before the next.
+  async settle() {
+    watchSaves();
+    if (!live()) return;
+    const before = saves;
+    if (!(await waitFor(() => saves > before, 2500))) return;
+    // Then a moment without another save landing: a text box can save twice, on leaving it and on its timer.
+    let count = saves;
+    let quietSince = Date.now();
+    await waitFor(() => {
+      if (saves !== count) {
+        count = saves;
+        quietSince = Date.now();
+      }
+      return Date.now() - quietSince >= 300;
+    }, 2000);
+  },
 
   confirmed(doc) {
     const success = doc.querySelector('[class*="success"], .ashby-application-form-success-container');

@@ -264,16 +264,26 @@ function resolveEntry(field: ScannedField, ctx: RuleContext): Resolution | null 
       case 'education.gpa':
         return text(key, field, school.gpa);
       case 'education.start':
-        return school.start
-          ? date(key, field, `${school.start}-01`, school.start.slice(0, 4))
-          : empty(key, field);
+        return school.start ? datePart(key, field, school.start) : empty(key, field);
       case 'education.end':
-        return school.end ? date(key, field, `${school.end}-01`, school.end.slice(0, 4)) : empty(key, field);
+        return school.end ? datePart(key, field, school.end) : empty(key, field);
       default:
         return null;
     }
   }
   return null;
+}
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; // prettier-ignore
+
+/** A month ("2023-09") as the field asks for it: the month's name where it's split out (Greenhouse), else the year. */
+function datePart(key: string, field: ScannedField, month: string): Resolution {
+  const label = norm(field.label);
+  if (field.kind !== 'date' && /\bmonth\b/.test(label) && !/\byear\b/.test(label)) {
+    const name = MONTH_NAMES[Number(month.slice(5, 7)) - 1] ?? '';
+    return text(key, field, name, [name.slice(0, 3), month.slice(5, 7)]);
+  }
+  return date(key, field, `${month}-01`, month.slice(0, 4));
 }
 
 function degreeWords(level: Education['level']): string[] {

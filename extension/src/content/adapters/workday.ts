@@ -100,6 +100,15 @@ const holdsAnything = (section: Element) =>
   ].some((control) => control.value.trim() !== '') ||
   section.querySelector('[data-automation-id="selectedItem"]') !== null;
 
+/**
+ * A dropdown shows a choice, not its prompt. Its button carries the chosen option's id as its value, empty while it
+ * prompts in whatever language the page is in ("Select One", "选择一个").
+ */
+export function holdsChoice(button: Element): boolean {
+  if (button.hasAttribute('value')) return button.getAttribute('value') !== '';
+  return !/select one|^$/i.test(textOf(button));
+}
+
 function addButton(section: Element | null): HTMLElement | null {
   if (!section) return null;
   return (
@@ -171,7 +180,7 @@ export const workday: Adapter = {
         entry: entryOf(button),
         handle: { type: 'combobox', element: button },
         anchor,
-        filled: !/select one|^$/i.test(textOf(button)),
+        filled: holdsChoice(button),
       });
     }
     // Prompts: type to search, pick from suggestions.

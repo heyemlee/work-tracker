@@ -7,11 +7,16 @@ export function clean(text: string): string {
     .trim();
 }
 
+/** Yes and no as a page in Chinese offers them (Workday in zh-CN): whole options only. */
+const LOCAL_YES_NO: Record<string, string> = { 是: 'yes', 是的: 'yes', 否: 'no', 不是: 'no' };
+
 /**
  * Lowercase words only, for matching: "Are you legally authorized to work in the U.S.?" → "are you legally
  * authorized to work in the u s". Diacritics and curly quotes fold to plain letters.
  */
 export function norm(text: string): string {
+  const local = LOCAL_YES_NO[text.trim()];
+  if (local) return local;
   return text
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')

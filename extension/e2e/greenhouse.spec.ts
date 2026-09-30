@@ -58,3 +58,37 @@ test('fills a Greenhouse application and logs it to Outbox after the owner submi
   await expect(page.locator('outbox-autofill').getByText('Logged to Outbox')).toBeVisible();
   await page.screenshot({ path: 'e2e/output/greenhouse-logged.png' });
 });
+
+// Greenhouse asks for race only once "Are you Hispanic/Latino?" is answered. This stand-in adds the question when
+// the first one changes.
+const FOLLOW_UP_FORM = `<!doctype html><html><head><title>Job Application for Software Engineer at Acme</title></head><body>
+<form id="application-form">
+  <label for="first_name">First Name</label><input id="first_name" type="text">
+  <label for="last_name">Last Name</label><input id="last_name" type="text">
+  <label for="email">Email</label><input id="email" type="text">
+  <div id="eeo">
+    <label for="hispanic_ethnicity">Are you Hispanic/Latino?</label>
+    <select id="hispanic_ethnicity"><option value="">Select...</option><option>Yes</option><option>No</option><option>Decline To Self Identify</option></select>
+  </div>
+</form>
+<script>
+  document.querySelector('#hispanic_ethnicity').addEventListener('change', () => {
+    if (document.querySelector('#race')) return;
+    document.querySelector('#eeo').insertAdjacentHTML('beforeend',
+      '<label for="race">Please identify your race</label><select id="race"><option value="">Select...</option><option>Asian</option><option>White</option><option>Decline To Self Identify</option></select>');
+  });
+</script></body></html>`;
+
+test('fills a question that appears once another is answered', async ({ context, worker, outbox }) => {
+  await seed(worker, outbox.url);
+  await serve(context, 'job-boards.greenhouse.io', FOLLOW_UP_FORM, THANKS);
+  const page = await context.newPage();
+  await page.goto('https://job-boards.greenhouse.io/acme/jobs/123');
+
+  const card = page.locator('outbox-autofill');
+  await card.getByRole('button', { name: /^Fill/ }).click();
+  await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });
+  // The test applicant left voluntary self-identification at "decline".
+  await expect(page.locator('#hispanic_ethnicity')).toHaveValue('Decline To Self Identify');
+  await expect(page.locator('#race')).toHaveValue('Decline To Self Identify');
+});

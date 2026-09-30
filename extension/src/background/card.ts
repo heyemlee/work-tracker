@@ -327,11 +327,29 @@ export async function fill(tabId: number, url: string): Promise<CardState> {
   const ctx = contextFor(session, profile, outbox.snapshot, true);
   const useAi = settings.aiEnabled && Boolean(key);
   // Without AI, a free-text question is the owner's to write.
-  const plan = planForm(session.fields, ctx, memory).map((entry) =>
-    entry.status === 'draft' && !entry.answer && !useAi ? { ...entry, status: 'missing' as const } : entry,
-  );
+  const planFields = (fields: readonly ScannedField[]) =>
+    planForm(fields, ctx, memory).map((entry) =>
+      entry.status === 'draft' && !entry.answer && !useAi ? { ...entry, status: 'missing' as const } : entry,
+    );
+  let fields = session.fields;
+  let plan = planFields(fields);
   const results = await fillFrames(tabId, plan);
+  // An answer can bring up another question (Greenhouse asks for race once "Hispanic or Latino?" is answered): the
+  // page is read again and what appeared is filled too, twice at most.
+  for (let round = 0; round < 2; round++) {
+    await new Promise((done) => setTimeout(done, 300));
+    const current = merge(await scanFrames(tabId, null), session).fields;
+    const known = new Set(fields.map((field) => field.id));
+    const added = current.filter((field) => !known.has(field.id));
+    if (added.length === 0) break;
+    const more = planFields(added);
+    Object.assign(results, await fillFrames(tabId, more));
+    const planned = new Map([...plan, ...more].map((entry) => [entry.fieldId, entry]));
+    fields = current;
+    plan = current.flatMap((field) => planned.get(field.id) ?? []);
+  }
   session = await updateSession(tabId, url, () => ({
+    fields,
     plan,
     results,
     phase: useAi ? 'drafting' : 'done',

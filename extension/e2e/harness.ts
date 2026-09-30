@@ -88,7 +88,8 @@ export const test = base.extend<{ outbox: OutboxMock; context: BrowserContext; w
 
   // eslint-disable-next-line no-empty-pattern
   context: async ({}, provide) => {
-    const extension = resolve(here, '../.output/chrome-mv3');
+    // E2E_EXTENSION=.output/chrome-mv3-dev tests a development build without replacing the one Chrome loads.
+    const extension = resolve(here, '..', process.env.E2E_EXTENSION ?? '.output/chrome-mv3');
     const context = await chromium.launchPersistentContext('', {
       channel: 'chromium',
       headless: true,

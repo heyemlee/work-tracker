@@ -56,6 +56,8 @@ export interface Adapter {
   submitButton(doc: Document): HTMLElement | null;
   /** The page shows that an application went through. */
   confirmed(doc: Document, url: string): boolean;
+  /** Waits after a field is filled until the page has taken the answer in, before the next field is touched. */
+  settle?(): Promise<void>;
   /** Workday's step name ("My Information"). */
   step?(doc: Document): string | null;
   /**
