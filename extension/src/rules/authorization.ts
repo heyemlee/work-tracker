@@ -181,10 +181,13 @@ export function answerAuth(
     }
     case 'authorized': {
       if (isText) return unknown('text answer about work authorization');
-      // "Authorized to work for any employer" is narrower than authorized: OPT is tied to its employer.
+      // "Authorized to work for any employer" is narrower than authorized: OPT is tied to its employer, so someone on
+      // it, or needing sponsorship, says no (the owner's call, 2026-09-30). Anyone else authorized without being a
+      // citizen, a green card holder say, answers by hand: the profile doesn't tell them apart.
       if (/any employer|without (any )?restriction|unrestricted|full(y)? time without/.test(question)) {
+        const onVisa = facts.opt || facts.sponsorshipNow || facts.sponsorshipFuture;
         return ask(
-          facts.unrestricted ? 'yes' : facts.authorized ? null : 'no',
+          facts.unrestricted ? 'yes' : !facts.authorized || onVisa ? 'no' : null,
           'authorized for any employer',
         );
       }

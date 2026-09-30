@@ -245,9 +245,30 @@ describe('work authorization edge cases', () => {
         noCitizenship,
       ),
     ).toBeNull();
-    // OPT holders can't claim "any employer" with a plain yes or no.
+    // OPT is authorization with restrictions: no "any employer", no "without restrictions".
     expect(
       answer('Are you currently authorized to work for any employer in the United States?', YES_NO),
+    ).toBe('No');
+    expect(answer('Are you authorized to work in the United States without restrictions?', YES_NO)).toBe(
+      'No',
+    );
+    expect(
+      answer(
+        'Are you legally authorized to work in the country where the job is located without any restrictions?',
+        YES_NO,
+      ),
+    ).toBe('No');
+    // Authorized, needing no sponsorship, not a citizen (a green card, say): theirs to answer.
+    const resident = makeProfile({
+      workAuthorization: {
+        authorizedCountries: ['United States'],
+        sponsorshipNow: false,
+        sponsorshipFuture: false,
+        citizenship: ['China'],
+      },
+    });
+    expect(
+      answer('Are you authorized to work in the United States without restrictions?', YES_NO, resident),
     ).toBeNull();
   });
 
