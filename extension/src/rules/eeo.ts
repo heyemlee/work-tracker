@@ -60,9 +60,12 @@ export function pickEeoOption(options: readonly string[], field: EeoField, value
       return pattern ? find((text) => pattern.test(text) && !DECLINE.test(text)) : null;
     }
     case 'veteran':
+      // Workday's "I identify as a veteran, just not a protected veteran" is a yes.
       if (value === 'not')
-        return find((text) =>
-          /not a (protected )?veteran|i am not (a )?(protected )?veteran|^no\b|not a veteran/.test(text),
+        return find(
+          (text) =>
+            !/identify as a veteran|i am a veteran/.test(text) &&
+            /not a (protected )?veteran|i am not (a )?(protected )?veteran|^no\b/.test(text),
         );
       return find(
         (text) =>
