@@ -13,6 +13,8 @@ const TAGS: Partial<Record<ChecklistItem['status'], { key: MessageKey; tone: str
   missing: { key: 'tag.missing', tone: 'red' },
 };
 
+const openOptions = () => void toBackground('card:options', {}).catch(() => undefined);
+
 /** At most one line above the controls: what's wrong, and where to fix it. */
 interface Notice {
   tone: 'error' | 'warn';
@@ -42,7 +44,7 @@ function noticeFor(state: CardState, t: Translate, outboxUrl: string): Notice | 
     return {
       tone: 'warn',
       text: t('notice.noKey'),
-      action: { label: t('action.settings'), run: () => void toBackground('card:options', {}) },
+      action: { label: t('action.settings'), run: openOptions },
     };
   return null;
 }
@@ -110,7 +112,7 @@ function Attention({ items, t }: { items: ChecklistItem[]; t: Translate }) {
           <button
             key={item.fieldId}
             className="item"
-            onClick={() => void toBackground('card:focus', { fieldId: item.fieldId })}
+            onClick={() => void toBackground('card:focus', { fieldId: item.fieldId }).catch(() => undefined)}
             title={item.label}
           >
             <span className={`tag ${tag.tone}`}>{t(tag.key)}</span>
@@ -351,13 +353,15 @@ export function Card({ startOpen }: { startOpen: boolean }) {
           {
             label: t('snapshot'),
             run: () =>
-              void toBackground('card:snapshot', {}).then(({ saved }) => {
-                if (saved) setFlash(t('snapshotSaved'));
-              }),
+              void toBackground('card:snapshot', {})
+                .then((reply: { saved: number } | undefined) => {
+                  if (reply?.saved) setFlash(t('snapshotSaved'));
+                })
+                .catch(() => undefined),
           },
         ]
       : []),
-    { label: t('options'), run: () => void toBackground('card:options', {}) },
+    { label: t('options'), run: openOptions },
   ];
 
   let main: ReactNode = null;

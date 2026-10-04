@@ -16,6 +16,13 @@ export async function startFrame(ctx: ContentScriptContext, startOpen: boolean):
   const scope = window as unknown as Record<string, boolean>;
   if (scope[RUNNING_FLAG]) return;
   scope[RUNNING_FLAG] = true;
+  // Reloading or updating the extension cuts this copy off from it, in a page that stays open. WXT notices when
+  // asked, and then takes the card away and stops the watchers; without the flag, the toolbar button or the
+  // shortcut brings in the new copy, with no need to load the page again.
+  ctx.onInvalidated(() => {
+    scope[RUNNING_FLAG] = false;
+  });
+  ctx.setInterval(() => undefined, 2000);
   startContent();
   if (window === window.top) await mountCard(ctx, startOpen);
   const adapter = adapterFor(location.href);

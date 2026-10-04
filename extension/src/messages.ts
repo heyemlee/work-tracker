@@ -148,7 +148,13 @@ export function toBackground<Type extends keyof ToBackground>(
   type: Type,
   request: ToBackground[Type]['request'],
 ): Promise<Reply<ToBackground, Type>> {
-  return browser.runtime.sendMessage({ type, ...request }) as Promise<Reply<ToBackground, Type>>;
+  // A page open while the extension was reloaded or updated keeps its old content script, cut off from the
+  // extension: there Chrome throws ("Extension context invalidated") instead of rejecting.
+  try {
+    return browser.runtime.sendMessage({ type, ...request }) as Promise<Reply<ToBackground, Type>>;
+  } catch (error) {
+    return Promise.reject(error instanceof Error ? error : new Error(String(error)));
+  }
 }
 
 export function toFrame<Type extends keyof ToFrame>(
