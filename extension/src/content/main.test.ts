@@ -119,6 +119,24 @@ describe('filling a page that fills fields of its own', () => {
   });
 });
 
+describe('while filling', () => {
+  it('brings each field it fills into view, and not the ones it leaves alone', async () => {
+    const ask = start();
+    document.body.innerHTML = FORM;
+    input('org').value = 'Acme AI Labs';
+    const seen: string[] = [];
+    vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(function (this: Element) {
+      seen.push(this.id || this.querySelector('input')?.id || this.tagName);
+    });
+
+    const scan = await ask<FrameScan>({ type: 'frame:scan', frameId: 0, prepare: null });
+    await ask({ type: 'frame:fill', fields: plan(scan, ANSWERS) });
+
+    // In the form's order; the resume, attached first, and the company the page already held don't move the page.
+    expect(seen).toEqual(['name', 'email', 'phone', 'linkedin']);
+  });
+});
+
 describe('filling a multi-select again', () => {
   // Greenhouse's "How do you identify? (race/ethnicity)": react-select with chips, the chosen option gone from the list.
   const OPTIONS = ['East Asian', 'South Asian', 'White'];

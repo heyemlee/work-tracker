@@ -17,6 +17,10 @@ import { formSnapshot } from './snapshot';
 import { watchSubmission } from './submit';
 import { fileFromBase64, readComboboxOptions } from './widgets';
 
+/** How the page moves to a field: gliding, unless the owner's system asks for less motion. */
+const glide = (): ScrollBehavior =>
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+
 /** What a field the page filled holds, for the checklist. */
 function shownValue(handle: Handle): string | undefined {
   if (handle.type === 'file') return attachedFile(handle.element) ?? undefined;
@@ -99,6 +103,10 @@ export function startContent(): void {
         results[entry.fieldId] = { ok: true, value: shownValue(handle) };
         continue;
       }
+      // The page follows the fill, so the owner can watch each answer go in. The resume is attached out of turn, and
+      // going to it would only jerk the page down and back.
+      const anchor = extraction.anchors.get(entry.fieldId);
+      if (entry.answer.type !== 'file') anchor?.scrollIntoView?.({ behavior: glide(), block: 'center' });
       const before = shownValue(handle);
       results[entry.fieldId] = await applyAnswer(handle, entry.answer, loadResume);
       if (!results[entry.fieldId]?.ok) continue;
@@ -141,7 +149,7 @@ export function startContent(): void {
         case 'frame:focus': {
           const anchor = extraction?.anchors.get(message.fieldId);
           if (!(anchor instanceof HTMLElement)) return false;
-          anchor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          anchor.scrollIntoView({ behavior: glide(), block: 'center' });
           const outline = anchor.style.outline;
           anchor.style.outline = '2px solid #3478f6';
           anchor.style.outlineOffset = '4px';
