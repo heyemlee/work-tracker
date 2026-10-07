@@ -80,7 +80,7 @@ function firstDateFrom(options: readonly string[], from: string, today: string):
   );
 }
 
-const LANGUAGE_NAMES = ['english', 'mandarin', 'chinese', 'cantonese', 'spanish', 'french', 'german', 'japanese', 'korean', 'arabic', 'hindi', 'portuguese', 'italian', 'russian', 'dutch', 'hebrew', 'vietnamese', 'turkish', 'polish', 'swedish', 'norwegian', 'danish', 'finnish', 'greek', 'thai', 'indonesian', 'malay', 'tagalog', 'urdu', 'bengali', 'punjabi', 'tamil', 'telugu', 'persian', 'farsi', 'ukrainian', 'czech', 'romanian', 'hungarian']; // prettier-ignore
+export const LANGUAGE_NAMES = ['english', 'mandarin', 'chinese', 'cantonese', 'spanish', 'french', 'german', 'japanese', 'korean', 'arabic', 'hindi', 'portuguese', 'italian', 'russian', 'dutch', 'hebrew', 'vietnamese', 'turkish', 'polish', 'swedish', 'norwegian', 'danish', 'finnish', 'greek', 'thai', 'indonesian', 'malay', 'tagalog', 'urdu', 'bengali', 'punjabi', 'tamil', 'telugu', 'persian', 'farsi', 'ukrainian', 'czech', 'romanian', 'hungarian']; // prettier-ignore
 
 // The longest name first: a bare "United States" also matches "United States Minor Outlying Islands", which sorts
 // ahead of "United States of America" in Workday's lists. An exact "United States" still matches on its turn.

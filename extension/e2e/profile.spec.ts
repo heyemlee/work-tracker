@@ -56,3 +56,66 @@ test('edits the profile in a window over the page, saves it to Outbox, and fills
   await expect(page.locator('#first')).toHaveValue('Alexander');
   await expect(page.locator('#phone')).toHaveValue('+1 408-555-0199');
 });
+
+test('picks what has a list to pick from: the status, a job still held, the languages', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  await serve(context, 'careers.acme-robotics.com', FORM, THANKS);
+  const page = await context.newPage();
+  await page.goto('https://careers.acme-robotics.com/jobs/42/apply');
+
+  const card = page.locator('outbox-autofill');
+  await card.getByRole('button', { name: /^Alex Chen/ }).click({ timeout: 15_000 });
+  const sheet = card.getByRole('dialog', { name: 'Your autofill information' });
+  const save = async () => {
+    await sheet.getByRole('button', { name: 'Save' }).click();
+    await expect(sheet.getByText('Saved', { exact: true })).toBeVisible();
+  };
+
+  // A status says whether it's OPT: picking one sets both.
+  await sheet.getByRole('tab', { name: 'Work authorization' }).click();
+  const opt = sheet.locator('label.field', { has: page.getByText('OPT', { exact: true }) }).locator('select');
+  await sheet.getByLabel('Current status').selectOption('F-1 OPT');
+  await expect(opt).toHaveValue('opt');
+  await sheet.getByLabel('Current status').selectOption('H-1B');
+  await expect(opt).toHaveValue('none');
+  await sheet.getByLabel('Current status').selectOption('F-1 STEM OPT');
+  await expect(opt).toHaveValue('stem');
+
+  // The job still held says "Present" where its end date would be; a date takes its place, and gives it back.
+  await sheet.getByRole('tab', { name: 'Work experience' }).click();
+  const present = sheet.getByRole('checkbox', { name: 'Present' }).first();
+  await expect(present).toBeChecked();
+  await sheet.getByRole('button', { name: 'End' }).first().click();
+  await expect(present).not.toBeChecked();
+  await sheet.getByLabel('End').first().fill('2026-03');
+
+  // Languages are ticked on a list that folds behind what's chosen, and kept in the list's order.
+  await sheet.getByRole('tab', { name: 'Skills' }).click();
+  const languages = sheet.getByRole('button', { name: 'Languages' });
+  await expect(languages).toHaveText('English, Mandarin');
+  await languages.click();
+  await sheet.getByRole('option', { name: 'Korean' }).click();
+  await sheet.getByRole('option', { name: 'Cantonese' }).click();
+  await sheet.getByRole('option', { name: 'Mandarin' }).click();
+  await expect(languages).toHaveText('English, Cantonese, Korean');
+  // Escape closes the list, not the window.
+  await languages.press('Escape');
+  await expect(sheet.getByRole('listbox')).toHaveCount(0);
+
+  await save();
+  expect(outbox.profiles.at(-1)).toMatchObject({
+    workAuthorization: { status: 'F-1 STEM OPT', opt: 'stem' },
+    experience: [{ company: 'Acme AI', end: '2026-03' }, {}, {}],
+    languages: ['English', 'Cantonese', 'Korean'],
+  });
+
+  await sheet.getByRole('tab', { name: 'Work experience' }).click();
+  await present.click();
+  await expect(sheet.getByRole('button', { name: 'End' }).first()).toHaveText('Present');
+  await save();
+  expect(outbox.profiles.at(-1)).toMatchObject({ experience: [{ company: 'Acme AI', end: null }, {}, {}] });
+});

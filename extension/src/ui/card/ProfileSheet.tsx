@@ -1,5 +1,5 @@
-import { ChevronDown, Plus, X } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { toBackground, type CardState, type ProfileDraft } from '../../messages';
 import {
   EDUCATION_LEVELS,
@@ -16,12 +16,31 @@ import {
 } from '../../profile/schema';
 import type { MessageKey, Translate } from '../i18n';
 import {
+  Add,
+  Area,
+  Choice,
+  Count,
+  End,
+  Entry,
+  Grid,
+  Heading,
+  List,
+  Month,
+  Note,
+  Several,
+  Text,
+  Toggle,
+  Toggles,
+} from './fields';
+import {
   ANSWER_SWITCHES,
   describeIssue,
+  LANGUAGES,
   picks,
   PRONOUNS,
   SECTIONS,
   STATES,
+  STATUSES,
   tidy,
   type Section,
 } from './profileForm';
@@ -302,11 +321,19 @@ function Fields({
               value={auth.citizenship}
               onChange={(citizenship) => patch('workAuthorization', { citizenship })}
             />
-            <Text
+            <Choice
               label={f('status')}
-              placeholder="F-1 STEM OPT"
               value={auth.status}
-              onChange={(status) => patch('workAuthorization', { status })}
+              options={picks(
+                STATUSES.map((status) => status.value),
+                auth.status,
+                '—',
+              )}
+              onChange={(status) => {
+                // A status says whether it's OPT: the two are set together.
+                const known = STATUSES.find((item) => item.value === status);
+                patch('workAuthorization', known ? { status, opt: known.opt } : { status });
+              }}
             />
             <Choice
               label={f('opt')}
@@ -470,7 +497,12 @@ function Fields({
                     value={job.start || null}
                     onChange={(start) => set({ start: start ?? '' })}
                   />
-                  <Month label={f('endCurrent')} value={job.end} onChange={(end) => set({ end })} />
+                  <End
+                    label={f('end')}
+                    present={t('profile.present')}
+                    value={job.end}
+                    onChange={(end) => set({ end })}
+                  />
                   <Area
                     wide
                     label={f('description')}
@@ -494,10 +526,11 @@ function Fields({
             value={draft.skills}
             onChange={(skills) => update((profile) => ({ ...profile, skills }))}
           />
-          <List
+          <Several
             wide
             label={f('languages')}
-            hint={hint}
+            none="—"
+            options={LANGUAGES}
             value={draft.languages}
             onChange={(languages) => update((profile) => ({ ...profile, languages }))}
           />
@@ -685,263 +718,4 @@ function Fields({
         </>
       );
   }
-}
-
-const Grid = ({ children }: { children: ReactNode }) => <div className="grid">{children}</div>;
-const Heading = ({ children }: { children: ReactNode }) => <h2 className="sheet-heading">{children}</h2>;
-const Note = ({ children }: { children: ReactNode }) => <p className="sheet-note">{children}</p>;
-const Toggles = ({ children }: { children: ReactNode }) => <div className="toggles">{children}</div>;
-
-function Field({
-  label,
-  wide,
-  bare,
-  children,
-}: {
-  label: string;
-  wide?: boolean;
-  /** The label is said, not shown: the entry's own title already names the field. */
-  bare?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <label className={`field${wide ? ' wide' : ''}`}>
-      <span className={bare ? 'unseen' : undefined}>{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function Text({
-  label,
-  value,
-  onChange,
-  type = 'text',
-  placeholder,
-  wide,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  type?: 'text' | 'tel' | 'url';
-  placeholder?: string;
-  wide?: boolean;
-}) {
-  return (
-    <Field label={label} wide={wide}>
-      <input
-        className="input"
-        type={type}
-        value={value}
-        placeholder={placeholder}
-        onChange={(event) => onChange(event.target.value)}
-      />
-    </Field>
-  );
-}
-
-function Area({
-  label,
-  value,
-  onChange,
-  wide,
-  bare,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  wide?: boolean;
-  bare?: boolean;
-}) {
-  return (
-    <Field label={label} wide={wide} bare={bare}>
-      <textarea
-        className="input area"
-        rows={4}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      />
-    </Field>
-  );
-}
-
-const words = (text: string) =>
-  text
-    .split(/[,，、]/)
-    .map((word) => word.trim())
-    .filter(Boolean);
-
-/** Comma-separated words. What's typed stays as typed; the words it makes go to the profile as it changes. */
-function List({
-  label,
-  value,
-  onChange,
-  hint,
-  wide,
-}: {
-  label: string;
-  value: string[];
-  onChange: (value: string[]) => void;
-  hint: string;
-  wide?: boolean;
-}) {
-  const joined = value.join(', ');
-  const [text, setText] = useState(joined);
-  // The profile's words changed from outside this field (a save came back, an entry above was removed).
-  const [seen, setSeen] = useState(joined);
-  if (joined !== seen) {
-    setSeen(joined);
-    if (words(text).join(', ') !== joined) setText(joined);
-  }
-  return (
-    <Field label={label} wide={wide}>
-      <input
-        className="input"
-        value={text}
-        placeholder={hint}
-        onChange={(event) => {
-          setText(event.target.value);
-          const next = words(event.target.value);
-          if (next.join(', ') !== joined) onChange(next);
-        }}
-      />
-    </Field>
-  );
-}
-
-function Choice<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: T;
-  options: { value: T; label: string }[];
-  onChange: (value: T) => void;
-}) {
-  return (
-    <Field label={label}>
-      <span className="select">
-        <select className="input" value={value} onChange={(event) => onChange(event.target.value as T)}>
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <ChevronDown size={14} />
-      </span>
-    </Field>
-  );
-}
-
-/** A month, or none: YYYY-MM as the profile keeps it. */
-function Month({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string | null;
-  onChange: (value: string | null) => void;
-}) {
-  return (
-    <Field label={label}>
-      <input
-        className="input"
-        type="month"
-        value={value ?? ''}
-        onChange={(event) => onChange(event.target.value || null)}
-      />
-    </Field>
-  );
-}
-
-/** A number, or none where the profile takes none. */
-function Count({
-  label,
-  value,
-  onChange,
-  max,
-  placeholder,
-}: {
-  label: string;
-  value: number | null;
-  onChange: (value: number | null) => void;
-  max: number;
-  placeholder?: string;
-}) {
-  return (
-    <Field label={label}>
-      <input
-        className="input"
-        type="number"
-        min={0}
-        max={max}
-        value={value ?? ''}
-        placeholder={placeholder}
-        onChange={(event) => onChange(event.target.value === '' ? null : Number(event.target.value))}
-      />
-    </Field>
-  );
-}
-
-function Toggle({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <label className="toggle">
-      <span>{label}</span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        className="switch"
-        onClick={() => onChange(!checked)}
-      >
-        <span />
-      </button>
-    </label>
-  );
-}
-
-/** One of several alike (a school, a job, a story), with a way to take it out. */
-function Entry({
-  title,
-  remove,
-  onRemove,
-  children,
-}: {
-  title: string;
-  remove: string;
-  onRemove: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <div className="entry">
-      <div className="entry-head">
-        <span>{title}</span>
-        <button type="button" className="ghost" onClick={onRemove}>
-          {remove}
-        </button>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Add({ onClick, children }: { onClick: () => void; children: ReactNode }) {
-  return (
-    <button type="button" className="add" onClick={onClick}>
-      <Plus size={14} />
-      {children}
-    </button>
-  );
 }

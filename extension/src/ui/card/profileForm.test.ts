@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { makeProfile } from '../../test/profiles';
 import { translator } from '../i18n';
 import { findOption } from '../../text';
-import { describeIssue, picks, PRONOUNS, STATES, tidy } from './profileForm';
+import { LANGUAGE_NAMES } from '../../rules/common';
+import { norm } from '../../text';
+import { describeIssue, LANGUAGES, picks, PRONOUNS, STATES, STATUSES, tidy } from './profileForm';
 
 const t = translator('en');
 
@@ -92,5 +94,22 @@ describe('picks', () => {
   it('keeps pronouns in the form that finds a form’s longer option', () => {
     const offered = ['He/him/his', 'She/her/hers', 'They/them/theirs', 'I prefer not to say'];
     expect(PRONOUNS.map((pronouns) => findOption(offered, [pronouns]))).toEqual(offered.slice(0, 3));
+  });
+});
+
+describe('the lists to pick from', () => {
+  it('offers only languages the fluency rule knows by name', () => {
+    expect(LANGUAGES.filter((language) => !LANGUAGE_NAMES.includes(norm(language)))).toEqual([]);
+    expect(new Set(LANGUAGES).size).toBe(LANGUAGES.length);
+  });
+
+  it('says of each status whether it is OPT', () => {
+    const opt = (value: string) => STATUSES.find((status) => status.value === value)?.opt;
+    expect(opt('F-1 STEM OPT')).toBe('stem');
+    expect(opt('F-1 OPT')).toBe('opt');
+    expect(STATUSES.filter((status) => status.opt !== 'none').map((status) => status.value)).toEqual([
+      'F-1 OPT',
+      'F-1 STEM OPT',
+    ]);
   });
 });

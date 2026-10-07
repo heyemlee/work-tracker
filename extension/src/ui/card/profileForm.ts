@@ -20,6 +20,36 @@ export type Section = (typeof SECTIONS)[number];
 /** The pronouns forms offer, in the short form the profile keeps: "He/him" also finds "He/him/his". */
 export const PRONOUNS = ['He/him', 'She/her', 'They/them'];
 
+/**
+ * Work statuses as forms word them, and what each says about OPT: picking one sets both, so the two can't disagree
+ * (an "H-1B" still counted as on OPT would answer OPT questions with a yes).
+ */
+export const STATUSES: { value: string; opt: Profile['workAuthorization']['opt'] }[] = [
+  { value: 'U.S. Citizen', opt: 'none' },
+  { value: 'Permanent Resident', opt: 'none' },
+  { value: 'F-1 OPT', opt: 'opt' },
+  { value: 'F-1 STEM OPT', opt: 'stem' },
+  { value: 'F-1 CPT', opt: 'none' },
+  { value: 'H-1B', opt: 'none' },
+  { value: 'H-4 EAD', opt: 'none' },
+  { value: 'L-2 EAD', opt: 'none' },
+  { value: 'O-1', opt: 'none' },
+  { value: 'TN', opt: 'none' },
+  { value: 'J-1', opt: 'none' },
+];
+
+/**
+ * Languages forms ask about, the commonest first, by the names the fill rules know. "Mandarin" and "Cantonese" each
+ * answer for "Chinese" too.
+ */
+// prettier-ignore
+export const LANGUAGES = [
+  'English', 'Mandarin', 'Cantonese', 'Spanish', 'Korean', 'Japanese', 'French', 'German', 'Hindi', 'Portuguese',
+  'Arabic', 'Russian', 'Italian', 'Vietnamese', 'Indonesian', 'Thai', 'Turkish', 'Dutch', 'Polish', 'Ukrainian',
+  'Hebrew', 'Persian', 'Urdu', 'Bengali', 'Punjabi', 'Tamil', 'Telugu', 'Tagalog', 'Malay', 'Swedish', 'Norwegian',
+  'Danish', 'Finnish', 'Greek', 'Czech', 'Romanian', 'Hungarian',
+];
+
 /** US states by name, kept by their two-letter code as forms and the fill rules take either. */
 export const STATES = Object.entries(US_STATES).map(([value, name]) => ({
   value,

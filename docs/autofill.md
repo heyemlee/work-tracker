@@ -111,7 +111,10 @@ Common questions, Writing material — and the open one's fields beside them. It
 when Outbox can't be reached, with a note that nothing can be saved then) and saves through `PUT /api/profile`,
 checked by the same schema first in the window and again in the service worker (`background/profile.ts`); a save
 Outbox didn't take isn't kept locally either, or the next sync would quietly undo it. Entries added and left blank
-are dropped on save. Reading a resume into the profile stays on Outbox's page.
+are dropped on save. Reading a resume into the profile stays on Outbox's page. What has a list is picked from it:
+pronouns, the US state, the work status (which sets the OPT field with it, so the two can't disagree), the languages
+(several, folded behind what's chosen), and "Present" for a job still held, as a choice of its own rather than an end
+date left empty.
 
 **Resumes** (decided 2026-09-28, replacing PDFs added on the options page) are uploaded on Outbox, on their own page: one PDF per resume version, up to 1.4 MB, stored in D1 as base64 (`resume_files`, apart from the
 version so the snapshot never reads it). Base64 rather than a blob: D1 hands a blob to the Worker as an array of
