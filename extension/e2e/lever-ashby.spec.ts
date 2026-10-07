@@ -150,6 +150,44 @@ for (const [pace, ms] of [
   });
 }
 
+test('attaches the resume once: filling again doesn’t have Lever read it a second time', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  await serve(
+    context,
+    'jobs.lever.co',
+    fixture('lever/palantir.html').replace('</body>', `${reader(300)}</body>`),
+    THANKS,
+  );
+  const page = await context.newPage();
+  await page.goto('https://jobs.lever.co/palantir/10dfc8bc-99ad-4ca2-ab76-853cb90a92c2/apply');
+  await page.evaluate(() => {
+    const scope = window as unknown as { attached: number };
+    scope.attached = 0;
+    document.querySelector('#resume-upload-input')?.addEventListener('change', () => scope.attached++);
+  });
+  const attached = () => page.evaluate(() => (window as unknown as { attached: number }).attached);
+
+  const card = page.locator('outbox-autofill');
+  await card.getByRole('button', { name: /^Fill/ }).click();
+  await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });
+  expect(await attached()).toBe(1);
+
+  await card.getByRole('button', { name: 'Fill again' }).click();
+  await expect(card.locator('.progress')).toBeVisible();
+  await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });
+  expect(await attached()).toBe(1);
+  // The resume is still there, and so is what Lever read from it.
+  expect(
+    await page.locator('#resume-upload-input').evaluate((input: HTMLInputElement) => input.files?.[0]?.name),
+  ).toBe('Alex_Chen_Resume.pdf');
+  await expect(page.locator('input[name="name"]')).toHaveValue('Alexander Chen');
+  await expect(card.locator('.item', { hasText: 'Resume' }).first()).toContainText('Alex_Chen_Resume.pdf');
+});
+
 test('fills an Ashby application: system fields, yes/no buttons, radio groups', async ({
   context,
   worker,

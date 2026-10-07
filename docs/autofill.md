@@ -202,7 +202,12 @@ resume (the resume goes in first and the fill waits for the site, see below), wh
 again redoes the extension's own answers, so that another account, resume or an edited profile takes effect, but only
 while a field still shows what the extension left in it (`wrote` in `content/main.ts`): an answer the owner corrected
 is theirs from then on (their call, 2026-10-07), and so is one the site wrote over. A field emptied is filled again,
-a box unticked counts as emptied, and the email always names the account picked on the card. A dropdown's pick is
+a box unticked counts as emptied, and the email always names the account picked on the card. Two kinds of its own
+answers aren't redone while they stand (also 2026-10-07). What AI wrote is asked for once: the scan marks a field
+still holding it as `drafted`, the plan keeps AI's line for it, and only a field emptied since is asked for again;
+before, every fill asked for every draft anew and wrote over the last. And a resume already attached isn't attached
+again unless another is chosen on the card: put in again, the site takes the file in again, and one that reads
+resumes reads it again (on Lever's own page code that took a second fill from 1.0 s to 2.1 s). A dropdown's pick is
 looked for in the dropdown's own box (`pickBox` in `content/extract.ts`). Until 2026-10-07 it was looked for in the
 wrapper round the search input, which react-select calls a container too, so on Greenhouse's own pages a dropdown the
 owner had answered read as empty: a fill wrote over it, and the answer wasn't remembered at submit.

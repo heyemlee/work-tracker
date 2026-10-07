@@ -91,6 +91,8 @@ export interface ScannedField {
   entry: Entry | null;
   /** The field already holds something: the page prefilled it, or the owner typed it. */
   filled: boolean;
+  /** What it holds is an answer AI wrote in an earlier fill, standing as AI left it: kept, and not asked for again. */
+  drafted?: boolean;
   maxLength: number | null;
 }
 

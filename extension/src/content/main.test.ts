@@ -157,6 +157,112 @@ describe('filling again once the owner has gone on by hand', () => {
   });
 });
 
+describe('filling again: what isn’t redone while it stands', () => {
+  const ESSAY = `
+    <form>
+      <label for="name">Full name</label><input id="name">
+      <label for="email">Email</label><input id="email" type="email">
+      <label for="resume">Resume</label><input id="resume" type="file">
+      <label for="why">Why do you want to work here?</label><textarea id="why"></textarea>
+    </form>`;
+  const essay = () => document.querySelector<HTMLTextAreaElement>('#why')!;
+  /** The plan a service worker would send: the name by rule, the resume chosen, and what AI drafted. */
+  const entries = (scan: FrameScan, draft: string | null, resumeId = 'res-1'): PlannedField[] =>
+    scan.fields.flatMap((field): PlannedField[] => {
+      const base = { fieldId: field.id, note: null, critical: false };
+      if (field.kind === 'file')
+        return [
+          { ...base, status: 'filled', answer: { type: 'file', resumeId }, source: 'rule', key: 'resume' },
+        ];
+      if (field.kind === 'textarea')
+        return draft === null
+          ? []
+          : [
+              {
+                ...base,
+                status: 'draft',
+                answer: { type: 'text', text: draft },
+                source: 'ai',
+                key: 'text.why',
+              },
+            ];
+      if (field.label === 'Full name')
+        return [
+          {
+            ...base,
+            status: 'filled',
+            answer: { type: 'text', text: 'Alex Chen' },
+            source: 'rule',
+            key: 'name',
+          },
+        ];
+      return [];
+    });
+  const read = (ask: ReturnType<typeof start>) =>
+    ask<FrameScan>({ type: 'frame:scan', frameId: 0, prepare: null });
+  const why = (scan: FrameScan) => scan.fields.find((field) => field.kind === 'textarea')!;
+
+  it('keeps what AI wrote, and says so, until the owner changes or empties it', async () => {
+    const ask = start();
+    document.body.innerHTML = ESSAY;
+    await ask({ type: 'frame:fill', fields: entries(await read(ask), 'First draft.') });
+    expect(essay().value).toBe('First draft.');
+
+    // Read again: the name is this script's own to redo, the draft is AI's and stays.
+    const again = await read(ask);
+    expect(again.fields.find((field) => field.label === 'Full name')?.filled).toBe(false);
+    expect(why(again)).toMatchObject({ filled: true, drafted: true });
+    // Were another draft sent all the same, the first would stand.
+    const results = await ask<Record<string, { ok: boolean; value?: string }>>({
+      type: 'frame:fill',
+      fields: entries(again, 'Second draft.'),
+    });
+    expect(essay().value).toBe('First draft.');
+    expect(results[why(again).id]).toMatchObject({ ok: true, value: 'First draft.' });
+
+    // The owner rewrites it: theirs now, like any answer they put in.
+    essay().value = 'My own words.';
+    const edited = await read(ask);
+    expect(why(edited).filled).toBe(true);
+    expect(why(edited).drafted).toBeUndefined();
+
+    // The owner empties it: open again, and what AI writes next goes in.
+    essay().value = '';
+    const emptied = await read(ask);
+    expect(why(emptied).filled).toBe(false);
+    await ask({ type: 'frame:fill', fields: entries(emptied, 'Second draft.') });
+    expect(essay().value).toBe('Second draft.');
+  });
+
+  it('attaches the resume once, and again only when another is chosen or the upload is emptied', async () => {
+    const ask = start();
+    document.body.innerHTML = ESSAY;
+    let attached = 0;
+    input('resume').addEventListener('change', () => attached++);
+    const fill = async (resumeId: string) => {
+      const scan = await read(ask);
+      const results = await ask<Record<string, { ok: boolean; value?: string }>>({
+        type: 'frame:fill',
+        fields: entries(scan, null, resumeId),
+      });
+      return results[scan.fields.find((field) => field.kind === 'file')!.id];
+    };
+
+    expect(await fill('res-1')).toMatchObject({ ok: true, value: 'Alex_Chen_Resume.pdf' });
+    expect(attached).toBe(1);
+    // The same resume again: it's there already, and says so.
+    expect(await fill('res-1')).toMatchObject({ ok: true, value: 'Alex_Chen_Resume.pdf' });
+    expect(attached).toBe(1);
+    // Another one chosen on the card.
+    await fill('res-2');
+    expect(attached).toBe(2);
+    // The owner takes the file out: the upload is empty, and is filled like any empty field.
+    input('resume').value = '';
+    await fill('res-2');
+    expect(attached).toBe(3);
+  });
+});
+
 describe('while filling', () => {
   it('brings each field it fills into view, and not the ones it leaves alone', async () => {
     const ask = start();

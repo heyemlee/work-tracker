@@ -353,11 +353,22 @@ export async function fill(tabId: number, url: string): Promise<CardState> {
   await pushState(session, outbox);
   const ctx = contextFor(session, profile, outbox.snapshot, true);
   const useAi = settings.aiEnabled && Boolean(key);
-  // Without AI, a free-text question is the owner's to write.
+  // What AI wrote in an earlier fill, where the page still holds it as AI left it, keeps its line of the plan: it
+  // isn't asked for again. The tab's plan is still the earlier fill's here.
+  const written = new Map(
+    session.plan
+      .filter((entry) => entry.source === 'ai' && entry.answer)
+      .map((entry) => [entry.fieldId, entry]),
+  );
   const planFields = (fields: readonly ScannedField[]) =>
-    planForm(fields, ctx, memory).map((entry) =>
-      entry.status === 'draft' && !entry.answer && !useAi ? { ...entry, status: 'missing' as const } : entry,
-    );
+    planForm(fields, ctx, memory).map((entry, at) => {
+      const kept = fields[at]?.drafted ? written.get(entry.fieldId) : undefined;
+      if (kept) return kept;
+      // Without AI, a free-text question is the owner's to write.
+      return entry.status === 'draft' && !entry.answer && !useAi
+        ? { ...entry, status: 'missing' as const }
+        : entry;
+    });
   let fields = session.fields;
   let plan = planFields(fields);
   const results = await fillFrames(tabId, plan);

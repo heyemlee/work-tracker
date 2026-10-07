@@ -540,6 +540,38 @@ describe('filling', () => {
       expect(mostWriting).toBe(1);
     });
 
+    it('asks again only for what stands empty, when the form is filled again', async () => {
+      draftAnswer.mockImplementation(async (question) => draftOf(question.id));
+      await fill(tab, URL_);
+      await settled('ready');
+      expect(draftAnswer).toHaveBeenCalledTimes(3);
+
+      // Filled again. The page reads two drafts as standing as AI left them, and the third as emptied since.
+      const [why, project, hard] = essays;
+      scanFrames.mockResolvedValue(
+        form([
+          field('0:first', 'First Name'),
+          field('0:color', 'Favorite color', { maxLength: 40 }),
+          { ...why!, filled: true, drafted: true },
+          { ...project!, filled: true, drafted: true },
+          hard!,
+        ]),
+      );
+      draftAnswer.mockImplementation(async (question) => `Another draft for ${question.id}`);
+      await fill(tab, URL_);
+      await settled('ready');
+
+      expect(draftAnswer).toHaveBeenCalledTimes(4);
+      expect(draftAnswer.mock.calls.at(-1)?.[0]).toMatchObject({ id: '0:hard' });
+      // The standing drafts keep their lines of the plan, as AI's and with what AI wrote.
+      expect(await drafted()).toEqual({
+        '0:why': draftOf('0:why'),
+        '0:project': draftOf('0:project'),
+        '0:hard': 'Another draft for 0:hard',
+      });
+      expect((await getSession(tab))?.plan.find((entry) => entry.fieldId === '0:why')?.status).toBe('draft');
+    });
+
     it('gives a request that failed among the others a second go, alone', async () => {
       let out = 0;
       let refused = false;

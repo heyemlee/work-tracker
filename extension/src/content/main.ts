@@ -1,5 +1,5 @@
 import { listen, toBackground, type CapturedAnswer, type FrameMessage } from '../messages';
-import type { FrameScan, Held, PlannedField } from '../model';
+import type { Answer, FrameScan, Held, PlannedField } from '../model';
 import { adapterFor } from './adapters';
 import type { Handle } from './adapters/types';
 import { applyAnswer, readAnswer, type Applied } from './apply';
@@ -36,6 +36,18 @@ export function startContent(): () => void {
     const control = controlsOf(handle).find((element) => wrote.has(element));
     return control !== undefined && wrote.get(control) === shownValue(handle);
   };
+  // Two kinds of its own answers aren't redone while they stand. What AI wrote is written once: asking again costs
+  // a request, and gives another answer in place of one the owner may have read and settled on.
+  const byAi = new WeakSet<Element>();
+  const drafted = (handle: Handle) => ours(handle) && controlsOf(handle).some((element) => byAi.has(element));
+  // And a resume: put into the upload again, the site takes the file in again, and one that reads resumes reads it
+  // again. It goes in anew when another is chosen on the card.
+  const attached = new WeakMap<Element, string>();
+  const sameResume = (handle: Handle, answer: Answer) =>
+    handle.type === 'file' &&
+    answer.type === 'file' &&
+    ours(handle) &&
+    attached.get(handle.element) === answer.resumeId;
 
   // After a fill the owner goes on by hand: what each field holds is told as it changes, for the card's list. The
   // page is watched from the first form read on it, and a page without one never is.
@@ -61,7 +73,10 @@ export function startContent(): () => void {
     extraction = extractFields(adapter, document, frameId, ids);
     for (const field of extraction.fields) {
       const handle = extraction.handles.get(field.id);
-      if (field.filled && handle && ours(handle)) field.filled = false;
+      if (!field.filled || !handle || !ours(handle)) continue;
+      // An answer of this script's own reads as open, for the next fill to redo; one AI wrote reads as kept.
+      if (drafted(handle)) field.drafted = true;
+      else field.filled = false;
     }
     if (extraction.fields.length > 0) held ??= watchHeld(document, look, tell);
     // A page read afresh may not be as the card last heard: loaded again, or changed by the page itself.
@@ -101,9 +116,10 @@ export function startContent(): () => void {
           results[entry.fieldId] = left({ ok: true, value: shownValue(handle) });
           continue;
         }
-        // Filling again redoes this script's own answers, except where a second pick wouldn't replace the first: a
-        // multi-select would show both ("East Asian", then "South Asian" as the nearest option left).
-        if (holdsPicks(handle)) {
+        // Filling again redoes this script's own answers, except what AI wrote and a resume already attached, and
+        // except where a second pick wouldn't replace the first: a multi-select would show both ("East Asian", then
+        // "South Asian" as the nearest option left).
+        if (drafted(handle) || sameResume(handle, entry.answer) || holdsPicks(handle)) {
           results[entry.fieldId] = left({ ok: true, value: shownValue(handle) });
           continue;
         }
@@ -115,7 +131,13 @@ export function startContent(): () => void {
         results[entry.fieldId] = left(await applyAnswer(handle, entry.answer, loadResume));
         if (!results[entry.fieldId]?.ok) continue;
         const shown = shownValue(handle);
-        for (const element of controlsOf(handle)) wrote.set(element, shown);
+        for (const element of controlsOf(handle)) {
+          wrote.set(element, shown);
+          if (entry.source === 'ai') byAi.add(element);
+          else byAi.delete(element);
+        }
+        if (handle.type === 'file' && entry.answer.type === 'file')
+          attached.set(handle.element, entry.answer.resumeId);
         if (entry.answer.type === 'file') await (adapter.resumeRead?.(document) ?? sleep(300));
         // Filling a field again with what it holds changes nothing for the page to take in.
         if (adapter.settle && (!before || shownValue(handle) !== before)) await adapter.settle();
