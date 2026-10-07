@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { greenhouse } from './adapters/greenhouse';
+import { readAnswer } from './apply';
 import { attachedFile, extractFields, fieldIds } from './extract';
 
 const upload = (markup: string) => {
@@ -44,6 +45,28 @@ describe('extractFields', () => {
       kind: 'typeahead',
       filled: false,
     });
+  });
+
+  it('sees the pick in one of Greenhouse’s dropdowns, which sits beside the input’s own box', () => {
+    // As its page draws a react-select: the pick in the value box, next to the box round the input, whose class
+    // says "container" too.
+    const dropdown = (picked: string) => `<form id="application-form">
+      <label id="q-label" for="q">Have you used Arcadia?</label>
+      <div class="select-shell remix-css-b62m3t-container"><div><div class="select__control">
+        <div class="select__value-container${picked ? ' select__value-container--has-value' : ''}">
+          ${picked ? `<div class="select__single-value remix-css-1dimb5e-singleValue">${picked}</div>` : ''}
+          <div class="select__input-container remix-css-19bb58m"><input id="q" class="select__input" role="combobox" aria-labelledby="q-label"></div>
+        </div></div></div></div></form>`;
+    const read = (picked: string) => {
+      document.body.innerHTML = dropdown(picked);
+      const { fields, handles } = extractFields(greenhouse, document, 0);
+      return { field: fields[0], answer: readAnswer(handles.get(fields[0]!.id)!) };
+    };
+    expect(read('Yes')).toMatchObject({
+      field: { kind: 'combobox', filled: true },
+      answer: { type: 'choice', option: 'Yes' },
+    });
+    expect(read('')).toMatchObject({ field: { kind: 'combobox', filled: false }, answer: null });
   });
 
   it("keeps a field's id when the page is read again, and gives a question that appeared a new one", () => {

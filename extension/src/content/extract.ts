@@ -100,6 +100,18 @@ export function attachedFile(input: HTMLInputElement): string | null {
   return null;
 }
 
+/**
+ * The box of a custom dropdown that shows its pick beside the search input: react-select's control, or another
+ * library's container. Not the wrapper round the input alone, which react-select calls a container too and which
+ * holds no pick: taken for the box, it made every dropdown of Greenhouse's read as empty.
+ */
+export function pickBox(control: Element): Element | null {
+  return (
+    control.closest('[class*="select__control"]') ??
+    control.closest('[class*="container"]:not([class*="input-container"])')
+  );
+}
+
 /** The picks a multi-select shows as chips beside its search box. */
 export function chipsOf(control: Element): string[] {
   const chips = control
@@ -147,9 +159,10 @@ export function isFilled(handle: Handle): boolean {
     case 'file':
       return attachedFile(handle.element) !== null;
     case 'combobox': {
-      // react-select shows the chosen option in a sibling "single value" element.
-      const container = handle.element.closest('[class*="select__control"], [class*="container"]');
-      return Boolean(container?.querySelector('[class*="single-value"], [class*="multi-value"]'));
+      // react-select shows the chosen option in a "single value" element beside the input's own box.
+      return Boolean(
+        pickBox(handle.element)?.querySelector('[class*="single-value"], [class*="multi-value"]'),
+      );
     }
     case 'dateParts':
       return handle.year.value.trim() !== '';
