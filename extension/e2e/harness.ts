@@ -1,5 +1,5 @@
 import { test as base, chromium, type BrowserContext, type Worker } from '@playwright/test';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { dirname, resolve } from 'node:path';
@@ -45,7 +45,16 @@ export interface OutboxMock {
   profiles: Record<string, unknown>[];
 }
 
-export const test = base.extend<{ outbox: OutboxMock; context: BrowserContext; worker: Worker }>({
+export const test = base.extend<{
+  outbox: OutboxMock;
+  build: 'e2e' | 'production';
+  context: BrowserContext;
+  worker: Worker;
+}>({
+  // Which build runs. The specs' own (wxt.e2e.config.ts) is the one Chrome loads but for the card's shadow root,
+  // left open: Playwright looks into open roots only. `production` is the one Chrome loads, card closed.
+  build: ['e2e', { option: true }],
+
   // eslint-disable-next-line no-empty-pattern
   outbox: async ({}, provide) => {
     const quickAdds: Record<string, unknown>[] = [];
@@ -106,10 +115,11 @@ export const test = base.extend<{ outbox: OutboxMock; context: BrowserContext; w
     await new Promise<void>((done) => server.close(() => done()));
   },
 
-  // eslint-disable-next-line no-empty-pattern
-  context: async ({}, provide) => {
-    // E2E_EXTENSION=.output/chrome-mv3-dev tests a development build without replacing the one Chrome loads.
-    const extension = resolve(here, '..', process.env.E2E_EXTENSION ?? '.output/chrome-mv3');
+  context: async ({ build }, provide) => {
+    const extension = resolve(here, '..', build === 'e2e' ? '.output/chrome-mv3-e2e' : '.output/chrome-mv3');
+    // The specs' own build is made as the run starts (build.ts); the one Chrome loads isn't.
+    if (build === 'production' && !existsSync(resolve(extension, 'manifest.json')))
+      throw new Error(`No build at ${extension}: run "npm run build -w extension" first.`);
     const context = await chromium.launchPersistentContext('', {
       channel: 'chromium',
       headless: true,

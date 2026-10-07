@@ -11,8 +11,9 @@ const WAIT = 6000;
 
 /**
  * The settings, in a window over the page like the profile's. What's in the window is the extension's own page in a
- * frame: the page underneath can't read an API key typed there or press anything in it, which it could in the card's
- * own markup. A page that won't take the frame gets the settings in a tab, as before.
+ * frame: nothing typed there reaches the page underneath, which still gets the keys typed into the card's own
+ * markup, closed as its shadow root is (docs/autofill.md, "What the page can reach"). An API key belongs in the
+ * frame. A page that won't take the frame gets the settings in a tab, as before.
  */
 export function SettingsFrame({ t, dark, onClose }: { t: Translate; dark: boolean; onClose: () => void }) {
   const [address, setAddress] = useState<string | null>(null);

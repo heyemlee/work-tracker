@@ -60,7 +60,7 @@ the toolbar button brings it back.
 flowchart LR
   subgraph chrome["Chrome"]
     cs["Content script, every frame<br/>detect · read · fill · watch submit"]
-    card["Card, top frame<br/>shadow DOM"]
+    card["Card, top frame<br/>closed shadow DOM"]
     bg["Service worker<br/>storage · Outbox client · Claude client"]
     opts["Settings page, framed in the card<br/>connection · AI · reports · answers"]
   end
@@ -80,7 +80,8 @@ flowchart LR
   has fields (`watch.ts`). The service worker never injects the script twice into one frame, since WXT would stop the
   running copy, card and all. Greenhouse, Lever and Ashby forms are often embedded in an iframe on a company's own
   career site, so the form's frame and the card's frame can differ.
-- **Card** in the top frame, in a shadow root so the page's CSS can't reach it: a panel the window's height for an
+- **Card** in the top frame, in a closed shadow root, which keeps the page's CSS out and its scripts from looking
+  into the card or pressing anything in it ([what they still learn](#9-privacy)): a panel the window's height for an
   application, a card for a posting or a log, both pinned to the right edge from the top (the bottom of a page
   belongs to its Submit button, chat bubbles and reCAPTCHA's badge). Outbox's Liquid Glass over the page, tinted
   more heavily than in Outbox so text stays readable whatever scrolls beneath, in black, white and grays after
@@ -117,9 +118,9 @@ pronouns, the US state, the work status (which sets the OPT field with it, so th
 date left empty.
 
 **Settings** (decided 2026-10-06) open from the card's ⋯ menu in a window like the profile's, not in a tab. What's
-in the window is the extension's own page (`entrypoints/options`) in a frame (`SettingsFrame.tsx`): the card's
-markup sits in an open shadow root that the page under it can read and script, which is no place for an API key or
-for the addresses keys are sent to; a frame of the extension's origin is closed to the page. The page is reachable by
+in the window is the extension's own page (`entrypoints/options`) in a frame (`SettingsFrame.tsx`): what's typed
+into the card's own markup still passes the page under it, closed as its shadow root is ([Privacy](#9-privacy)):
+no place for an API key. Nothing crosses a frame of the extension's origin. The settings' page is reachable by
 address from any site, so framed it draws only on a ticket the card asked the service worker for, for its tab, good
 once (`background/settings.ts`); in a tab of its own (the browser's "Options") it draws as it is. Five sections —
 Connection (Outbox, the profile's and resumes' copies, Outbox's address), AI, Fill reports, Remembered answers,
@@ -278,6 +279,28 @@ account, and copied into the browser that fills. Remembered answers and the API 
 goes to the model only when the owner asks the profile panel to read it. Claude receives field labels and options, the profile parts a question needs, and the posting's text for
 drafts — never voluntary (EEO) answers or work-authorization questions. Form snapshots carry no values.
 
+**What the page can reach** (decided 2026-10-07). The card sits in the page it helps with, and that page's scripts
+are anyone's: the career site's own, its analytics, a session recorder that takes down open shadow roots with the
+rest of the page. The card shows the accounts and the resume versions, its profile window every field of the
+profile — more than any one form asks for — and its buttons fill, log and save. So its shadow root is closed, and
+made by the content script, on the extension's side of the page, where a page that swapped `attachShadow` for its
+own changes nothing (`ui/card/mount.tsx`): the page finds the card's element and nothing in it, and a press it makes
+up stops at that element. The settings' frame is inside too, where the page can't point it somewhere else. One way
+round is shut separately: an element's definition is handed the element's shadow root whatever its mode
+(`ElementInternals.shadowRoot`), so where a page defined an element named `outbox-autofill` before the card came,
+no card is drawn; a definition made afterwards gets nothing.
+
+A closed root keeps markup in, not everything. A page written to look still gets the keys typed and the text
+pasted into the card (those events pass the page's window on their way in), the text selected in it (tabbing into
+a field selects what it holds), and whether a given string stands in it, a field's value included (`window.find`
+searches the card as find-in-page does); it also sees where the card is, and can cover it or remove it. None of
+that presses anything or changes the profile: the most a page can do there is draw over the card and wait for the
+owner's own press. And all of it takes a script written against this extension. What such a script would learn is
+what the card shows while it shows it, most of which the owner is about to hand that page's form: so the profile's
+window stays in the card, with its glass and its glide. The API keys don't: the settings are a frame of the
+extension's own origin, which none of this crosses. Should the profile ever have to be kept from a page that goes
+looking, its window goes into that frame as well, and appears in place as the settings do.
+
 ## 10. Testing
 
 - **Unit** (Vitest, happy-dom): the dictionary, the critical-question rules, the match scan, the setters, each adapter
@@ -290,6 +313,12 @@ drafts — never voluntary (EEO) answers or work-authorization questions. Form s
   172/172 (87% of required fields filled), Lever 115/115 (79%), Ashby 78/78 (77%).
 - **End to end** (Playwright): the built extension in Chromium against fixtures served on the real hosts through
   request interception, logging to a mock Outbox: Greenhouse and Lever fill → submit → logged, Ashby fill.
+  Playwright can't look into a closed shadow root any more than a page can, so the specs drive a build of their
+  own: the one Chrome loads with the card's root left open and nothing else changed (`wxt.e2e.config.ts`), made as
+  a run starts, in `.output/chrome-mv3-e2e`. One spec (`e2e/reach.spec.ts`) takes the build Chrome loads and tries
+  it from the page's side: the card not read and not pressed, the profile not saved, no card where the page
+  claimed its element. What's in the card it reads on the extension's side (`chrome.dom`) and presses with the
+  mouse.
 - **Free-text eval** (`npm run eval -w extension`): each model drafts the same 20 essay questions through the
   extension's own `draftAnswer`, and a report puts the drafts side by side with flags for banned phrases and
   numbers the material never states. A run costs about $1, so the owner starts each one.

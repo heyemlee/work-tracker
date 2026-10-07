@@ -75,7 +75,8 @@ test('shows the settings in a window over the page, and what’s changed there h
   await expect(settings.getByRole('heading', { name: 'Settings' })).toBeVisible();
   await expect(settings.getByText('Connected · 1 account')).toBeVisible();
   expect(context.pages()).toHaveLength(2);
-  // The page under the window can't look into them, as it can into the card's own markup.
+  // Even a page that got hold of the frame couldn't look into it. (This build leaves the card's root open, for
+  // Playwright; in the one Chrome loads the page can't find the frame either: reach.spec.ts.)
   expect(
     await page.evaluate(() => {
       const frame = document.querySelector('outbox-autofill')?.shadowRoot?.querySelector('iframe');
