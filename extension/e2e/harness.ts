@@ -41,12 +41,15 @@ export const SNAPSHOT = {
 export interface OutboxMock {
   url: string;
   quickAdds: Record<string, unknown>[];
+  /** Profiles saved from the card's own window, oldest first. */
+  profiles: Record<string, unknown>[];
 }
 
 export const test = base.extend<{ outbox: OutboxMock; context: BrowserContext; worker: Worker }>({
   // eslint-disable-next-line no-empty-pattern
   outbox: async ({}, provide) => {
     const quickAdds: Record<string, unknown>[] = [];
+    const profiles: Record<string, unknown>[] = [];
     const server = createServer((request, response) => {
       const send = (status: number, body?: unknown) => {
         response.writeHead(status, { 'content-type': 'application/json' });
@@ -63,7 +66,20 @@ export const test = base.extend<{ outbox: OutboxMock; context: BrowserContext; w
       }
       // The profile lives on Outbox; the extension fetches it before filling.
       if (request.method === 'GET' && request.url === '/api/profile')
-        return send(200, { saved: { profile: makeProfile(), updatedAt: '2026-09-27T12:00:00.000Z' } });
+        return send(200, {
+          saved: { profile: profiles.at(-1) ?? makeProfile(), updatedAt: '2026-09-27T12:00:00.000Z' },
+        });
+      // The card's own window saves the profile here, as Outbox's profile page does.
+      if (request.method === 'PUT' && request.url === '/api/profile') {
+        let data = '';
+        request.on('data', (chunk) => (data += chunk));
+        request.on('end', () => {
+          const profile = JSON.parse(data) as Record<string, unknown>;
+          profiles.push(profile);
+          send(200, { profile, updatedAt: '2026-10-06T12:00:00.000Z' });
+        });
+        return;
+      }
       if (request.method === 'POST' && request.url === '/api/quick-add') {
         let data = '';
         request.on('data', (chunk) => (data += chunk));
@@ -82,7 +98,11 @@ export const test = base.extend<{ outbox: OutboxMock; context: BrowserContext; w
       return send(404, { error: 'not found' });
     });
     await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
-    await provide({ url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`, quickAdds });
+    await provide({
+      url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+      quickAdds,
+      profiles,
+    });
     await new Promise<void>((done) => server.close(() => done()));
   },
 

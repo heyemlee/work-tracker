@@ -19,6 +19,7 @@ import { bridgeStatus, fromOutbox, readResumeForOutbox } from './bridge';
 import { dropFixedSnapshots } from './fixed';
 import { forgetTab, openCard, showForm } from './inject';
 import { flushQueue, syncProfile } from './outbox';
+import { loadProfile, storeProfile } from './profile';
 import { dropSession } from './session';
 
 export function startBackground(): void {
@@ -28,6 +29,8 @@ export function startBackground(): void {
       const url = sender.tab?.url ?? '';
       if (message.type === 'outbox:session') return outboxTokenItem.setValue(message.token);
       if (message.type === 'resume:read') return readResume(message.resumeId);
+      if (message.type === 'profile:load') return loadProfile();
+      if (message.type === 'profile:save') return storeProfile(tabId, message.profile);
       if (message.type === 'bridge:status' || message.type === 'resume:parse') {
         if (!fromOutbox(sender.url)) return undefined;
         return message.type === 'bridge:status'

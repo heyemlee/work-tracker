@@ -5,6 +5,7 @@ import type { AccountColor } from '@domain/types';
 import { browser, type Browser } from 'wxt/browser';
 import type { Answer, Ats, FieldStatus, FrameScan, PlannedField, Posting, Source } from './model';
 import type { MatchReport } from './match/report';
+import type { Profile } from './profile/schema';
 import type { FormSnapshot } from './storage';
 
 /** What Outbox's page learns when it asks after the extension. */
@@ -23,6 +24,8 @@ export interface ChecklistItem {
   note: string | null;
   /** What the field holds after filling. */
   value: string | null;
+  /** The form asks for it: it won't go through with the field empty. */
+  required: boolean;
   critical: boolean;
   source: Source | null;
   /** The fill reached the page; false when the widget refused the answer. */
@@ -53,7 +56,8 @@ export interface CardState {
   hasForm: boolean;
   step: string | null;
   outbox: 'connected' | 'signedOut' | 'unreachable';
-  profileLoaded: boolean;
+  /** Whose answers fill the form, and how many of the blanks most forms ask about the profile still has. */
+  profile: { name: string; blanks: number } | null;
   accounts: CardAccount[];
   accountId: string | null;
   resumes: CardResume[];
@@ -70,6 +74,25 @@ export interface CardState {
   ai: 'off' | 'noKey' | 'ready' | 'busy' | 'failed';
   error: string | null;
 }
+
+/** The profile as the card's own window opens it for editing. */
+export interface ProfileDraft {
+  profile: Profile;
+  /** Nothing is saved yet: this is a blank to start from. */
+  blank: boolean;
+  /** Whether Outbox, where the profile lives, could be reached: without it there's no saving. */
+  outbox: CardState['outbox'];
+}
+
+/** Where a profile doesn't hold: the path into it, and the validator's word for what's wrong there. */
+export interface ProfileIssue {
+  path: (string | number)[];
+  code: string;
+}
+
+export type ProfileSaved =
+  | { ok: true; profile: Profile; state: CardState | null }
+  | { ok: false; error: 'invalid' | 'signedOut' | 'unreachable'; issues: ProfileIssue[] };
 
 /** An answer the owner typed, read from the page as they submit. */
 export interface CapturedAnswer {
@@ -98,6 +121,10 @@ export interface ToBackground {
   'card:save': { request: Record<string, never>; response: CardState };
   'card:undo': { request: Record<string, never>; response: CardState };
   'card:options': { request: Record<string, never>; response: void };
+  /** The profile to edit: Outbox's copy, or this browser's when Outbox can't be reached. */
+  'profile:load': { request: Record<string, never>; response: ProfileDraft };
+  /** Saves the profile on Outbox, where it lives, and in this browser's copy. */
+  'profile:save': { request: { profile: unknown }; response: ProfileSaved };
   'submit:attempt': { request: { answers: CapturedAnswer[] }; response: void };
   'submit:confirmed': { request: { url: string }; response: void };
   'outbox:session': { request: { token: string | null }; response: void };

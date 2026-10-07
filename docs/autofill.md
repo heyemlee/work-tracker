@@ -19,15 +19,25 @@ typing, fingerprint spoofing, CAPTCHA solving); automating LinkedIn, whose terms
 
 ## 2. How it's used
 
-1. Open an application page. Once the form is on the page, a card opens in the corner: the posting with a dot for
-   the match check (green, yellow, red; yellow and red give their two main reasons), then the account to apply from —
-   accounts that already applied to this posting are disabled — and the resume, in one row. With a single account or
-   resume the card names it instead of offering a choice. A posting whose form isn't showing yet opens the card too,
-   for its match check and two buttons: **Save for later**, which adds it to Outbox as a saved job, and **Mark as
-   applied**. A posting Outbox already saved says so when it's opened again.
-2. Press **Fill** (or the shortcut). Recognized fields fill in about a second and the resume PDF is attached.
-3. Work through what the card lists: confirm the work-authorization answers, edit the AI drafts, fill what's missing.
-   Fields that filled fine are counted, not listed.
+1. Open an application page. Once the form is on the page, a glass panel slides in down the window's right edge
+   (on a window under 1360 px wide it stays a card in the top-right corner): the posting's title with a dot for the
+   match check (green, yellow, red; yellow and red give their two main reasons under it), then the accounts, as a
+   list with a highlight on the one applying that slides to the next choice — accounts that already applied to
+   this posting are disabled — and the resume in use, which drops open to the other versions when pressed. Under
+   them, whose profile the form is filled from and how many of the blanks most forms ask about it still has;
+   pressing it opens the profile in a window over the page, to edit it right there. A posting whose form isn't
+   showing yet gets a card in the top-right corner instead, for its match check and two buttons: **Save for
+   later**, which adds it to Outbox as a saved job, and **Mark as applied**. A posting Outbox already saved says so
+   when it's opened again.
+2. Press **Fill** (or the shortcut). Recognized fields fill in about a second and the resume PDF is attached; the
+   button turns into a bar that fills meanwhile. Its count is paced by the stage the fill is at (reading the page,
+   then filling), not measured field by field.
+3. Work through what the panel lists. It says how many of the form's required fields are filled, over a bar, and
+   then names every field with a mark for whether it holds something, grouped by what's left to do: **To fill**
+   (nothing to put there; "Required" where the form won't go through without it), **To check** (work-authorization
+   answers, consents, AI drafts), **Filled in**, and **Optional, left empty**. Each question reads in full, with
+   its answer beside it or the start of its draft under it; pressing one scrolls to its field and leaves the
+   highlight on it.
 4. Press Submit on the page.
 5. The extension sees the confirmation and logs the application to Outbox. The card shrinks to that one line, with
    Undo.
@@ -70,8 +80,14 @@ flowchart LR
   has fields (`watch.ts`). The service worker never injects the script twice into one frame, since WXT would stop the
   running copy, card and all. Greenhouse, Lever and Ashby forms are often embedded in an iframe on a company's own
   career site, so the form's frame and the card's frame can differ.
-- **Card** in the top frame, in a shadow root so the page's CSS can't reach it. Outbox's Liquid Glass styling,
-  English and Simplified Chinese.
+- **Card** in the top frame, in a shadow root so the page's CSS can't reach it: a panel the window's height for an
+  application, a card for a posting or a log, both pinned to the right edge from the top (the bottom of a page
+  belongs to its Submit button, chat bubbles and reCAPTCHA's badge). Outbox's Liquid Glass over the page, tinted
+  more heavily than in Outbox so text stays readable whatever scrolls beneath, in black, white and grays after
+  OpenAI's interfaces, with color only where it says something (the match check, an account, an error). Light or
+  dark goes by the page it sits on rather than the system (`scheme.ts`): a dark pane over a white page turns the
+  gray of neither. A list's highlight slides to the item chosen on a spring (`Track` in `Card.tsx`); nothing
+  follows the pointer. English and Simplified Chinese.
 - **Service worker** holds the storage, talks to Outbox and to Claude, and queues logs while offline.
 - **Shared code.** The extension imports `src/domain` — link parsing (`postings.ts`), types, rows — so "already
   applied" means the same thing in the extension and the app.
@@ -87,6 +103,15 @@ account in D1 as one JSON document (`profiles` table), validated by the shared s
 every save. The panel can import the old `autofill-profile.json` once. The extension copies the profile into
 `chrome.storage.local` whenever it reads a page or fills, so filling works offline from the last copy. The API key and
 remembered answers stay in the extension; they never go to Outbox. Nothing is in git.
+
+**From the card** (decided 2026-10-06). The same profile opens in a window of the card's own, over the application
+page (`ProfileSheet.tsx`), so a blank met on a form is fixed without leaving it: eight sections down the left —
+Personal (name, contact, address, links), Work authorization, Education, Work experience, Skills, Equal employment,
+Common questions, Writing material — and the open one's fields beside them. It loads Outbox's copy (this browser's
+when Outbox can't be reached, with a note that nothing can be saved then) and saves through `PUT /api/profile`,
+checked by the same schema first in the window and again in the service worker (`background/profile.ts`); a save
+Outbox didn't take isn't kept locally either, or the next sync would quietly undo it. Entries added and left blank
+are dropped on save. Reading a resume into the profile stays on Outbox's page.
 
 **Resumes** (decided 2026-09-28, replacing PDFs added on the options page) are uploaded on Outbox, on their own page: one PDF per resume version, up to 1.4 MB, stored in D1 as base64 (`resume_files`, apart from the
 version so the snapshot never reads it). Base64 rather than a blob: D1 hands a blob to the Worker as an array of
@@ -136,9 +161,11 @@ Each field goes through four layers and stops at the first that places it:
 wordings like "do you not require…"), citizenship and visa status. They never reach the model; an ambiguous wording
 stays blank and turns red; every answer is marked for confirmation.
 
-After filling, the card lists only the fields that need the owner, each tagged **Check** (work authorization,
-consents), **AI** (a draft to edit) or **Fill** (nothing to put there); the ones that filled are counted. Clicking an
-entry scrolls to its field. Values are set so React sees them: the native value setter plus `input` and `change`
+After filling, the card lists every field the form has (`checklist` in `background/card.ts`), each with a mark —
+a check where the field now holds something, a dash where it doesn't — and its answer: what needs the owner first
+(to fill, then to check, AI's drafts marked **AI**), then what filled fine, then what was optional and left alone.
+The count over the bar is of the fields the form marks as required, or of all of them where it marks none.
+Clicking an entry scrolls to its field. Values are set so React sees them: the native value setter plus `input` and `change`
 events, clicks for radios, checkboxes and options, and a `DataTransfer` for the resume's file input.
 
 An answer can bring up another question (Greenhouse asks for race once "Hispanic or Latino?" is answered), so after
@@ -197,12 +224,12 @@ Shown before filling. It warns and never blocks.
 | ------------------------------------------------------------------------------------------------- | ------ |
 | US citizenship, security clearance, export-control "U.S. person", or an explicit "no sponsorship" | Red    |
 | 5+ years required; Senior, Staff, Principal, Lead or Manager titles                               | Yellow |
-| No H-1B approvals on record for the company                                                       | Yellow |
 | Three or more postings at this company in the last 30 days (from Outbox)                          | Yellow |
 | New-grad or early-career signals, H-1B history                                                    | Green  |
 
 H-1B history is a compact table built from the USCIS H-1B Employer Data Hub files for fiscal years 2021–2023 (82,000
-employers, bundled with the extension) and matched by normalized company name.
+employers, bundled with the extension) and matched by normalized company name. A company with no approvals on record
+raises nothing: the match is by name, and most small employers aren't in the table.
 
 **Duplicate hint.** Ashby and Workday merge candidates by name and contact details, so picking a second account for
 a posting there shows a note. It is a note, not a block.

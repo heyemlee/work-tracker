@@ -2,7 +2,7 @@ import type { QuickAddResult } from '@domain/repository';
 import type { Snapshot } from '@domain/types';
 import { beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import type { Posting, ScannedField } from '../model';
+import type { PlannedField, Posting, ScannedField } from '../model';
 import type { FormSnapshot } from '../storage';
 
 const loadSnapshot = vi.fn<() => Promise<Snapshot>>();
@@ -16,7 +16,7 @@ vi.mock('./outbox', () => ({
   OutboxSignedOut: class extends Error {},
 }));
 
-const { logApplication, saveJob, snapshot, undo } = await import('./card');
+const { cardState, logApplication, saveJob, snapshot, undo } = await import('./card');
 const { updateSession } = await import('./session');
 const { loggedItem, snapshotsItem } = await import('../storage');
 
@@ -122,6 +122,66 @@ describe('saving a posting for later', () => {
     await updateSession(TAB, URL_, () => ({ accountId: 'a1' }));
     await logApplication(TAB, URL_, true);
     expect(await loggedItem.getValue()).toBe(true);
+  });
+});
+
+describe('the checklist', () => {
+  beforeEach(() => {
+    fakeBrowser.reset();
+    vi.clearAllMocks();
+    loadSnapshot.mockResolvedValue(empty);
+  });
+
+  const scanned = (id: string, label: string, required: boolean): ScannedField => ({
+    id,
+    label,
+    description: '',
+    kind: 'text',
+    options: [],
+    required,
+    hint: null,
+    section: '',
+    entry: null,
+    filled: false,
+    maxLength: null,
+  });
+  const planned = (fieldId: string, status: PlannedField['status'], text?: string): PlannedField => ({
+    fieldId,
+    status,
+    answer: text ? { type: 'text', text } : null,
+    source: text ? 'rule' : null,
+    key: null,
+    note: null,
+    critical: false,
+  });
+
+  it('lists every field, what needs the owner first, and says which the form requires', async () => {
+    const session = await updateSession(TAB, URL_, () => ({
+      hasForm: true,
+      fields: [
+        scanned('0:first', 'First Name', true),
+        scanned('0:twitter', 'Twitter URL', false),
+        scanned('0:gpa', 'GPA', true),
+        scanned('0:phone', 'Phone', true),
+      ],
+      plan: [
+        planned('0:first', 'filled', 'Alex'),
+        planned('0:twitter', 'skipped'),
+        planned('0:gpa', 'missing'),
+        planned('0:phone', 'filled', '+1 408-555-0100'),
+      ],
+      // The page refused the phone number: it's the owner's to fill.
+      results: { '0:first': { ok: true, value: 'Alex' }, '0:phone': { ok: false, error: 'no such option' } },
+    }));
+    const { checklist } = await cardState(session);
+    expect(
+      checklist.map(({ label, status, required, value }) => ({ label, status, required, value })),
+    ).toEqual([
+      { label: 'GPA', status: 'missing', required: true, value: null },
+      { label: 'Phone', status: 'missing', required: true, value: null },
+      { label: 'First Name', status: 'filled', required: true, value: 'Alex' },
+      { label: 'Twitter URL', status: 'skipped', required: false, value: null },
+    ]);
   });
 });
 

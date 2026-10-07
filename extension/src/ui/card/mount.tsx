@@ -4,7 +4,11 @@ import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root';
 import { Card } from './Card';
 import './card.css';
 
-/** Puts the card in the page's top frame, in a shadow root pinned to the bottom-right corner. */
+/**
+ * Puts the card in the page's top frame, in a shadow root pinned to the window's right edge, from the top: under
+ * the toolbar button that brings it back, and clear of what pages keep at the bottom (their Submit, chat bubbles,
+ * reCAPTCHA's badge).
+ */
 export async function mountCard(ctx: ContentScriptContext, startOpen: boolean): Promise<void> {
   const ui = await createShadowRootUi<Root>(ctx, {
     name: 'outbox-autofill',

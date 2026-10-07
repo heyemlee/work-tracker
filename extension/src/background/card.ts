@@ -9,7 +9,7 @@ import type { H1bTable } from '../match/h1b';
 import { matchReport } from '../match/report';
 import { toFrame, type CapturedAnswer, type CardState, type ChecklistItem } from '../messages';
 import { aiCandidates, draftCandidates, planForm } from '../plan';
-import { yearsOfExperience } from '../profile/profile';
+import { fullName, missingItems, yearsOfExperience } from '../profile/profile';
 import type { Profile } from '../profile/schema';
 import type { RuleContext } from '../rules/context';
 import { remember } from '../rules/memory';
@@ -95,20 +95,22 @@ const STATUS_ORDER: Record<PlannedField['status'], number> = {
   skipped: 4,
 };
 
+/** Every field of the form, what needs the owner first; within one standing, in the form's own order. */
 function checklist(session: TabSession): ChecklistItem[] {
   const fields = new Map(session.fields.map((field) => [field.id, field]));
   return session.plan
-    .filter((entry) => entry.status !== 'skipped' || fields.get(entry.fieldId)?.required)
     .map((entry) => {
+      const field = fields.get(entry.fieldId);
       const result = session.results[entry.fieldId];
       const failed = entry.answer !== null && result !== undefined && !result.ok;
       return {
         fieldId: entry.fieldId,
-        label: fields.get(entry.fieldId)?.label ?? '',
+        label: field?.label ?? '',
         // An answer the page refused is the owner's to fill.
         status: failed ? 'missing' : entry.status,
         note: failed ? (result?.error ?? entry.note) : entry.note,
         value: result?.value ?? null,
+        required: field?.required ?? false,
         critical: entry.critical,
         source: entry.source,
         applied: result?.ok ?? false,
@@ -144,7 +146,7 @@ export async function cardState(session: TabSession, outbox?: OutboxState): Prom
     hasForm: session.hasForm,
     step: session.step,
     outbox: status,
-    profileLoaded: profile !== null,
+    profile: profile ? { name: fullName(profile).trim(), blanks: missingItems(profile).length } : null,
     accounts,
     accountId: session.accountId,
     resumes,

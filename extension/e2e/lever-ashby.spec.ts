@@ -32,7 +32,7 @@ test('fills a Lever application, and logs it once the thank-you page loads', asy
   );
   await expect(authorized).toBeChecked();
   await expect(sponsorship).toBeChecked();
-  await expect(card.getByText('Check', { exact: true }).first()).toBeVisible();
+  await expect(card.getByTitle(/^Check: /).first()).toBeVisible();
   expect(
     await page.locator('#resume-upload-input').evaluate((input: HTMLInputElement) => input.files?.length),
   ).toBe(1);

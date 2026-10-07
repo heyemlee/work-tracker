@@ -1,30 +1,41 @@
 /* The card lives in a shadow root: nothing from the page reaches it, and it reaches nothing on the page.
-   Tokens follow Outbox's (src/index.css), light and dark by the system setting. */
+   The glass is Outbox's (src/index.css), tinted more heavily: whatever scrolls beneath on someone else's page, the
+   text on it stays readable. The colors are black, white and the grays between, after OpenAI's interfaces, light
+   or dark by the page the card sits on; color is kept for what it has to say (the match check, an account, an
+   error). */
 
 :host {
   --font:
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB',
     'Microsoft YaHei', system-ui, sans-serif;
-  --fg: #1d1d1f;
-  --fg-2: #6e6e73;
-  --fg-3: #8a8a8e;
-  --hairline: rgb(0 0 0 / 0.08);
+  --fg: #0d0d0d;
+  --fg-2: #5d5d5d;
+  --fg-3: #8f8f8f;
+  --hairline: rgb(0 0 0 / 0.1);
   --fill: rgb(0 0 0 / 0.045);
-  --fill-2: rgb(0 0 0 / 0.085);
-  --glass: rgb(255 255 255 / 0.94);
-  --glass-rim: rgb(255 255 255 / 0.95);
-  --glass-edge: rgb(0 0 0 / 0.07);
-  --glass-shadow: 0 18px 44px -18px rgb(0 0 0 / 0.28), 0 4px 12px -6px rgb(0 0 0 / 0.12);
-  --accent: #1d1d1f;
+  --fill-2: rgb(0 0 0 / 0.08);
+  --solid: #ffffff;
+  --glass-rgb: 255 255 255;
+  --glass-alpha: 0.8;
+  --glass-alpha-strong: 0.92;
+  --glass-blur: 28px;
+  --glass-rim: rgb(255 255 255 / 0.9);
+  --glass-rim-soft: rgb(255 255 255 / 0.2);
+  --glass-edge: rgb(0 0 0 / 0.1);
+  --glass-sheen: rgb(255 255 255 / 0.4);
+  --glass-shadow: 0 24px 56px -24px rgb(0 0 0 / 0.3), 0 4px 14px -6px rgb(0 0 0 / 0.12);
+  --thumb: #ffffff;
+  --thumb-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.06), 0 1px 3px rgb(0 0 0 / 0.1);
+  --accent: #0d0d0d;
   --on-accent: #ffffff;
-  --red: #d70015;
-  --red-bg: rgb(215 0 21 / 0.08);
-  --yellow: #8a590b;
-  --yellow-bg: #fbefd9;
-  --green: #23703a;
-  --green-bg: #e1f2e5;
-  --blue: #2f5fa8;
-  --blue-bg: #e8eef7;
+  --focus: rgb(2 133 255 / 0.55);
+  --red: #e02e2a;
+  --yellow: #a85f00;
+  --green: #10a37f;
+  --on-green: #ffffff;
+  --red-dot: #f93a37;
+  --yellow-dot: #f4ac00;
+  --green-dot: #10a37f;
   --acc-blue: #3478f6;
   --acc-purple: #9a5de0;
   --acc-pink: #e0569b;
@@ -32,119 +43,230 @@
   --acc-green: #2e9e55;
   --acc-teal: #1a9fb0;
   --acc-gray: #8e8e93;
+  /* Springs as easings. A highlight overshoots a little where it lands, then settles: 0.5 s with a bounce of 0.3.
+     A pane glides in with barely any: 0.45 s and 0.18, the pace of Outbox's own thumb. */
+  /* prettier-ignore */
+  --spring: linear(0, 0.038, 0.131, 0.253, 0.387, 0.519, 0.641, 0.746, 0.834, 0.904, 0.957, 0.995, 1.021, 1.036,
+    1.044, 1.046, 1.044, 1.04, 1.034, 1.028, 1.022, 1.016, 1.011, 1.007, 1.004, 1.002, 1, 0.999, 0.998, 0.998, 1);
+  --spring-time: 0.75s;
+  /* prettier-ignore */
+  --glide: linear(0, 0.03, 0.103, 0.2, 0.308, 0.416, 0.519, 0.613, 0.695, 0.766, 0.825, 0.873, 0.911, 0.941, 0.964,
+    0.98, 0.992, 1.001, 1.006, 1.009, 1.011, 1.011, 1.011, 1.01, 1.009, 1.008, 1.006, 1.005, 1.004, 1.003, 1);
+  --glide-time: 0.6s;
   all: initial;
 }
 
-@media (prefers-color-scheme: dark) {
-  :host {
-    --fg: #f5f5f7;
-    --fg-2: #a1a1a6;
-    --fg-3: #7c7c80;
-    --hairline: rgb(255 255 255 / 0.09);
-    --fill: rgb(255 255 255 / 0.065);
-    --fill-2: rgb(255 255 255 / 0.11);
-    --glass: rgb(34 34 38 / 0.94);
-    --glass-rim: rgb(255 255 255 / 0.3);
-    --glass-edge: rgb(255 255 255 / 0.06);
-    --glass-shadow: 0 22px 54px -18px rgb(0 0 0 / 0.75), 0 4px 12px -6px rgb(0 0 0 / 0.5);
-    --accent: #f5f5f7;
-    --on-accent: #1c1c1e;
-    --red: #ff6961;
-    --red-bg: rgb(255 105 97 / 0.14);
-    --yellow: #edbe72;
-    --yellow-bg: rgb(235 170 70 / 0.18);
-    --green: #88d59e;
-    --green-bg: rgb(100 195 130 / 0.18);
-    --blue: #a6bfe2;
-    --blue-bg: rgb(120 160 220 / 0.18);
-    --acc-blue: #4c8dff;
-    --acc-purple: #b17cf2;
-    --acc-pink: #f06aa8;
-    --acc-orange: #f59a3c;
-    --acc-green: #3fbf6a;
-    --acc-teal: #33bccc;
-    --acc-gray: #98989d;
-  }
+/* On a dark page: see scheme.ts. */
+.card.dark,
+.sheet.dark {
+  color-scheme: dark;
+  --fg: #f3f3f3;
+  --fg-2: #b4b4b4;
+  --fg-3: #9b9b9b;
+  --hairline: rgb(255 255 255 / 0.1);
+  --fill: rgb(255 255 255 / 0.06);
+  --fill-2: rgb(255 255 255 / 0.12);
+  --solid: #212121;
+  --glass-rgb: 33 33 33;
+  --glass-alpha: 0.78;
+  --glass-alpha-strong: 0.92;
+  --glass-rim: rgb(255 255 255 / 0.22);
+  --glass-rim-soft: rgb(255 255 255 / 0.04);
+  --glass-edge: rgb(0 0 0 / 0.5);
+  --glass-sheen: rgb(255 255 255 / 0.05);
+  --glass-shadow: 0 28px 64px -22px rgb(0 0 0 / 0.8), 0 6px 16px -8px rgb(0 0 0 / 0.5);
+  --thumb: rgb(255 255 255 / 0.13);
+  --thumb-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  --accent: #ffffff;
+  --on-accent: #0d0d0d;
+  --focus: rgb(2 133 255 / 0.7);
+  --red: #ff6764;
+  --yellow: #f2b84b;
+  --green: #19c37d;
+  --on-green: #0d0d0d;
+  --acc-blue: #4c8dff;
+  --acc-purple: #b17cf2;
+  --acc-pink: #f06aa8;
+  --acc-orange: #f59a3c;
+  --acc-green: #3fbf6a;
+  --acc-teal: #33bccc;
+  --acc-gray: #98989d;
 }
 
 * {
   box-sizing: border-box;
 }
 
-/* Pinned inside the shadow root: WXT resets the host element itself with `all: initial !important`. */
+/* Pinned inside the shadow root: WXT resets the host element itself with `all: initial !important`. The right
+   edge, from the top, is where a browser's own panels and bubbles open; the bottom corner belongs to the page's
+   Submit, its chat bubble and reCAPTCHA's badge. */
 .root {
   position: fixed;
-  right: 16px;
-  bottom: 16px;
+  top: 12px;
+  right: 12px;
   z-index: 2147483647;
   font-family: var(--font);
   font-size: 13px;
   line-height: 1.4;
   color: var(--fg);
+  /* Lets the card's height glide between "what it holds" and "the window's". */
+  interpolate-size: allow-keywords;
   -webkit-font-smoothing: antialiased;
 }
 
+/* Liquid glass, as in Outbox, drawn by two layers so that the element itself stays plain: a pane that blurred its
+   own backdrop would be all its menu could see behind it, and the menu would show the page unblurred wherever it
+   reached past the pane. */
 .glass {
-  background: var(--glass);
-  backdrop-filter: blur(22px) saturate(1.8);
-  -webkit-backdrop-filter: blur(22px) saturate(1.8);
-  border: 0.5px solid var(--glass-edge);
+  isolation: isolate;
   box-shadow:
     var(--glass-shadow),
-    inset 0 1px 0 var(--glass-rim);
+    0 0 0 0.5px var(--glass-edge);
 }
 
+/* The pane: a tint over the blurred page, light pooling along its top. */
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, var(--glass-sheen), transparent min(42%, 200px)),
+    rgb(var(--glass-rgb) / var(--glass-alpha));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.8);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.8);
+}
+
+/* Specular rim: a gradient border that catches light on the top-left and bottom-right edges. */
+.glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    170deg,
+    var(--glass-rim) 0%,
+    var(--glass-rim-soft) 30%,
+    transparent 55%,
+    var(--glass-rim-soft) 80%,
+    var(--glass-rim) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+/* A posting or a log is a card under the toolbar. An application is worked through in a panel down the window's
+   right edge, as long as the window can spare the width. The card slides in without fading: while it fades, its
+   glass would have nothing to blur. */
 .card {
-  width: 320px;
-  max-height: min(600px, calc(100vh - 32px));
+  position: relative;
+  /* The scrollbar follows the card, not the page. */
+  color-scheme: light;
+  color: var(--fg);
+  width: 360px;
+  height: auto;
+  max-height: calc(100vh - 24px);
   display: flex;
   flex-direction: column;
-  border-radius: 20px;
+  border-radius: 24px;
+  animation: card-in var(--glide-time) var(--glide);
+  transition: height var(--glide-time) var(--glide);
+}
+
+/* Under this width the panel would lie over the form it's there to fill. */
+@media (min-width: 1360px) {
+  .card.panel {
+    height: calc(100vh - 24px);
+  }
+}
+
+@keyframes card-in {
+  from {
+    transform: translateX(calc(100% + 24px));
+  }
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 .head {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  padding: 12px 12px 10px 16px;
+  gap: 2px;
+  padding: 14px 12px 4px 18px;
 }
 
 .head-text {
   flex: 1;
   min-width: 0;
-}
-
-.company {
-  font-size: 12px;
-  color: var(--fg-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  padding: 4px 8px 0 0;
 }
 
 .title {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 15px;
+  line-height: 20px;
   font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.title .dot {
+  margin-top: 6px;
 }
 
 .title span:last-child {
   min-width: 0;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
+/* Under the title's text, past its dot. */
+.reasons {
+  margin-top: 3px;
+  padding-left: 16px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.reasons.red {
+  color: var(--red);
+}
+.reasons.yellow {
+  color: var(--yellow);
+}
+
+/* What scrolls fades out under the head and at the foot of the pane, over the body's own padding. */
 .body {
-  padding: 0 14px 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 10px 14px 14px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
   scrollbar-width: thin;
   scrollbar-color: var(--fill-2) transparent;
+  -webkit-mask-image: linear-gradient(transparent, #000 10px, #000 calc(100% - 14px), transparent);
+  mask-image: linear-gradient(transparent, #000 10px, #000 calc(100% - 14px), transparent);
 }
 
 /* A long list scrolls; the controls above it keep their size. */
@@ -157,20 +279,21 @@
 }
 
 .icon-button {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border: 0;
-  border-radius: 999px;
-  background: var(--fill);
-  color: var(--fg-2);
+  border-radius: 9px;
+  background: none;
+  color: var(--fg-3);
   display: grid;
   place-items: center;
   cursor: pointer;
   flex: none;
 }
 
-.icon-button:hover {
-  background: var(--fill-2);
+.icon-button:hover,
+.icon-button[aria-expanded='true'] {
+  background: var(--fill);
   color: var(--fg);
 }
 
@@ -182,28 +305,68 @@
 }
 
 .dot.red {
-  background: var(--red);
+  background: var(--red-dot);
 }
 .dot.yellow {
-  background: var(--yellow);
+  background: var(--yellow-dot);
 }
 .dot.green {
-  background: var(--green);
+  background: var(--green-dot);
+}
+
+/* The highlight of a list: it sits on the current item, slides to the next and takes its size, overshooting a
+   little where it lands. It appears on its first item in place, and never chases the pointer. */
+.track {
+  position: relative;
+}
+
+.track > * {
+  position: relative;
+  z-index: 1;
+}
+
+.track > .lens {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  border-radius: 10px;
+  background: var(--thumb);
+  box-shadow: var(--thumb-shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.track > .lens.on {
+  opacity: 1;
+}
+
+.track > .lens.sliding {
+  transition:
+    opacity 0.2s ease,
+    transform var(--spring-time) var(--spring),
+    width var(--spring-time) var(--spring),
+    height var(--spring-time) var(--spring);
 }
 
 .menu-wrap {
   position: relative;
 }
 
+/* Over busy lines, so tinted more than the pane. It pops from the button's corner. */
 .menu {
+  --glass-alpha: var(--glass-alpha-strong);
   position: absolute;
   right: 0;
-  z-index: 1;
-  min-width: 168px;
+  z-index: 2;
+  min-width: 176px;
   padding: 4px;
-  border-radius: 12px;
+  border-radius: 14px;
   display: flex;
   flex-direction: column;
+  transform-origin: top right;
+  animation: pop 0.45s var(--spring);
 }
 
 .menu.down {
@@ -212,6 +375,13 @@
 
 .menu.up {
   bottom: calc(100% + 6px);
+  transform-origin: bottom right;
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.9);
+  }
 }
 
 .menu button {
@@ -220,28 +390,16 @@
   color: var(--fg);
   font: 13px/1.2 var(--font);
   text-align: left;
-  padding: 8px 10px;
-  border-radius: 8px;
+  padding: 9px 10px;
+  border-radius: 10px;
   cursor: pointer;
   white-space: nowrap;
+  outline: none;
 }
 
 .menu button:hover,
 .menu button:focus-visible {
-  background: var(--fill);
-  outline: none;
-}
-
-.reasons {
-  font-size: 12px;
-  margin-top: -4px;
-}
-
-.reasons.red {
-  color: var(--red);
-}
-.reasons.yellow {
-  color: var(--yellow);
+  background: var(--fill-2);
 }
 
 .notice {
@@ -249,8 +407,10 @@
   align-items: baseline;
   gap: 8px;
   font-size: 12px;
-  border-radius: 10px;
-  padding: 7px 10px;
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: var(--fill);
+  color: var(--fg-2);
 }
 
 /* A model's error can run long: three lines, the rest on hover. */
@@ -266,12 +426,6 @@
 
 .notice.error {
   color: var(--red);
-  background: var(--red-bg);
-}
-
-.notice.warn {
-  color: var(--yellow);
-  background: var(--yellow-bg);
 }
 
 .notice-action {
@@ -279,84 +433,210 @@
   border: 0;
   background: none;
   padding: 0;
-  color: inherit;
+  color: var(--fg);
   font: 600 12px var(--font);
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
 }
 
-.pickers {
+.section {
   display: flex;
+  flex-direction: column;
   gap: 6px;
 }
 
-.picker {
-  flex: 1 1 0;
-  min-width: 0;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 4px;
-  border-radius: 9px;
-  border: 0.5px solid transparent;
+.label {
+  margin: 0;
+  padding: 0 6px;
   font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
   color: var(--fg-2);
 }
 
-.picker.account {
-  flex-grow: 1.6;
+/* How many there are, after the name of a group. */
+.label > span {
+  margin-left: 2px;
+  font-weight: 400;
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
 }
 
-.picker.choosable {
-  padding: 0 4px 0 8px;
-  border-color: var(--hairline);
+/* The accounts, the resumes: a recessed track, a line each, the highlight on the one in use. */
+.choices {
+  padding: 4px;
+  border-radius: 14px;
   background: var(--fill);
+}
+
+.choices.none {
+  padding: 10px 14px;
+  color: var(--fg-2);
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Folded, the track is a window one line tall, and the list rolls its chosen line into it: a closed dropdown.
+   Open, the window is the list's height. The highlight then rides with the list, so it stays put in the window. */
+.choices.fold {
+  height: calc(36px + 8px);
+  overflow: hidden;
+  transition: height var(--glide-time) var(--glide);
+}
+
+.choices.fold.open {
+  height: calc(var(--lines) * 36px + 8px);
+}
+
+.choices.fold > .lines {
+  transform: translateY(calc(var(--at) * -36px));
+  transition: transform var(--glide-time) var(--glide);
+}
+
+.choices.fold.open > .lines {
+  transform: none;
+}
+
+.choices.fold:not(.open) .lens.sliding {
+  transition:
+    opacity 0.2s ease,
+    transform var(--glide-time) var(--glide);
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 36px;
+  padding: 0 12px 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--fg-2);
+  font: 13px var(--font);
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.choice[aria-checked='true'],
+.choice:hover:enabled {
   color: var(--fg);
 }
 
-.picker-icon {
+.choice:disabled {
+  color: var(--fg-3);
+  cursor: default;
+}
+
+.choice:disabled .dot {
+  opacity: 0.45;
+}
+
+.choice:focus-visible,
+.item:focus-visible {
+  outline-offset: -2px;
+}
+
+.choice-icon {
+  width: 16px;
+  display: grid;
+  place-items: center;
   flex: none;
   color: var(--fg-3);
 }
 
-.picker select {
+.choice-text {
   flex: 1;
-  min-width: 0;
-  height: 100%;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: 12px var(--font);
-  cursor: pointer;
-  outline: none;
-}
-
-.fixed {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.hint {
+.choice-note {
+  flex: none;
   font-size: 12px;
+}
+
+/* A line that opens something: the profile, in its own window. */
+.choices.link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  color: var(--fg);
+  font: 13px var(--font);
+  text-align: left;
+  cursor: pointer;
+}
+
+.choices.link:hover {
+  background: var(--fill-2);
+}
+
+.choices.link .choice-note {
   color: var(--fg-2);
 }
 
+.link-arrow {
+  flex: none;
+  margin-right: -2px;
+  color: var(--fg-3);
+}
+
+/* What a folded list shows it can do: open, and close again. */
+.choice-fold {
+  flex: none;
+  margin-right: -2px;
+  color: var(--fg-3);
+  transition: transform var(--glide-time) var(--glide);
+}
+
+.choice-fold.up {
+  transform: rotate(180deg);
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--fg-2);
+  padding: 0 6px;
+}
+
 .primary {
-  height: 36px;
+  height: 44px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 999px;
   background: var(--accent);
   color: var(--on-accent);
-  font: 600 14px/1 var(--font);
+  font: 600 15px/1 var(--font);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  transition:
+    opacity 0.15s ease,
+    transform 0.5s var(--spring);
+}
+
+.primary:hover:enabled {
+  opacity: 0.88;
+}
+
+/* It gives under the press at once, and springs back. */
+.primary:active:enabled,
+.secondary:active {
+  transform: scale(0.97);
+  transition-duration: 0.15s, 0.08s;
 }
 
 .primary:disabled {
@@ -365,19 +645,67 @@
 }
 
 .secondary {
-  height: 28px;
-  border: 0.5px solid var(--hairline);
-  border-radius: 9px;
+  height: 30px;
+  border: 0;
+  border-radius: 999px;
   background: var(--fill);
   color: var(--fg);
   font: 500 12px var(--font);
   cursor: pointer;
-  padding: 0 10px;
+  padding: 0 12px;
   flex: none;
+  transition:
+    background 0.15s ease,
+    transform 0.5s var(--spring);
 }
 
 .secondary:hover {
   background: var(--fill-2);
+}
+
+/* A fill under way, where its button was: a dark bar that a light one fills, the count on it. After a loader by
+   thekuntal49 on Uiverse.io; here the words stay in the middle, and take the bar's color where the fill has
+   passed under them. */
+.progress {
+  position: relative;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--accent);
+  overflow: hidden;
+  /* So the words inside the fill can be as wide as the bar: 100cqw. */
+  container-type: inline-size;
+}
+
+.progress-fill {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  /* It starts as a dot the bar's height. */
+  min-width: 38px;
+  border-radius: 999px;
+  background: var(--on-accent);
+  overflow: hidden;
+  transition: width 0.3s ease-out;
+}
+
+.progress-text {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--on-accent);
+  font: 600 14px/1 var(--font);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Laid over the bar's own words, to the pixel. */
+.progress-fill > .progress-text {
+  inset: -3px auto auto -3px;
+  width: 100cqw;
+  height: 44px;
+  color: var(--accent);
 }
 
 /* Two actions side by side: the main one takes the room, the other sits beside it at the same height. */
@@ -391,119 +719,183 @@
 }
 
 .actions .secondary {
-  height: 36px;
-  border-radius: 12px;
-  padding: 0 12px;
+  height: 44px;
+  padding: 0 16px;
   font-size: 13px;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.link {
-  border: 0;
-  background: none;
-  color: var(--fg-2);
-  font: 12px var(--font);
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  flex: none;
-}
-
-.link:hover {
-  color: var(--fg);
-}
-
+/* After a fill: how much of the form is filled, as a count over a bar; the fields follow in their groups. */
 .summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 6px;
+}
+
+.summary-line {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 12px;
-  color: var(--fg-2);
+  min-height: 24px;
 }
 
-.summary > span {
+.summary-title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-percent {
+  font-weight: 400;
+  color: var(--fg-3);
+}
+
+.meter {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--fill-2);
+  overflow: hidden;
+}
+
+.meter > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
+  transition: width var(--glide-time) var(--glide);
+}
+
+.drafting {
   display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 0 4px;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--fg-2);
+  white-space: nowrap;
 }
 
+.ghost {
+  height: 24px;
+  margin-right: -8px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--fg-2);
+  font: 12px var(--font);
+  cursor: pointer;
+}
+
+.ghost:hover {
+  background: var(--fill);
+  color: var(--fg);
+}
+
+/* The form's fields, a line each, with a mark for whether the field holds something. The highlight marks the
+   field last jumped to. */
 .items {
   display: flex;
   flex-direction: column;
-  margin: -2px -8px 0;
+}
+
+.items > .lens {
+  background: var(--fill-2);
+  box-shadow: none;
 }
 
 .item {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 8px;
-  cursor: pointer;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px 7px 6px;
   border: 0;
+  border-radius: 10px;
   background: none;
   color: var(--fg);
+  font: 13px/18px var(--font);
   text-align: left;
-  font: 12px/1.35 var(--font);
-  width: 100%;
+  cursor: pointer;
 }
 
-.item:hover {
+.item:hover:not([aria-current]) {
   background: var(--fill);
 }
 
-.item-label {
+/* Filled, or not: the one thing to tell at a glance. */
+.mark {
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--fill-2);
+  color: var(--fg-3);
+}
+
+.mark.on {
+  background: var(--green);
+  color: var(--on-green);
+}
+
+.item-text {
   flex: 1;
-  min-width: 0;
+  min-width: 36%;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* A question reads in full here, up to three lines. */
+.item-label {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.item-sub {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--fg-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .item-value {
-  flex: none;
-  max-width: 40%;
+  flex: 0 1 auto;
+  min-width: 0;
   color: var(--fg-2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* One width for every tag, so the labels after them line up. */
-.tag {
-  flex: none;
-  min-width: 34px;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 16px;
-  padding: 0 5px;
-  border-radius: 6px;
+/* No answer yet; and none where the form won't go through without one. */
+.item-value.none {
+  color: var(--fg-3);
 }
 
-.tag.yellow {
-  color: var(--yellow);
-  background: var(--yellow-bg);
-}
-.tag.blue {
-  color: var(--blue);
-  background: var(--blue-bg);
-}
-.tag.red {
+.item-value.wanted {
   color: var(--red);
-  background: var(--red-bg);
 }
 
 .done {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 12px 12px 14px;
+  gap: 12px;
+  padding: 14px 12px 14px 16px;
 }
 
 .done-icon {
@@ -553,7 +945,399 @@
   }
 }
 
+/* The profile's own window: over the page, in the middle of it, the page dimmed behind. Its glass is tinted as
+   the menu's is: a form wants a steadier ground than a list. The dimming comes in as a color, not as opacity, which
+   would leave the glass nothing to blur while it fades. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 0.32);
+  animation: scrim-in 0.25s ease;
+}
+
+@keyframes scrim-in {
+  from {
+    background: rgb(0 0 0 / 0);
+  }
+}
+
+.sheet {
+  --glass-alpha: var(--glass-alpha-strong);
+  position: relative;
+  color-scheme: light;
+  color: var(--fg);
+  width: min(880px, calc(100vw - 48px));
+  height: min(660px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px;
+  animation: sheet-in var(--glide-time) var(--glide);
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(24px) scale(0.97);
+  }
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 14px 12px 24px;
+}
+
+.sheet-head h1 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* The sections down the left, the one open to its right. */
+.sheet-main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+}
+
+.sheet-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 8px 12px 14px;
+  overflow-y: auto;
+}
+
+.sheet-nav > .lens {
+  background: var(--fill-2);
+  box-shadow: none;
+}
+
+.sheet-tab {
+  flex: none;
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--fg-2);
+  font: 500 13px var(--font);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.sheet-tab:hover,
+.sheet-tab[aria-selected='true'] {
+  color: var(--fg);
+}
+
+.sheet-tab:focus-visible {
+  outline-offset: -2px;
+}
+
+.sheet-fields {
+  min-width: 0;
+  padding: 4px 24px 24px 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--fill-2) transparent;
+}
+
+.sheet-fields > * {
+  flex-shrink: 0;
+}
+
+/* A part of a section: what follows is of one kind. */
+.sheet-heading {
+  margin: 4px 0 -4px;
+  padding-top: 16px;
+  border-top: 0.5px solid var(--hairline);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: var(--fg-2);
+}
+
+.sheet-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--fg-2);
+}
+
+.sheet-wait {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 0;
+  color: var(--fg-2);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field.wide {
+  grid-column: 1 / -1;
+}
+
+.field > span:first-child {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--fg-2);
+}
+
+/* Said to a screen reader, not shown. */
+.field > .unseen {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.input {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--fill);
+  color: var(--fg);
+  font: 13px var(--font);
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--fg-3);
+}
+
+.input:focus-visible {
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+.input.area {
+  height: auto;
+  min-height: 92px;
+  padding: 10px 12px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.select {
+  position: relative;
+  display: block;
+}
+
+.select > select {
+  padding-right: 32px;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  appearance: none;
+}
+
+.select > svg {
+  position: absolute;
+  top: 12px;
+  right: 11px;
+  color: var(--fg-3);
+  pointer-events: none;
+}
+
+.toggles {
+  display: flex;
+  flex-direction: column;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 42px;
+  cursor: pointer;
+}
+
+.toggle + .toggle {
+  border-top: 0.5px solid var(--hairline);
+}
+
+/* On is said in color, as a filled field's mark is; the knob crosses on the highlight's spring. */
+.switch {
+  flex: none;
+  width: 38px;
+  height: 22px;
+  padding: 2px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fill-2);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.switch > span {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.22);
+  transition: transform var(--spring-time) var(--spring);
+}
+
+.switch[aria-checked='true'] {
+  background: var(--green);
+}
+
+.switch[aria-checked='true'] > span {
+  transform: translateX(16px);
+}
+
+/* One of several alike: a school, a job, a story. */
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px 14px;
+  border-radius: 14px;
+  background: var(--fill);
+}
+
+.entry .input {
+  background: var(--thumb);
+}
+
+.entry-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-2);
+}
+
+.add {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fill);
+  color: var(--fg);
+  font: 500 13px var(--font);
+  cursor: pointer;
+}
+
+.add:hover {
+  background: var(--fill-2);
+}
+
+.sheet-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px 16px 24px;
+  border-top: 0.5px solid var(--hairline);
+}
+
+.sheet-status {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--fg-2);
+}
+
+.sheet-status.bad {
+  color: var(--red);
+}
+
+.sheet-foot .primary {
+  height: 38px;
+  min-width: 112px;
+  padding: 0 22px;
+  font-size: 14px;
+}
+
+.sheet-foot .secondary {
+  height: 38px;
+  padding: 0 16px;
+}
+
+/* A narrow window: the sections run across the top, the fields in one column. */
+@media (max-width: 680px) {
+  .sheet-main {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .sheet-nav {
+    flex-direction: row;
+    padding: 0 14px 10px;
+    overflow-x: auto;
+  }
+
+  .sheet-fields {
+    padding-left: 24px;
+  }
+
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Glass is for those who want it. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass::before {
+    background: var(--solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .card,
+  .menu,
+  .scrim,
+  .sheet {
+    animation: none;
+  }
+
+  .card,
+  .primary,
+  .secondary,
+  .progress-fill,
+  .meter > span,
+  .switch > span,
+  .choices.fold,
+  .choices.fold > .lines,
+  .choice-fold,
+  .track > .lens.sliding {
+    transition: none;
+  }
+
   .spinner {
     animation-duration: 2.4s;
   }

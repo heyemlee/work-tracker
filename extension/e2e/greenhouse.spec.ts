@@ -37,7 +37,7 @@ test('fills a Greenhouse application and logs it to Outbox after the owner submi
   );
   // The saved page runs no React, so its dropdowns never open: they're listed for the owner to fill.
   await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });
-  await expect(card.getByText('Fill', { exact: true }).first()).toBeVisible();
+  await expect(card.getByTitle(/^Fill: /).first()).toBeVisible();
   await page.screenshot({ path: 'e2e/output/greenhouse-filled.png' });
   await page.locator('outbox-autofill .card').screenshot({ path: 'e2e/output/card.png' });
 

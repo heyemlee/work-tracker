@@ -1,5 +1,5 @@
 import type { QuickAddInput, QuickAddResult } from '@domain/repository';
-import type { SavedProfile } from '@domain/profile';
+import type { Profile, SavedProfile } from '@domain/profile';
 import type { Snapshot } from '@domain/types';
 import { getSettings, outboxTokenItem, pendingLogsItem, profileItem, profileSourceItem } from '../storage';
 
@@ -22,7 +22,7 @@ export class OutboxUnreachable extends Error {
  * Outbox, so Chrome sends it); if Outbox still answers 401, the session token captured from an open Outbox tab is
  * sent as a bearer token instead.
  */
-async function send(method: 'GET' | 'POST', path: string, body?: unknown): Promise<Response> {
+async function send(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown): Promise<Response> {
   const { outboxUrl } = await getSettings();
   const url = `${outboxUrl.replace(/\/$/, '')}/api${path}`;
   const init = (auth: 'cookie' | string): RequestInit => ({
@@ -49,7 +49,7 @@ async function send(method: 'GET' | 'POST', path: string, body?: unknown): Promi
   return response;
 }
 
-async function call<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
+async function call<T>(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown): Promise<T> {
   const response = await send(method, path, body);
   return (response.status === 204 ? undefined : await response.json()) as T;
 }
@@ -121,6 +121,14 @@ export async function flushQueue(): Promise<number> {
 export async function syncProfile(): Promise<SavedProfile | null> {
   const { saved } = await call<{ saved: SavedProfile | null }>('GET', '/profile');
   if (!saved) return null;
+  await profileItem.setValue(saved.profile);
+  await profileSourceItem.setValue({ updatedAt: saved.updatedAt, syncedAt: new Date().toISOString() });
+  return saved;
+}
+
+/** Saves the profile on Outbox, where it lives, and keeps this browser's copy in step with it. */
+export async function saveProfile(profile: Profile): Promise<SavedProfile> {
+  const saved = await call<SavedProfile>('PUT', '/profile', profile);
   await profileItem.setValue(saved.profile);
   await profileSourceItem.setValue({ updatedAt: saved.updatedAt, syncedAt: new Date().toISOString() });
   return saved;
