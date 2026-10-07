@@ -1,0 +1,9 @@
+# Vite names every file under /assets after its contents, so one never changes: the browser keeps it for the day
+# and doesn't ask again. The page itself is still checked on every visit, and names the files it needs.
+#
+# A day, not the customary year: an address under /assets that names no file is answered with the page (the app's
+# routes all are, see wrangler.jsonc), and that answer gets this header too. A tab left open across a deploy can ask
+# for a file the deploy replaced; kept for a year, the page it got would stand in for that file if the same build
+# ever came back.
+/assets/*
+  Cache-Control: public, max-age=86400, immutable

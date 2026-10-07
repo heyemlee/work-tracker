@@ -105,7 +105,8 @@ popovers); content sits on clean, opaque surfaces so dense lists stay readable.
 
 A single Worker serves everything:
 
-- **Static assets** — the React SPA built by Vite. Asset requests are free and use no Worker CPU.
+- **Static assets** — the React SPA built by Vite. Asset requests are free and use no Worker CPU. The page is
+  checked on every visit; the files it names are kept by the browser for a day (`public/_headers`).
 - **API** — Hono under `/api/*`: plain REST, bodies validated with zod, every query scoped to the signed-in user.
 - **Cron triggers** — sync Gmail every 30 minutes (milestone 5).
 - **Data** — D1 (SQLite) through Drizzle, one database: `outbox`.

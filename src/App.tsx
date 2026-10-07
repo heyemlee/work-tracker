@@ -35,7 +35,8 @@ export function App() {
 /** Local mode opens straight into the workspace; otherwise the owner has to be signed in first. */
 function Gate() {
   const user = useCurrentUser();
-  const snapshot = useSnapshot(localRepository !== null || user.isSuccess);
+  // Asked for along with the user, not after: a signed-out owner gets the same answer from both.
+  const snapshot = useSnapshot(localRepository !== null || !user.isError);
 
   if (user.error instanceof UnauthorizedError || snapshot.error instanceof UnauthorizedError)
     return <SignIn />;
