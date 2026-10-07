@@ -3,7 +3,7 @@ import type { ResumeFacts } from '@domain/profile';
 import type { QuickAddResult } from '@domain/repository';
 import type { AccountColor } from '@domain/types';
 import { browser, type Browser } from 'wxt/browser';
-import type { Answer, Ats, FieldStatus, FrameScan, PlannedField, Posting, Source } from './model';
+import type { Answer, Ats, FieldStatus, FrameHeld, FrameScan, PlannedField, Posting, Source } from './model';
 import type { MatchReport } from './match/report';
 import type { Profile } from './profile/schema';
 import type { FormSnapshot } from './storage';
@@ -22,7 +22,7 @@ export interface ChecklistItem {
   label: string;
   status: FieldStatus;
   note: string | null;
-  /** What the field holds after filling. */
+  /** What the field holds: as the fill left it, or as the page was seen to hold since. */
   value: string | null;
   /** The form asks for it: it won't go through with the field empty. */
   required: boolean;
@@ -31,6 +31,10 @@ export interface ChecklistItem {
   /** The fill reached the page; false when the widget refused the answer. */
   applied: boolean;
 }
+
+/** The field holds something: put by a rule, kept from the page, written by AI, or filled in by the owner since. */
+export const isDone = (item: Pick<ChecklistItem, 'status' | 'value'>) =>
+  item.status === 'filled' || item.status === 'confirm' || (item.status === 'draft' && Boolean(item.value));
 
 export interface CardAccount {
   id: string;
@@ -121,6 +125,8 @@ export interface ToBackground {
   'frame:hello': { request: { ats: Ats; hasForm: boolean; top: boolean }; response: void };
   /** The frame now shows an application form (see watch.ts): the card should open for it. */
   'frame:form': { request: Record<string, never>; response: void };
+  /** What the frame's fields hold now, told each time that has changed: the card's list follows the page. */
+  'frame:held': { request: FrameHeld; response: void };
   'card:state': { request: { refresh: boolean }; response: CardState };
   'card:select': { request: { accountId?: string | null; resumeId?: string | null }; response: CardState };
   'card:fill': { request: Record<string, never>; response: CardState };
@@ -169,13 +175,15 @@ export interface ToFrame {
   };
   'frame:fill': {
     request: { fields: PlannedField[] };
-    response: Record<string, { ok: boolean; value?: string; error?: string }>;
+    response: Record<string, { ok: boolean; value?: string; error?: string; at?: number }>;
   };
   'frame:options': { request: { fieldIds: string[] }; response: Record<string, string[]> };
   'frame:read': { request: { fieldIds: string[] }; response: CapturedAnswer[] };
   'frame:focus': { request: { fieldId: string }; response: boolean };
   'frame:snapshot': { request: { plan: PlannedField[] }; response: Omit<FormSnapshot, 'id' | 'at'> | null };
   'card:update': { request: { state: CardState }; response: void };
+  /** The list alone, as the page was seen to change under it; the rest of the card stands. */
+  'card:checklist': { request: { checklist: ChecklistItem[] }; response: void };
   /** The card answers true, so the service worker knows there is one. */
   'card:open': { request: Record<string, never>; response: boolean };
   'card:fill': { request: Record<string, never>; response: boolean };

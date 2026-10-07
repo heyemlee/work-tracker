@@ -166,3 +166,43 @@ test('searches for the city and the school, and picks the applicant’s', async 
     'Santa Clara University',
   );
 });
+
+// After a fill the owner goes on by hand. This stand-in asks one thing the rules have no answer for.
+const BY_HAND_FORM = `<!doctype html><html><head><title>Job Application for Software Engineer at Acme</title></head><body>
+<form id="application-form">
+  <label for="first_name">First Name</label><input id="first_name" type="text" required>
+  <label for="last_name">Last Name</label><input id="last_name" type="text" required>
+  <label for="email">Email</label><input id="email" type="text" required>
+  <label for="office">What is your preferred office location?</label>
+  <select id="office" required><option value="">Select...</option><option>Menlo Park, CA</option><option>New York, NY</option></select>
+</form></body></html>`;
+
+test('follows what the owner fills in and empties by hand after the fill', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  await serve(context, 'job-boards.greenhouse.io', BY_HAND_FORM, THANKS);
+  const page = await context.newPage();
+  await page.goto('https://job-boards.greenhouse.io/acme/jobs/123');
+
+  const card = page.locator('outbox-autofill');
+  const line = (label: string) => card.locator('.item', { hasText: label });
+  await card.getByRole('button', { name: /^Fill/ }).click();
+  // The office is the owner's to pick.
+  await expect(card.getByText('Filled 3/4 required')).toBeVisible({ timeout: 45_000 });
+  await expect(card.getByTitle('Fill: What is your preferred office location?')).toBeVisible();
+
+  await page.selectOption('#office', 'Menlo Park, CA');
+  await expect(card.getByText('Filled 4/4 required')).toBeVisible();
+  await expect(line('preferred office location').locator('.mark.on')).toBeVisible();
+  await expect(line('preferred office location')).toContainText('Menlo Park, CA');
+
+  // A field the fill had filled, emptied: the owner's to fill again. And the office, changed, shows the new pick.
+  await page.locator('#first_name').fill('');
+  await page.selectOption('#office', 'New York, NY');
+  await expect(card.getByText('Filled 3/4 required')).toBeVisible();
+  await expect(card.getByTitle('Fill: First Name')).toBeVisible();
+  await expect(line('preferred office location')).toContainText('New York, NY');
+});

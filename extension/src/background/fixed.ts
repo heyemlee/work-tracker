@@ -25,6 +25,9 @@ export const FIXED_SNAPSHOTS: ReadonlySet<string> = new Set([
   '498b278b-f6be-4121-bb86-38564a6efb9c',
   // Saved by a slip of the hand on 2026-10-06: nothing was wrong on the page.
   '2e3a98fd-1784-435f-8413-aaaf16a7c1bb',
+  // Fixed 2026-10-07: Robinhood's three required questions stayed "to fill" in the list after the owner had
+  // answered them by hand. The list follows the page now.
+  '808dd626-d3e8-4442-8da5-4f27fbe79366',
 ]);
 
 /** Takes the reports this build fixes off the list. */

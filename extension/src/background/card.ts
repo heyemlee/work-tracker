@@ -4,10 +4,10 @@ import type { QuickAddInput } from '@domain/repository';
 import { buildRows } from '@domain/rows';
 import type { Snapshot } from '@domain/types';
 import { browser } from 'wxt/browser';
-import type { Answer, FrameScan, PlannedField, ScannedField } from '../model';
+import type { Answer, FrameHeld, FrameScan, Held, PlannedField, ScannedField } from '../model';
 import type { H1bTable } from '../match/h1b';
 import { matchReport } from '../match/report';
-import { toFrame, type CapturedAnswer, type CardState, type ChecklistItem } from '../messages';
+import { isDone, toFrame, type CapturedAnswer, type CardState, type ChecklistItem } from '../messages';
 import { aiCandidates, draftCandidates, planForm } from '../plan';
 import { fullName, missingItems, yearsOfExperience } from '../profile/profile';
 import type { Profile } from '../profile/schema';
@@ -95,7 +95,25 @@ const STATUS_ORDER: Record<PlannedField['status'], number> = {
   skipped: 4,
 };
 
-/** Every field of the form, what needs the owner first; within one standing, in the form's own order. */
+/**
+ * A line of the list as its field was seen after the fill. Filled in by hand where the fill had put nothing, it's
+ * done; emptied, it's the owner's to fill again, or left empty where the form doesn't ask for it. A field the fill
+ * did fill keeps its standing (an answer to check stays one) and shows what it holds now.
+ */
+function follow(item: ChecklistItem, now: Held): ChecklistItem {
+  if (now.filled)
+    return isDone(item)
+      ? { ...item, value: now.value ?? item.value }
+      : { ...item, status: 'filled', value: now.value ?? null };
+  // A box the fill left unticked is as it was left.
+  if (!isDone(item) || item.value === 'unchecked') return item;
+  return { ...item, status: item.required ? 'missing' : 'skipped', value: null };
+}
+
+/**
+ * Every field of the form, what needs the owner first; within one standing, in the form's own order. Each as the
+ * fill left it, or as the page was seen to hold since: the owner goes on by hand, and the list follows.
+ */
 function checklist(session: TabSession): ChecklistItem[] {
   const fields = new Map(session.fields.map((field) => [field.id, field]));
   return session.plan
@@ -103,7 +121,7 @@ function checklist(session: TabSession): ChecklistItem[] {
       const field = fields.get(entry.fieldId);
       const result = session.results[entry.fieldId];
       const failed = entry.answer !== null && result !== undefined && !result.ok;
-      return {
+      const item: ChecklistItem = {
         fieldId: entry.fieldId,
         label: field?.label ?? '',
         // An answer the page refused is the owner's to fill.
@@ -114,7 +132,11 @@ function checklist(session: TabSession): ChecklistItem[] {
         critical: entry.critical,
         source: entry.source,
         applied: result?.ok ?? false,
-      } satisfies ChecklistItem;
+      };
+      // Of a look at the page and the fill's own word on a field, the later one counts.
+      const seen = session.held[frameOf(entry.fieldId)];
+      const now = seen && seen.at >= (result?.at ?? 0) ? seen.fields[entry.fieldId] : undefined;
+      return now ? follow(item, now) : item;
     })
     .sort(
       (a, b) => Number(b.critical) - Number(a.critical) || STATUS_ORDER[a.status] - STATUS_ORDER[b.status],
@@ -139,6 +161,9 @@ export async function cardState(session: TabSession, outbox?: OutboxState): Prom
     applied: applied.has(account.id),
   }));
   const otherApplied = [...applied].some((id) => id !== session.accountId);
+  // The page may have been seen to change while the rest was read, and its list sent on its own (`pageHolds`): the
+  // list here is of the tab as it is now, so that it never takes an older one's place on the card.
+  const latest = (await getSession(session.tabId)) ?? session;
   return {
     phase: session.phase,
     ats: session.ats,
@@ -157,7 +182,7 @@ export async function cardState(session: TabSession, outbox?: OutboxState): Prom
       otherApplied &&
       session.accountId !== null &&
       !applied.has(session.accountId),
-    checklist: checklist(session),
+    checklist: checklist(latest),
     logged: session.logged,
     saved: session.saved,
     tracked: job ? (job.applications.length > 0 ? 'applied' : 'saved') : null,
@@ -483,6 +508,23 @@ async function runAi(tabId: number, url: string, ctx: RuleContext): Promise<void
         error instanceof NoApiKey ? null : `ai: ${error instanceof Error ? error.message : String(error)}`,
     }));
     await pushState(session);
+  }
+}
+
+/**
+ * What a frame's fields hold now, as its content script saw once the page had changed: after a fill the owner goes
+ * on by hand, and the card's list follows. Only the list is sent, so nothing here waits on Outbox.
+ */
+export async function pageHolds(tabId: number, url: string, frameId: number, held: FrameHeld): Promise<void> {
+  const session = await updateSession(tabId, url, (current) =>
+    // A look overtaken on its way isn't put over a later one.
+    (current.held[frameId]?.at ?? 0) > held.at ? {} : { held: { ...current.held, [frameId]: held } },
+  );
+  if (session.plan.length === 0) return;
+  try {
+    await toFrame(tabId, 0, 'card:checklist', { checklist: checklist(session) });
+  } catch {
+    // No card in the top frame.
   }
 }
 

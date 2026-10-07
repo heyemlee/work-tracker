@@ -34,7 +34,7 @@ vi.mock('./ai', async (original) => ({
   draftAnswer,
 }));
 
-const { cardState, fill, logApplication, saveJob, snapshot, undo } = await import('./card');
+const { cardState, fill, logApplication, pageHolds, saveJob, snapshot, undo } = await import('./card');
 const { getSession, updateSession } = await import('./session');
 const { DEFAULT_SETTINGS, loggedItem, openaiKeyItem, profileItem, settingsItem, snapshotsItem } =
   await import('../storage');
@@ -201,6 +201,131 @@ describe('the checklist', () => {
       { label: 'First Name', status: 'filled', required: true, value: 'Alex' },
       { label: 'Twitter URL', status: 'skipped', required: false, value: null },
     ]);
+  });
+
+  describe('as the owner goes on by hand', () => {
+    // When the fill left its fields, by the page's clock; a look at the page is before or after that.
+    const FILLED_AT = 1000;
+    const left = (value: string) => ({ ok: true, value, at: FILLED_AT });
+    /** A filled form: two questions the rules had nothing for, and four answers put in. */
+    const filled = (tab: number) =>
+      updateSession(tab, URL_, () => ({
+        hasForm: true,
+        fields: [
+          scanned('0:office', 'Preferred office', true),
+          scanned('0:used', 'Have you used Arcadia?', false),
+          scanned('0:first', 'First Name', true),
+          scanned('0:site', 'Website', false),
+          scanned('0:auth', 'Are you authorized to work in the US?', true),
+          scanned('0:news', 'Send me product news', false),
+        ],
+        plan: [
+          planned('0:office', 'missing'),
+          planned('0:used', 'skipped'),
+          planned('0:first', 'filled', 'Alex'),
+          planned('0:site', 'filled', 'https://alex.example'),
+          planned('0:auth', 'confirm', 'Yes'),
+          planned('0:news', 'filled', 'No'),
+        ],
+        results: {
+          '0:first': left('Alex'),
+          '0:site': left('https://alex.example'),
+          '0:auth': left('Yes'),
+          // A box the fill left unticked.
+          '0:news': left('unchecked'),
+        },
+      }));
+    /** What the page was seen to hold, each field's line in the list by its label. */
+    const seen = async (
+      tab: number,
+      at: number,
+      fields: Record<string, { filled: boolean; value?: string }>,
+    ) => {
+      await pageHolds(tab, URL_, 0, { at, fields });
+      const { checklist } = await cardState((await getSession(tab))!);
+      return Object.fromEntries(checklist.map(({ label, status, value }) => [label, [status, value]]));
+    };
+    const card = vi.spyOn(fakeBrowser.tabs, 'sendMessage') as unknown as MockInstance<
+      (tab: number, message: object, to: object) => Promise<unknown>
+    >;
+    let tab = 200;
+
+    beforeEach(() => {
+      tab++;
+      card.mockResolvedValue(undefined);
+    });
+
+    it('marks done what the owner filled in, and to fill what was emptied', async () => {
+      await filled(tab);
+      expect(
+        await seen(tab, FILLED_AT + 1, {
+          '0:office': { filled: true, value: 'Menlo Park, CA' },
+          '0:used': { filled: true, value: 'Yes' },
+          '0:first': { filled: false },
+          '0:site': { filled: false },
+          // Changed to another answer: still one to check, and the list shows which.
+          '0:auth': { filled: true, value: 'No' },
+          '0:news': { filled: false, value: 'unchecked' },
+        }),
+      ).toEqual({
+        'Preferred office': ['filled', 'Menlo Park, CA'],
+        'Have you used Arcadia?': ['filled', 'Yes'],
+        'First Name': ['missing', null],
+        Website: ['skipped', null],
+        'Are you authorized to work in the US?': ['confirm', 'No'],
+        'Send me product news': ['filled', 'unchecked'],
+      });
+      // Emptied again, a question the rules had nothing for is as it was.
+      expect(await seen(tab, FILLED_AT + 2, { '0:office': { filled: false } })).toMatchObject({
+        'Preferred office': ['missing', null],
+        'First Name': ['filled', 'Alex'],
+      });
+    });
+
+    it('takes the fill’s word over a look at the page from before it', async () => {
+      await filled(tab);
+      expect(
+        await seen(tab, FILLED_AT - 1, {
+          '0:office': { filled: true, value: 'Menlo Park, CA' },
+          '0:first': { filled: false },
+        }),
+      ).toMatchObject({
+        // The fill said nothing of the office, so what was seen there stands.
+        'Preferred office': ['filled', 'Menlo Park, CA'],
+        'First Name': ['filled', 'Alex'],
+      });
+    });
+
+    it('sends the card its list alone, without asking Outbox, and not before there is one', async () => {
+      await pageHolds(tab, URL_, 0, { at: 1, fields: { '0:office': { filled: true } } });
+      expect(card).not.toHaveBeenCalled();
+
+      await filled(tab);
+      await pageHolds(tab, URL_, 0, {
+        at: FILLED_AT + 2,
+        fields: { '0:office': { filled: true, value: 'Menlo Park, CA' } },
+      });
+      // A look overtaken on its way doesn't take the later one's place.
+      await pageHolds(tab, URL_, 0, { at: FILLED_AT + 1, fields: { '0:office': { filled: false } } });
+      for (const [to, message, where] of card.mock.calls) {
+        expect([to, where]).toEqual([tab, { frameId: 0 }]);
+        expect(message).toMatchObject({
+          type: 'card:checklist',
+          checklist: expect.arrayContaining([
+            expect.objectContaining({ fieldId: '0:office', status: 'filled', value: 'Menlo Park, CA' }),
+          ]),
+        });
+      }
+      expect(card).toHaveBeenCalledTimes(2);
+      expect(loadSnapshot).not.toHaveBeenCalled();
+    });
+
+    it('draws the list from the tab as it is by then, though handed an older state of it', async () => {
+      const before = await filled(tab);
+      await pageHolds(tab, URL_, 0, { at: FILLED_AT + 1, fields: { '0:office': { filled: true } } });
+      const { checklist } = await cardState(before);
+      expect(checklist.find((item) => item.fieldId === '0:office')?.status).toBe('filled');
+    });
   });
 });
 

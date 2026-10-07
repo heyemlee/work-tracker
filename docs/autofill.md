@@ -184,6 +184,19 @@ The count over the bar is of the fields the form marks as required, or of all of
 Clicking an entry scrolls to its field. Values are set so React sees them: the native value setter plus `input` and `change`
 events, clicks for radios, checkboxes and options, and a `DataTransfer` for the resume's file input.
 
+The list follows the page after the fill (2026-10-07), since the owner goes on by hand: a question they answer
+moves to the filled ones with its answer, a field they empty goes back to theirs to fill, and the count over the bar
+moves with them. Each frame's content script looks at its fields a moment after the page changes (`watchHeld` in
+`content/held.ts`: `input` and `change` events for typing, a mutation observer for what a custom dropdown draws) and
+tells the service worker what each holds whenever that differs from what it last told (`frame:held`). The service
+worker keeps each frame's latest look in the tab's session and sends the card its list alone (`card:checklist`),
+asking Outbox for nothing. Of a look at a field and the fill's own result for it, the later counts, by the page's
+clock; while the script itself fills it doesn't look. Where it can't tell, a field keeps the standing the fill gave
+it: a widget that draws its value its own way and shows none, an upload with no file to see (the page may have taken
+the file and emptied the input), a control the page has since replaced. A react-select holds a pick when it shows
+one or its value box says so (it stops drawing the pick while something is typed over it); what's typed into its
+search box isn't one. Tried on Greenhouse's own page code served locally, as the waits below were.
+
 An answer can bring up another question (Greenhouse asks for race once "Hispanic or Latino?" is answered), so after
 filling the page is read again and what appeared is filled too, twice at most; a field keeps its id across reads.
 Ashby saves each answer to its server as it changes, and saves that overlap there overwrite each other — a form

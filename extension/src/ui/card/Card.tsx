@@ -21,7 +21,7 @@ import {
 } from 'react';
 import { browser } from 'wxt/browser';
 import { adapterFor } from '../../content/adapters';
-import { toBackground, type CardState, type ChecklistItem } from '../../messages';
+import { isDone, toBackground, type CardState, type ChecklistItem } from '../../messages';
 import type { Signal } from '../../match/scan';
 import { DEFAULT_SETTINGS, getSettings } from '../../storage';
 import { resolveLanguage, translator, type MessageKey, type Translate } from '../i18n';
@@ -36,10 +36,6 @@ const KINDS: Partial<Record<ChecklistItem['status'], MessageKey>> = {
   draft: 'tag.draft',
   missing: 'tag.missing',
 };
-
-/** The page now holds something in the field: put by a rule, kept from the page, or written by AI. */
-const isDone = (item: ChecklistItem) =>
-  item.status === 'filled' || item.status === 'confirm' || (item.status === 'draft' && Boolean(item.value));
 
 interface Choice {
   id: string;
@@ -416,7 +412,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     readSettings();
     refresh();
     const listener = (
-      message: { type?: string; state?: CardState },
+      message: { type?: string; state?: CardState; checklist?: ChecklistItem[] },
       _sender: unknown,
       // Answering tells the service worker there's a card here.
       sendResponse: (reply: boolean) => void,
@@ -427,6 +423,11 @@ export function Card({ startOpen }: { startOpen: boolean }) {
           setOpen(true);
           setLoggedHere(true);
         }
+      }
+      // The owner filled in or emptied a field by hand: the list follows the page, the rest of the card stands.
+      if (message.type === 'card:checklist' && message.checklist) {
+        const { checklist } = message;
+        setState((current) => current && { ...current, checklist });
       }
       if (message.type === 'card:open') {
         setOpen(true);

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import type { FrameScan, PlannedField } from '../model';
+import type { FrameHeld, FrameScan, PlannedField } from '../model';
 import { startContent } from './main';
 
 const FORM = `
@@ -16,6 +16,9 @@ const FORM = `
 type Respond = (value: unknown) => void;
 type Listener = (message: object, sender: object, respond: Respond) => boolean;
 
+/** Ends the content script's watching of the page, which outlives a test otherwise. */
+let stop = () => {};
+
 /** Starts the content script on the page and returns a way to message it as the service worker does. */
 function start() {
   let listener: Listener | undefined;
@@ -26,7 +29,7 @@ function start() {
     message.type === 'resume:read'
       ? { base64: btoa('%PDF-1.4'), name: 'Alex_Chen_Resume.pdf', type: 'application/pdf' }
       : undefined) as never);
-  startContent();
+  stop = startContent();
   return <T>(message: object) =>
     new Promise<T>((resolve) => listener!(message, {}, (value) => resolve(value as T)));
 }
@@ -65,7 +68,10 @@ const ANSWERS = {
   linkedin: 'https://www.linkedin.com/in/alex-chen',
 };
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  stop();
+  vi.restoreAllMocks();
+});
 
 describe('filling a page that fills fields of its own', () => {
   it('keeps what the resume parser and the owner put there, and fills the rest', async () => {
@@ -93,7 +99,7 @@ describe('filling a page that fills fields of its own', () => {
     expect(input('email').value).toBe('alex@example.com');
     expect(input('linkedin').value).toBe('https://www.linkedin.com/in/alex-chen');
     const name = scan.fields.find((field) => field.label === 'Full name')!;
-    expect(results[name.id]).toEqual({ ok: true, value: 'Alexander Chen' });
+    expect(results[name.id]).toMatchObject({ ok: true, value: 'Alexander Chen' });
   });
 
   it('fills its own answers again, and still leaves the page’s alone', async () => {
@@ -193,8 +199,60 @@ describe('filling a multi-select again', () => {
       return results[race.id];
     };
 
-    expect(await fill()).toEqual({ ok: true, value: 'East Asian' });
-    expect(await fill()).toEqual({ ok: true, value: 'East Asian' });
+    expect(await fill()).toMatchObject({ ok: true, value: 'East Asian' });
+    expect(await fill()).toMatchObject({ ok: true, value: 'East Asian' });
     expect(chips()).toEqual(['East Asian']);
+  });
+});
+
+describe('what the form holds, told as it changes', () => {
+  /** What the service worker was told the form holds, oldest first. */
+  const told = () =>
+    vi
+      .mocked(fakeBrowser.runtime.sendMessage)
+      .mock.calls.map(([message]) => message as unknown as { type: string } & FrameHeld)
+      .filter((message) => message.type === 'frame:held');
+  const type = (id: string, text: string) => {
+    input(id).value = text;
+    input(id).dispatchEvent(new Event('input', { bubbles: true }));
+  };
+
+  it('follows the owner filling in a field by hand, and emptying it again', async () => {
+    const ask = start();
+    document.body.innerHTML = FORM;
+    const scan = await ask<FrameScan>({ type: 'frame:scan', frameId: 0, prepare: null });
+    const id = (label: string) => scan.fields.find((field) => field.label === label)!.id;
+
+    // The form as it was found, a moment after it was read. An upload with no file to see is left unsaid.
+    await vi.waitFor(() => expect(told()).toHaveLength(1));
+    expect(told()[0]?.fields[id('Phone')]).toEqual({ filled: false });
+    expect(told()[0]?.fields).not.toHaveProperty(id('Resume'));
+
+    type('phone', '+1 408 555 0100');
+    await vi.waitFor(() => expect(told()).toHaveLength(2));
+    expect(told()[1]?.fields[id('Phone')]).toEqual({ filled: true, value: '+1 408 555 0100' });
+
+    type('phone', '');
+    await vi.waitFor(() => expect(told()).toHaveLength(3));
+    expect(told()[2]?.fields[id('Phone')]).toEqual({ filled: false });
+  });
+
+  it('looks again once a fill is through, later than the fill says it left each field', async () => {
+    const ask = start();
+    document.body.innerHTML = FORM;
+    const scan = await ask<FrameScan>({ type: 'frame:scan', frameId: 0, prepare: null });
+    const email = scan.fields.find((field) => field.label === 'Email')!.id;
+    const results = await ask<Record<string, { ok: boolean; at?: number }>>({
+      type: 'frame:fill',
+      fields: plan(scan, ANSWERS),
+    });
+
+    await vi.waitFor(() =>
+      expect(told().at(-1)?.fields[email]).toEqual({ filled: true, value: 'alex@example.com' }),
+    );
+    // Nothing was told of the form half filled.
+    expect(told()).toHaveLength(1);
+    const { at } = told()[0]!;
+    for (const result of Object.values(results)) expect(result.at).toBeLessThanOrEqual(at);
   });
 });

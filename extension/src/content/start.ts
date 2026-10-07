@@ -23,7 +23,7 @@ export async function startFrame(ctx: ContentScriptContext, startOpen: boolean):
     scope[RUNNING_FLAG] = false;
   });
   ctx.setInterval(() => undefined, 2000);
-  startContent();
+  ctx.onInvalidated(startContent());
   if (window === window.top) await mountCard(ctx, startOpen);
   const adapter = adapterFor(location.href);
   if (adapter.ats === 'generic') return;

@@ -7,6 +7,7 @@ import {
   fill,
   focus,
   logApplication,
+  pageHolds,
   readTab,
   saveJob,
   select,
@@ -49,6 +50,8 @@ export function startBackground(): void {
           // A job board's own apply flow, or Outbox itself: there the card waits for the toolbar button.
           if (onJobBoard(url) || fromOutbox(url)) return undefined;
           return showForm(tabId, sender.frameId ?? 0);
+        case 'frame:held':
+          return pageHolds(tabId, url, sender.frameId ?? 0, { at: message.at, fields: message.fields });
         case 'card:state':
           return readTab(tabId, url);
         case 'card:select':

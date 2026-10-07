@@ -1,5 +1,5 @@
 import { storage } from 'wxt/utils/storage';
-import type { Ats, PlannedField, Posting, ScannedField } from '../model';
+import type { Ats, FrameHeld, PlannedField, Posting, ScannedField } from '../model';
 import type { MatchReport } from '../match/report';
 import type { CapturedAnswer, CardState, Phase } from '../messages';
 import type { QuickAddResult } from '@domain/repository';
@@ -15,7 +15,9 @@ export interface TabSession {
   step: string | null;
   fields: ScannedField[];
   plan: PlannedField[];
-  results: Record<string, { ok: boolean; value?: string; error?: string }>;
+  results: Record<string, { ok: boolean; value?: string; error?: string; at?: number }>;
+  /** What each frame's fields were last seen to hold, by frame id: the owner goes on by hand after a fill. */
+  held: Record<number, FrameHeld>;
   accountId: string | null;
   resumeId: string | null;
   /** The Outbox job this posting matched, when it's already tracked. */
@@ -45,6 +47,7 @@ export function emptySession(tabId: number, url: string): TabSession {
     fields: [],
     plan: [],
     results: {},
+    held: {},
     accountId: null,
     resumeId: null,
     jobId: null,

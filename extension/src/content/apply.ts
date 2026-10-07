@@ -23,6 +23,8 @@ export interface Applied {
   /** What the field holds now, for the checklist. */
   value?: string;
   error?: string;
+  /** When the fill left the field so, by the page's clock. */
+  at?: number;
 }
 
 const choiceLabel = (input: HTMLInputElement) =>

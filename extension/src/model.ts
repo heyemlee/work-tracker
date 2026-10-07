@@ -116,6 +116,19 @@ export interface FrameScan {
   step: string | null;
 }
 
+/** What a field holds as the page stands: whether anything, and what it shows there. */
+export interface Held {
+  filled: boolean;
+  value?: string;
+}
+
+/** A frame's fields as its content script last saw them, and when by the page's clock. */
+export interface FrameHeld {
+  at: number;
+  /** By field id. A field the script can't tell about is left out. */
+  fields: Record<string, Held>;
+}
+
 /** An answer to a choice, resolved against the options once they're known (some load only when opened). */
 export type Want =
   | { kind: 'yes' }

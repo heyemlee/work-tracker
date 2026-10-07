@@ -38,8 +38,8 @@ export function byFrame(plan: readonly PlannedField[]): Map<number, PlannedField
 export async function fillFrames(
   tabId: number,
   plan: readonly PlannedField[],
-): Promise<Record<string, { ok: boolean; value?: string; error?: string }>> {
-  const results: Record<string, { ok: boolean; value?: string; error?: string }> = {};
+): Promise<Record<string, { ok: boolean; value?: string; error?: string; at?: number }>> {
+  const results: Record<string, { ok: boolean; value?: string; error?: string; at?: number }> = {};
   for (const [frameId, fields] of byFrame(plan.filter((entry) => entry.answer !== null))) {
     try {
       Object.assign(results, await toFrame(tabId, frameId, 'frame:fill', { fields }));
