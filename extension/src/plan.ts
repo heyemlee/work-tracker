@@ -81,6 +81,25 @@ export function planField(
   };
 }
 
+/** What the owner typed for this question last time, as an answer to fill; null when nothing was kept. */
+function recalled(
+  memory: readonly MemoryEntry[],
+  field: ScannedField,
+): { resolution: Resolution; source: Source } | null {
+  const remembered = recall(memory, field);
+  if (!remembered) return null;
+  return {
+    resolution: {
+      status: 'filled',
+      answer: remembered.answer,
+      key: 'memory',
+      note: 'your answer last time',
+      critical: false,
+    },
+    source: 'memory',
+  };
+}
+
 function resolve(
   field: ScannedField,
   ctx: RuleContext,
@@ -94,7 +113,14 @@ function resolve(
   }
   if (field.hint) {
     const hinted = resolveHint(field.hint, field, ctx);
-    if (hinted) return rule(hinted);
+    if (hinted) {
+      // The profile has nothing for one of the form's own fields (a preferred name, a city): what the owner typed
+      // there last time fills it, as it would a question no rule knows. Not one of several alike (a school's end
+      // year), which its label doesn't tell apart, and never the voluntary survey.
+      const remembered =
+        !hinted.answer && !field.entry && !field.hint.startsWith('eeo.') ? recalled(memory, field) : null;
+      return remembered ?? rule(hinted);
+    }
   }
 
   const auth = classifyAuth(field.label, field.description);
@@ -103,19 +129,8 @@ function resolve(
   const eeo = classifyEeo(field.label);
   if (eeo && field.kind !== 'textarea') return rule(choose(`eeo.${eeo}`, field, eeoWant(eeo, ctx.profile)));
 
-  const remembered = recall(memory, field);
-  if (remembered) {
-    return {
-      resolution: {
-        status: 'filled',
-        answer: remembered.answer,
-        key: 'memory',
-        note: 'your answer last time',
-        critical: false,
-      },
-      source: 'memory',
-    };
-  }
+  const remembered = recalled(memory, field);
+  if (remembered) return remembered;
 
   if (isConsent(field)) return rule(answerConsent(field, ctx.profile));
 

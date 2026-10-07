@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ScannedField } from './model';
 import { planForm } from './plan';
+import { memoryKey } from './rules/memory';
 import { makeProfile } from './test/profiles';
 
 const ctx = {
@@ -34,6 +35,58 @@ describe('planForm', () => {
       answer: null,
       note: 'already filled',
     });
+  });
+});
+
+describe('a field the form names itself, with nothing for it in the profile', () => {
+  const blank = { ...ctx, profile: makeProfile({ name: { first: 'Alex', last: 'Chen', preferred: '' } }) };
+  // Greenhouse's own "Preferred First Name": the adapter knows it by its id, whatever the form calls it.
+  const preferred: ScannedField = {
+    ...whyUs(false),
+    label: 'Preferred First Name',
+    kind: 'text',
+    required: false,
+    hint: 'name.preferred',
+  };
+  const typed = (field: ScannedField, text: string) => ({
+    key: memoryKey(field),
+    label: field.label,
+    answer: { type: 'text' as const, text },
+    uses: 4,
+    updatedAt: '2026-10-06T00:00:00.000Z',
+  });
+
+  it('takes what the owner typed there last time', () => {
+    expect(planForm([preferred], blank, [])[0]).toMatchObject({ status: 'skipped', answer: null });
+    expect(planForm([preferred], blank, [typed(preferred, 'Lucas')])[0]).toMatchObject({
+      status: 'filled',
+      answer: { type: 'text', text: 'Lucas' },
+      source: 'memory',
+      key: 'memory',
+    });
+  });
+
+  it('goes by the profile once it has an answer', () => {
+    expect(planForm([preferred], ctx, [typed(preferred, 'Lucas')])[0]).toMatchObject({
+      answer: { type: 'text', text: 'Al' },
+      source: 'rule',
+      key: 'name.preferred',
+    });
+  });
+
+  it('leaves one of several alike empty: a remembered end year says nothing of which school', () => {
+    const noDates = {
+      ...ctx,
+      profile: makeProfile({ education: [{ school: 'Santa Clara University', level: 'master' }] }),
+    };
+    const year: ScannedField = {
+      ...whyUs(false),
+      label: 'End date year',
+      kind: 'number',
+      hint: 'education.end',
+      entry: { kind: 'education', index: 0 },
+    };
+    expect(planForm([year], noDates, [typed(year, '2025')])[0]).toMatchObject({ answer: null });
   });
 });
 

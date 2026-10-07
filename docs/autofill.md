@@ -153,7 +153,8 @@ Each field goes through four layers and stops at the first that places it:
    work and education sections.
 2. **Field dictionary** — label patterns mapped to profile keys. Works on any site.
 3. **Answer memory** — what the owner typed into a field the layers above missed, keyed by the normalized question
-   and reused next time. Captured at submit; editable on the options page.
+   and reused next time. Captured at submit; editable on the options page. It also fills one of the form's own
+   fields (Greenhouse's "Preferred First Name") when the profile has nothing for it.
 4. **AI fallback** — the remaining fields, as text (label, kind, options), go to Claude in one request per form.
    Below a confidence threshold the field stays blank.
 
