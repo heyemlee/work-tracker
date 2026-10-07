@@ -190,6 +190,13 @@ Ashby saves each answer to its server as it changes, and saves that overlap ther
 filled all at once showed every answer and still reported some missing on submit — so on Ashby fields are filled one
 at a time, each save finished (seen in the page's network timeline) before the next.
 
+A react-select dropdown, which is what Greenhouse's are, is waited on for what it does rather than for a set time
+(decided 2026-10-07, tried first on Greenhouse's own page code served locally; that code isn't in the repository):
+its list is looked for again at once, and after a pick the fill goes on as soon as the list has closed, which it has
+by its next render, where it used to wait 150 ms. That took a second or two off a form of a dozen dropdowns. Any
+other dropdown, Workday's and Ashby's among them, keeps the pace and the 150 ms it had: there's no page of theirs
+to try shorter waits on.
+
 | System     | Hosts                                                          | Notes                                                      |
 | ---------- | -------------------------------------------------------------- | ---------------------------------------------------------- |
 | Greenhouse | `job-boards.greenhouse.io`, `boards.greenhouse.io`, EU, embeds | react-select dropdowns; embeds read the job from page data |

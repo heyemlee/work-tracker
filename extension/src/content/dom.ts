@@ -2,18 +2,24 @@ import { clean } from '../text';
 
 export const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-/** Polls until `probe` returns something, or gives up after `timeout` ms. */
+/**
+ * Polls until `probe` returns something, or gives up after `timeout` ms. It looks every `interval` ms; told the
+ * answer comes `soon`, it looks again after 10 ms first and doubles the wait from there, up to `interval`: for a
+ * page known to answer within a frame or two.
+ */
 export async function waitFor<T>(
   probe: () => T | null | undefined,
   timeout = 2000,
   interval = 50,
+  soon = false,
 ): Promise<T | null> {
   const started = Date.now();
-  for (;;) {
+  for (let pause = soon ? Math.min(10, interval) : interval; ; pause = Math.min(pause * 2, interval)) {
     const found = probe();
     if (found) return found;
-    if (Date.now() - started >= timeout) return null;
-    await sleep(interval);
+    const left = timeout - (Date.now() - started);
+    if (left <= 0) return null;
+    await sleep(Math.min(pause, left));
   }
 }
 

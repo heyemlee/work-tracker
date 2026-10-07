@@ -100,16 +100,28 @@ function optionsIn(listbox: HTMLElement): HTMLElement[] {
   return found.filter((option) => !isHidden(option));
 }
 
+/**
+ * The control is react-select's. Its list is there by its next render and gone by the one after a pick, as tried on
+ * Greenhouse's own page code: waits on it look again at once, and end when it has answered. Any other widget —
+ * Workday's, Ashby's — keeps the pace and the pause it had, there being no page of theirs to try shorter ones on.
+ */
+const isReactSelect = (input: HTMLElement) => input.closest('[class*="select__control"]') !== null;
+
 /** Opens a combobox (react-select and the like) and returns its option elements. */
 export async function openCombobox(input: HTMLElement): Promise<HTMLElement[]> {
   input.focus();
   const control = input.closest<HTMLElement>('.select__control, [class*="control"]') ?? input;
   clickLikeAPerson(control);
   key(input, 'ArrowDown');
-  const listbox = await waitFor(() => {
-    const box = listboxFor(input);
-    return box && optionsIn(box).length > 0 ? box : null;
-  }, 800);
+  const listbox = await waitFor(
+    () => {
+      const box = listboxFor(input);
+      return box && optionsIn(box).length > 0 ? box : null;
+    },
+    800,
+    50,
+    isReactSelect(input),
+  );
   return listbox ? optionsIn(listbox) : [];
 }
 
@@ -138,12 +150,17 @@ export function clickAway(input: HTMLElement): void {
 
 /**
  * After a pick, closes a menu that stayed open, as a person would by clicking away: Workday's prompts keep their
- * list up after a choice. A menu that closed itself is left alone.
+ * list up after a choice. A menu gets 150 ms to close by itself, and one that did is left alone. react-select's is
+ * gone by its next render, and the wait with it.
  */
 async function closeIfOpen(input: HTMLElement): Promise<void> {
-  await sleep(150);
-  const box = listboxFor(input);
-  if (box && !isHidden(box) && optionsIn(box).length > 0) clickAway(input);
+  const closed = () => {
+    const box = listboxFor(input);
+    return !(box && !isHidden(box) && optionsIn(box).length > 0);
+  };
+  if (!isReactSelect(input)) await sleep(150);
+  else if (await waitFor(closed, 150, 50, true)) return;
+  if (!closed()) clickAway(input);
 }
 
 /**
@@ -192,19 +209,24 @@ export async function pickFromTypeahead(
   setNativeValue(input, query);
   // Typing ends on a key coming up, and Greenhouse's dropdowns open their list on that, not on the text changing.
   key(input, query.slice(-1));
-  const found = await waitFor(() => {
-    const box =
-      listboxFor(input) ??
-      input.closest('li, .application-field, div')?.querySelector<HTMLElement>('.dropdown-results');
-    if (!box) return null;
-    const items = [
-      ...box.querySelectorAll<HTMLElement>('[role="option"], .dropdown-location, li, .pac-item'),
-    ].filter((item) => textOf(item) && !isHidden(item));
-    const texts = items.map((item) => textOf(item));
-    const choice = choose(texts);
-    const target = choice === null ? undefined : items[texts.indexOf(choice)];
-    return target ? { target, choice } : null;
-  }, 4000);
+  const found = await waitFor(
+    () => {
+      const box =
+        listboxFor(input) ??
+        input.closest('li, .application-field, div')?.querySelector<HTMLElement>('.dropdown-results');
+      if (!box) return null;
+      const items = [
+        ...box.querySelectorAll<HTMLElement>('[role="option"], .dropdown-location, li, .pac-item'),
+      ].filter((item) => textOf(item) && !isHidden(item));
+      const texts = items.map((item) => textOf(item));
+      const choice = choose(texts);
+      const target = choice === null ? undefined : items[texts.indexOf(choice)];
+      return target ? { target, choice } : null;
+    },
+    4000,
+    50,
+    isReactSelect(input),
+  );
   if (!found) return null;
   const { target, choice } = found;
   clickLikeAPerson(target);

@@ -1,12 +1,15 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clickAway, pickFromCombobox, pickFromTypeahead } from './widgets';
 
 const OPTIONS = ['United States Minor Outlying Islands (+1)', 'United States of America (+1)'];
 
-/** A search box with its list. `stays` keeps the list open after a pick, as Workday's prompts do. */
-function dropdown(stays: boolean) {
+/**
+ * A search box with its list. `stays` keeps the list open after a pick, as Workday's prompts do; otherwise it closes
+ * `closesAfter` ms after the pick, at once by default. `reactSelect` puts the box in that library's control.
+ */
+function dropdown(stays: boolean, closesAfter = 0, reactSelect = false) {
   document.body.innerHTML = `
-    <input id="search" aria-controls="list">
+    <div class="${reactSelect ? 'select__control' : 'box'}"><input id="search" aria-controls="list"></div>
     <div id="list" role="listbox">${OPTIONS.map((text) => `<div role="option">${text}</div>`).join('')}</div>`;
   const input = document.querySelector<HTMLInputElement>('#search')!;
   const list = document.querySelector<HTMLElement>('#list')!;
@@ -14,7 +17,9 @@ function dropdown(stays: boolean) {
   for (const option of list.querySelectorAll<HTMLElement>('[role="option"]')) {
     option.addEventListener('click', () => {
       input.dataset.picked = option.textContent ?? '';
-      if (!stays) list.remove();
+      if (stays) return;
+      if (closesAfter) setTimeout(() => list.remove(), closesAfter);
+      else list.remove();
     });
   }
   input.addEventListener('keydown', (event) => {
@@ -49,6 +54,51 @@ describe('after picking from a dropdown', () => {
     const { input, escapes } = dropdown(false);
     expect(await pickFromCombobox(input, america)).toBe('United States of America (+1)');
     expect(escapes).toEqual([]);
+  });
+
+  describe('by the clock', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    /** Picks, and says whether the pick was over once `ms` had gone by. */
+    async function overWithin(ms: number, input: HTMLInputElement) {
+      let over = false;
+      const picking = pickFromCombobox(input, america).then((choice) => {
+        over = true;
+        return choice;
+      });
+      await vi.advanceTimersByTimeAsync(ms);
+      const inTime = over;
+      await vi.runAllTimersAsync();
+      expect(await picking).toBe('United States of America (+1)');
+      return inTime;
+    }
+
+    it('goes on as soon as react-select’s list has closed, which it has by its next render', async () => {
+      const { input, escapes } = dropdown(false, 5, true);
+      expect(await overWithin(20, input)).toBe(true);
+      expect(escapes).toEqual([]);
+    });
+
+    it('gives react-select’s list 150 ms to close before closing it itself', async () => {
+      const slow = dropdown(false, 120, true);
+      expect(await overWithin(100, slow.input)).toBe(false);
+      expect(slow.escapes).toEqual([]);
+
+      const stuck = dropdown(true, 0, true);
+      expect(await overWithin(140, stuck.input)).toBe(false);
+      expect(stuck.escapes).toEqual(['Escape']);
+    });
+
+    it('leaves any other widget the 150 ms it had, closed or not', async () => {
+      const { input, escapes } = dropdown(false, 5);
+      expect(await overWithin(140, input)).toBe(false);
+      expect(escapes).toEqual([]);
+    });
   });
 });
 
