@@ -63,18 +63,34 @@ async function recordUsage(message: BetaMessage, model: Model): Promise<void> {
   await addUsage(usage.input_tokens + cachedRead + cachedWrite, usage.output_tokens, cost);
 }
 
-/** Adds a request to today's line. An OpenAI-compatible endpoint's prices aren't known, so its cost stays 0. */
-async function addUsage(inputTokens: number, outputTokens: number, cost: number): Promise<void> {
-  const day = new Date().toLocaleDateString('en-CA');
-  const days = await usageItem.getValue();
-  const today = days.find((entry) => entry.day === day) ?? { day, inputTokens: 0, outputTokens: 0, cost: 0 };
-  const updated = {
-    day,
-    inputTokens: today.inputTokens + inputTokens,
-    outputTokens: today.outputTokens + outputTokens,
-    cost: today.cost + cost,
-  };
-  await usageItem.setValue([updated, ...days.filter((entry) => entry.day !== day)].slice(0, 90));
+/** The last request's count, still being written or done: a form's requests can come back together. */
+let counted: Promise<void> = Promise.resolve();
+
+/**
+ * Adds a request to today's line, once the request before it has been added: two that read the line at the same
+ * time would each write their own sum, and one would be lost. An OpenAI-compatible endpoint's prices aren't known,
+ * so its cost stays 0.
+ */
+function addUsage(inputTokens: number, outputTokens: number, cost: number): Promise<void> {
+  const added = counted.then(async () => {
+    const day = new Date().toLocaleDateString('en-CA');
+    const days = await usageItem.getValue();
+    const today = days.find((entry) => entry.day === day) ?? {
+      day,
+      inputTokens: 0,
+      outputTokens: 0,
+      cost: 0,
+    };
+    const updated = {
+      day,
+      inputTokens: today.inputTokens + inputTokens,
+      outputTokens: today.outputTokens + outputTokens,
+      cost: today.cost + cost,
+    };
+    await usageItem.setValue([updated, ...days.filter((entry) => entry.day !== day)].slice(0, 90));
+  });
+  counted = added.catch(() => undefined);
+  return added;
 }
 
 /**

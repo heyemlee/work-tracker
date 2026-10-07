@@ -102,6 +102,13 @@ describe('answerFields', () => {
     expect(today?.cost).toBeCloseTo(0.01, 6);
   });
 
+  it('counts every request of a form, though they come back together', async () => {
+    create.mockResolvedValue(reply(JSON.stringify({ answers: [] })));
+    await Promise.all([1, 2, 3].map(() => answerFields(questions, makeProfile(), null, '2026-09-27')));
+    const [today] = await usageItem.getValue();
+    expect(today).toMatchObject({ inputTokens: 3000, outputTokens: 600 });
+  });
+
   it('needs a key', async () => {
     await apiKeyItem.setValue('');
     await expect(answerFields(questions, makeProfile(), null, '2026-09-27')).rejects.toBeInstanceOf(NoApiKey);

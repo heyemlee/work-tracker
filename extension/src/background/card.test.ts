@@ -18,7 +18,7 @@ vi.mock('./outbox', () => ({
   OutboxSignedOut: class extends Error {},
 }));
 
-// The page, for the tests that fill: what a frame holds, and what it takes.
+// The page and the model, for the tests that fill: what a frame holds, what it takes, what comes back drafted.
 const scanFrames = vi.fn<typeof import('./frames').scanFrames>();
 const fillFrames = vi.fn<typeof import('./frames').fillFrames>();
 vi.mock('./frames', async (original) => ({
@@ -26,10 +26,18 @@ vi.mock('./frames', async (original) => ({
   scanFrames,
   fillFrames,
 }));
+const answerFields = vi.fn<typeof import('./ai').answerFields>();
+const draftAnswer = vi.fn<typeof import('./ai').draftAnswer>();
+vi.mock('./ai', async (original) => ({
+  ...(await original<typeof import('./ai')>()),
+  answerFields,
+  draftAnswer,
+}));
 
 const { cardState, fill, logApplication, saveJob, snapshot, undo } = await import('./card');
-const { updateSession } = await import('./session');
-const { DEFAULT_SETTINGS, loggedItem, profileItem, settingsItem, snapshotsItem } = await import('../storage');
+const { getSession, updateSession } = await import('./session');
+const { DEFAULT_SETTINGS, loggedItem, openaiKeyItem, profileItem, settingsItem, snapshotsItem } =
+  await import('../storage');
 
 const URL_ = 'https://job-boards.greenhouse.io/arcadia/jobs/42';
 const TAB = 7;
@@ -337,5 +345,117 @@ describe('filling', () => {
     ]);
     // The card heard of each stage on the way, and none of that went back to Outbox.
     expect(loadSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  describe('with AI for what the rules leave', () => {
+    const essays = [
+      field('0:why', 'Why do you want to work at Arcadia Cloud?', { kind: 'textarea' }),
+      field('0:project', 'Tell us about a project you are proud of', { kind: 'textarea' }),
+      field('0:hard', 'Describe the hardest bug you have fixed', { kind: 'textarea' }),
+    ];
+    const draftOf = (id: string) => `A draft for ${id}`;
+    const allDrafts = Object.fromEntries(essays.map(({ id }) => [id, draftOf(id)]));
+    /** What the AI put into the plan, by field. */
+    const drafted = async () =>
+      Object.fromEntries(
+        ((await getSession(tab))?.plan ?? [])
+          .filter((entry) => entry.source === 'ai')
+          .map((entry) => [entry.fieldId, entry.answer?.type === 'text' ? entry.answer.text : null]),
+      );
+    const settled = (ai: 'ready' | 'failed') =>
+      vi.waitFor(async () => expect((await getSession(tab))?.ai).toBe(ai), { timeout: 3000 });
+
+    beforeEach(async () => {
+      await settingsItem.setValue({ ...DEFAULT_SETTINGS, aiEnabled: true });
+      await openaiKeyItem.setValue('sk-test');
+      scanFrames.mockResolvedValue(
+        form([
+          field('0:first', 'First Name'),
+          field('0:color', 'Favorite color', { maxLength: 40 }),
+          ...essays,
+        ]),
+      );
+      answerFields.mockResolvedValue([]);
+    });
+
+    it('asks for the drafts together, and writes them into the page one at a time', async () => {
+      const leftovers = later<never[]>();
+      answerFields.mockReturnValue(leftovers.promise);
+      const drafts = new Map<string, ReturnType<typeof later<string>>>();
+      draftAnswer.mockImplementation((question) => {
+        const draft = later<string>();
+        drafts.set(question.id, draft);
+        return draft.promise;
+      });
+      let writing = 0;
+      let mostWriting = 0;
+      fillFrames.mockImplementation(async (_tab, plan) => {
+        mostWriting = Math.max(mostWriting, ++writing);
+        await new Promise((done) => setTimeout(done, 5));
+        writing--;
+        return Object.fromEntries(
+          plan.filter((entry) => entry.answer).map((entry) => [entry.fieldId, { ok: true }]),
+        );
+      });
+
+      await fill(tab, URL_);
+      // Three requests are out before any has come back: the leftover field's, and two of the drafts'.
+      await vi.waitFor(() => {
+        expect(answerFields).toHaveBeenCalledTimes(1);
+        expect(draftAnswer).toHaveBeenCalledTimes(2);
+      });
+      // One comes back, and the third draft goes out.
+      leftovers.settle([]);
+      await vi.waitFor(() => expect(draftAnswer).toHaveBeenCalledTimes(3));
+      // The drafts come back at once, the last one first.
+      for (const { id } of [...essays].reverse()) drafts.get(id)?.settle(draftOf(id));
+      await settled('ready');
+
+      expect(await drafted()).toEqual(allDrafts);
+      expect(mostWriting).toBe(1);
+    });
+
+    it('gives a request that failed among the others a second go, alone', async () => {
+      let out = 0;
+      let refused = false;
+      const outAtSecondGo: number[] = [];
+      draftAnswer.mockImplementation(async (question) => {
+        const again = question.id === '0:project' && refused;
+        if (again) outAtSecondGo.push(out);
+        out++;
+        try {
+          await new Promise((done) => setTimeout(done, 5));
+          if (question.id === '0:project' && !again) {
+            refused = true;
+            throw new Error('429 Too many requests');
+          }
+          return draftOf(question.id);
+        } finally {
+          out--;
+        }
+      });
+
+      await fill(tab, URL_);
+      await settled('ready');
+
+      expect(draftAnswer).toHaveBeenCalledTimes(4);
+      expect(outAtSecondGo).toEqual([0]);
+      expect(await drafted()).toEqual(allDrafts);
+      expect((await getSession(tab))?.error).toBeNull();
+    });
+
+    it('says so when a request fails twice, and keeps what the others drafted', async () => {
+      draftAnswer.mockImplementation(async (question) => {
+        if (question.id === '0:project') throw new Error('500 upstream error');
+        return draftOf(question.id);
+      });
+
+      await fill(tab, URL_);
+      await settled('failed');
+
+      expect((await getSession(tab))?.error).toBe('ai: 500 upstream error');
+      expect(await drafted()).toEqual({ '0:why': draftOf('0:why'), '0:hard': draftOf('0:hard') });
+      expect(draftAnswer).toHaveBeenCalledTimes(4);
+    });
   });
 });

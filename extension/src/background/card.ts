@@ -372,44 +372,86 @@ async function applyAi(tabId: number, url: string, entries: PlannedField[]): Pro
   return session;
 }
 
-/** AI for the leftovers: unknown fields in one request, then each free-text draft. */
+/** How many AI requests are out at once: an endpoint behind a proxy may turn a crowd away. */
+const AI_AT_ONCE = 3;
+
+/** Turns at the page, which takes one answer at a time: each task runs once the one asked before it is through. */
+function oneAtATime(): <T>(task: () => Promise<T>) => Promise<T> {
+  let last: Promise<unknown> = Promise.resolve();
+  return (task) => {
+    const turn = last.then(task);
+    last = turn.catch(() => undefined);
+    return turn;
+  };
+}
+
+/**
+ * Runs the tasks a few at a time rather than each after the last. One that failed in that company gets a second go
+ * alone, once the rest are through: an endpoint that turned it away for the crowd takes it then. The first to fail
+ * twice is thrown.
+ */
+async function together(tasks: (() => Promise<void>)[]): Promise<void> {
+  const failed: (() => Promise<void>)[] = [];
+  let next = 0;
+  const lane = async () => {
+    for (let task = tasks[next++]; task; task = tasks[next++]) {
+      try {
+        await task();
+      } catch {
+        failed.push(task);
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: AI_AT_ONCE }, lane));
+  for (const task of failed) await task();
+}
+
+/**
+ * AI for the leftovers: unknown fields in one request, and a request per free-text draft. The requests go out
+ * together, since each takes seconds; their answers go into the page one at a time, as they come back.
+ */
 async function runAi(tabId: number, url: string, ctx: RuleContext): Promise<void> {
   try {
     let session = (await getSession(tabId))!;
-    const candidates = aiCandidates(session.fields, session.plan);
-    const needOptions = candidates
-      .filter((field) => field.kind === 'combobox' && field.options.length === 0)
-      .map((field) => field.id);
-    const options = needOptions.length ? await readOptions(tabId, needOptions) : {};
-    const questions = candidates.map((field) => ({ ...field, options: options[field.id] ?? field.options }));
-    const answers = await answerFields(questions, ctx.profile, ctx.posting, ctx.today);
-    if (answers.length) {
-      const byId = new Map(questions.map((field) => [field.id, field]));
-      session = await applyAi(
-        tabId,
-        url,
-        answers.map((answer): PlannedField => {
-          const field = byId.get(answer.id)!;
-          const value: Answer =
-            field.kind === 'multi'
-              ? { type: 'choices', texts: answer.choices }
-              : field.options.length
-                ? { type: 'choice', want: { kind: 'like', texts: [answer.answer] }, option: answer.answer }
-                : { type: 'text', text: answer.answer };
-          return {
-            fieldId: answer.id,
-            status: 'draft',
-            answer: value,
-            source: 'ai',
-            key: 'ai',
-            note: answer.reason,
-            critical: false,
-          };
-        }),
-      );
-    }
+    const { fields, plan } = session;
     const finals = await finalsItem.getValue();
-    for (const field of draftCandidates(session.fields, session.plan)) {
+    const onPage = oneAtATime();
+
+    const leftovers = async () => {
+      const candidates = aiCandidates(fields, plan);
+      const needOptions = candidates
+        .filter((field) => field.kind === 'combobox' && field.options.length === 0)
+        .map((field) => field.id);
+      const options = needOptions.length ? await onPage(() => readOptions(tabId, needOptions)) : {};
+      const questions = candidates.map((field) => ({
+        ...field,
+        options: options[field.id] ?? field.options,
+      }));
+      const answers = await answerFields(questions, ctx.profile, ctx.posting, ctx.today);
+      if (answers.length === 0) return;
+      const byId = new Map(questions.map((field) => [field.id, field]));
+      const entries = answers.map((answer): PlannedField => {
+        const field = byId.get(answer.id)!;
+        const value: Answer =
+          field.kind === 'multi'
+            ? { type: 'choices', texts: answer.choices }
+            : field.options.length
+              ? { type: 'choice', want: { kind: 'like', texts: [answer.answer] }, option: answer.answer }
+              : { type: 'text', text: answer.answer };
+        return {
+          fieldId: answer.id,
+          status: 'draft',
+          answer: value,
+          source: 'ai',
+          key: 'ai',
+          note: answer.reason,
+          critical: false,
+        };
+      });
+      await onPage(() => applyAi(tabId, url, entries));
+    };
+
+    const drafts = draftCandidates(fields, plan).map((field) => async () => {
       const text = await draftAnswer(
         field,
         ctx.profile,
@@ -417,19 +459,20 @@ async function runAi(tabId: number, url: string, ctx: RuleContext): Promise<void
         ctx.today,
         similarFinals(finals, field.label),
       );
-      if (!text) continue;
-      session = await applyAi(tabId, url, [
-        {
-          fieldId: field.id,
-          status: 'draft',
-          answer: { type: 'text', text },
-          source: 'ai',
-          key: session.plan.find((entry) => entry.fieldId === field.id)?.key ?? 'text',
-          note: null,
-          critical: false,
-        },
-      ]);
-    }
+      if (!text) return;
+      const entry: PlannedField = {
+        fieldId: field.id,
+        status: 'draft',
+        answer: { type: 'text', text },
+        source: 'ai',
+        key: plan.find((planned) => planned.fieldId === field.id)?.key ?? 'text',
+        note: null,
+        critical: false,
+      };
+      await onPage(() => applyAi(tabId, url, [entry]));
+    });
+
+    await together([leftovers, ...drafts]);
     session = await updateSession(tabId, url, () => ({ ai: 'ready', phase: 'done' }));
     await pushState(session);
   } catch (error) {

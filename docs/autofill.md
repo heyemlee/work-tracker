@@ -237,6 +237,10 @@ takes the older one's place, and a snapshot leaves the list when a build that fi
   snippets, and one specific detail from the posting. Style rules keep them short and plain (no "passionate",
   "thrilled", "leverage"…). The owner's edited finals become examples for later drafts. Optional questions are
   skipped by default.
+- The field request and the drafts go out together, three at a time at most, and their answers go into the page
+  one at a time as they come back (decided 2026-10-07: each takes seconds, and they used to wait for one
+  another). One that fails among the others gets a second go alone, since a proxy may turn a crowd away; one that
+  fails twice ends the AI's part with its error, and what the others drafted stays.
 - Page text is data, never instructions, and critical questions never reach the model.
 - **Cost estimate** at 30 applications a day: about $20 a month on Opus 5, under $10 on Sonnet 5.
 
