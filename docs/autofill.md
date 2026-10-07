@@ -164,6 +164,9 @@ relocation and office questions for a job abroad as the owner's call.
 **When a page fills badly**, "This page didn't fill right" in the card's ⋯ menu saves the form's structure — labels, kinds,
 options, what each layer did — without any values. Those snapshots become test fixtures. Workday's adapter is built
 from its `data-automation-id` conventions, not from a saved form, so its first real pages are the ones to snapshot.
+The snapshots on the options page are the list of open problems: pressed again on the same form, the newer snapshot
+takes the older one's place, and a snapshot leaves the list when a build that fixes it is loaded — its id goes into
+`src/background/fixed.ts` with the fix.
 
 ## 6. AI
 

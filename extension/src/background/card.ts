@@ -595,7 +595,20 @@ export async function undo(tabId: number, url: string): Promise<CardState> {
   return cardState(session ?? (await updateSession(tabId, url, () => ({}))));
 }
 
-/** "This page didn't fill right": saves each form frame's structure, without values. */
+/** The same form captured again: its page, its step and its questions. */
+function sameForm(a: FormSnapshot, b: FormSnapshot): boolean {
+  return (
+    a.url === b.url &&
+    a.step === b.step &&
+    a.fields.length === b.fields.length &&
+    a.fields.every((field, index) => field.label === b.fields[index]?.label)
+  );
+}
+
+/**
+ * "This page didn't fill right": saves each form frame's structure, without values. Pressed again on the same
+ * form, the newer capture takes the older one's place.
+ */
 export async function snapshot(tabId: number): Promise<number> {
   const session = await getSession(tabId);
   if (!session) return 0;
@@ -611,8 +624,12 @@ export async function snapshot(tabId: number): Promise<number> {
       // The frame is gone.
     }
   }
-  if (saved.length)
-    await snapshotsItem.setValue([...saved, ...(await snapshotsItem.getValue())].slice(0, 50));
+  if (saved.length) {
+    const earlier = (await snapshotsItem.getValue()).filter(
+      (old) => !saved.some((shot) => sameForm(shot, old)),
+    );
+    await snapshotsItem.setValue([...saved, ...earlier].slice(0, 50));
+  }
   return saved.length;
 }
 

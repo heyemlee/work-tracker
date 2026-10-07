@@ -40,7 +40,7 @@ const en = {
   memoryHelp: 'What you type where the rules have nothing, used for the same question next time.',
   snapshots: 'Form snapshots · {n}',
   snapshotsHelp:
-    'Saved from the card’s ⋯ menu, “This page didn’t fill right”: the form’s structure, never its values.',
+    'Saved from the card’s ⋯ menu, “This page didn’t fill right”: the form’s structure, never its values. A snapshot leaves this list once the extension is updated with its fix.',
   fields: '{n} fields',
   export: 'Export',
   delete: 'Delete',
@@ -99,7 +99,8 @@ const zh: Record<Key, string> = {
   memory: '记住的回答 · {n}',
   memoryHelp: '规则填不了、你自己填的答案，下次遇到同样的问题会自动填。',
   snapshots: '表单快照 · {n}',
-  snapshotsHelp: '在卡片的 ⋯ 菜单里点「这页没填好」保存，只有表单结构，不含填写内容。',
+  snapshotsHelp:
+    '在卡片的 ⋯ 菜单里点「这页没填好」保存，只有表单结构，不含填写内容。修好的会在扩展更新后自动从这里消失。',
   fields: '{n} 个字段',
   export: '导出',
   delete: '删除',

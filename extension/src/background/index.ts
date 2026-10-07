@@ -16,6 +16,7 @@ import {
   undo,
 } from './card';
 import { bridgeStatus, fromOutbox, readResumeForOutbox } from './bridge';
+import { dropFixedSnapshots } from './fixed';
 import { forgetTab, openCard, showForm } from './inject';
 import { flushQueue, syncProfile } from './outbox';
 import { dropSession } from './session';
@@ -89,9 +90,16 @@ export function startBackground(): void {
     void dropSession(tabId);
   });
 
+  // Reports this build fixes leave the list when the build comes in: installed, updated, or reloaded on
+  // chrome://extensions.
+  browser.runtime.onInstalled.addListener(() => {
+    void dropFixedSnapshots().catch(() => undefined);
+  });
+
   // Logs queued while Outbox was unreachable go out when the browser starts.
   browser.runtime.onStartup.addListener(() => {
     void flushQueue().catch(() => undefined);
     void syncProfile().catch(() => undefined);
+    void dropFixedSnapshots().catch(() => undefined);
   });
 }
