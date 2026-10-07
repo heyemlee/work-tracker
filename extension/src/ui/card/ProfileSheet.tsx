@@ -15,7 +15,16 @@ import {
   type Profile,
 } from '../../profile/schema';
 import type { MessageKey, Translate } from '../i18n';
-import { ANSWER_SWITCHES, describeIssue, SECTIONS, tidy, type Section } from './profileForm';
+import {
+  ANSWER_SWITCHES,
+  describeIssue,
+  picks,
+  PRONOUNS,
+  SECTIONS,
+  STATES,
+  tidy,
+  type Section,
+} from './profileForm';
 import { Track } from './Track';
 
 const OPT: Profile['workAuthorization']['opt'][] = ['none', 'opt', 'stem'];
@@ -227,9 +236,10 @@ function Fields({
               value={draft.phone}
               onChange={(phone) => update((profile) => ({ ...profile, phone }))}
             />
-            <Text
+            <Choice
               label={f('pronouns')}
               value={name.pronouns}
+              options={picks(PRONOUNS, name.pronouns, t('profile.pronouns.none'))}
               onChange={(pronouns) => patch('name', { pronouns })}
             />
             <Text
@@ -247,9 +257,10 @@ function Fields({
               onChange={(line1) => patch('address', { line1 })}
             />
             <Text label={f('city')} value={address.city} onChange={(city) => patch('address', { city })} />
-            <Text
+            <Choice
               label={f('state')}
               value={address.state}
+              options={picks(STATES, address.state, '—')}
               onChange={(state) => patch('address', { state })}
             />
             <Text label={f('zip')} value={address.zip} onChange={(zip) => patch('address', { zip })} />

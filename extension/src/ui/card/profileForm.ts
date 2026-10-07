@@ -1,5 +1,6 @@
 import type { ProfileIssue } from '../../messages';
 import type { Profile } from '../../profile/schema';
+import { US_STATES } from '../../rules/geo';
 import type { MessageKey, Translate } from '../i18n';
 
 /** The profile window's sections, in the order its list shows them. */
@@ -15,6 +16,29 @@ export const SECTIONS = [
 ] as const;
 
 export type Section = (typeof SECTIONS)[number];
+
+/** The pronouns forms offer, in the short form the profile keeps: "He/him" also finds "He/him/his". */
+export const PRONOUNS = ['He/him', 'She/her', 'They/them'];
+
+/** US states by name, kept by their two-letter code as forms and the fill rules take either. */
+export const STATES = Object.entries(US_STATES).map(([value, name]) => ({
+  value,
+  label: `${name} (${value})`,
+}));
+
+/**
+ * A dropdown over a field the profile keeps as text: `none` for leaving it empty, the usual values, and whatever
+ * else the profile already holds (typed on Outbox), so opening the window never changes it.
+ */
+export function picks(
+  values: readonly (string | { value: string; label: string })[],
+  current: string,
+  none: string,
+): { value: string; label: string }[] {
+  const options = values.map((item) => (typeof item === 'string' ? { value: item, label: item } : item));
+  const held = current && !options.some((option) => option.value === current);
+  return [{ value: '', label: none }, ...options, ...(held ? [{ value: current, label: current }] : [])];
+}
 
 /** The yes-or-no answers under "Common questions", in the order forms tend to ask them. */
 export const ANSWER_SWITCHES = [

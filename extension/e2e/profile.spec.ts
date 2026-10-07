@@ -35,12 +35,15 @@ test('edits the profile in a window over the page, saves it to Outbox, and fills
 
   await sheet.getByLabel('Legal first name').fill('Alexander');
   await sheet.getByLabel('Phone').fill('+1 408-555-0199');
+  // Pronouns and the state are picked, not typed.
+  await sheet.getByLabel('Pronouns').selectOption('He/him');
+  await expect(sheet.getByLabel('State')).toHaveValue('CA');
   await sheet.getByRole('tab', { name: 'Skills' }).click();
   await sheet.getByRole('textbox', { name: 'Skills' }).fill('Python, Go, Rust');
   await save.click();
   await expect(sheet.getByText('Saved', { exact: true })).toBeVisible();
   expect(outbox.profiles.at(-1)).toMatchObject({
-    name: { first: 'Alexander' },
+    name: { first: 'Alexander', pronouns: 'He/him' },
     phone: '+1 408-555-0199',
     skills: ['Python', 'Go', 'Rust'],
   });

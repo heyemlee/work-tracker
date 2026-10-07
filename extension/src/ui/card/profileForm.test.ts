@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { makeProfile } from '../../test/profiles';
 import { translator } from '../i18n';
-import { describeIssue, tidy } from './profileForm';
+import { findOption } from '../../text';
+import { describeIssue, picks, PRONOUNS, STATES, tidy } from './profileForm';
 
 const t = translator('en');
 
@@ -69,5 +70,27 @@ describe('describeIssue', () => {
     [['writing', 'stories', 0, 'title'], 'too_small', 'writing', 'Stories (STAR) 1 · Title is required'],
   ] as const)('says where %j stands, and in which section', (path, code, section, text) => {
     expect(describeIssue({ path: [...path], code }, t)).toEqual({ section, text });
+  });
+});
+
+describe('picks', () => {
+  it('offers none, the usual values, and a value typed on Outbox that isn’t among them', () => {
+    expect(picks(PRONOUNS, '', 'Prefer not to say').map((option) => option.value)).toEqual([
+      '',
+      'He/him',
+      'She/her',
+      'They/them',
+    ]);
+    expect(picks(PRONOUNS, 'Ze/zir', 'Prefer not to say').at(-1)).toEqual({
+      value: 'Ze/zir',
+      label: 'Ze/zir',
+    });
+    expect(picks(STATES, 'CA', '—')).toHaveLength(52);
+    expect(picks(STATES, 'CA', '—')).toContainEqual({ value: 'CA', label: 'California (CA)' });
+  });
+
+  it('keeps pronouns in the form that finds a form’s longer option', () => {
+    const offered = ['He/him/his', 'She/her/hers', 'They/them/theirs', 'I prefer not to say'];
+    expect(PRONOUNS.map((pronouns) => findOption(offered, [pronouns]))).toEqual(offered.slice(0, 3));
   });
 });
