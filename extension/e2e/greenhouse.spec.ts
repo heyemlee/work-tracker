@@ -206,3 +206,30 @@ test('follows what the owner fills in and empties by hand after the fill', async
   await expect(card.getByTitle('Fill: First Name')).toBeVisible();
   await expect(line('preferred office location')).toContainText('New York, NY');
 });
+
+test('filling again keeps an answer the owner corrected, and fills what they emptied', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  await serve(context, 'job-boards.greenhouse.io', BY_HAND_FORM, THANKS);
+  const page = await context.newPage();
+  await page.goto('https://job-boards.greenhouse.io/acme/jobs/123');
+
+  const card = page.locator('outbox-autofill');
+  await card.getByRole('button', { name: /^Fill/ }).click();
+  await expect(card.getByText('Filled 3/4 required')).toBeVisible({ timeout: 45_000 });
+
+  await page.locator('#last_name').fill('Chan');
+  await page.locator('#first_name').fill('');
+  await page.selectOption('#office', 'New York, NY');
+  await expect(card.getByText('Filled 3/4 required')).toBeVisible();
+  await card.getByRole('button', { name: 'Fill again' }).click();
+
+  await expect(page.locator('#first_name')).toHaveValue('Alex');
+  await expect(card.getByText('Filled 4/4 required')).toBeVisible();
+  await expect(page.locator('#last_name')).toHaveValue('Chan');
+  await expect(page.locator('#office')).toHaveValue('New York, NY');
+  await expect(card.locator('.item', { hasText: 'Last Name' })).toContainText('Chan');
+});

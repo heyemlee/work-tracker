@@ -197,6 +197,16 @@ the file and emptied the input), a control the page has since replaced. A react-
 one or its value box says so (it stops drawing the pick while something is typed over it); what's typed into its
 search box isn't one. Tried on Greenhouse's own page code served locally, as the waits below were.
 
+What the page already holds stays, on the first fill and on any later one: what the site read from an attached
+resume (the resume goes in first and the fill waits for the site, see below), what the owner typed or picked. Filling
+again redoes the extension's own answers, so that another account, resume or an edited profile takes effect, but only
+while a field still shows what the extension left in it (`wrote` in `content/main.ts`): an answer the owner corrected
+is theirs from then on (their call, 2026-10-07), and so is one the site wrote over. A field emptied is filled again,
+a box unticked counts as emptied, and the email always names the account picked on the card. A dropdown's pick is
+looked for in the dropdown's own box (`pickBox` in `content/extract.ts`). Until 2026-10-07 it was looked for in the
+wrapper round the search input, which react-select calls a container too, so on Greenhouse's own pages a dropdown the
+owner had answered read as empty: a fill wrote over it, and the answer wasn't remembered at submit.
+
 An answer can bring up another question (Greenhouse asks for race once "Hispanic or Latino?" is answered), so after
 filling the page is read again and what appeared is filled too, twice at most; a field keeps its id across reads.
 Ashby saves each answer to its server as it changes, and saves that overlap there overwrite each other — a form

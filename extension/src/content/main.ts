@@ -28,9 +28,14 @@ export function startContent(): () => void {
   let extraction: Extraction | null = null;
   // A field keeps its id across reads of the page: fields that appear after filling are told apart as new.
   const ids = fieldIds();
-  // Controls this script filled: filling again may redo them. Any other value in the form is the page's, and stays.
-  const wrote = new WeakSet<Element>();
-  const ours = (handle: Handle) => controlsOf(handle).some((element) => wrote.has(element));
+  // What this script left in each control it filled. Filling again redoes its own answers, as long as they stand
+  // as it left them. Any other value in the form stays: the page's, and the owner's, who may have put theirs in
+  // place of this script's.
+  const wrote = new WeakMap<Element, string | undefined>();
+  const ours = (handle: Handle) => {
+    const control = controlsOf(handle).find((element) => wrote.has(element));
+    return control !== undefined && wrote.get(control) === shownValue(handle);
+  };
 
   // After a fill the owner goes on by hand: what each field holds is told as it changes, for the card's list. The
   // page is watched from the first form read on it, and a page without one never is.
@@ -90,8 +95,8 @@ export function startContent(): () => void {
       for (const entry of ordered) {
         const handle = extraction.handles.get(entry.fieldId);
         if (!handle || !entry.answer) continue;
-        // What the page holds stays: a resume it parsed, a Workday profile, the owner's typing. The email doesn't:
-        // it names the account applying.
+        // What the page holds stays: a resume it parsed, a Workday profile, the owner's typing, their correction of
+        // an answer of this script's. The email doesn't: it names the account applying.
         if (entry.key !== 'email' && !ours(handle) && (filled.has(entry.fieldId) || isFilled(handle))) {
           results[entry.fieldId] = left({ ok: true, value: shownValue(handle) });
           continue;
@@ -109,7 +114,8 @@ export function startContent(): () => void {
         const before = shownValue(handle);
         results[entry.fieldId] = left(await applyAnswer(handle, entry.answer, loadResume));
         if (!results[entry.fieldId]?.ok) continue;
-        for (const element of controlsOf(handle)) wrote.add(element);
+        const shown = shownValue(handle);
+        for (const element of controlsOf(handle)) wrote.set(element, shown);
         if (entry.answer.type === 'file') await (adapter.resumeRead?.(document) ?? sleep(300));
         // Filling a field again with what it holds changes nothing for the page to take in.
         if (adapter.settle && (!before || shownValue(handle) !== before)) await adapter.settle();

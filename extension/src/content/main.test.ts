@@ -125,6 +125,38 @@ describe('filling a page that fills fields of its own', () => {
   });
 });
 
+describe('filling again once the owner has gone on by hand', () => {
+  it('leaves an answer of its own the owner put theirs in place of, and fills one they emptied', async () => {
+    const ask = start();
+    document.body.innerHTML = FORM;
+    const fill = async (answers: Record<string, string>) => {
+      const scan = await ask<FrameScan>({ type: 'frame:scan', frameId: 0, prepare: null });
+      await ask({
+        type: 'frame:fill',
+        fields: plan(scan, answers).filter((entry) => entry.answer?.type !== 'file'),
+      });
+      return scan;
+    };
+    await fill(ANSWERS);
+
+    // The owner corrects the phone, empties the company, and types another email.
+    input('phone').value = '+1 999 000 1111';
+    input('org').value = '';
+    input('email').value = 'someone@else.example';
+    const again = await fill({ ...ANSWERS, linkedin: 'https://www.linkedin.com/in/alexchen' });
+
+    // Theirs now: read as the page's, and left alone.
+    expect(again.fields.find((field) => field.label === 'Phone')?.filled).toBe(true);
+    expect(input('phone').value).toBe('+1 999 000 1111');
+    // Empty is empty, whoever emptied it.
+    expect(input('org').value).toBe('Acme AI');
+    // What stands as this script left it is still its own to redo.
+    expect(input('linkedin').value).toBe('https://www.linkedin.com/in/alexchen');
+    // And the email names the account applying, whatever was typed there.
+    expect(input('email').value).toBe('alex@example.com');
+  });
+});
+
 describe('while filling', () => {
   it('brings each field it fills into view, and not the ones it leaves alone', async () => {
     const ask = start();

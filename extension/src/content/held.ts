@@ -4,9 +4,21 @@ import { readAnswer } from './apply';
 import { textOf } from './dom';
 import { attachedFile, chipsOf, controlsOf, isFilled } from './extract';
 
-/** What a field the page filled holds, for the checklist. */
+/**
+ * What a field shows as its answer: for the checklist, and for telling an answer this script put in from one the
+ * owner has since put in its place.
+ */
 export function shownValue(handle: Handle): string | undefined {
   if (handle.type === 'file') return attachedFile(handle.element) ?? undefined;
+  if (handle.type === 'combobox' || handle.type === 'typeahead') {
+    const select = handle.element.closest('[class*="select__control"]');
+    if (select) {
+      // react-select shows a pick beside its search box; what's typed into the box isn't one yet.
+      const chips = chipsOf(handle.element);
+      const pick = chips.length ? chips.join(', ') : textOf(select.querySelector('[class*="single-value"]'));
+      return pick || undefined;
+    }
+  }
   const answer = readAnswer(handle);
   if (!answer) return undefined;
   switch (answer.type) {
@@ -57,15 +69,8 @@ export function heldBy(handle: Handle): Held | null {
     case 'combobox':
     case 'typeahead': {
       const select = handle.element.closest('[class*="select__control"]');
-      if (select) {
-        // react-select shows a pick beside its search box, and what's typed into the box isn't one yet. While
-        // something is typed there the pick isn't drawn, though the field still holds it.
-        const chips = chipsOf(handle.element);
-        const pick = chips.length
-          ? chips.join(', ')
-          : textOf(select.querySelector('[class*="single-value"]'));
-        return held(select.querySelector(PICKED) !== null, pick || undefined, true);
-      }
+      // While something is typed into react-select's search box the pick isn't drawn, though the field holds it.
+      if (select) return held(select.querySelector(PICKED) !== null, shownValue(handle), true);
       // Workday's dropdown button carries the chosen option's id as its value, empty while it prompts.
       if (handle.element.tagName === 'BUTTON' && handle.element.hasAttribute('value'))
         return held(handle.element.getAttribute('value') !== '', shownValue(handle), true);
