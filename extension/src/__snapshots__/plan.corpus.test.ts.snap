@@ -20,7 +20,7 @@ exports[`the question corpus > answers every question the same way as last revie
   "filled  links.github             GitHub => https://github.com/alexchen",
   "filled  links.website            Other Links => https://github.com/alexchen",
   "filled  links.website            Portfolio => https://github.com/alexchen",
-  "skipped unknown                  Name Pronunciation => ",
+  "skipped name.pronunciation       Name Pronunciation => ",
   "filled  languageFluency          This role requires advanced fluency in English and Chinese, both spoken and written. Are you fluent in BOTH? => Yes",
   "missing relocation               This role needs to based in China, if you are based outside of China now, are you open to relocate? => ",
   "filled  howHeard                 How did you hear about this job? => LinkedIn",

@@ -286,7 +286,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     key: 'name.pronunciation',
-    test: /pronounc/,
+    test: /pronunc|pronounc/,
     answer: (field, ctx) => text('name.pronunciation', field, ctx.profile.name.pronunciation),
   },
   {

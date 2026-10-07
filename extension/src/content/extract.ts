@@ -100,6 +100,23 @@ export function attachedFile(input: HTMLInputElement): string | null {
   return null;
 }
 
+/** The picks a multi-select shows as chips beside its search box. */
+export function chipsOf(control: Element): string[] {
+  const chips = control
+    .closest('[class*="select__control"]')
+    ?.querySelectorAll('[class*="multi-value__label"]');
+  return [...(chips ?? [])].map((chip) => textOf(chip)).filter(Boolean);
+}
+
+/**
+ * The field collects picks and holds one already: a multi-select's chips, Workday's selected items. Picking again
+ * would add a second choice beside the first, or take the first back out.
+ */
+export function holdsPicks(handle: Handle): boolean {
+  if (handle.type === 'prompt') return isFilled(handle);
+  return (handle.type === 'combobox' || handle.type === 'typeahead') && chipsOf(handle.element).length > 0;
+}
+
 /** The field holds something: the page filled it in, or the owner did. */
 export function isFilled(handle: Handle): boolean {
   switch (handle.type) {

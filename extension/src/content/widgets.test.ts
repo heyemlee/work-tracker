@@ -71,6 +71,26 @@ describe('searching a dropdown', () => {
   });
 });
 
+describe('typing into a dropdown', () => {
+  it('ends on a keystroke, which is what opens Greenhouse’s list', async () => {
+    // Its react-select is shown by the form's own state, set when a key comes up: text that only changes opens nothing.
+    document.body.innerHTML = `
+      <div class="select-shell"><div><div class="select__control">
+        <input id="search" role="combobox"></div></div></div>`;
+    const input = document.querySelector<HTMLInputElement>('#search')!;
+    const shell = document.querySelector<HTMLElement>('.select-shell')!;
+    input.addEventListener('keyup', (event) => {
+      if (event.key === 'Escape' || !input.value) return;
+      shell.insertAdjacentHTML(
+        'beforeend',
+        '<div class="select__menu"><div role="listbox"><div role="option">Santa Clara University</div></div></div>',
+      );
+    });
+    const school = (texts: string[]) => texts.find((text) => text === 'Santa Clara University') ?? null;
+    expect(await pickFromTypeahead(input, 'Santa Clara University', school)).toBe('Santa Clara University');
+  });
+});
+
 describe('clicking away', () => {
   it('closes a Workday-style popup that listens for presses outside it, with no listbox role to spot', async () => {
     document.body.innerHTML = `

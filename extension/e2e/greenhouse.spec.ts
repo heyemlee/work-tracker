@@ -94,8 +94,9 @@ test('fills a question that appears once another is answered', async ({ context,
 });
 
 // Greenhouse's city and school fields search as you type and take only a pick. This stand-in draws them as its
-// react-select does: no list until something is typed, suggestions a moment later, the pick shown beside an input
-// that empties. The phone widget's country list sits above them, hidden by its stylesheet.
+// react-select does: no list until a key comes up on typed text (the form opens it on keyup; text that only
+// changes opens nothing), suggestions a moment later, the pick shown beside an input that empties. The phone
+// widget's country list sits above them, hidden by its stylesheet.
 const SEARCH_FORM = `<!doctype html><html><head><title>Job Application for Software Engineer at Acme</title>
 <style>.iti__hide { display: none; }</style></head><body>
 <form id="application-form">
@@ -131,7 +132,7 @@ const SEARCH_FORM = `<!doctype html><html><head><title>Job Application for Softw
       });
       shell.append(menu);
     };
-    input.addEventListener('input', () => {
+    input.addEventListener('keyup', () => {
       shell.querySelector('.select__menu')?.remove();
       if (!input.value) return;
       const all = LISTS[shell.dataset.list];

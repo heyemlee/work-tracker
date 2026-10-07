@@ -21,6 +21,8 @@ export const FIXED_SNAPSHOTS: ReadonlySet<string> = new Set([
   'c5f0154f-3eab-42a5-a5c0-7ad205da2be8',
   // Fixed 2026-10-06 (66dcdb1).
   '5687b391-71f8-413f-9f24-2f09ebb1898a',
+  // Fixed 2026-10-06: Affirm's city and school searches, typed into but never opened.
+  '498b278b-f6be-4121-bb86-38564a6efb9c',
 ]);
 
 /** Takes the reports this build fixes off the list. */

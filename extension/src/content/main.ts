@@ -4,7 +4,15 @@ import { adapterFor } from './adapters';
 import type { Handle } from './adapters/types';
 import { applyAnswer, readAnswer, type Applied } from './apply';
 import { sleep } from './dom';
-import { attachedFile, controlsOf, extractFields, fieldIds, isFilled, type Extraction } from './extract';
+import {
+  attachedFile,
+  controlsOf,
+  extractFields,
+  fieldIds,
+  holdsPicks,
+  isFilled,
+  type Extraction,
+} from './extract';
 import { formSnapshot } from './snapshot';
 import { watchSubmission } from './submit';
 import { fileFromBase64, readComboboxOptions } from './widgets';
@@ -82,6 +90,12 @@ export function startContent(): void {
       // What the page holds stays: a resume it parsed, a Workday profile, the owner's typing. The email doesn't: it
       // names the account applying.
       if (entry.key !== 'email' && !ours(handle) && (filled.has(entry.fieldId) || isFilled(handle))) {
+        results[entry.fieldId] = { ok: true, value: shownValue(handle) };
+        continue;
+      }
+      // Filling again redoes this script's own answers, except where a second pick wouldn't replace the first: a
+      // multi-select would show both ("East Asian", then "South Asian" as the nearest option left).
+      if (holdsPicks(handle)) {
         results[entry.fieldId] = { ok: true, value: shownValue(handle) };
         continue;
       }

@@ -190,6 +190,8 @@ export async function pickFromTypeahead(
   alwaysClose = false,
 ): Promise<string | null> {
   setNativeValue(input, query);
+  // Typing ends on a key coming up, and Greenhouse's dropdowns open their list on that, not on the text changing.
+  key(input, query.slice(-1));
   const found = await waitFor(() => {
     const box =
       listboxFor(input) ??

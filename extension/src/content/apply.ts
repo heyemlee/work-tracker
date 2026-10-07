@@ -5,6 +5,7 @@ import { findOption, norm } from '../text';
 import type { Handle } from './adapters/types';
 import { holdsChoice } from './adapters/workday';
 import { sleep, textOf } from './dom';
+import { chipsOf } from './extract';
 import {
   clickLikeAPerson,
   closeCombobox,
@@ -287,6 +288,8 @@ export function readAnswer(handle: Handle): Answer | null {
       const container = handle.element.closest(
         '[class*="select__control"], [class*="container"], [data-automation-id^="formField-"]',
       );
+      const chips = chipsOf(handle.element);
+      if (chips.length) return { type: 'choices', texts: chips };
       const shown =
         textOf(container?.querySelector('[class*="single-value"]')) ||
         (handle.element.tagName === 'BUTTON' ? textOf(handle.element) : '');

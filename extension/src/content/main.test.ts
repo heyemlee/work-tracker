@@ -118,3 +118,65 @@ describe('filling a page that fills fields of its own', () => {
     expect(input('org').value).toBe('Acme AI Labs');
   });
 });
+
+describe('filling a multi-select again', () => {
+  // Greenhouse's "How do you identify? (race/ethnicity)": react-select with chips, the chosen option gone from the list.
+  const OPTIONS = ['East Asian', 'South Asian', 'White'];
+  const MULTI = `
+    <form>
+      <label for="email">Email</label><input id="email" type="email">
+      <label for="resume">Resume</label><input id="resume" type="file">
+      <label id="race-label" for="race">How do you identify?</label>
+      <div class="select-shell"><div><div class="select__control"><div class="select__value-container">
+        <input id="race" role="combobox" aria-labelledby="race-label"></div></div></div></div>
+    </form>`;
+
+  it('keeps its first pick instead of adding the nearest option left', async () => {
+    const ask = start();
+    document.body.innerHTML = MULTI;
+    const shell = document.querySelector<HTMLElement>('.select-shell')!;
+    const chips = () =>
+      [...shell.querySelectorAll('.select__multi-value__label')].map((chip) => chip.textContent);
+    shell.querySelector('.select__control')!.addEventListener('mouseup', () => {
+      shell.querySelector('.select__menu')?.remove();
+      const left = OPTIONS.filter((text) => !chips().includes(text));
+      const menu = document.createElement('div');
+      menu.className = 'select__menu';
+      menu.innerHTML = `<div role="listbox">${left.map((text) => `<div role="option">${text}</div>`).join('')}</div>`;
+      menu.addEventListener('click', (event) => {
+        shell
+          .querySelector('.select__value-container')!
+          .insertAdjacentHTML(
+            'afterbegin',
+            `<div class="select__multi-value"><div class="select__multi-value__label">${(event.target as Element).textContent}</div></div>`,
+          );
+        menu.remove();
+      });
+      shell.append(menu);
+    });
+
+    const fill = async () => {
+      const scan = await ask<FrameScan>({ type: 'frame:scan', frameId: 0, prepare: null });
+      const race = scan.fields.find((field) => field.label === 'How do you identify?')!;
+      const results = await ask<Record<string, { ok: boolean; value?: string }>>({
+        type: 'frame:fill',
+        fields: [
+          {
+            fieldId: race.id,
+            status: 'filled',
+            answer: { type: 'choice', want: { kind: 'eeo', field: 'race', value: 'asian' }, option: null },
+            source: 'rule',
+            key: 'eeo.race',
+            note: null,
+            critical: false,
+          },
+        ],
+      });
+      return results[race.id];
+    };
+
+    expect(await fill()).toEqual({ ok: true, value: 'East Asian' });
+    expect(await fill()).toEqual({ ok: true, value: 'East Asian' });
+    expect(chips()).toEqual(['East Asian']);
+  });
+});
