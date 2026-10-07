@@ -2,23 +2,34 @@ import type { QuickAddResult } from '@domain/repository';
 import type { Snapshot } from '@domain/types';
 import { beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import type { PlannedField, Posting, ScannedField } from '../model';
+import type { FrameScan, PlannedField, Posting, ScannedField } from '../model';
 import type { FormSnapshot } from '../storage';
+import { makeProfile } from '../test/profiles';
 
 const loadSnapshot = vi.fn<() => Promise<Snapshot>>();
+const syncProfile = vi.fn<() => Promise<null>>(async () => null);
 const quickAddOrQueue = vi.fn();
 const undoQuickAdd = vi.fn();
 vi.mock('./outbox', () => ({
   loadSnapshot,
   quickAddOrQueue,
   undoQuickAdd,
-  syncProfile: vi.fn(async () => null),
+  syncProfile,
   OutboxSignedOut: class extends Error {},
 }));
 
-const { cardState, logApplication, saveJob, snapshot, undo } = await import('./card');
+// The page, for the tests that fill: what a frame holds, and what it takes.
+const scanFrames = vi.fn<typeof import('./frames').scanFrames>();
+const fillFrames = vi.fn<typeof import('./frames').fillFrames>();
+vi.mock('./frames', async (original) => ({
+  ...(await original<typeof import('./frames')>()),
+  scanFrames,
+  fillFrames,
+}));
+
+const { cardState, fill, logApplication, saveJob, snapshot, undo } = await import('./card');
 const { updateSession } = await import('./session');
-const { loggedItem, snapshotsItem } = await import('../storage');
+const { DEFAULT_SETTINGS, loggedItem, profileItem, settingsItem, snapshotsItem } = await import('../storage');
 
 const URL_ = 'https://job-boards.greenhouse.io/arcadia/jobs/42';
 const TAB = 7;
@@ -256,5 +267,75 @@ describe('"This page didn’t fill right"', () => {
     frame.mockRejectedValue(new Error('Could not establish connection.'));
     expect(await snapshot(TAB)).toBe(0);
     expect(await snapshotsItem.getValue()).toEqual([]);
+  });
+});
+
+describe('filling', () => {
+  const field = (id: string, label: string, more: Partial<ScannedField> = {}): ScannedField => ({
+    id,
+    label,
+    description: '',
+    kind: 'text',
+    options: [],
+    required: true,
+    hint: null,
+    section: '',
+    entry: null,
+    filled: false,
+    maxLength: null,
+    ...more,
+  });
+  /** What reading the tab finds: one frame, holding a form with these questions. */
+  const form = (fields: ScannedField[]): FrameScan[] => [
+    { frameId: 0, ats: 'greenhouse', isApplication: true, posting, fields, step: null },
+  ];
+  /** An answer that comes when the test says so. */
+  function later<T>() {
+    let settle!: (value: T) => void;
+    const promise = new Promise<T>((resolve) => {
+      settle = resolve;
+    });
+    return { promise, settle };
+  }
+  // A tab of its own for each test: a tab's session outlives the storage a test starts from.
+  let tab = 100;
+
+  beforeEach(async () => {
+    fakeBrowser.reset();
+    vi.clearAllMocks();
+    tab++;
+    loadSnapshot.mockResolvedValue(empty);
+    syncProfile.mockResolvedValue(null);
+    // The page takes whatever it's given.
+    fillFrames.mockImplementation(async (_tab, plan) =>
+      Object.fromEntries(plan.filter((entry) => entry.answer).map((entry) => [entry.fieldId, { ok: true }])),
+    );
+    await profileItem.setValue(makeProfile());
+    await settingsItem.setValue({ ...DEFAULT_SETTINGS, aiEnabled: false });
+  });
+
+  it('asks Outbox for the profile and the accounts together, and only once', async () => {
+    const profile = later<null>();
+    const accounts = later<Snapshot>();
+    syncProfile.mockReturnValue(profile.promise);
+    loadSnapshot.mockReturnValue(accounts.promise);
+    scanFrames.mockResolvedValue(form([field('0:first', 'First Name')]));
+
+    const filling = fill(tab, URL_);
+    // Neither has answered yet, and both have been asked.
+    await vi.waitFor(() => {
+      expect(syncProfile).toHaveBeenCalledTimes(1);
+      expect(loadSnapshot).toHaveBeenCalledTimes(1);
+    });
+    profile.settle(null);
+    accounts.settle(empty);
+
+    const state = await filling;
+    expect(state.phase).toBe('done');
+    expect(fillFrames).toHaveBeenCalledWith(tab, [
+      expect.objectContaining({ fieldId: '0:first', answer: { type: 'text', text: 'Alex' } }),
+    ]);
+    // The card heard of each stage on the way, and none of that went back to Outbox.
+    expect(loadSnapshot).toHaveBeenCalledTimes(1);
   });
 });

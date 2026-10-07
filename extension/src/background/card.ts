@@ -173,9 +173,9 @@ export async function cardState(session: TabSession, outbox?: OutboxState): Prom
 }
 
 /** Sends the tab's card its new state; the card may not be there yet. */
-export async function pushState(session: TabSession): Promise<void> {
+export async function pushState(session: TabSession, outbox?: OutboxState): Promise<void> {
   try {
-    await toFrame(session.tabId, 0, 'card:update', { state: await cardState(session) });
+    await toFrame(session.tabId, 0, 'card:update', { state: await cardState(session, outbox) });
   } catch {
     // No card in the top frame (yet).
   }
@@ -302,15 +302,16 @@ function contextFor(
 
 /** Fills the tab's form: rules first, into the page at once; then AI for what's left, as it arrives. */
 export async function fill(tabId: number, url: string): Promise<CardState> {
-  // The owner may have edited the profile on Outbox since the last fill; offline, the last copy is used.
-  await syncProfile().catch(() => undefined);
+  // What a fill needs of Outbox is asked for together, and once: the profile, which the owner may have edited there
+  // since the last fill (offline, the last copy is used), and the accounts. Nothing below waits for Outbox again.
+  const [, outbox] = await Promise.all([syncProfile().catch(() => undefined), outboxState()]);
   const profile = await profileItem.getValue();
   if (!profile) {
     const session = await updateSession(tabId, url, () => ({ error: 'profile' }));
-    return cardState(session);
+    return cardState(session, outbox);
   }
   let session = await updateSession(tabId, url, () => ({ phase: 'reading', error: null }));
-  await pushState(session);
+  await pushState(session, outbox);
 
   // Fresh handles: the page may have changed since it was read. Workday also needs its entries added first.
   const prepare =
@@ -322,10 +323,9 @@ export async function fill(tabId: number, url: string): Promise<CardState> {
       : null;
   const scans = await scanFrames(tabId, prepare);
   const found = merge(scans, session);
-  const outbox = await outboxState();
   const [memory, settings, key] = await Promise.all([memoryItem.getValue(), getSettings(), aiKey()]);
   session = await updateSession(tabId, url, () => ({ ...found, phase: 'filling' }));
-  await pushState(session);
+  await pushState(session, outbox);
   const ctx = contextFor(session, profile, outbox.snapshot, true);
   const useAi = settings.aiEnabled && Boolean(key);
   // Without AI, a free-text question is the owner's to write.
@@ -357,7 +357,7 @@ export async function fill(tabId: number, url: string): Promise<CardState> {
     phase: useAi ? 'drafting' : 'done',
     ai: useAi ? 'busy' : settings.aiEnabled ? 'noKey' : 'off',
   }));
-  await pushState(session);
+  await pushState(session, outbox);
   if (useAi) void runAi(tabId, url, ctx);
   return cardState(session, outbox);
 }
