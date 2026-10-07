@@ -101,6 +101,39 @@ test('shows the settings in a window over the page, and what’s changed there h
   await expect(card.getByRole('button', { name: '填写', exact: true })).toBeVisible();
 });
 
+test('offers the models the owner settled on, and how hard they think', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  await worker.evaluate(async () => {
+    const { local } = (globalThis as unknown as Extension).chrome.storage;
+    const { settings } = (await local.get('settings')) as { settings: object };
+    await local.set({ settings: { ...settings, aiEnabled: true, provider: 'openai' } });
+  });
+  await serve(context, 'careers.acme-robotics.com', FORM, THANKS);
+  const page = await context.newPage();
+  await page.goto('https://careers.acme-robotics.com/jobs/42/apply');
+  const card = page.locator('outbox-autofill');
+  await card.getByRole('button', { name: 'More' }).click({ timeout: 15_000 });
+  await card.getByRole('menuitem', { name: 'Settings' }).click();
+  const settings = page.frameLocator('outbox-autofill iframe');
+  await settings.getByRole('tab', { name: 'AI' }).click();
+
+  // Three models to pick from, not everything the endpoint lists.
+  const model = settings.getByLabel('Model');
+  await expect(model.locator('option')).toHaveText(['gpt-5.6-luna', 'gpt-5.6-sol', 'gpt-5.6-terra']);
+  await expect(model).toHaveValue('gpt-5.6-terra');
+  await model.selectOption('gpt-5.6-sol');
+  const effort = settings.getByLabel('Reasoning effort');
+  await expect(effort).toHaveValue('auto');
+  await effort.selectOption('high');
+  await expect
+    .poll(() => stored(worker, 'settings'))
+    .toMatchObject({ openaiModel: 'gpt-5.6-sol', openaiEffort: 'high' });
+});
+
 test('deletes what the extension keeps in this browser, asked twice', async ({ context, worker, outbox }) => {
   await seed(worker, outbox.url);
   await worker.evaluate(

@@ -33,7 +33,7 @@ const PRICES: Record<Model, [number, number]> = {
 
 export class NoApiKey extends Error {
   constructor() {
-    super('No API key on the options page');
+    super('No API key in the settings');
     this.name = 'NoApiKey';
   }
 }
@@ -99,6 +99,8 @@ interface AskParams {
 interface Reply {
   text: string | null;
   why: string | null;
+  /** The endpoint wouldn't take a reasoning effort, and answered without one. */
+  effortRefused?: boolean;
 }
 
 async function ask(params: AskParams): Promise<string | null> {
@@ -176,6 +178,19 @@ async function openaiKey(): Promise<string> {
 
 type ChatBody = Record<string, unknown>;
 
+const THINKING = { low: 1, medium: 2, high: 4 };
+
+/**
+ * The output limit for a request made with another effort than it was sized for. A reasoning model thinks in output
+ * tokens, so thinking harder with the same limit ends in an answer cut off unfinished: the room grows in step. It
+ * never shrinks, and stops at the largest limit any request here already asks for: an endpoint's own ceiling isn't
+ * known.
+ */
+export function roomFor(limit: number, sized: 'low' | 'medium', effort: 'low' | 'medium' | 'high'): number {
+  const more = Math.max(1, THINKING[effort] / THINKING[sized]);
+  return Math.max(limit, Math.min(16_000, Math.round(limit * more)));
+}
+
 /**
  * The same request over OpenAI's chat completions API, which OpenAI and most proxies speak. Proxies differ in what
  * they accept, so a request refused for `max_completion_tokens` or for structured output is sent again without it;
@@ -183,7 +198,9 @@ type ChatBody = Record<string, unknown>;
  */
 async function askOpenAI(params: AskParams, settings: Settings): Promise<Reply> {
   const key = await openaiKey();
-  if (!settings.openaiModel.trim()) throw new Error('Choose a model on the options page');
+  if (!settings.openaiModel.trim()) throw new Error('Choose a model in the settings');
+  // The owner's choice of effort, or the request's own where they left it to each kind of request.
+  const effort = settings.openaiEffort === 'auto' ? params.effort : settings.openaiEffort;
   const content: unknown[] = [];
   // A proxy may accept a PDF part and drop it; the text reaches any model. The file goes only when there's no text.
   if (params.pdfText)
@@ -207,9 +224,9 @@ async function askOpenAI(params: AskParams, settings: Settings): Promise<Reply> 
       },
       { role: 'user', content },
     ],
-    max_completion_tokens: params.maxTokens,
+    max_completion_tokens: roomFor(params.maxTokens, params.effort, effort),
     // Reasoning models spend output tokens thinking; low effort leaves room for the answer and answers sooner.
-    reasoning_effort: params.effort,
+    reasoning_effort: effort,
     ...(params.schema
       ? {
           response_format: {
@@ -220,6 +237,7 @@ async function askOpenAI(params: AskParams, settings: Settings): Promise<Reply> 
       : {}),
   };
 
+  let effortRefused = false;
   for (let attempt = 0; ; attempt++) {
     const response = await fetch(`${openaiEndpoint(settings.openaiBaseUrl)}/chat/completions`, {
       method: 'POST',
@@ -231,6 +249,7 @@ async function askOpenAI(params: AskParams, settings: Settings): Promise<Reply> 
       const detail = (await response.text()).slice(0, 400);
       const retry = response.status === 400 && attempt < 3 ? relaxed(body, detail) : null;
       if (retry) {
+        if (!('reasoning_effort' in retry) && 'reasoning_effort' in body) effortRefused = true;
         body = retry;
         continue;
       }
@@ -242,12 +261,12 @@ async function askOpenAI(params: AskParams, settings: Settings): Promise<Reply> 
     };
     await addUsage(data.usage?.prompt_tokens ?? 0, data.usage?.completion_tokens ?? 0, 0);
     const choice = data.choices?.[0];
-    if (!choice) return { text: null, why: 'the endpoint returned no answer' };
-    if (choice.message?.refusal) return { text: null, why: `the model declined: ${choice.message.refusal}` };
-    if (choice.finish_reason === 'length')
-      return { text: null, why: 'the answer was cut off at the token limit' };
+    const reply = (text: string | null, why: string | null): Reply => ({ text, why, effortRefused });
+    if (!choice) return reply(null, 'the endpoint returned no answer');
+    if (choice.message?.refusal) return reply(null, `the model declined: ${choice.message.refusal}`);
+    if (choice.finish_reason === 'length') return reply(null, 'the answer was cut off at the token limit');
     const text = (choice.message?.content ?? '').trim();
-    return text ? { text, why: null } : { text: null, why: 'the answer was empty' };
+    return text ? reply(text, null) : reply(null, 'the answer was empty');
   }
 }
 
@@ -268,18 +287,6 @@ function relaxed(body: ChatBody, detail: string): ChatBody | null {
     return rest;
   }
   return null;
-}
-
-/** The models an OpenAI-compatible endpoint offers, for the options page. */
-export async function listOpenAIModels(): Promise<string[]> {
-  const [settings, key] = await Promise.all([getSettings(), openaiKey()]);
-  const response = await fetch(`${openaiEndpoint(settings.openaiBaseUrl)}/models`, {
-    headers: { Authorization: `Bearer ${key}` },
-    signal: AbortSignal.timeout(30_000),
-  });
-  if (!response.ok) throw new Error(`${response.status} ${(await response.text()).slice(0, 200)}`);
-  const data = (await response.json()) as { data?: { id?: string }[] };
-  return (data.data ?? []).flatMap((model) => (model.id ? [model.id] : [])).sort();
 }
 
 export interface FieldQuestion {
@@ -429,17 +436,20 @@ export async function parseResume(pdf: string, pdfText = ''): Promise<ResumeFact
   return parsed.data;
 }
 
-/** A tiny request to check the key works, for the options page. */
-export async function checkKey(): Promise<{ ok: boolean; error?: string }> {
+/**
+ * A tiny request to check the key works, for the settings. It goes out as any other would, so it also tells
+ * whether the endpoint takes the reasoning effort it's sent.
+ */
+export async function checkKey(): Promise<{ ok: boolean; error?: string; effortRefused?: boolean }> {
   try {
-    const answer = await ask({
+    const reply = await request({
       system: 'Reply with the word OK.',
       material: 'Key check.',
       prompt: 'Say OK.',
       effort: 'low',
       maxTokens: 200,
     });
-    return { ok: answer !== null };
+    return { ok: reply.text !== null, effortRefused: reply.effortRefused ?? false };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }

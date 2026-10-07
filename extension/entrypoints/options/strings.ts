@@ -36,10 +36,17 @@ const en = {
   save: 'Save',
   check: 'Check',
   keyOk: 'The key works.',
+  keyOkNoEffort:
+    'The key works, but this endpoint doesn’t take a reasoning effort: the setting has no effect.',
   keyBad: 'The key didn’t work: {detail}',
   model: 'Model',
-  loadModels: 'Load list',
-  modelsLoaded: '{n} models available',
+  effort: 'Reasoning effort',
+  'effort.auto': 'Auto',
+  'effort.low': 'Low',
+  'effort.medium': 'Medium',
+  'effort.high': 'High',
+  effortHelp:
+    'Auto uses low effort to answer a form’s leftover fields and medium to draft free-text answers. More effort is slower and uses more tokens. “Check” tells whether the endpoint takes the setting.',
   usageTokens: 'This month: {tokens} tokens',
   usageCost: 'This month: ${cost}',
 
@@ -108,10 +115,16 @@ const zh: Record<Key, string> = {
   save: '保存',
   check: '检查',
   keyOk: 'Key 可以用。',
+  keyOkNoEffort: 'Key 可以用，但这个接口不接受推理强度，这项设置不会生效。',
   keyBad: 'Key 不可用：{detail}',
   model: '模型',
-  loadModels: '获取列表',
-  modelsLoaded: '共 {n} 个可用模型',
+  effort: '推理强度',
+  'effort.auto': '自动',
+  'effort.low': '低',
+  'effort.medium': '中',
+  'effort.high': '高',
+  effortHelp:
+    '自动：填表单里剩下的题用低，起草问答题用中。强度越高越慢、越费 token。点「检查」可以确认接口是否接受这项设置。',
   usageTokens: '本月用量：{tokens} tokens',
   usageCost: '本月用量：${cost}',
 

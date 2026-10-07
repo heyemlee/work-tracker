@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import type { WxtStorageItem } from 'wxt/utils/storage';
-import { checkKey, listOpenAIModels } from '../../src/background/ai';
+import { checkKey } from '../../src/background/ai';
 import { toBackground, type SettingsStatus } from '../../src/messages';
 import type { Ats } from '../../src/model';
 import { missingItems } from '../../src/profile/profile';
@@ -10,6 +10,7 @@ import {
   DEFAULT_SETTINGS,
   finalsItem,
   memoryItem,
+  OPENAI_MODELS,
   openaiKeyItem,
   pendingLogsItem,
   profileItem,
@@ -17,6 +18,7 @@ import {
   settingsItem,
   snapshotsItem,
   usageItem,
+  type Effort,
   type FormSnapshot,
   type Settings,
 } from '../../src/storage';
@@ -54,7 +56,6 @@ function download(name: string, data: unknown) {
 
 const save = (settings: Settings, change: Partial<Settings>) =>
   void settingsItem.setValue({ ...settings, ...change });
-const detail = (error: unknown) => (error instanceof Error ? error.message : String(error));
 const today = () => new Date().toISOString().slice(0, 10);
 const when = (iso: string) =>
   new Date(iso).toLocaleString(undefined, {
@@ -80,12 +81,10 @@ function Kept({
   value,
   onSave,
   placeholder,
-  list,
 }: {
   value: string;
   onSave: (value: string) => void;
   placeholder?: string;
-  list?: string;
 }) {
   const [text, setText] = useState(value);
   // The setting changed elsewhere (another tab, a default restored).
@@ -102,7 +101,6 @@ function Kept({
       className="input"
       value={text}
       placeholder={placeholder}
-      list={list}
       onChange={(event) => setText(event.target.value)}
       onBlur={commit}
       onKeyDown={(event) => {
@@ -140,6 +138,8 @@ function Record({
     </div>
   );
 }
+
+const EFFORTS: Effort[] = ['auto', 'low', 'medium', 'high'];
 
 const DOWN: SettingsStatus = { outbox: { state: 'unreachable', detail: '' }, resumes: null };
 
@@ -249,18 +249,20 @@ function Ai({ s, settings }: Props) {
   const key = useItem(keyItem) ?? '';
   const usage = useItem(usageItem) ?? [];
   const [draft, setDraft] = useState('');
-  const [models, setModels] = useState<string[]>([]);
-  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const [result, setResult] = useState<{ tone: 'good' | 'warn' | 'bad'; text: string } | null>(null);
   const month = new Date().toLocaleDateString('en-CA').slice(0, 7);
   const thisMonth = usage.filter((day) => day.day.startsWith(month));
   const cost = thisMonth.reduce((sum, day) => sum + day.cost, 0);
   const tokens = thisMonth.reduce((sum, day) => sum + day.inputTokens + day.outputTokens, 0);
+  // The check goes out as any request would: it also tells whether the endpoint takes the effort chosen here.
   const verify = () =>
     checkKey().then((check) =>
       setResult(
-        check.ok
-          ? { ok: true, text: s('keyOk') }
-          : { ok: false, text: s('keyBad', { detail: check.error ?? '' }) },
+        !check.ok
+          ? { tone: 'bad', text: s('keyBad', { detail: check.error ?? '' }) }
+          : check.effortRefused && openai && settings.openaiEffort !== 'auto'
+            ? { tone: 'warn', text: s('keyOkNoEffort') }
+            : { tone: 'good', text: s('keyOk') },
       ),
     );
   // A key typed in is saved, then tried; with none typed, the saved key is tried.
@@ -271,14 +273,10 @@ function Ai({ s, settings }: Props) {
     }
     await verify();
   };
-  const loadModels = () =>
-    void listOpenAIModels().then(
-      (found) => {
-        setModels(found);
-        setResult({ ok: true, text: s('modelsLoaded', { n: found.length }) });
-      },
-      (error: unknown) => setResult({ ok: false, text: detail(error) }),
-    );
+  // The models the owner settled on, and whatever else the setting already holds.
+  const models = OPENAI_MODELS.includes(settings.openaiModel)
+    ? OPENAI_MODELS
+    : [...OPENAI_MODELS, settings.openaiModel].filter(Boolean);
   return (
     <>
       <Toggles>
@@ -348,27 +346,31 @@ function Ai({ s, settings }: Props) {
               </span>
             </Field>
             {openai && (
-              <Field label={s('model')}>
-                <span className="with-action">
-                  <Kept
-                    value={settings.openaiModel}
-                    list="openai-models"
-                    onSave={(openaiModel) => save(settings, { openaiModel })}
-                  />
-                  <datalist id="openai-models">
-                    {models.map((model) => (
-                      <option key={model} value={model} />
-                    ))}
-                  </datalist>
-                  <button type="button" className="secondary" disabled={!key} onClick={loadModels}>
-                    {s('loadModels')}
-                  </button>
-                </span>
-              </Field>
+              <Choice
+                label={s('model')}
+                value={settings.openaiModel}
+                options={models.map((model) => ({ value: model, label: model }))}
+                onChange={(openaiModel) => {
+                  setResult(null);
+                  save(settings, { openaiModel });
+                }}
+              />
+            )}
+            {openai && (
+              <Choice
+                label={s('effort')}
+                value={settings.openaiEffort}
+                options={EFFORTS.map((effort) => ({ value: effort, label: s(`effort.${effort}`) }))}
+                onChange={(openaiEffort) => {
+                  setResult(null);
+                  save(settings, { openaiEffort });
+                }}
+              />
             )}
           </Grid>
+          {openai && <Note>{s('effortHelp')}</Note>}
           {result && (
-            <p className={`sheet-note ${result.ok ? 'good' : 'bad'}`} role="status">
+            <p className={`sheet-note ${result.tone}`} role="status">
               {result.text}
             </p>
           )}

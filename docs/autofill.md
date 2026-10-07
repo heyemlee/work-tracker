@@ -223,6 +223,13 @@ takes the older one's place, and a snapshot leaves the list when a build that fi
   Its own key, also only in `chrome.storage.local`. Structured output goes as a strict `json_schema`, a resume as a PDF
   `file` part; a proxy that refuses `max_completion_tokens` or structured output gets the request again without it.
   Token counts are recorded, cost isn't: the proxy's prices aren't known. The free-text eval still runs on Claude.
+  The settings offer three models to pick from (`OPENAI_MODELS` in `storage.ts`: GPT-5.6 Luna, Sol and Terra, the
+  owner's choice out of all the proxy lists) and a reasoning effort (decided 2026-10-07): "auto" keeps each request's
+  own (low to answer leftover fields and read a resume, medium to draft), or low, medium or high for all of them,
+  sent as `reasoning_effort`. Thinking is paid for in output tokens, so a request made with more effort than it was
+  sized for gets more room in step (`roomFor` in `background/ai.ts`), up to the largest limit a request already
+  uses. An endpoint that refuses the parameter gets the request again without it, and the settings' key check says
+  so.
 - **Field fallback:** one structured-output request per form listing the unplaced fields; each answer comes back with
   a confidence.
 - **Free-text drafts** ("Why this company?") are grounded in real material: the resume, STAR stories, approved

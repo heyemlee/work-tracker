@@ -7,6 +7,11 @@ export type Model = 'claude-opus-5' | 'claude-sonnet-5';
 /** Who answers the AI requests: Anthropic, or any endpoint speaking OpenAI's chat completions API. */
 export type Provider = 'anthropic' | 'openai';
 export type Language = 'auto' | 'en' | 'zh';
+/** How hard an OpenAI-compatible model thinks before it answers; "auto" leaves it to each kind of request. */
+export type Effort = 'auto' | 'low' | 'medium' | 'high';
+
+/** The models the settings offer for an OpenAI-compatible endpoint: the owner's pick of what theirs lists. */
+export const OPENAI_MODELS = ['gpt-5.6-luna', 'gpt-5.6-sol', 'gpt-5.6-terra'];
 
 export interface Settings {
   /** Where Outbox runs; `http://localhost:5180` while developing. */
@@ -17,6 +22,7 @@ export interface Settings {
   openaiBaseUrl: string;
   /** Whatever model name the endpoint accepts. */
   openaiModel: string;
+  openaiEffort: Effort;
   /** Warn after this many postings at one company in 30 days. */
   sameCompanyLimit: number;
   language: Language;
@@ -30,6 +36,7 @@ export const DEFAULT_SETTINGS: Settings = {
   model: 'claude-opus-5',
   openaiBaseUrl: 'https://api.kabi.pro',
   openaiModel: 'gpt-5.6-terra',
+  openaiEffort: 'auto',
   sameCompanyLimit: 3,
   language: 'auto',
   aiEnabled: true,

@@ -11,7 +11,7 @@ vi.mock('@anthropic-ai/sdk', () => ({
   },
 }));
 
-const { answerFields, draftAnswer, listOpenAIModels, NoApiKey, openaiEndpoint, parseResume } =
+const { answerFields, checkKey, draftAnswer, NoApiKey, openaiEndpoint, parseResume, roomFor } =
   await import('./ai');
 
 function reply(text: string, stop = 'end_turn') {
@@ -305,12 +305,57 @@ describe('an OpenAI-compatible provider', () => {
     expect(bodies[3].reasoning_effort).toBeUndefined();
   });
 
-  it('needs its own key, and lists the models the endpoint offers', async () => {
-    fetchMock.mockResolvedValue(
-      new Response(JSON.stringify({ data: [{ id: 'gpt-5.6-terra' }, { id: 'gpt-5.6' }] })),
-    );
-    expect(await listOpenAIModels()).toEqual(['gpt-5.6', 'gpt-5.6-terra']);
+  it('needs its own key', async () => {
     await openaiKeyItem.setValue('');
     await expect(answerFields(questions, makeProfile(), null, '2026-09-27')).rejects.toBeInstanceOf(NoApiKey);
+  });
+
+  const sent = () =>
+    fetchMock.mock.calls.map((call) => JSON.parse(String((call as [string, RequestInit])[1].body)));
+  const question = { ...questions[1]!, maxLength: null };
+
+  it('thinks as hard as each request asks, left to itself', async () => {
+    fetchMock.mockImplementation(async () => answer('Python, mostly.'));
+    await answerFields(questions, makeProfile(), null, '2026-09-27').catch(() => undefined);
+    await draftAnswer(question, makeProfile(), null, '2026-09-27', []);
+    expect(sent().map((body) => [body.reasoning_effort, body.max_completion_tokens])).toEqual([
+      ['low', 4000],
+      ['medium', 3000],
+    ]);
+  });
+
+  it('thinks as hard as the owner chose, with room to think in', async () => {
+    fetchMock.mockImplementation(async () => answer('Python, mostly.'));
+    await settingsItem.setValue({ ...DEFAULT_SETTINGS, provider: 'openai', openaiEffort: 'high' });
+    await answerFields(questions, makeProfile(), null, '2026-09-27').catch(() => undefined);
+    await draftAnswer(question, makeProfile(), null, '2026-09-27', []);
+    await settingsItem.setValue({ ...DEFAULT_SETTINGS, provider: 'openai', openaiEffort: 'low' });
+    await draftAnswer(question, makeProfile(), null, '2026-09-27', []);
+    expect(sent().map((body) => [body.reasoning_effort, body.max_completion_tokens])).toEqual([
+      ['high', 16000],
+      ['high', 6000],
+      // Less effort than a draft was sized for leaves its room as it was.
+      ['low', 3000],
+    ]);
+  });
+
+  it('gives more effort more room, never less, and no more than a request already asks for', () => {
+    expect(roomFor(4000, 'low', 'low')).toBe(4000);
+    expect(roomFor(4000, 'low', 'medium')).toBe(8000);
+    expect(roomFor(3000, 'medium', 'low')).toBe(3000);
+    expect(roomFor(16000, 'low', 'high')).toBe(16000);
+    expect(roomFor(200, 'low', 'high')).toBe(800);
+  });
+
+  it('says so when the endpoint won’t take an effort, as the key check finds out', async () => {
+    fetchMock.mockImplementation(async () => answer('OK'));
+    expect(await checkKey()).toEqual({ ok: true, effortRefused: false });
+    fetchMock
+      .mockReset()
+      .mockResolvedValueOnce(answer('Unrecognized request argument supplied: reasoning_effort', 400))
+      .mockResolvedValueOnce(answer('OK'));
+    expect(await checkKey()).toEqual({ ok: true, effortRefused: true });
+    fetchMock.mockReset().mockResolvedValue(answer('Incorrect API key provided', 401));
+    expect(await checkKey()).toMatchObject({ ok: false, error: expect.stringContaining('401') });
   });
 });
