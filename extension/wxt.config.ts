@@ -1,6 +1,14 @@
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'wxt';
 
+const icons = {
+  16: 'icon/16.png',
+  32: 'icon/32.png',
+  48: 'icon/48.png',
+  96: 'icon/96.png',
+  128: 'icon/128.png',
+};
+
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   // Explicit imports everywhere, so the code reads like the rest of the repository.
@@ -14,7 +22,8 @@ export default defineConfig({
     // worker talks to Outbox and to the Claude API.
     host_permissions: ['<all_urls>'],
     permissions: ['storage', 'unlimitedStorage', 'scripting', 'webNavigation'],
-    action: { default_title: 'Outbox Autofill' },
+    icons,
+    action: { default_title: 'Outbox Autofill', default_icon: icons },
     // The card's stylesheet, read by the card when it's injected into a career site that embeds a form; and the
     // settings page, which the card shows in a frame inside its window (it draws there only for the card: see
     // src/background/settings.ts).

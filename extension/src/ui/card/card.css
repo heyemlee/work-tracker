@@ -223,6 +223,10 @@ a:focus-visible {
   padding: 4px 8px 0 0;
 }
 
+.head > .brand-mark {
+  margin: 2px 6px 0 0;
+}
+
 .title {
   display: flex;
   align-items: flex-start;
@@ -1010,10 +1014,12 @@ a:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 16px 14px 12px 24px;
 }
 
 .sheet-head h1 {
+  flex: 1;
   margin: 0;
   font-size: 16px;
   line-height: 22px;

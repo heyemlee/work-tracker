@@ -117,6 +117,9 @@ npm run dev:local                # the original prototype: sample data in the br
 npm run ext:build                # the extension, into extension/.output/chrome-mv3
 ```
 
+The app and extension share their mark in `src/assets/outbox.svg`. After changing it, run `npm run icons`
+to regenerate the favicon, home-screen icons, and Chrome extension icons, then rebuild both apps.
+
 ## Test
 
 ```bash

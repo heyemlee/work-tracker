@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import type { WxtStorageItem } from 'wxt/utils/storage';
+import { BrandMark } from '../../../src/ui/BrandMark';
 import { checkKey } from '../../src/background/ai';
 import { toBackground, type SettingsStatus } from '../../src/messages';
 import type { Ats } from '../../src/model';
@@ -579,6 +580,7 @@ export function App({ framed, dark }: { framed: boolean; dark: boolean }) {
   const pane = (
     <div className={`pane${dark ? ' dark' : ''}`}>
       <header className="sheet-head">
+        <BrandMark size={24} />
         <h1>{s('title')}</h1>
         {framed && (
           <button className="icon-button" onClick={close} aria-label={s('close')} title={s('close')}>

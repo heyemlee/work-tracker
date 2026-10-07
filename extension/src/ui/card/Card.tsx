@@ -20,6 +20,7 @@ import {
   type ReactNode,
 } from 'react';
 import { browser } from 'wxt/browser';
+import { BrandMark } from '../../../../src/ui/BrandMark';
 import { adapterFor } from '../../content/adapters';
 import { isDone, toBackground, type CardState, type ChecklistItem } from '../../messages';
 import type { Signal } from '../../match/scan';
@@ -720,6 +721,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     <>
       <div className={`${frame}${state.hasForm ? ' panel' : ''}`} role="dialog" aria-label="Outbox Autofill">
         <header className="head">
+          <BrandMark size={24} className="brand-mark" />
           {/* The page already says whose posting this is: the company waits in the hover, with the match check. */}
           <div
             className="head-text"

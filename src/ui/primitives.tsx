@@ -1,6 +1,9 @@
 import clsx from 'clsx';
 import { Switch as RadixSwitch } from 'radix-ui';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { BrandMark } from './BrandMark';
+
+export { BrandMark } from './BrandMark';
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   label: string;
@@ -113,19 +116,6 @@ export function Section({
       <h3 className="mb-2.5 text-[13px] font-semibold text-fg-2">{title}</h3>
       {children}
     </section>
-  );
-}
-
-/** The app mark: a tray with an outgoing arrow. Inverts with the theme. */
-export function BrandMark({ size = 28 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 64 64" width={size} height={size} aria-hidden="true" className="shrink-0">
-      <rect width="64" height="64" rx="15" fill="var(--fg)" />
-      <g fill="none" stroke="var(--canvas)" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M18 36v5.5a4.5 4.5 0 0 0 4.5 4.5h19a4.5 4.5 0 0 0 4.5-4.5V36" />
-        <path d="M32 37V17M24.5 24.5 32 17l7.5 7.5" />
-      </g>
-    </svg>
   );
 }
 

@@ -1,31 +1,32 @@
-// Renders the app icons from one SVG definition. Run with `node scripts/icons.mjs` after changing the mark;
-// the PNGs are committed. Needs @resvg/resvg-js (installed on demand: npm i --no-save @resvg/resvg-js).
+// Generate the web and Chrome icons from the same SVG used by both interfaces: npm run icons.
 import { Resvg } from '@resvg/resvg-js';
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const glyph = (scale) => `
-  <g transform="translate(32 32) scale(${scale}) translate(-32 -31)" fill="none" stroke="#fff" stroke-width="4.5"
-     stroke-linecap="round" stroke-linejoin="round">
-    <path d="M18 36v5.5a4.5 4.5 0 0 0 4.5 4.5h19a4.5 4.5 0 0 0 4.5-4.5V36" />
-    <path d="M32 37V17M24.5 24.5 32 17l7.5 7.5" />
-  </g>`;
+const source = readFileSync(new URL('../src/assets/outbox.svg', import.meta.url), 'utf8');
+const fullBleed = source.replace('rx="15"', 'rx="0"');
+// Keep the entire mark inside the central 80% circle, including on circular Android launchers.
+const maskable = fullBleed.replace(
+  '<g fill=',
+  '<g transform="translate(32 32) scale(0.88) translate(-32 -32)" fill=',
+);
 
-const background = `<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-  <stop offset="0" stop-color="#3a3a3c" /><stop offset="1" stop-color="#0b0b0c" /></linearGradient></defs>`;
-
-// "any" icons keep the rounded tile; maskable and Apple icons are full-bleed because the OS applies its own mask.
-const rounded = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">${background}
-  <rect width="64" height="64" rx="15" fill="url(#bg)" />${glyph(1)}</svg>`;
-const fullBleed = (scale) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">${background}
-  <rect width="64" height="64" fill="url(#bg)" />${glyph(scale)}</svg>`;
-
-const render = (svg, size, file) => {
-  const png = new Resvg(svg, { fitTo: { mode: 'width', value: size } }).render().asPng();
-  writeFileSync(new URL(`../public/${file}`, import.meta.url), png);
-  console.log(`public/${file}`);
+const save = (file, contents) => {
+  const path = fileURLToPath(new URL(`../${file}`, import.meta.url));
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, contents);
+  console.log(file);
 };
+const render = (svg, size, file) =>
+  save(file, new Resvg(svg, { fitTo: { mode: 'width', value: size } }).render().asPng());
 
-render(rounded, 192, 'icons/icon-192.png');
-render(rounded, 512, 'icons/icon-512.png');
-render(fullBleed(0.78), 512, 'icons/maskable-512.png');
-render(fullBleed(0.9), 180, 'apple-touch-icon.png');
+save('public/favicon.svg', source);
+save('extension/public/icon.svg', source);
+render(source, 192, 'public/icons/icon-192.png');
+render(source, 512, 'public/icons/icon-512.png');
+render(maskable, 512, 'public/icons/maskable-512.png');
+render(fullBleed, 180, 'public/apple-touch-icon.png');
+for (const size of [16, 32, 48, 96, 128]) {
+  render(source, size, `extension/public/icon/${size}.png`);
+}
