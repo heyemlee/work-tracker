@@ -272,6 +272,30 @@ describe('work authorization edge cases', () => {
     ).toBeNull();
   });
 
+  it('tells STEM OPT from OPT and from CPT where a list of statuses offers them side by side', () => {
+    const stem = makeProfile();
+    const opt = makeProfile({
+      workAuthorization: { ...stem.workAuthorization, opt: 'opt', status: 'F-1 OPT' },
+    });
+    const both = ['U.S. Citizen', 'Green Card Holder', 'H-1B', 'F-1 OPT', 'F-1 STEM OPT', 'TN', 'Other'];
+    expect(answer('What is your current visa status?', both, stem)).toBe('F-1 STEM OPT');
+    expect(answer('What is your current visa status?', both, opt)).toBe('F-1 OPT');
+    const bare = ['Citizen / Green card', 'OPT', 'STEM OPT', 'H1B', 'Other'];
+    expect(answer('What is your current visa status?', bare, stem)).toBe('STEM OPT');
+    expect(answer('What is your current visa status?', bare, opt)).toBe('OPT');
+    // A student's CPT is neither; with no STEM option, "OPT" still does for someone on the extension.
+    const withCpt = ['F-1 (CPT)', 'F-1 (OPT)', 'F-1 (STEM OPT)', 'H-1B', 'J-1', 'Not applicable'];
+    expect(answer('Visa type', withCpt, stem)).toBe('F-1 (STEM OPT)');
+    expect(answer('Visa type', ['F-1 (CPT)', 'F-1 (OPT)', 'H-1B'], stem)).toBe('F-1 (OPT)');
+    expect(
+      answer(
+        'What is your current work authorization status?',
+        ['US Citizen', 'Permanent Resident', 'H-1B', 'F-1 OPT', 'Other'],
+        stem,
+      ),
+    ).toBe('F-1 OPT');
+  });
+
   it('answers for a US citizen', () => {
     const citizen = makeProfile({
       workAuthorization: {

@@ -103,6 +103,7 @@ export function authFacts(profile: Profile, country: string): AuthFacts {
     sponsorshipNow: !authorized || (home ? auth.sponsorshipNow : false),
     sponsorshipFuture: !citizen && (!authorized || (home ? auth.sponsorshipFuture : false)),
     opt: home && auth.opt !== 'none',
+    stemOpt: home && auth.opt === 'stem',
   };
 }
 

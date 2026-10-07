@@ -149,6 +149,8 @@ export interface AuthFacts {
   sponsorshipFuture: boolean;
   /** On F-1 OPT or STEM OPT. */
   opt: boolean;
+  /** On the STEM extension of OPT. */
+  stemOpt: boolean;
 }
 
 export type Answer =

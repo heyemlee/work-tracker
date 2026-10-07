@@ -277,6 +277,8 @@ interface Claims {
   sponsorshipNow?: boolean;
   sponsorshipFuture?: boolean;
   opt?: boolean;
+  /** Names the STEM extension of OPT, as against OPT itself. */
+  stemOpt?: boolean;
   /** Names a visa other than F-1 OPT or H-1B. */
   otherVisa?: boolean;
   /** "Yes, but not one of the visas listed here". */
@@ -290,7 +292,11 @@ function claimsOf(option: string): Claims {
   const bare = norm(option.replace(/\([^)]*\)/g, ' '));
   const claims: Claims = {};
   if (/\bunknown\b|\bnot sure\b|\bunsure\b/.test(text)) claims.unknown = true;
-  if (/\bf ?1\b|\bopt\b|optional practical training/.test(text)) claims.opt = true;
+  // "F-1 (CPT)" is the F-1 of a student still enrolled, not OPT: for someone on OPT it's another visa.
+  const cpt = /\bcpt\b|curricular practical/.test(text) && !/\bopt\b|optional practical/.test(text);
+  if (cpt) claims.otherVisa = true;
+  else if (/\bf ?1\b|\bopt\b|optional practical training/.test(text)) claims.opt = true;
+  if (claims.opt && /\bstem\b|24 month/.test(text)) claims.stemOpt = true;
   if (
     /highly skilled|blue card|\btn\b|\be 3\b|\bo 1\b|\bl 1\b|dependent visa|iang|working holiday/.test(bare)
   ) {
@@ -376,6 +382,12 @@ function agreement(claims: Claims, facts: AuthFacts): number | null {
   if (claims.opt) {
     if (!facts.opt) return null;
     score += 2;
+  }
+  // Where a list offers both, "STEM OPT" is the one for someone on the extension, and "OPT" for someone who isn't;
+  // "OPT" alone still does for either.
+  if (claims.stemOpt) {
+    if (!facts.stemOpt) return null;
+    score++;
   }
   return score;
 }
