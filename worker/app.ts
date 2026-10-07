@@ -62,7 +62,13 @@ const requireUser = createMiddleware<AppEnv>(async (c, next) => {
   if (c.env.DEV_AUTH_BYPASS === 'true' && isLocalhost(c.req.url)) {
     user = await devUser(c.var.db);
   } else {
-    const session = await c.var.auth.api.getSession({ headers: c.req.raw.headers });
+    const { headers, response: session } = await c.var.auth.api.getSession({
+      headers: c.req.raw.headers,
+      returnHeaders: true,
+    });
+    // What Better Auth sets while it looks: the session it just read, as the cookie that spares the next requests
+    // the lookup (auth.ts), or a cookie it found out of date, taken back.
+    for (const cookie of headers.getSetCookie()) c.header('Set-Cookie', cookie, { append: true });
     if (session) {
       const { id, name, email, image } = session.user;
       user = { id, name, email, image: image ?? null };

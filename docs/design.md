@@ -109,7 +109,9 @@ A single Worker serves everything:
 - **API** — Hono under `/api/*`: plain REST, bodies validated with zod, every query scoped to the signed-in user.
 - **Cron triggers** — sync Gmail every 30 minutes (milestone 5).
 - **Data** — D1 (SQLite) through Drizzle, one database: `outbox`.
-- **Auth** — Better Auth with Google sign-in, allowlisted to the owner's email.
+- **Auth** — Better Auth with Google sign-in, allowlisted to the owner's email. A session is looked up in D1,
+  then carried in a signed cookie for five minutes, so most requests are checked without a query; measured in
+  production on 2026-10-07, a query costs a request about 40 ms and the lookup is two.
 - **LLM calls** — the Anthropic API through Cloudflare AI Gateway (request logs, cost stats).
 - **Deploy** — `npm run deploy` (wrangler). Custom domain `tracker.haoyang.us`; `workers.dev` is off. GitHub
   Actions runs the checks.

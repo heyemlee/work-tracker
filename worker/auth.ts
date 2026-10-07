@@ -19,6 +19,10 @@ export function createAuth(env: Env, db: Db) {
     // Failed sign-ins land back on the app's own sign-in screen (with ?error=) instead of Better Auth's page.
     onAPIError: env.BETTER_AUTH_URL ? { errorURL: `${env.BETTER_AUTH_URL}/` } : undefined,
     database: drizzleAdapter(db, { provider: 'sqlite', schema: authSchema }),
+    // A session read from the database rides along in a signed cookie for five minutes, and requests in that time are
+    // checked against the cookie alone: the lookup is two queries, on every request. A session ended somewhere else
+    // keeps working in this browser for those minutes at most.
+    session: { cookieCache: { enabled: true, maxAge: 5 * 60 } },
     socialProviders: env.GOOGLE_CLIENT_ID
       ? {
           google: {

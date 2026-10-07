@@ -8,8 +8,15 @@ const migrations = import.meta.glob<string>('../migrations/*.sql', {
   eager: true,
 });
 
-/** A fresh in-memory D1 with every migration applied. Call `dispose` when the tests are done. */
-export async function startTestDatabase(): Promise<{ db: Db; dispose: () => Promise<void> }> {
+/**
+ * A fresh in-memory D1 with every migration applied: through Drizzle, and as the binding the Worker is handed. Call
+ * `dispose` when the tests are done.
+ */
+export async function startTestDatabase(): Promise<{
+  db: Db;
+  d1: D1Database;
+  dispose: () => Promise<void>;
+}> {
   const proxy = await getPlatformProxy<Env>({ persist: false });
   const d1 = proxy.env.DB;
   for (const [, sql] of Object.entries(migrations).sort(([a], [b]) => a.localeCompare(b))) {
@@ -19,5 +26,5 @@ export async function startTestDatabase(): Promise<{ db: Db; dispose: () => Prom
       .filter(Boolean);
     await d1.batch(statements.map((statement) => d1.prepare(statement)));
   }
-  return { db: createDb(d1), dispose: () => proxy.dispose() };
+  return { db: createDb(d1), d1, dispose: () => proxy.dispose() };
 }
