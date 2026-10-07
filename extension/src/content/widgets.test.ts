@@ -52,6 +52,25 @@ describe('after picking from a dropdown', () => {
   });
 });
 
+describe('searching a dropdown', () => {
+  it('waits past what the list shows first for a suggestion that fits', async () => {
+    // Greenhouse's school list shows its first page while the search runs.
+    document.body.innerHTML = `
+      <input id="search" aria-controls="list">
+      <div id="list" role="listbox"><div role="option">Aalborg University</div></div>`;
+    const input = document.querySelector<HTMLInputElement>('#search')!;
+    const list = document.querySelector<HTMLElement>('#list')!;
+    input.addEventListener('input', () =>
+      setTimeout(() => (list.innerHTML = '<div role="option">Santa Clara University</div>'), 120),
+    );
+    const picked: string[] = [];
+    list.addEventListener('click', (event) => picked.push((event.target as Element).textContent ?? ''));
+    const school = (texts: string[]) => texts.find((text) => text === 'Santa Clara University') ?? null;
+    expect(await pickFromTypeahead(input, 'Santa Clara University', school)).toBe('Santa Clara University');
+    expect(picked).toEqual(['Santa Clara University']);
+  });
+});
+
 describe('clicking away', () => {
   it('closes a Workday-style popup that listens for presses outside it, with no listbox role to spot', async () => {
     document.body.innerHTML = `

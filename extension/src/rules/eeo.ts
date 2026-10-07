@@ -24,7 +24,7 @@ export function eeoWant(field: EeoField, profile: Profile): Want {
     race: eeo.race,
     veteran: eeo.veteran,
     disability: eeo.disability,
-    orientation: 'decline',
+    orientation: eeo.orientation,
     transgender: 'decline',
   };
   return { kind: 'eeo', field, value: value[field] };
@@ -37,6 +37,13 @@ const RACE: Record<string, RegExp> = {
   'native-american': /american indian|alaska(n)? native|native american|indigenous/,
   'pacific-islander': /hawaiian|pacific islander/,
   'two-or-more': /two or more|multiracial|multiple races|mixed/,
+};
+
+// Forms say "Heterosexual" or "Straight", "Gay or lesbian" or "Homosexual".
+const ORIENTATION: Record<string, RegExp> = {
+  heterosexual: /\b(heterosexual|straight)\b/,
+  gay: /\b(gay|lesbian|homosexual)\b/,
+  bisexual: /\bbisexual\b/,
 };
 
 /** The option for an EEO answer; "decline" picks whichever wording the form uses for it. */
@@ -79,7 +86,10 @@ export function pickEeoOption(options: readonly string[], field: EeoField, value
       return find(
         (text) => /^yes\b|i have a disability|have had one/.test(text) && !/do not|don t/.test(text),
       );
-    case 'orientation':
+    case 'orientation': {
+      const pattern = ORIENTATION[value];
+      return pattern ? find((text) => pattern.test(text) && !/\bnot\b/.test(text)) : null;
+    }
     case 'transgender':
       return null;
   }

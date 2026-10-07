@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { pickEeoOption } from './eeo';
+import { makeProfile } from '../test/profiles';
+import { eeoWant, pickEeoOption } from './eeo';
 
 describe('veteran status', () => {
   // Workday's wording, in the order the dropdown lists it.
@@ -30,5 +31,30 @@ describe('veteran status', () => {
 
   it('declines', () => {
     expect(pickEeoOption(workday, 'veteran', 'decline')).toBe('I DO NOT WISH TO SELF-IDENTIFY');
+  });
+});
+
+describe('sexual orientation', () => {
+  // Twilio's Greenhouse form, from the owner's snapshot.
+  const twilio = ['Bisexual', 'Heterosexual', 'Homosexual', "I don't wish to answer"];
+
+  it('picks the profile’s answer under either of its names', () => {
+    expect(pickEeoOption(twilio, 'orientation', 'heterosexual')).toBe('Heterosexual');
+    expect(
+      pickEeoOption(
+        ['Asexual', 'Gay or Lesbian', 'Straight', 'Prefer not to say'],
+        'orientation',
+        'heterosexual',
+      ),
+    ).toBe('Straight');
+    expect(pickEeoOption(twilio, 'orientation', 'gay')).toBe('Homosexual');
+    expect(pickEeoOption(twilio, 'orientation', 'bisexual')).toBe('Bisexual');
+  });
+
+  it('declines until the profile says otherwise', () => {
+    expect(eeoWant('orientation', makeProfile())).toMatchObject({ value: 'decline' });
+    expect(pickEeoOption(twilio, 'orientation', 'decline')).toBe("I don't wish to answer");
+    const profile = makeProfile({ eeo: { orientation: 'heterosexual' } });
+    expect(eeoWant('orientation', profile)).toMatchObject({ value: 'heterosexual' });
   });
 });

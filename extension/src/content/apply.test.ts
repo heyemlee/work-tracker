@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Handle } from './adapters/types';
 import { applyAnswer, readAnswer } from './apply';
 
@@ -117,6 +117,76 @@ describe('applyAnswer', () => {
     const input = $<HTMLInputElement>('#d');
     await applyAnswer({ type: 'input', element: input }, { type: 'date', iso: '2025-06-01' }, noFile);
     expect(input.value).toBe('06/2025');
+  });
+
+  /**
+   * Greenhouse's city search as its react-select draws it: no list until something is typed, then suggestions
+   * beside the control; a pick shows beside the input, which empties. Above it, the phone widget's country list,
+   * hidden by a stylesheet the test doesn't load.
+   */
+  function citySearch(suggestions: string[]): HTMLInputElement {
+    html(`
+      <div class="iti__dropdown-content iti__hide"><ul role="listbox">
+        <li role="option">Afghanistan+93</li><li role="option">United States+1</li></ul></div>
+      <div class="select-shell"><div><div class="select__control"><div class="select__value-container">
+        <div class="select__input-container"><input id="candidate-location" role="combobox" type="text"></div>
+      </div></div></div></div>`);
+    const input = $<HTMLInputElement>('#candidate-location');
+    const shell = $<HTMLElement>('.select-shell');
+    input.addEventListener('input', () => {
+      shell.querySelector('.select__menu')?.remove();
+      if (!input.value) return;
+      shell.insertAdjacentHTML(
+        'beforeend',
+        `<div class="select__menu"><div role="listbox">${suggestions
+          .map((text) => `<div class="select__option" role="option">${text}</div>`)
+          .join('')}</div></div>`,
+      );
+      for (const option of shell.querySelectorAll<HTMLElement>('.select__option')) {
+        option.addEventListener('click', () => {
+          input.insertAdjacentHTML(
+            'beforebegin',
+            `<div class="select__single-value">${option.textContent}</div>`,
+          );
+          input.value = '';
+          shell.querySelector('.select__menu')?.remove();
+        });
+      }
+    });
+    return input;
+  }
+
+  it('picks a searched city by its state, not the first namesake or another field’s list', async () => {
+    const input = citySearch([
+      'Santa Clara, Villa Clara, Cuba',
+      'Santa Clara, California, United States',
+      'Santa Clara, Utah, United States',
+    ]);
+    const result = await applyAnswer(
+      { type: 'typeahead', element: input },
+      { type: 'text', text: 'Santa Clara, CA' },
+      noFile,
+    );
+    expect(result).toEqual({ ok: true, value: 'Santa Clara, California, United States' });
+    expect($('.select__single-value').textContent).toBe('Santa Clara, California, United States');
+  });
+
+  it('empties a dropdown’s search box and says so when no suggestion fits', async () => {
+    vi.useFakeTimers();
+    try {
+      const input = citySearch(['Springfield, Illinois, United States']);
+      const pending = applyAnswer(
+        { type: 'typeahead', element: input },
+        { type: 'text', text: 'Santa Clara, CA' },
+        noFile,
+      );
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(await pending).toEqual({ ok: false, error: 'no suggestion' });
+      expect(input.value).toBe('');
+      expect($('.select__single-value')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('reports a choice the page doesn’t offer instead of guessing', async () => {

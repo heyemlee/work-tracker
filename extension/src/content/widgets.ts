@@ -75,6 +75,13 @@ function listboxFor(input: HTMLElement): HTMLElement | null {
   const controls = input.getAttribute('aria-controls') ?? input.getAttribute('aria-owns');
   const byId = controls ? doc.getElementById(controls) : null;
   if (byId) return byId;
+  // react-select draws its menu beside its control. With none there it is closed, and another list on the page (a
+  // phone widget's hidden countries) isn't this field's.
+  const control = input.closest('[class*="select__control"]');
+  if (control) {
+    const shell = control.closest('.select-shell') ?? control.parentElement;
+    return shell?.querySelector<HTMLElement>('[role="listbox"], [class*="select__menu"]') ?? null;
+  }
   const container =
     input.closest(
       '.select, .select-shell, [class*="select__container"], [class*="container"], [data-automation-id]',
@@ -171,8 +178,9 @@ export async function readComboboxOptions(input: HTMLElement): Promise<string[]>
 }
 
 /**
- * Types into a search-as-you-type field and picks a suggestion: locations, schools. When no suggestion appears the
- * typed text stays, which many forms accept.
+ * Types into a search-as-you-type field and picks the suggestion `choose` settles on: locations, schools. The list
+ * can show something else first (a school list's first page while the search runs), so it is read until one fits.
+ * Null when none does; the typed text stays.
  */
 export async function pickFromTypeahead(
   input: HTMLInputElement,
@@ -182,21 +190,21 @@ export async function pickFromTypeahead(
   alwaysClose = false,
 ): Promise<string | null> {
   setNativeValue(input, query);
-  const options = await waitFor(() => {
+  const found = await waitFor(() => {
     const box =
       listboxFor(input) ??
       input.closest('li, .application-field, div')?.querySelector<HTMLElement>('.dropdown-results');
     if (!box) return null;
     const items = [
       ...box.querySelectorAll<HTMLElement>('[role="option"], .dropdown-location, li, .pac-item'),
-    ].filter((item) => textOf(item));
-    return items.length ? items : null;
-  }, 2500);
-  if (!options) return null;
-  const texts = options.map((option) => textOf(option));
-  const choice = choose(texts) ?? texts[0] ?? null;
-  const target = choice === null ? undefined : options[texts.indexOf(choice)];
-  if (!target) return null;
+    ].filter((item) => textOf(item) && !isHidden(item));
+    const texts = items.map((item) => textOf(item));
+    const choice = choose(texts);
+    const target = choice === null ? undefined : items[texts.indexOf(choice)];
+    return target ? { target, choice } : null;
+  }, 4000);
+  if (!found) return null;
+  const { target, choice } = found;
   clickLikeAPerson(target);
   if (alwaysClose) {
     await sleep(150);

@@ -28,6 +28,24 @@ describe('attachedFile', () => {
 });
 
 describe('extractFields', () => {
+  it('counts a city picked in Greenhouse’s search box as filled, though the input itself is empty', () => {
+    const city = (picked: string) => `<form id="application-form"><div class="select__control">
+      ${picked}<label for="candidate-location">Location (City)</label><input id="candidate-location" role="combobox">
+    </div></form>`;
+    document.body.innerHTML = city(
+      '<div class="select__single-value">Santa Clara, California, United States</div>',
+    );
+    expect(extractFields(greenhouse, document, 0).fields[0]).toMatchObject({
+      kind: 'typeahead',
+      filled: true,
+    });
+    document.body.innerHTML = city('');
+    expect(extractFields(greenhouse, document, 0).fields[0]).toMatchObject({
+      kind: 'typeahead',
+      filled: false,
+    });
+  });
+
   it("keeps a field's id when the page is read again, and gives a question that appeared a new one", () => {
     document.body.innerHTML =
       '<form id="application-form"><label for="a">First Name</label><input id="a"><label for="b">Hispanic or Latino?</label><select id="b"><option>Yes</option><option>No</option></select></form>';

@@ -20,6 +20,23 @@ export function stateNames(state: string): string[] {
   return code ? [US_STATES[code] ?? state, code] : [state];
 }
 
+/**
+ * Of a location search's suggestions, the one for "Santa Clara, CA": that city in that state, under either of the
+ * state's names ("Santa Clara, California, United States", not "Santa Clara, Villa Clara, Cuba"). Null when none is.
+ */
+export function pickPlace(options: readonly string[], place: string): string | null {
+  const [city = '', ...rest] = place.split(',').map(norm).filter(Boolean);
+  if (!city || rest.length === 0) return null;
+  return (
+    options.find((option) => {
+      const [first = '', ...parts] = option.split(',').map(norm);
+      return (
+        first === city && rest.every((part) => stateNames(part).some((name) => parts.includes(norm(name))))
+      );
+    }) ?? null
+  );
+}
+
 /** Metro areas, so "Santa Clara" and a posting in "San Francisco" count as the same place. */
 const METROS: Record<string, string[]> = {
   'bay area': [

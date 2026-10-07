@@ -16,6 +16,7 @@ export const EEO_RACES = [
 ] as const;
 export const EEO_YES_NO = ['yes', 'no', 'decline'] as const;
 export const EEO_VETERAN = ['not', 'protected', 'decline'] as const;
+export const EEO_ORIENTATIONS = ['heterosexual', 'gay', 'bisexual', 'decline'] as const;
 export const EDUCATION_LEVELS = [
   'high-school',
   'associate',
@@ -100,6 +101,8 @@ export const profileSchema = z.object({
       race: z.enum(EEO_RACES).default('decline'),
       veteran: z.enum(EEO_VETERAN).default('decline'),
       disability: z.enum(EEO_YES_NO).default('decline'),
+      /** Some forms add it to the voluntary survey; "gay" covers their "Gay or lesbian" and "Homosexual". */
+      orientation: z.enum(EEO_ORIENTATIONS).default('decline'),
     })
     .default({
       gender: 'decline',
@@ -107,6 +110,7 @@ export const profileSchema = z.object({
       race: 'decline',
       veteran: 'decline',
       disability: 'decline',
+      orientation: 'decline',
     }),
   answers: z
     .object({
@@ -194,6 +198,7 @@ export function emptyProfile(): Profile {
       race: 'decline',
       veteran: 'decline',
       disability: 'decline',
+      orientation: 'decline',
     },
     answers: profileSchema.shape.answers.parse({}),
     writing: { summary: '', stories: [], snippets: [] },

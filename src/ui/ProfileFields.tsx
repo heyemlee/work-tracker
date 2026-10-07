@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import {
   EDUCATION_LEVELS,
   EEO_GENDERS,
+  EEO_ORIENTATIONS,
   EEO_RACES,
   EEO_VETERAN,
   EEO_YES_NO,
@@ -392,6 +393,12 @@ export function SectionBody({
               value={eeo.disability}
               options={EEO_YES_NO.map((value) => ({ value, label: eeoLabel(value) }))}
               onChange={(disability) => patch('eeo', { disability })}
+            />
+            <Choice
+              label={t('profile.f.orientation')}
+              value={eeo.orientation}
+              options={EEO_ORIENTATIONS.map((value) => ({ value, label: eeoLabel(value) }))}
+              onChange={(orientation) => patch('eeo', { orientation })}
             />
           </Grid>
         </>

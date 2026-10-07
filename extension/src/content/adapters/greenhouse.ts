@@ -20,10 +20,13 @@ const HINTS: Record<string, Hint> = {
   disability_status: 'eeo.disability',
 };
 
-/** The education section's dates, numbered per school: "start-month--0", "end-year--1". */
-const EDUCATION = /^(start-month|start-year|end-month|end-year)--(\d+)$/;
+/** The education section's fields, numbered per school: "school--0", "start-month--0", "end-year--1". */
+const EDUCATION = /^(school|degree|discipline|start-month|start-year|end-month|end-year)--(\d+)$/;
 
 const EDUCATION_HINTS: Record<string, Hint> = {
+  school: 'education.school',
+  degree: 'education.degree',
+  discipline: 'education.field',
   'start-month': 'education.start',
   'start-year': 'education.start',
   'end-month': 'education.end',
@@ -113,8 +116,9 @@ export const greenhouse: Adapter = {
   },
 
   kind(control): FieldKind | null {
-    // The city field searches as you type; the rest of react-select's comboboxes are plain choices.
-    if (control.id === 'candidate-location') return 'typeahead';
+    // The city and school fields search as you type (a school list opens on its first hundred of thousands); the
+    // rest of react-select's comboboxes are plain choices.
+    if (control.id === 'candidate-location' || /^school--\d+$/.test(control.id)) return 'typeahead';
     return null;
   },
 

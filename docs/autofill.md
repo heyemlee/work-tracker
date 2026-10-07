@@ -114,7 +114,7 @@ extension, or without its key, the panel says what's missing.
 | Work authorization | Authorized to work in the US; sponsorship needed now; needed in the future; current status (F-1 STEM OPT) |
 | Education          | School, degree, field, dates, GPA (optional)                                                              |
 | Experience         | Company, title, location, dates, description — Workday asks for each entry                                |
-| Voluntary (EEO)    | Gender, Hispanic/Latino, race, veteran, disability; "decline" allowed for each                            |
+| Voluntary (EEO)    | Gender, Hispanic/Latino, race, veteran, disability, sexual orientation; "decline" allowed for each        |
 | Common answers     | How you heard, earliest start, salary expectation, relocation, on-site, previously employed, age 18+      |
 | Writing material   | Summary, STAR stories, approved snippets — grounding for free-text answers                                |
 | Resumes            | Not in the profile: PDFs uploaded on Outbox, one per resume version (see above)                           |

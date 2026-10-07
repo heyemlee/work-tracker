@@ -104,8 +104,17 @@ export function attachedFile(input: HTMLInputElement): string | null {
 export function isFilled(handle: Handle): boolean {
   switch (handle.type) {
     case 'input':
-    case 'typeahead':
       return handle.element.value.trim() !== '';
+    case 'typeahead':
+      // A dropdown's search box (Greenhouse's city and school) shows its pick beside the input, not in it.
+      return (
+        handle.element.value.trim() !== '' ||
+        Boolean(
+          handle.element
+            .closest('[class*="select__control"]')
+            ?.querySelector('[class*="single-value"], [class*="multi-value"]'),
+        )
+      );
     case 'select':
       return (
         handle.element.selectedIndex > 0 ||

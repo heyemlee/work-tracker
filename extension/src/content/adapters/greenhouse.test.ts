@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { planForm } from '../../plan';
+import { pickOption } from '../../rules/options';
 import { loadFixture } from '../../test/fixtures';
 import { makeProfile } from '../../test/profiles';
 import { extractFields } from '../extract';
@@ -48,7 +49,70 @@ const EDUCATION = `
   <div><label for="question_1">When can you start?</label><input id="question_1" type="text"></div>
 </form>`;
 
+// The school, degree and field of study above those dates, as Greenhouse's react-select draws them.
+const select = (id: string, label: string) => `
+  <div class="select-shell"><label id="${id}-label" for="${id}">${label}</label>
+    <div class="select__control"><input id="${id}" type="text" role="combobox" aria-labelledby="${id}-label"></div></div>`;
+const SCHOOLS = `<form id="application-form">${[0, 1]
+  .map(
+    (n) =>
+      select(`school--${n}`, 'School') +
+      select(`degree--${n}`, 'Degree') +
+      select(`discipline--${n}`, 'Discipline'),
+  )
+  .join('')}</form>`;
+
 describe('greenhouse education', () => {
+  it('searches for each school by name and answers its degree and field', () => {
+    document.body.innerHTML = SCHOOLS;
+    const { fields } = extractFields(greenhouse, document, 0);
+    expect(fields.map((field) => `${field.kind} ${field.hint} ${field.entry?.index}`)).toEqual([
+      'typeahead education.school 0',
+      'combobox education.degree 0',
+      'combobox education.field 0',
+      'typeahead education.school 1',
+      'combobox education.degree 1',
+      'combobox education.field 1',
+    ]);
+    const plan = planForm(
+      fields,
+      {
+        profile: makeProfile(),
+        email: 'alex@example.com',
+        resumeId: null,
+        posting: null,
+        today: '2026-10-06',
+        appliedBefore: false,
+      },
+      [],
+    );
+    // What each dropdown offers once opened; a school is typed in full.
+    const offered = [
+      "Bachelor's Degree",
+      'Master of Business Administration (M.B.A.)',
+      "Master's Degree",
+      'Computer Science',
+      'Software Engineering',
+      'Other',
+    ];
+    const shown = plan.map(({ answer }) =>
+      answer?.type === 'text'
+        ? answer.text
+        : answer?.type === 'choice'
+          ? pickOption(offered, answer.want)
+          : null,
+    );
+    // The newest school first: the master's, then the bachelor's.
+    expect(shown).toEqual([
+      'Santa Clara University',
+      "Master's Degree",
+      'Computer Science',
+      'Example University',
+      "Bachelor's Degree",
+      'Software Engineering',
+    ]);
+  });
+
   it("answers a school's start and end from that school, not from when the owner can start", () => {
     document.body.innerHTML = EDUCATION;
     const { fields } = extractFields(greenhouse, document, 0);

@@ -1,4 +1,5 @@
 import type { Answer, Want } from '../model';
+import { pickPlace } from '../rules/geo';
 import { pickOption } from '../rules/options';
 import { findOption, norm } from '../text';
 import type { Handle } from './adapters/types';
@@ -6,6 +7,7 @@ import { holdsChoice } from './adapters/workday';
 import { sleep, textOf } from './dom';
 import {
   clickLikeAPerson,
+  closeCombobox,
   pickFromCombobox,
   pickFromTypeahead,
   setChecked,
@@ -206,20 +208,29 @@ export async function applyAnswer(
         // "United States of America (+1)" is searched without its dialing code.
         const bare = query.replace(/\s*\([^)]*\)/g, '').trim() || query;
         const search = handle.type === 'typeahead' ? (bare.split(',')[0] ?? bare) : bare;
+        const starts = (texts: string[]) => texts.find((text) => norm(text).startsWith(norm(search))) ?? null;
         const choice = await pickFromTypeahead(
           handle.element,
           search,
           (texts) =>
             resolveChoice(texts, want, null) ??
-            texts.find((text) => norm(text).startsWith(norm(search))) ??
-            null,
+            (handle.type === 'prompt'
+              ? (starts(texts) ?? texts[0] ?? null)
+              : // A city is told from its namesakes by its state; the first one listed may be in another country.
+                search === bare
+                ? starts(texts)
+                : pickPlace(texts, bare)),
           handle.type === 'prompt',
         );
         if (choice) return { ok: true, value: choice };
-        // No suggestion: a plain text field keeps what was typed; a prompt must pick one.
-        return handle.type === 'typeahead'
-          ? { ok: true, value: handle.element.value }
-          : { ok: false, error: 'no suggestion' };
+        if (handle.type === 'prompt') return { ok: false, error: 'no suggestion' };
+        // No suggestion fit. A plain text field keeps what was typed; a dropdown's search box holds only a pick, so it
+        // is emptied again and left for the owner.
+        if (handle.element.getAttribute('role') !== 'combobox')
+          return { ok: true, value: handle.element.value };
+        setNativeValue(handle.element, '');
+        closeCombobox(handle.element);
+        return { ok: false, error: 'no suggestion' };
       }
 
       case 'dateParts': {

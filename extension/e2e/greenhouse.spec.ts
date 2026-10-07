@@ -92,3 +92,74 @@ test('fills a question that appears once another is answered', async ({ context,
   await expect(page.locator('#hispanic_ethnicity')).toHaveValue('Decline To Self Identify');
   await expect(page.locator('#race')).toHaveValue('Decline To Self Identify');
 });
+
+// Greenhouse's city and school fields search as you type and take only a pick. This stand-in draws them as its
+// react-select does: no list until something is typed, suggestions a moment later, the pick shown beside an input
+// that empties. The phone widget's country list sits above them, hidden by its stylesheet.
+const SEARCH_FORM = `<!doctype html><html><head><title>Job Application for Software Engineer at Acme</title>
+<style>.iti__hide { display: none; }</style></head><body>
+<form id="application-form">
+  <label for="first_name">First Name</label><input id="first_name" type="text">
+  <label for="last_name">Last Name</label><input id="last_name" type="text">
+  <label for="email">Email</label><input id="email" type="text">
+  <div class="iti__dropdown-content iti__hide"><ul role="listbox">
+    <li role="option">Afghanistan +93</li><li role="option">United States +1</li></ul></div>
+  <div class="select-shell" data-list="cities"><label id="candidate-location-label" for="candidate-location">Location (City)</label>
+    <div><div class="select__control"><div class="select__input-container">
+      <input id="candidate-location" type="text" role="combobox" aria-labelledby="candidate-location-label"></div></div></div></div>
+  <div class="select-shell" data-list="schools"><label id="school--0-label" for="school--0">School</label>
+    <div><div class="select__control"><div class="select__input-container">
+      <input id="school--0" type="text" role="combobox" aria-labelledby="school--0-label"></div></div></div></div>
+</form>
+<script>
+  const LISTS = {
+    cities: ['Santa Clara, Villa Clara, Cuba', 'Santa Clara, California, United States', 'Santa Clara, Utah, United States'],
+    schools: ['Aalborg University', 'Aalto University', 'Santa Clara University'],
+  };
+  for (const shell of document.querySelectorAll('.select-shell')) {
+    const input = shell.querySelector('input');
+    const show = (texts) => {
+      shell.querySelector('.select__menu')?.remove();
+      const menu = document.createElement('div');
+      menu.className = 'select__menu';
+      menu.innerHTML = '<div role="listbox">' + texts.map((text) => '<div class="select__option" role="option">' + text + '</div>').join('') + '</div>';
+      menu.addEventListener('click', (event) => {
+        shell.querySelector('.select__single-value')?.remove();
+        shell.querySelector('.select__input-container').insertAdjacentHTML('beforebegin', '<div class="select__single-value">' + event.target.textContent + '</div>');
+        input.value = '';
+        menu.remove();
+      });
+      shell.append(menu);
+    };
+    input.addEventListener('input', () => {
+      shell.querySelector('.select__menu')?.remove();
+      if (!input.value) return;
+      const all = LISTS[shell.dataset.list];
+      // The school list shows its first page while the search runs.
+      if (shell.dataset.list === 'schools') show(all.slice(0, 2));
+      setTimeout(() => show(all.filter((text) => text.toLowerCase().includes(input.value.toLowerCase()))), 400);
+    });
+  }
+</script></body></html>`;
+
+test('searches for the city and the school, and picks the applicant’s', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  await serve(context, 'job-boards.greenhouse.io', SEARCH_FORM, THANKS);
+  const page = await context.newPage();
+  await page.goto('https://job-boards.greenhouse.io/acme/jobs/123');
+
+  const card = page.locator('outbox-autofill');
+  await card.getByRole('button', { name: /^Fill/ }).click();
+  await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });
+  // The test applicant lives in Santa Clara, CA: not the Cuban city listed first, nor the hidden country list.
+  await expect(page.locator('[data-list="cities"] .select__single-value')).toHaveText(
+    'Santa Clara, California, United States',
+  );
+  await expect(page.locator('[data-list="schools"] .select__single-value')).toHaveText(
+    'Santa Clara University',
+  );
+});
