@@ -58,6 +58,12 @@ export interface Adapter {
   confirmed(doc: Document, url: string): boolean;
   /** Waits after a field is filled until the page has taken the answer in, before the next field is touched. */
   settle?(): Promise<void>;
+  /**
+   * Waits, once the resume is attached, for what the page does with it, before the next field is touched: Lever
+   * and Ashby read the file and fill fields of their own, which are then kept. Without it the fill goes on after
+   * a moment.
+   */
+  resumeRead?(doc: Document): Promise<void>;
   /** Workday's step name ("My Information"). */
   step?(doc: Document): string | null;
   /**

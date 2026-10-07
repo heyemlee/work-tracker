@@ -85,6 +85,71 @@ test('keeps what Lever read from the resume and what the owner typed, and fills 
   await expect(page.locator('input[name="urls[GitHub]"]')).toHaveValue('https://github.com/alexchen');
 });
 
+// What Lever's own script does with an attached resume, with a reader that takes `ms`: "Analyzing resume..." shows
+// while it reads, then "Success!", and the fields it found go in wherever nothing was typed since the page loaded.
+const reader = (ms: number) => `<style>
+    .resume-upload-working, .resume-upload-success, .resume-upload-failure, .resume-upload-oversize { display: none; }
+  </style>
+  <script>
+    (() => {
+      const note = (name) => document.querySelector('.resume-upload-' + name);
+      const field = (name) => document.querySelector('input[name="' + name + '"]');
+      const typed = new Set();
+      for (const name of ['name', 'email', 'org']) field(name).addEventListener('change', () => typed.add(name));
+      document.querySelector('#application-form, .application-form').addEventListener('change', (event) => {
+        if (event.target.id === 'resume-upload-input') window.attachedAt = performance.now();
+        else window.answeredAfter ??= performance.now() - window.attachedAt;
+      });
+      document.querySelector('#resume-upload-input').addEventListener('change', () => {
+        note('success').style.display = 'none';
+        note('working').style.display = 'inline';
+        setTimeout(() => {
+          note('working').style.display = 'none';
+          note('success').style.display = 'inline';
+          for (const [name, value] of [['name', 'Alexander Chen'], ['email', 'alex.chen@gmail.com'], ['org', 'Acme AI Labs']]) {
+            if (!typed.has(name)) field(name).value = value;
+          }
+        }, ${ms});
+      });
+    })();
+  </script>`;
+
+for (const [pace, ms] of [
+  ['at once', 300],
+  ['late', 3500],
+] as const) {
+  test(`goes on when Lever has read the resume, ${pace}, and keeps what it read`, async ({
+    context,
+    worker,
+    outbox,
+  }) => {
+    await seed(worker, outbox.url);
+    await serve(
+      context,
+      'jobs.lever.co',
+      fixture('lever/palantir.html').replace('</body>', `${reader(ms)}</body>`),
+      THANKS,
+    );
+    const page = await context.newPage();
+    await page.goto('https://jobs.lever.co/palantir/10dfc8bc-99ad-4ca2-ab76-853cb90a92c2/apply');
+
+    const card = page.locator('outbox-autofill');
+    await card.getByRole('button', { name: /^Fill/ }).click();
+    await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });
+    // A fill that went on before the read was over would have typed the profile's name and company first, and
+    // Lever leaves alone what was typed.
+    await expect(page.locator('input[name="name"]')).toHaveValue('Alexander Chen');
+    await expect(page.locator('input[name="org"]')).toHaveValue('Acme AI Labs');
+    await expect(page.locator('input[name="email"]')).toHaveValue('alex@example.com');
+    // The next answer came once the read was over, and not a set time later.
+    const answeredAfter = await page.evaluate(
+      () => (window as unknown as { answeredAfter: number }).answeredAfter,
+    );
+    expect(answeredAfter).toBeGreaterThanOrEqual(ms);
+    expect(answeredAfter).toBeLessThan(ms + 1500);
+  });
+}
+
 test('fills an Ashby application: system fields, yes/no buttons, radio groups', async ({
   context,
   worker,

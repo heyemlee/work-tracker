@@ -1,6 +1,6 @@
 import { cleanLink } from '@domain/postings';
 import type { FieldKind, Hint, Posting } from '../../model';
-import { htmlText, jsonAfter, textOf, waitFor } from '../dom';
+import { htmlText, jsonAfter, sleep, textOf, waitFor } from '../dom';
 import type { Adapter, CustomField } from './types';
 
 const PATH_HINTS: Record<string, Hint> = {
@@ -111,6 +111,9 @@ export const ashby: Adapter = {
   },
 
   submitButton: (doc) => doc.querySelector<HTMLElement>('.ashby-application-form-submit-button'),
+
+  // Ashby reads an attached resume and fills fields of its own; nothing on its page says when it's through.
+  resumeRead: () => sleep(2500),
 
   // Ashby saves each answer to its server as it changes (a text half a second after the last keystroke, a choice at
   // once), and saves that overlap there can overwrite each other: a form filled all at once loses answers it still

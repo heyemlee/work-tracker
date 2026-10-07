@@ -111,8 +111,7 @@ export function startContent(): void {
       results[entry.fieldId] = await applyAnswer(handle, entry.answer, loadResume);
       if (!results[entry.fieldId]?.ok) continue;
       for (const element of controlsOf(handle)) wrote.add(element);
-      if (entry.answer.type === 'file')
-        await sleep(adapter.ats === 'lever' || adapter.ats === 'ashby' ? 2500 : 300);
+      if (entry.answer.type === 'file') await (adapter.resumeRead?.(document) ?? sleep(300));
       // Filling a field again with what it holds changes nothing for the page to take in.
       if (adapter.settle && (!before || shownValue(handle) !== before)) await adapter.settle();
     }
