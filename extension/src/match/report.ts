@@ -55,11 +55,10 @@ export function matchReport(input: {
   let h1b: H1bRecord | null = null;
   if (input.h1b && posting.company) {
     h1b = findEmployer(input.h1b, posting.company);
-    signals.push(
-      h1b && h1b.approvals > 0
-        ? { level: 'green', code: 'h1b', evidence: String(h1b.approvals) }
-        : { level: 'yellow', code: 'noH1b', evidence: posting.company },
-    );
+    // Approvals are a good sign. Their absence is no warning: the table matches by name, and most small employers
+    // aren't in it.
+    if (h1b && h1b.approvals > 0)
+      signals.push({ level: 'green', code: 'h1b', evidence: String(h1b.approvals) });
   }
 
   const level = signals.reduce<Level>(

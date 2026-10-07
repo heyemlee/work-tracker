@@ -17,8 +17,7 @@ export interface Signal {
     | 'years'
     | 'newGrad'
     | 'sameCompany'
-    | 'h1b'
-    | 'noH1b';
+    | 'h1b';
   /** The sentence that triggered it, or a count. */
   evidence: string;
 }

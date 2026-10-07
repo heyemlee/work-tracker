@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 // @ts-expect-error: a plain JavaScript build script, imported here to keep its key in step with the extension's.
 import { employerKey as scriptKey } from '../../scripts/build-h1b.mjs';
 import { employerKey, findEmployer, type H1bTable } from './h1b';
+import { matchReport } from './report';
 import { minimumYears, scanPosting } from './scan';
 
 const codes = (text: string, title: string | null = 'Software Engineer', years = 2) =>
@@ -68,6 +69,35 @@ describe('H-1B lookup', () => {
     expect(findEmployer(table, 'Meta')?.employer).toBe('META PLATFORMS INC');
     expect(findEmployer(table, 'Scale AI')?.approvals).toBe(37);
     expect(findEmployer(table, 'Unknown Startup')).toBeNull();
+  });
+
+  const report = (company: string) =>
+    matchReport({
+      posting: {
+        ats: 'greenhouse',
+        company,
+        title: 'Software Engineer',
+        url: 'https://job-boards.greenhouse.io/acme/jobs/1',
+        location: null,
+        description: 'We build developer tools.',
+      },
+      applicantYears: 2,
+      snapshot: null,
+      h1b: table,
+      today: '2026-10-06',
+      jobId: null,
+      sameCompanyLimit: 3,
+    });
+
+  it('counts approvals as a good sign', () => {
+    expect(report('Stripe')).toMatchObject({
+      level: 'green',
+      signals: [{ level: 'green', code: 'h1b', evidence: '664' }],
+    });
+  });
+
+  it('raises nothing for a company with no approvals on record', () => {
+    expect(report('Unknown Startup')).toEqual({ level: 'green', signals: [], h1b: null });
   });
 
   it('keys employers the same way as the build script', () => {
