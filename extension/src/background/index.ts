@@ -21,6 +21,7 @@ import { forgetTab, openCard, showForm } from './inject';
 import { flushQueue, syncProfile } from './outbox';
 import { loadProfile, storeProfile } from './profile';
 import { dropSession } from './session';
+import { deleteEverything, dropTickets, enterSettings, openSettings, settingsStatus } from './settings';
 
 export function startBackground(): void {
   listen<BackgroundMessage>(
@@ -31,6 +32,8 @@ export function startBackground(): void {
       if (message.type === 'resume:read') return readResume(message.resumeId);
       if (message.type === 'profile:load') return loadProfile();
       if (message.type === 'profile:save') return storeProfile(tabId, message.profile);
+      if (message.type === 'settings:status') return settingsStatus();
+      if (message.type === 'settings:deleteAll') return deleteEverything();
       if (message.type === 'bridge:status' || message.type === 'resume:parse') {
         if (!fromOutbox(sender.url)) return undefined;
         return message.type === 'bridge:status'
@@ -64,6 +67,15 @@ export function startBackground(): void {
           return undo(tabId, url);
         case 'card:options':
           return browser.runtime.openOptionsPage();
+        case 'settings:open':
+          return openSettings(tabId);
+        case 'settings:enter': {
+          const allowed = enterSettings(tabId, message.ticket);
+          if (allowed) void toFrame(tabId, 0, 'settings:shown', {}).catch(() => undefined);
+          return allowed;
+        }
+        case 'settings:close':
+          return toFrame(tabId, 0, 'settings:close', {}).catch(() => undefined);
         case 'submit:attempt':
           return submitAttempt(tabId, url, message.answers);
         case 'submit:confirmed':
@@ -90,6 +102,7 @@ export function startBackground(): void {
 
   browser.tabs.onRemoved.addListener((tabId) => {
     forgetTab(tabId);
+    dropTickets(tabId);
     void dropSession(tabId);
   });
 

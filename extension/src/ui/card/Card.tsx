@@ -27,6 +27,7 @@ import { DEFAULT_SETTINGS, getSettings } from '../../storage';
 import { resolveLanguage, translator, type MessageKey, type Translate } from '../i18n';
 import { ProfileSheet } from './ProfileSheet';
 import { pageIsDark } from './scheme';
+import { SettingsFrame } from './SettingsFrame';
 import { Track } from './Track';
 
 /** What the owner does about a field the fill left open, in a word. */
@@ -39,8 +40,6 @@ const KINDS: Partial<Record<ChecklistItem['status'], MessageKey>> = {
 /** The page now holds something in the field: put by a rule, kept from the page, or written by AI. */
 const isDone = (item: ChecklistItem) =>
   item.status === 'filled' || item.status === 'confirm' || (item.status === 'draft' && Boolean(item.value));
-
-const openOptions = () => void toBackground('card:options', {}).catch(() => undefined);
 
 interface Choice {
   id: string;
@@ -158,6 +157,7 @@ function noticeFor(
   t: Translate,
   outboxUrl: string,
   editProfile: () => void,
+  openSettings: () => void,
 ): Notice | null {
   const outbox = (label: string) => ({ label, href: outboxUrl });
   if (state.error === 'profile' || (!state.profile && state.hasForm))
@@ -184,7 +184,7 @@ function noticeFor(
     return {
       tone: 'warn',
       text: t('notice.noKey'),
-      action: { label: t('action.settings'), run: openOptions },
+      action: { label: t('action.settings'), run: openSettings },
     };
   return null;
 }
@@ -369,8 +369,9 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   // Logged while this page was showing: the page is the confirmation, even where it kept its address and the form
   // is still counted. On another page with a form (the same posting, another account) the card fills again.
   const [loggedHere, setLoggedHere] = useState(false);
-  // The profile's own window is open, over the page.
+  // The profile's own window is open, over the page; or the settings'.
   const [editing, setEditing] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // A request that failed in the service worker answers nothing: the card keeps what it shows.
   const apply = useCallback((next: CardState | undefined) => {
@@ -402,11 +403,17 @@ export function Card({ startOpen }: { startOpen: boolean }) {
       .catch(() => undefined);
   }, [apply]);
 
+  const readSettings = useCallback(
+    () =>
+      void getSettings().then((settings) => {
+        setT(() => translator(resolveLanguage(settings.language)));
+        setOutboxUrl(settings.outboxUrl);
+      }),
+    [],
+  );
+
   useEffect(() => {
-    void getSettings().then((settings) => {
-      setT(() => translator(resolveLanguage(settings.language)));
-      setOutboxUrl(settings.outboxUrl);
-    });
+    readSettings();
     refresh();
     const listener = (
       message: { type?: string; state?: CardState },
@@ -449,7 +456,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
       browser.runtime.onMessage.removeListener(listener);
       clearInterval(timer);
     };
-  }, [refresh, fill]);
+  }, [refresh, fill, readSettings]);
 
   useEffect(() => {
     if (!flash) return;
@@ -496,7 +503,14 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   );
   const posting = [state.posting?.company, state.posting?.title].filter(Boolean).join(' · ');
   const frame = `card glass${dark ? ' dark' : ''}`;
-  const notice = noticeFor(state, t, outboxUrl, () => setEditing(true));
+  const openSettings = () => setSettingsOpen(true);
+  // What the settings changed shows at once: the language, the key AI was missing, Outbox's address.
+  const closeSettings = () => {
+    setSettingsOpen(false);
+    readSettings();
+    refresh();
+  };
+  const notice = noticeFor(state, t, outboxUrl, () => setEditing(true), openSettings);
   const noticeLine = notice && (
     <div className={`notice ${notice.tone}`}>
       <span title={notice.text}>{notice.text}</span>
@@ -617,7 +631,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
           },
         ]
       : []),
-    { label: t('options'), run: openOptions },
+    { label: t('options'), run: openSettings },
   ];
 
   let main: ReactNode = null;
@@ -789,6 +803,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
         </div>
       </div>
       {editing && <ProfileSheet t={t} dark={dark} onClose={() => setEditing(false)} onSaved={apply} />}
+      {settingsOpen && <SettingsFrame t={t} dark={dark} onClose={closeSettings} />}
     </>
   );
 }

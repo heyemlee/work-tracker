@@ -621,7 +621,14 @@ export async function snapshot(tabId: number): Promise<number> {
       const shot = await toFrame(tabId, frameId, 'frame:snapshot', {
         plan: session.plan.filter((entry) => frameOf(entry.fieldId) === frameId),
       });
-      if (shot) saved.push({ ...shot, id: crypto.randomUUID(), at: new Date().toISOString() });
+      if (shot)
+        saved.push({
+          ...shot,
+          company: session.posting?.company ?? null,
+          title: session.posting?.title ?? null,
+          id: crypto.randomUUID(),
+          at: new Date().toISOString(),
+        });
     } catch {
       // The frame is gone.
     }

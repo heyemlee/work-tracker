@@ -94,6 +94,16 @@ export type ProfileSaved =
   | { ok: true; profile: Profile; state: CardState | null }
   | { ok: false; error: 'invalid' | 'signedOut' | 'unreachable'; issues: ProfileIssue[] };
 
+/** What the settings show of Outbox: whether it answers, and the resumes it holds a PDF for. */
+export interface SettingsStatus {
+  outbox:
+    | { state: 'connected'; accounts: number }
+    | { state: 'signedOut' }
+    | { state: 'unreachable'; detail: string };
+  /** Null when Outbox didn't answer. */
+  resumes: string[] | null;
+}
+
 /** An answer the owner typed, read from the page as they submit. */
 export interface CapturedAnswer {
   fieldId: string;
@@ -120,7 +130,17 @@ export interface ToBackground {
   /** Saves the posting for later: a job on Outbox with no applications. */
   'card:save': { request: Record<string, never>; response: CardState };
   'card:undo': { request: Record<string, never>; response: CardState };
+  /** Opens the settings in a tab of their own: for Outbox's page, and where a page won't take the window's frame. */
   'card:options': { request: Record<string, never>; response: void };
+  /** The card is about to show the settings in its window: a ticket for the framed page to draw with. */
+  'settings:open': { request: Record<string, never>; response: { ticket: string } };
+  /** From the settings page in the card's window: may it draw? True tells the card it's showing, too. */
+  'settings:enter': { request: { ticket: string }; response: boolean };
+  /** From the settings page in the card's window: close it. */
+  'settings:close': { request: Record<string, never>; response: void };
+  'settings:status': { request: Record<string, never>; response: SettingsStatus };
+  /** Deletes what the extension keeps in this browser. */
+  'settings:deleteAll': { request: Record<string, never>; response: void };
   /** The profile to edit: Outbox's copy, or this browser's when Outbox can't be reached. */
   'profile:load': { request: Record<string, never>; response: ProfileDraft };
   /** Saves the profile on Outbox, where it lives, and in this browser's copy. */
@@ -159,6 +179,9 @@ export interface ToFrame {
   /** The card answers true, so the service worker knows there is one. */
   'card:open': { request: Record<string, never>; response: boolean };
   'card:fill': { request: Record<string, never>; response: boolean };
+  /** The settings page drew in the card's window. */
+  'settings:shown': { request: Record<string, never>; response: void };
+  'settings:close': { request: Record<string, never>; response: void };
 }
 
 type Envelope<Map, Type extends keyof Map> = { type: Type } & (Map[Type] extends { request: infer Request }

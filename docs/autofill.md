@@ -62,7 +62,7 @@ flowchart LR
     cs["Content script, every frame<br/>detect · read · fill · watch submit"]
     card["Card, top frame<br/>shadow DOM"]
     bg["Service worker<br/>storage · Outbox client · Claude client"]
-    opts["Options page<br/>status · AI · answers"]
+    opts["Settings page, framed in the card<br/>connection · AI · reports · answers"]
   end
   outbox[("tracker.haoyang.us/api")]
   claude["Claude API"]
@@ -116,6 +116,17 @@ pronouns, the US state, the work status (which sets the OPT field with it, so th
 (several, folded behind what's chosen), and "Present" for a job still held, as a choice of its own rather than an end
 date left empty.
 
+**Settings** (decided 2026-10-06) open from the card's ⋯ menu in a window like the profile's, not in a tab. What's
+in the window is the extension's own page (`entrypoints/options`) in a frame (`SettingsFrame.tsx`): the card's
+markup sits in an open shadow root that the page under it can read and script, which is no place for an API key or
+for the addresses keys are sent to; a frame of the extension's origin is closed to the page. The page is reachable by
+address from any site, so framed it draws only on a ticket the card asked the service worker for, for its tab, good
+once (`background/settings.ts`); in a tab of its own (the browser's "Options") it draws as it is. Five sections —
+Connection (Outbox, the profile's and resumes' copies, Outbox's address), AI, Fill reports, Remembered answers,
+General (language, the same-company warning, export and delete) — each saving as it's changed. The window appears in
+place rather than gliding in: Chrome drops presses on a frame from another origin while it moves and for half a
+second after. Where a page won't show the frame, the settings open in a tab after 6 s.
+
 **Resumes** (decided 2026-09-28, replacing PDFs added on the options page) are uploaded on Outbox, on their own page: one PDF per resume version, up to 1.4 MB, stored in D1 as base64 (`resume_files`, apart from the
 version so the snapshot never reads it). Base64 rather than a blob: D1 hands a blob to the Worker as an array of
 numbers, which costs more CPU than the free plan allows, and a row holds at most 2 MB. `GET /api/resumes/:id/file`
@@ -156,8 +167,8 @@ Each field goes through four layers and stops at the first that places it:
    work and education sections.
 2. **Field dictionary** — label patterns mapped to profile keys. Works on any site.
 3. **Answer memory** — what the owner typed into a field the layers above missed, keyed by the normalized question
-   and reused next time. Captured at submit; editable on the options page. It also fills one of the form's own
-   fields (Greenhouse's "Preferred First Name") when the profile has nothing for it.
+   and reused next time. Captured at submit; listed in the settings, where an answer can be taken off. It also
+   fills one of the form's own fields (Greenhouse's "Preferred First Name") when the profile has nothing for it.
 4. **AI fallback** — the remaining fields, as text (label, kind, options), go to Claude in one request per form.
    Below a confidence threshold the field stays blank.
 
@@ -195,7 +206,8 @@ relocation and office questions for a job abroad as the owner's call.
 **When a page fills badly**, "This page didn't fill right" in the card's ⋯ menu saves the form's structure — labels, kinds,
 options, what each layer did — without any values. Those snapshots become test fixtures. Workday's adapter is built
 from its `data-automation-id` conventions, not from a saved form, so its first real pages are the ones to snapshot.
-The snapshots on the options page are the list of open problems: pressed again on the same form, the newer snapshot
+The snapshots, listed in the settings under "Fill reports" with the posting each came from, are the list of open
+problems: pressed again on the same form, the newer snapshot
 takes the older one's place, and a snapshot leaves the list when a build that fixes it is loaded — its id goes into
 `src/background/fixed.ts` with the fix.
 

@@ -1,18 +1,215 @@
-@import 'tailwindcss';
+/* The settings wear the card's own look: its tokens, its window, its fields. What's below is theirs alone. */
+@import '../../src/ui/card/card.css';
 
-:root {
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB',
-    'Microsoft YaHei', system-ui, sans-serif;
-  color: #1d1d1f;
-  background: #f5f5f7;
-  color-scheme: light dark;
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* In the card's window the glass is the card's, behind this page: nothing is painted over it. */
+html.framed,
+html.framed body {
+  background: none;
+}
+
+.refused {
+  margin: 0;
+  padding: 24px;
+  font:
+    13px -apple-system,
+    system-ui,
+    sans-serif;
+  color: #8f8f8f;
+}
+
+/* A tab of its own: the same window, on a plain ground. */
+.tab-page {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  background: #ececec;
+}
+
+.tab-page.dark {
+  background: #0d0d0d;
+}
+
+/* In the card's window the page comes in by itself, a moment after the window: softly, and without moving. */
+html.framed .pane {
+  animation: pane-in 0.2s ease;
+}
+
+@keyframes pane-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.framed .pane {
+    animation: none;
+  }
+}
+
+.pane {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: inherit;
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--fg);
   -webkit-font-smoothing: antialiased;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f5f5f7;
-    background: #000;
-  }
+/* What's set, a line each: a name, what it is, and what can be done about it. */
+.rows {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 14px;
+  border-radius: 14px;
+  background: var(--fill);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.row + .row {
+  border-top: 0.5px solid var(--hairline);
+}
+
+.row-label {
+  flex: none;
+  width: 72px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-2);
+}
+
+.row-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row > .ghost {
+  flex: none;
+  margin-right: -8px;
+}
+
+a.ghost {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.dim {
+  color: var(--fg-2);
+}
+
+.warn {
+  color: var(--yellow);
+}
+
+.bad,
+.sheet-note.bad {
+  color: var(--red);
+}
+
+.sheet-note.good {
+  color: var(--green);
+}
+
+/* A field with a button beside it: a key to save, a list to load. */
+.with-action {
+  display: flex;
+  gap: 8px;
+}
+
+.with-action > .input {
+  flex: 1;
+  min-width: 0;
+}
+
+.with-action > .secondary,
+.buttons > .secondary {
+  height: 38px;
+  padding: 0 16px;
+  font-size: 13px;
+}
+
+.secondary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.secondary.danger {
+  color: var(--red);
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* The lists that can be thinned out: reports, remembered answers. Two lines each, and a way to take it off. */
+.records {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 6px 2px 14px;
+  border-radius: 14px;
+  background: var(--fill);
+}
+
+.record {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 54px;
+  padding: 8px 0;
+}
+
+.record + .record {
+  border-top: 0.5px solid var(--hairline);
+}
+
+.record-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.record-title,
+.record-sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-title {
+  font-weight: 500;
+}
+
+.record-sub {
+  font-size: 12px;
+  color: var(--fg-2);
+}
+
+.empty {
+  margin: 0;
+  padding: 20px 14px;
+  border-radius: 14px;
+  background: var(--fill);
+  color: var(--fg-2);
 }

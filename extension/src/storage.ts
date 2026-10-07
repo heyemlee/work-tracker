@@ -58,6 +58,9 @@ export interface FormSnapshot {
   ats: Ats;
   /** Origin and path only: no query string. */
   url: string;
+  /** Whose posting it was, for the list of reports. Reports saved before these were kept have neither. */
+  company?: string | null;
+  title?: string | null;
   step: string | null;
   fields: {
     label: string;

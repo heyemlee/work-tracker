@@ -15,8 +15,12 @@ export default defineConfig({
     host_permissions: ['<all_urls>'],
     permissions: ['storage', 'unlimitedStorage', 'scripting', 'webNavigation'],
     action: { default_title: 'Outbox Autofill' },
-    // The card's stylesheet, read by the card when it's injected into a career site that embeds a form.
-    web_accessible_resources: [{ resources: ['content-scripts/inject.css'], matches: ['<all_urls>'] }],
+    // The card's stylesheet, read by the card when it's injected into a career site that embeds a form; and the
+    // settings page, which the card shows in a frame inside its window (it draws there only for the card: see
+    // src/background/settings.ts).
+    web_accessible_resources: [
+      { resources: ['content-scripts/inject.css', 'options.html'], matches: ['<all_urls>'] },
+    ],
     commands: {
       'fill-application': {
         suggested_key: { default: 'Alt+Shift+F' },

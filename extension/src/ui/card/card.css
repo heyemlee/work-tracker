@@ -4,6 +4,9 @@
    or dark by the page the card sits on; color is kept for what it has to say (the match check, an account, an
    error). */
 
+/* The tokens: on the shadow root's host for the card, on the page itself for the settings (the extension's own
+   page, which draws inside the card's window). */
+:root,
 :host {
   --font:
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB',
@@ -53,12 +56,16 @@
   --glide: linear(0, 0.03, 0.103, 0.2, 0.308, 0.416, 0.519, 0.613, 0.695, 0.766, 0.825, 0.873, 0.911, 0.941, 0.964,
     0.98, 0.992, 1.001, 1.006, 1.009, 1.011, 1.011, 1.011, 1.01, 1.009, 1.008, 1.006, 1.005, 1.004, 1.003, 1);
   --glide-time: 0.6s;
+}
+
+:host {
   all: initial;
 }
 
 /* On a dark page: see scheme.ts. */
 .card.dark,
-.sheet.dark {
+.sheet.dark,
+.pane.dark {
   color-scheme: dark;
   --fg: #f3f3f3;
   --fg-2: #b4b4b4;
@@ -980,6 +987,23 @@ a:focus-visible {
   from {
     transform: translateY(24px) scale(0.97);
   }
+}
+
+/* The settings' window holds a frame, clear as the glass it lies on: the extension's own page draws in it. The
+   window appears in place: Chrome drops presses on a frame from another origin while it moves and for half a second
+   after (its guard against a page sliding a frame under the pointer), so one that glided in would ignore the first
+   press. What's in the frame fades in by itself. */
+.sheet.framed {
+  animation: none;
+}
+
+.sheet-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: inherit;
+  background: none;
 }
 
 .sheet-head {
