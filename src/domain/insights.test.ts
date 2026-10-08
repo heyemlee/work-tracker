@@ -45,8 +45,8 @@ describe('computeStats', () => {
     application('p6', 'j5', 'a', { appliedAt: '2026-08-29', stage: 'oa' }),
   ];
 
-  it('counts today, the last 7 days, live OAs and the 30-day OA rate', () => {
-    expect(computeStats(apps, TODAY)).toEqual({ today: 2, week: 3, oa: 2, month: { sent: 5, oa: 3 } });
+  it('counts today, the last 7 days and live OAs', () => {
+    expect(computeStats(apps, TODAY)).toEqual({ today: 2, week: 3, oa: 2 });
   });
 
   it('counts the last 7 days rather than the calendar week', () => {

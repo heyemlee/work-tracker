@@ -31,8 +31,8 @@ works. Still the single column and the floating glass toolbar; still the owner's
 
 ### Numbers
 
-- [x] Stats row: today against the daily goal (30 by default, none if left empty), the last 7 days, active OAs,
-      and the OA rate over 30 days.
+- [x] Stats row: today against the daily goal (30 by default, none if left empty), the last 7 days and active
+      OAs. (The OA rate over 30 days was on it until 2026-10-07.)
 - [x] Insights page, for 7 days, 30 days or everything: the funnel, applications per day against the goal, and the
       OA rate by resume version, account and channel.
 - [x] No reply: an application still at Applied after 30 days, shown faded and counted apart. Worked out, not

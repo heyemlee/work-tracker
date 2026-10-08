@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { percent, type Stats } from '../domain/insights';
+import type { Stats } from '../domain/insights';
 import type { IsoDate } from '../domain/types';
 import { useI18n } from '../i18n/context';
 import { formatCount, formatLongDate } from '../i18n/format';
@@ -7,12 +7,11 @@ import { formatCount, formatLongDate } from '../i18n/format';
 /** The day's headline numbers. Values stay in primary ink; a status dot beside the label carries the color. */
 export function StatsRow({ stats, today, goal }: { stats: Stats; today: IsoDate; goal: number | null }) {
   const { t, locale } = useI18n();
-  const rate = percent(stats.month.oa, stats.month.sent);
 
   return (
     <section>
       <p className="text-[13px] font-medium text-fg-2">{formatLongDate(today, locale)}</p>
-      <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
+      <dl className="mt-3 grid grid-cols-3 gap-x-6">
         <Stat label={t('stats.today')}>
           <Value>{formatCount(stats.today, locale)}</Value>
           {goal !== null && <span className="text-[15px] text-fg-3">/ {formatCount(goal, locale)}</span>}
@@ -37,14 +36,6 @@ export function StatsRow({ stats, today, goal }: { stats: Stats; today: IsoDate;
         </Stat>
         <Stat label={t('stats.oa')} dot="oa">
           <Value>{formatCount(stats.oa, locale)}</Value>
-        </Stat>
-        <Stat label={t('stats.rate')}>
-          <Value>{rate === null ? '–' : `${rate.toFixed(rate > 0 && rate < 10 ? 1 : 0)}%`}</Value>
-          {stats.month.sent > 0 && (
-            <span className="text-[13px] text-fg-3 tabular-nums">
-              {t('stats.rateOf', { oa: stats.month.oa, sent: stats.month.sent })}
-            </span>
-          )}
         </Stat>
       </dl>
     </section>

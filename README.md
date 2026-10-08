@@ -20,10 +20,9 @@ follows Apple's Liquid Glass.
   `Enter`. Typing a company you've applied to before offers its postings, and accounts that already applied
   can't be picked twice. Or paste the posting's link: the company fills itself in, and a link you've already
   tracked opens its posting, ready for the next account. Adds and deletes can be undone.
-- **A list you can scan.** Grouped by day, with today's count against a daily goal, the last 7 days, active OAs
-  and the 30-day OA rate, status filters with counts, search (`/`), and a switch to hide rejections. An
-  application still at Applied after 30 days reads _No reply_ and fades. Every change lands on the posting's
-  timeline.
+- **A list you can scan.** Grouped by day, with today's count against a daily goal, the last 7 days and active
+  OAs, status filters with counts, search (`/`), and a switch to hide rejections. An application still at Applied
+  after 30 days reads _No reply_ and fades. Every change lands on the posting's timeline.
 - **Numbers that say what works.** An Insights page shows the funnel from applied to OA to offer, applications per
   day against the goal, and the OA rate of each resume version, account and channel, for 7 days, 30 days or
   everything.

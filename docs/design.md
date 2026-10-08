@@ -63,8 +63,9 @@ rejected, it displays the furthest rejected one, dimmed. Filters use the rollup.
   that applied is a chip showing its own status. Rejected jobs are dimmed, and so are jobs whose applications got
   no reply in 30 days; one click hides rejected ones. Accounts are shown by their email address everywhere, since
   that's what tells them apart.
-- **Header** — a KPI row (applied today against the daily goal, the last 7 days, active OAs, the OA rate over 30
-  days), then a segmented control `All · Saved · Applied · OA · Offer` with a count on each.
+- **Header** — a KPI row (applied today against the daily goal, the last 7 days, active OAs), then a segmented
+  control `All · Saved · Applied · OA · Offer` with a count on each. The OA rate over 30 days was on the row until
+  2026-10-07; Insights has it.
 - **Insights** — for 7 days, 30 days or everything: the funnel (applied → OA → offer, with the rest split into
   rejected, no reply and still waiting), applications per day against the goal, and the OA rate by resume version,
   account and channel. Small samples are marked. Everything is worked out from the snapshot; nothing is stored.

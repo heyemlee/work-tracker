@@ -27,24 +27,16 @@ export interface Stats {
   week: number;
   /** At OA and not rejected. */
   oa: number;
-  /** Sent in the last 30 days, and how many of those reached an OA. */
-  month: { sent: number; oa: number };
 }
 
 /** Counts applications (not jobs): one posting applied to from two accounts is two applications. */
 export function computeStats(applications: readonly Application[], today: IsoDate): Stats {
   const weekStart = addDays(today, -6);
-  const monthStart = addDays(today, -29);
-  const stats: Stats = { today: 0, week: 0, oa: 0, month: { sent: 0, oa: 0 } };
+  const stats: Stats = { today: 0, week: 0, oa: 0 };
   for (const app of applications) {
-    const sent = app.appliedAt <= today;
     if (app.appliedAt === today) stats.today += 1;
-    if (sent && app.appliedAt >= weekStart) stats.week += 1;
+    if (app.appliedAt >= weekStart && app.appliedAt <= today) stats.week += 1;
     if (!app.rejected && app.stage === 'oa') stats.oa += 1;
-    if (sent && app.appliedAt >= monthStart) {
-      stats.month.sent += 1;
-      if (reachedOa(app)) stats.month.oa += 1;
-    }
   }
   return stats;
 }

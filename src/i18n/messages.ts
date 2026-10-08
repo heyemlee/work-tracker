@@ -373,8 +373,6 @@ const en = {
   'ext.howTo': 'How to install',
   'ext.reload': 'Reload page',
 
-  'stats.rate': 'OA rate · 30 days',
-  'stats.rateOf': '{oa} of {sent}',
   'stats.goalProgress': 'Today against the daily goal',
   noReply: 'No reply',
   'noReply.hint': 'Still at Applied after {n} days',
@@ -887,8 +885,6 @@ const zh: Record<MessageKey, string> = {
   'ext.howTo': '怎么安装',
   'ext.reload': '刷新页面',
 
-  'stats.rate': 'OA 率 · 近 30 天',
-  'stats.rateOf': '{oa} / {sent}',
   'stats.goalProgress': '今日目标进度',
   noReply: '无回音',
   'noReply.hint': '投递 {n} 天后仍是已投递',
