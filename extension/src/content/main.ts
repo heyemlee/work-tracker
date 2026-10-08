@@ -234,7 +234,7 @@ export function startContent(): () => void {
   const stopSubmission = watchSubmission(
     adapter,
     document,
-    () => void toBackground('submit:attempt', { answers: capture() }).catch(() => undefined),
+    (emails) => void toBackground('submit:attempt', { answers: capture(), emails }).catch(() => undefined),
     () => void toBackground('submit:confirmed', { url: location.href }).catch(() => undefined),
   );
 

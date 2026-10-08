@@ -40,6 +40,8 @@ export const SNAPSHOT = {
 
 export interface OutboxMock {
   url: string;
+  /** What Outbox answers for its snapshot: `SNAPSHOT`, until a spec puts another in its place. */
+  snapshot: typeof SNAPSHOT;
   quickAdds: Record<string, unknown>[];
   /** Profiles saved from the card's own window, oldest first. */
   profiles: Record<string, unknown>[];
@@ -59,12 +61,13 @@ export const test = base.extend<{
   outbox: async ({}, provide) => {
     const quickAdds: Record<string, unknown>[] = [];
     const profiles: Record<string, unknown>[] = [];
+    const mock: OutboxMock = { url: '', snapshot: SNAPSHOT, quickAdds, profiles };
     const server = createServer((request, response) => {
       const send = (status: number, body?: unknown) => {
         response.writeHead(status, { 'content-type': 'application/json' });
         response.end(body === undefined ? '' : JSON.stringify(body));
       };
-      if (request.method === 'GET' && request.url === '/api/snapshot') return send(200, SNAPSHOT);
+      if (request.method === 'GET' && request.url === '/api/snapshot') return send(200, mock.snapshot);
       // Resume PDFs live on Outbox; the extension downloads the one it attaches.
       if (request.method === 'GET' && request.url === '/api/resumes/res-1/file') {
         response.writeHead(200, {
@@ -107,11 +110,8 @@ export const test = base.extend<{
       return send(404, { error: 'not found' });
     });
     await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
-    await provide({
-      url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
-      quickAdds,
-      profiles,
-    });
+    mock.url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    await provide(mock);
     await new Promise<void>((done) => server.close(() => done()));
   },
 

@@ -29,6 +29,8 @@ export interface TabSession {
   /** When the owner pressed Submit; a confirmation within 15 minutes logs the application. */
   submittedAt: string | null;
   captured: CapturedAnswer[];
+  /** The emails the form held as the owner sent it: the account applying is the one they name. */
+  emails: string[];
   logged: { result: QuickAddResult; undone: boolean; manual: boolean } | null;
   saved: { result: QuickAddResult; undone: boolean } | null;
 }
@@ -57,6 +59,7 @@ export function emptySession(tabId: number, url: string): TabSession {
     error: null,
     submittedAt: null,
     captured: [],
+    emails: [],
     logged: null,
     saved: null,
   };

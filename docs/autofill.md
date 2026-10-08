@@ -40,7 +40,8 @@ typing, fingerprint spoofing, CAPTCHA solving); automating LinkedIn, whose terms
    highlight on it.
 4. Press Submit on the page.
 5. The extension sees the confirmation and logs the application to Outbox. The card shrinks to that one line, with
-   Undo.
+   Undo. Steps 2 and 3 can be skipped: a form filled in by hand, by the site from a resume or by another tool is
+   logged the same way once the owner has sent it.
 
 The card shows only what applies. At most one notice sits above its controls, with what to do about it: sign in to
 Outbox, fill in the profile, add an API key. What's needed now and then — logging by hand, "This page didn't fill
@@ -451,6 +452,23 @@ a posting there shows a note. It is a note, not a block.
 - On a detected submission the service worker sends a quick add: company, title, link, the existing job when the
   link or company and title match (`findSamePosting`), the account, channel "Company site", and the resume version.
   The card shrinks to "Logged to Outbox" with Undo (`/quick-add/undo`). While offline the log waits in a queue.
+- **What counts as a submission** (`content/submit.ts`, `submitConfirmed` in `background/card.ts`): the owner's press
+  of the form's Submit seen in the tab — its button, or the form's own submit event — and then, within fifteen
+  minutes, a page saying the application went through: the same page, or the one the form leads to. Who filled the
+  form in doesn't count (since 2026-10-08; until then only a form this extension had filled was logged, so one the
+  owner filled in by hand, or the site from a resume, or another tool, went unrecorded). With the fill no longer
+  asked for, the form sent is what tells an application: another form on the page, a search box or a sign-up, is
+  none, though the page is still watched for what it says after it. Where no press was seen, a confirmation at the
+  posting's own address is still logged for a form the extension filled, and for no other: such a page can be opened
+  without applying.
+- Not seen at all: a thank-you on a page that doesn't run the content script, which on a site without an adapter
+  is any page but the one with the form, so one that takes that page's place in the tab; and LinkedIn's Easy Apply,
+  whose card has the Log button.
+- **Which account.** The one whose email the form held as it was sent, whichever the card had chosen: the owner may
+  have typed another's, or the site or another tool put one there. The emails are read from the form at the press
+  of Submit (`emailsIn`), not from an earlier reading of it, which a page that has drawn its fields anew since would
+  leave behind. The card's choice stands where the form holds no account's email or more than one's, and for a log
+  made by hand from the card. The resume version logged is the card's.
 - **Save for later** on a posting sends a quick add with no account, which Outbox shows as a saved job, with Undo
   the same way. The first log with an account is remembered (`local:logged`): Outbox's setup checklist asks the
   extension, over the page bridge, whether it has logged an application yet, along with its version and whether it
@@ -503,6 +521,7 @@ looking, its window goes into that frame as well, and appears in place as the se
   172/172 (87% of required fields filled), Lever 115/115 (79%), Ashby 78/78 (77%).
 - **End to end** (Playwright): the built extension in Chromium against fixtures served on the real hosts through
   request interception, logging to a mock Outbox: Greenhouse, Lever and Gem fill → submit → logged, Ashby fill;
+  a Greenhouse form filled in by hand → submit → logged under the account its email names;
   on Gem also the resume taken out at its ✕ and attached again, and a file dropped in by hand kept.
   Playwright can't look into a closed shadow root any more than a page can, so the specs drive a build of their
   own: the one Chrome loads with the card's root left open and nothing else changed (`wxt.e2e.config.ts`), made as

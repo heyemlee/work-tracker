@@ -80,7 +80,7 @@ export function startBackground(): void {
         case 'settings:close':
           return toFrame(tabId, 0, 'settings:close', {}).catch(() => undefined);
         case 'submit:attempt':
-          return submitAttempt(tabId, url, message.answers);
+          return submitAttempt(tabId, url, message.answers, message.emails);
         case 'submit:confirmed':
           return submitConfirmed(tabId, message.url);
       }

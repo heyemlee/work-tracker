@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { fixture, seed, serve, test } from './harness';
+import { fixture, seed, serve, SNAPSHOT, test } from './harness';
 
 const URL = 'https://job-boards.greenhouse.io/discord/jobs/8811574002';
 const THANKS =
@@ -285,3 +285,59 @@ test('stays on a page that throws its document away and builds another, and fill
   await page.selectOption('#office', 'Menlo Park, CA');
   await expect(card.getByText('Filled 4/4 required')).toBeVisible();
 });
+
+// A form the owner fills in without the card: by hand, as here, or as the site or another tool does it for them.
+// Outbox has two accounts, and the form goes out with the second one's email.
+const SENT_BY_HAND_FORM = BY_HAND_FORM.replace(
+  '</form>',
+  // On a line of its own: this bare page's fields run along the top line, in under the card.
+  '<p><button type="submit">Submit application</button></p></form>',
+);
+const SECOND_ACCOUNT = {
+  ...SNAPSHOT.accounts[0]!,
+  id: 'acc-2',
+  email: 'alex.chen@example.org',
+  color: 'green',
+};
+
+for (const rebuilt of [false, true]) {
+  test(`logs an application the owner filled in by hand, under the account whose email it was sent with${
+    rebuilt ? ', on a page that built its document anew' : ''
+  }`, async ({ context, worker, outbox }) => {
+    await seed(worker, outbox.url);
+    outbox.snapshot = { ...SNAPSHOT, accounts: [...SNAPSHOT.accounts, SECOND_ACCOUNT] };
+    await serve(context, 'job-boards.greenhouse.io', SENT_BY_HAND_FORM, THANKS);
+    const page = await context.newPage();
+    await page.goto('https://job-boards.greenhouse.io/acme/jobs/123');
+
+    // The card came, with the first account chosen. Its Fill is never pressed.
+    const card = page.locator('outbox-autofill');
+    await expect(card.getByRole('button', { name: /^Fill/ })).toBeVisible();
+    await expect(card.getByRole('radio', { name: 'alex@example.com' })).toBeChecked();
+    // The fields the card read are gone with the document they were in: the form is read as it's sent.
+    if (rebuilt)
+      await page.evaluate(() => {
+        const old = document.documentElement;
+        const built = old.cloneNode(true) as HTMLElement;
+        built.querySelector('outbox-autofill')?.remove();
+        old.remove();
+        document.append(built);
+      });
+
+    await page.locator('#first_name').fill('Alex');
+    await page.locator('#last_name').fill('Chen');
+    await page.locator('#email').fill('alex.chen@example.org');
+    await page.selectOption('#office', 'Menlo Park, CA');
+    await page.locator('button[type="submit"]').click();
+
+    await expect.poll(() => outbox.quickAdds.length, { timeout: 15_000 }).toBe(1);
+    expect(outbox.quickAdds[0]).toMatchObject({
+      companyName: 'Acme',
+      title: 'Software Engineer',
+      url: 'https://job-boards.greenhouse.io/acme/jobs/123',
+      accountIds: ['acc-2'],
+      channelId: 'ch_company_site',
+    });
+    await expect(card.getByText('Logged to Outbox')).toBeVisible();
+  });
+}

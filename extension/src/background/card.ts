@@ -276,6 +276,7 @@ export async function readTab(tabId: number, url: string): Promise<CardState> {
       saved: samePosting ? current.saved : null,
       submittedAt: samePosting ? current.submittedAt : null,
       captured: samePosting ? current.captured : [],
+      emails: samePosting ? current.emails : [],
       error: null,
     };
   });
@@ -580,22 +581,47 @@ async function learn(session: TabSession, captured: CapturedAnswer[]): Promise<v
   await finalsItem.setValue(finals.slice(0, 200));
 }
 
-export async function submitAttempt(tabId: number, url: string, captured: CapturedAnswer[]): Promise<void> {
+export async function submitAttempt(
+  tabId: number,
+  url: string,
+  captured: CapturedAnswer[],
+  emails: string[],
+): Promise<void> {
   const session = await updateSession(tabId, url, () => ({
     submittedAt: new Date().toISOString(),
     captured,
+    emails,
   }));
   await learn(session, captured);
 }
 
-/** A confirmation page: log the application if this tab was filled and submitted recently. */
+/**
+ * A page says an application went through. It's logged when the owner was seen to send a form in this tab not long
+ * before, whoever filled that form in: this extension, the owner by hand, the site from a resume, another tool.
+ * Without that, a confirmation standing at the posting's own address is taken for a form this extension filled,
+ * sent in a way the content script didn't see; for no other, since such a page can be opened without applying.
+ */
 export async function submitConfirmed(tabId: number, url: string): Promise<void> {
   const session = await getSession(tabId);
-  if (!session || session.plan.length === 0 || (session.logged && !session.logged.undone)) return;
-  const recent = session.submittedAt !== null && Date.now() - Date.parse(session.submittedAt) < 15 * 60_000;
-  const samePosting = session.posting !== null && url.startsWith(session.posting.url);
-  if (!recent && !samePosting) return;
+  if (!session || (session.logged && !session.logged.undone)) return;
+  const sent = session.submittedAt !== null && Date.now() - Date.parse(session.submittedAt) < 15 * 60_000;
+  const filledHere =
+    session.plan.length > 0 && session.posting !== null && url.startsWith(session.posting.url);
+  if (!sent && !filledHere) return;
   await logApplication(tabId, url, false);
+}
+
+/**
+ * The account an application went out from: the one whose email its form held as the owner sent it. The card's
+ * choice stands where the form held no account's email, or more than one's.
+ */
+function accountSent(session: TabSession, snapshot: Snapshot | null): string | null {
+  const held = new Set(session.emails.map((email) => email.toLowerCase()));
+  const named = (snapshot?.accounts ?? []).filter(
+    (account) => account.email && held.has(account.email.trim().toLowerCase()),
+  );
+  const [only] = named;
+  return only && named.length === 1 ? only.id : session.accountId;
 }
 
 export async function logApplication(tabId: number, url: string, manual: boolean): Promise<CardState> {
@@ -606,6 +632,10 @@ export async function logApplication(tabId: number, url: string, manual: boolean
     return cardState(session);
   }
   const outbox = await outboxState(true);
+  // A submission is logged under the account its form named, which needn't be the card's: the owner may have typed
+  // another's email, or the site or another tool put one there. Logged by hand from the card, it's the card's.
+  const accountId = manual ? session.accountId : accountSent(session, outbox.snapshot);
+  if (accountId !== session.accountId) session = await updateSession(tabId, url, () => ({ accountId }));
   const job = matchedJob(outbox.snapshot, session);
   if (
     session.accountId &&

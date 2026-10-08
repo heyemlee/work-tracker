@@ -151,7 +151,8 @@ export interface ToBackground {
   'profile:load': { request: Record<string, never>; response: ProfileDraft };
   /** Saves the profile on Outbox, where it lives, and in this browser's copy. */
   'profile:save': { request: { profile: unknown }; response: ProfileSaved };
-  'submit:attempt': { request: { answers: CapturedAnswer[] }; response: void };
+  /** The owner sends the form: its answers as the page holds them, and the emails among its fields. */
+  'submit:attempt': { request: { answers: CapturedAnswer[]; emails: string[] }; response: void };
   'submit:confirmed': { request: { url: string }; response: void };
   'outbox:session': { request: { token: string | null }; response: void };
   'resume:read': {
