@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Held } from '../model';
+import { rebuildDocument } from '../test/rebuild';
 import { greenhouse } from './adapters/greenhouse';
 import type { Adapter, Handle } from './adapters/types';
 import { workday } from './adapters/workday';
@@ -211,6 +212,16 @@ describe('watching what the form holds', () => {
     expect(told).not.toHaveBeenCalled();
     watcher.resume();
     await vi.waitFor(() => expect(told).toHaveBeenCalledTimes(1));
+  });
+
+  it('goes on looking at a page that throws its document away and builds another', async () => {
+    const { input, told } = watch();
+    rebuildDocument();
+    await vi.waitFor(() => expect(told).toHaveBeenCalledTimes(1));
+    // A change in the new document, with no event from a control.
+    input.value = 'Alex';
+    document.body.append(document.createElement('p'));
+    await vi.waitFor(() => expect(told).toHaveBeenCalledTimes(2));
   });
 
   it('stops watching', async () => {

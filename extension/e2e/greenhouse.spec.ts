@@ -252,3 +252,36 @@ test('filling again keeps an answer the owner corrected, and fills what they emp
   await expect(page.locator('#office')).toHaveValue('New York, NY');
   await expect(card.locator('.item', { hasText: 'Last Name' })).toContainText('Chan');
 });
+
+// Where a board's markup doesn't match what its server sent (Twitch's, by the font it brings), Greenhouse's React
+// throws the document away a moment after loading, `<html>` and all, and builds another. The page does so here
+// once the card has come.
+test('stays on a page that throws its document away and builds another, and fills the new one', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  await serve(context, 'job-boards.greenhouse.io', BY_HAND_FORM, THANKS);
+  const page = await context.newPage();
+  await page.goto('https://job-boards.greenhouse.io/acme/jobs/123');
+
+  const card = page.locator('outbox-autofill');
+  await expect(card.getByRole('button', { name: /^Fill/ })).toBeVisible();
+  await page.evaluate(() => {
+    const old = document.documentElement;
+    const built = old.cloneNode(true) as HTMLElement;
+    built.querySelector('outbox-autofill')?.remove();
+    old.remove();
+    document.append(built);
+  });
+
+  // The card that was there, back where it was.
+  await expect(card).toHaveCount(1);
+  await card.getByRole('button', { name: /^Fill/ }).click();
+  await expect(page.locator('#first_name')).toHaveValue('Alex');
+  await expect(card.getByText('Filled 3/4 required')).toBeVisible({ timeout: 45_000 });
+  // And the new document is the one it follows from there.
+  await page.selectOption('#office', 'Menlo Park, CA');
+  await expect(card.getByText('Filled 4/4 required')).toBeVisible();
+});

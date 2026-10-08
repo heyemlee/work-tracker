@@ -24,7 +24,8 @@ export function watchForForm(
   const observer = new MutationObserver(() => {
     timer ??= setTimeout(check, delay);
   });
-  observer.observe(doc.documentElement, {
+  // The document, not its root element: a page may throw that away and build another (ui/card/shadow.tsx).
+  observer.observe(doc, {
     childList: true,
     subtree: true,
     attributes: true,

@@ -83,12 +83,15 @@ flowchart LR
 - **Card** in the top frame, in a closed shadow root, which keeps the page's CSS out and its scripts from looking
   into the card or pressing anything in it ([what they still learn](#9-privacy)): a panel the window's height for an
   application, a card for a posting or a log, both pinned to the right edge from the top (the bottom of a page
-  belongs to its Submit button, chat bubbles and reCAPTCHA's badge). Outbox's Liquid Glass over the page, tinted
-  more heavily than in Outbox so text stays readable whatever scrolls beneath, in black, white and grays after
-  OpenAI's interfaces, with color only where it says something (the match check, an account, an error). Light or
-  dark goes by the page it sits on rather than the system (`scheme.ts`): a dark pane over a white page turns the
-  gray of neither. A list's highlight slides to the item chosen on a spring (`Track` in `Card.tsx`); nothing
-  follows the pointer. English and Simplified Chinese.
+  belongs to its Submit button, chat bubbles and reCAPTCHA's badge). Its element goes back into a page that drops it
+  with its own markup (`keepInPage` in `ui/card/shadow.tsx`): where what a server sent doesn't match what the page's
+  React draws, React throws the document away, `<html>` and all, and builds another — Greenhouse's boards with a font
+  of their own do, a moment after loading — so the watchers observe the document, not its root element. Outbox's
+  Liquid Glass over the page, tinted more heavily than in Outbox so text stays readable whatever scrolls beneath, in
+  black, white and grays after OpenAI's interfaces, with color only where it says something (the match check, an
+  account, an error). Light or dark goes by the page it sits on rather than the system (`scheme.ts`): a dark pane
+  over a white page turns the gray of neither. A list's highlight slides to the item chosen on a spring (`Track` in
+  `Card.tsx`); nothing follows the pointer. English and Simplified Chinese.
 - **Service worker** holds the storage, talks to Outbox and to Claude, and queues logs while offline.
 - **Shared code.** The extension imports `src/domain` — link parsing (`postings.ts`), types, rows — so "already
   applied" means the same thing in the extension and the app.

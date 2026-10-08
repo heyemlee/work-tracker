@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { rebuildDocument } from '../test/rebuild';
 import { watchForForm } from './watch';
 
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -47,6 +48,16 @@ describe('watching a frame for its form', () => {
     place = 'My Experience';
     document.body.append(document.createElement('input'));
     await vi.waitFor(() => expect(found).toHaveBeenCalledTimes(2));
+  });
+
+  it('goes on watching a page that throws its document away and builds another', async () => {
+    const found = vi.fn();
+    stop = watchForForm(document, () => 'page', hasInput, found, 10);
+    rebuildDocument();
+    await pause(50);
+    expect(found).not.toHaveBeenCalled();
+    document.body.append(document.createElement('input'));
+    await vi.waitFor(() => expect(found).toHaveBeenCalledTimes(1));
   });
 
   it('stops watching', async () => {

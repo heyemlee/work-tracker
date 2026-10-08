@@ -116,7 +116,8 @@ export function watchHeld(
   };
   // Typing changes a control's value without changing the document; a custom dropdown's pick does the reverse.
   const observer = new MutationObserver(soon);
-  observer.observe(doc.documentElement, {
+  // The document, not its root element, which a page may replace (ui/card/shadow.tsx).
+  observer.observe(doc, {
     childList: true,
     subtree: true,
     characterData: true,
