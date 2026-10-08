@@ -102,7 +102,7 @@ export function Toolbar({ page, query, onQuery, onCompose, onOpenSettings, snaps
                   to={PAGE_PATHS[item.page]}
                   aria-current={active ? 'page' : undefined}
                   className={clsx(
-                    'relative flex h-8 items-center gap-1.5 rounded-full px-4 text-[13px] font-medium whitespace-nowrap transition-colors',
+                    'relative flex h-8 min-w-20 items-center justify-center gap-1.5 rounded-full px-4 text-[13px] font-medium whitespace-nowrap transition-colors',
                     active ? 'text-fg' : 'text-fg-2 hover:text-fg',
                   )}
                 >
