@@ -256,6 +256,134 @@ describe('applyAnswer', () => {
   });
 });
 
+// A page the browser translates between the reading and the fill, or while it's filled: each text gives way to
+// the translation, in two nested <font>s, and the controls stay where they were.
+describe('choices the page has worded anew since they were read', () => {
+  beforeEach(() => html(''));
+
+  /** Puts the translation where the text was, as Chrome's page translation does. */
+  function translate(words: Record<string, string>): void {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const texts: Text[] = [];
+    while (walker.nextNode()) texts.push(walker.currentNode as Text);
+    for (const text of texts) {
+      const into = words[text.data.trim()];
+      if (!into) continue;
+      if (text.parentElement instanceof HTMLOptionElement) {
+        text.data = into;
+        continue;
+      }
+      const outer = document.createElement('font');
+      const inner = document.createElement('font');
+      inner.textContent = into;
+      outer.append(inner);
+      text.replaceWith(outer);
+    }
+  }
+
+  const RACE = ['Hispanic or Latino', 'Asian (Not Hispanic or Latino)', 'Decline to self-identify'];
+  const RACE_ZH = {
+    [RACE[0]!]: '西班牙裔或拉丁裔',
+    [RACE[1]!]: '亚裔（非西班牙裔或拉丁裔）',
+    [RACE[2]!]: '拒绝自我识别',
+  };
+  const asian = {
+    type: 'choice',
+    want: { kind: 'eeo', field: 'race', value: 'asian' },
+    option: RACE[1]!,
+  } as const;
+
+  it('checks the radio standing where the planned one was read', async () => {
+    html(
+      RACE.map(
+        (text, at) => `<input type="radio" name="race" id="r${at}"><label for="r${at}">${text}</label>`,
+      ).join(''),
+    );
+    const inputs = $$<HTMLInputElement>('input');
+    const handle: Handle = { type: 'radio', inputs };
+    translate(RACE_ZH);
+
+    // Without the reading there is only the translation to go by, and none of it answers.
+    expect(await applyAnswer(handle, asian, noFile)).toEqual({ ok: false, error: 'no matching option' });
+    expect(await applyAnswer(handle, asian, noFile, RACE)).toEqual({
+      ok: true,
+      value: '亚裔（非西班牙裔或拉丁裔）',
+    });
+    expect(inputs.map((input) => input.checked)).toEqual([false, true, false]);
+    // And what it holds is told in the words it was read in.
+    expect(readAnswer(handle, RACE)).toMatchObject({ type: 'choice', option: RACE[1] });
+    expect(readAnswer(handle)).toMatchObject({ type: 'choice', option: '亚裔（非西班牙裔或拉丁裔）' });
+  });
+
+  it('presses the button standing where the planned one was read', async () => {
+    html('<button data-option="yes">Yes</button><button data-option="no">No</button>');
+    const buttons = $$<HTMLButtonElement>('button');
+    for (const button of buttons)
+      button.addEventListener('click', () => button.setAttribute('aria-pressed', 'true'));
+    const handle: Handle = { type: 'buttons', buttons };
+    translate({ Yes: '是的', No: '不' });
+    const result = await applyAnswer(handle, { type: 'choice', want: { kind: 'no' }, option: 'No' }, noFile, [
+      'Yes',
+      'No',
+    ]);
+    expect(result).toEqual({ ok: true, value: '不' });
+    expect(buttons.map((button) => button.getAttribute('aria-pressed'))).toEqual([null, 'true']);
+    expect(readAnswer(handle, ['Yes', 'No'])).toMatchObject({ type: 'choice', option: 'No' });
+  });
+
+  it('picks from a list by place, past the prompt it starts with', async () => {
+    html(
+      '<select id="s"><option value="">Select...</option><option value="m">Male</option><option value="f">Female</option><option value="d">Decline to self-identify</option></select>',
+    );
+    const select = $<HTMLSelectElement>('#s');
+    const handle: Handle = { type: 'select', element: select };
+    const read = ['Male', 'Female', 'Decline to self-identify'];
+    translate({
+      'Select...': '选择...',
+      Male: '男性',
+      Female: '女性',
+      'Decline to self-identify': '拒绝自我识别',
+    });
+    const female = {
+      type: 'choice',
+      want: { kind: 'eeo', field: 'gender', value: 'female' },
+      option: 'Female',
+    } as const;
+    expect(await applyAnswer(handle, female, noFile, read)).toEqual({ ok: true, value: '女性' });
+    expect(select.value).toBe('f');
+  });
+
+  it('ticks the boxes an answer names in the words they were read in', async () => {
+    const read = ['English', 'Mandarin', 'Spanish'];
+    html(read.map((text) => `<label><input type="checkbox">${text}</label>`).join(''));
+    const inputs = $$<HTMLInputElement>('input');
+    const handle: Handle = { type: 'multi', inputs };
+    translate({ English: '英语', Mandarin: '普通话', Spanish: '西班牙语' });
+    const result = await applyAnswer(
+      handle,
+      { type: 'choices', texts: ['English', 'Mandarin'] },
+      noFile,
+      read,
+    );
+    expect(result).toEqual({ ok: true, value: '英语, 普通话' });
+    expect(inputs.map((input) => input.checked)).toEqual([true, true, false]);
+    expect(readAnswer(handle, read)).toEqual({ type: 'choices', texts: ['English', 'Mandarin'] });
+  });
+
+  it('goes by what is there when the choices themselves have changed', async () => {
+    // Read with three choices, and the page offers two others by now: no place of theirs is the planned one's.
+    html('<label><input type="radio" name="q">Yes</label><label><input type="radio" name="q">No</label>');
+    const inputs = $$<HTMLInputElement>('input');
+    const handle: Handle = { type: 'radio', inputs };
+    const planned = { type: 'choice', want: { kind: 'no' }, option: 'Not now' } as const;
+    expect(await applyAnswer(handle, planned, noFile, ['Now', 'Later', 'Not now'])).toEqual({
+      ok: true,
+      value: 'No',
+    });
+    expect(inputs.map((input) => input.checked)).toEqual([false, true]);
+  });
+});
+
 // Stripe's embedded form, as saved: "countries you anticipate working in" is a group of boxes that name countries
 // in short ("UK", "US"), and the profile spells its country out.
 describe('a saved page’s boxes', () => {

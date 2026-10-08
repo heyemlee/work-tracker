@@ -1,4 +1,3 @@
-import { norm } from '../text';
 import { isHidden, sleep, textOf, waitFor } from './dom';
 
 /**
@@ -23,14 +22,6 @@ export function setText(element: HTMLInputElement | HTMLTextAreaElement, value: 
   setNativeValue(element, value);
   element.dispatchEvent(new Event('blur', { bubbles: false }));
   element.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
-}
-
-/** Picks an option of a native select by its text. */
-export function setSelect(select: HTMLSelectElement, optionText: string): boolean {
-  const option = [...select.options].find((item) => norm(item.text) === norm(optionText));
-  if (!option) return false;
-  setNativeValue(select, option.value);
-  return true;
 }
 
 export function clickLikeAPerson(element: HTMLElement): void {

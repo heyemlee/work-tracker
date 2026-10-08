@@ -432,3 +432,70 @@ describe('what the form holds, told as it changes', () => {
     for (const result of Object.values(results)) expect(result.at).toBeLessThanOrEqual(at);
   });
 });
+
+describe('a page the browser translates after it was read', () => {
+  const VOLUNTARY = FORM.replace(
+    '</form>',
+    `<fieldset>
+    <legend>Veteran Status</legend>
+    <input type="radio" name="veteran" id="v0"><label for="v0">I am a protected veteran</label>
+    <input type="radio" name="veteran" id="v1"><label for="v1">I am not a protected veteran</label>
+  </fieldset>
+</form>`,
+  );
+  const NOT = 'I am not a protected veteran';
+
+  afterEach(() => {
+    document.documentElement.className = '';
+  });
+
+  it('is read, filled and told of in the page’s own words', async () => {
+    const ask = start();
+    document.body.innerHTML = VOLUNTARY;
+    const words = (scan: FrameScan) => scan.fields.map(({ label, options }) => ({ label, options }));
+    const before = await ask<FrameScan>({ type: 'frame:scan', frameId: 0, prepare: null });
+    expect(words(before)).toContainEqual({ label: 'Full name', options: [] });
+    expect(words(before)).toContainEqual({
+      label: 'Veteran Status',
+      options: ['I am a protected veteran', NOT],
+    });
+
+    // Chrome's translation: its mark on the document, and its words in two <font>s where the page's stood.
+    document.documentElement.classList.add('translated-ltr');
+    for (const [selector, text] of [
+      ['label[for="name"]', '姓名'],
+      ['legend', '退伍军人身份'],
+      ['label[for="v0"]', '我是受保护的退伍军人'],
+      ['label[for="v1"]', '我不是受保护的退伍军人'],
+    ] as const)
+      document.querySelector(selector)!.innerHTML = `<font><font>${text}</font></font>`;
+
+    // Read again, as a fill starts by doing: the rules get the words they know.
+    const scan = await ask<FrameScan>({ type: 'frame:scan', frameId: 0, prepare: null });
+    expect(words(scan)).toEqual(words(before));
+    const veteran = scan.fields.find((field) => field.label === 'Veteran Status')!;
+    const results = await ask<Record<string, { ok: boolean; value?: string }>>({
+      type: 'frame:fill',
+      fields: [
+        {
+          fieldId: veteran.id,
+          status: 'filled',
+          answer: { type: 'choice', want: { kind: 'eeo', field: 'veteran', value: 'not' }, option: NOT },
+          source: 'rule',
+          key: 'eeo.veteran',
+          note: null,
+          critical: false,
+        },
+      ] satisfies PlannedField[],
+    });
+    // The answer goes into the control it was planned for, which reads otherwise now.
+    expect(input('v1').checked).toBe(true);
+    expect(results[veteran.id]).toEqual(
+      expect.objectContaining({ ok: true, value: '我不是受保护的退伍军人' }),
+    );
+    // And what the form holds is remembered in the page's words, not the translation's.
+    expect(await ask({ type: 'frame:read', fieldIds: [veteran.id] })).toEqual([
+      { fieldId: veteran.id, answer: { type: 'choice', want: { kind: 'like', texts: [NOT] }, option: NOT } },
+    ]);
+  });
+});

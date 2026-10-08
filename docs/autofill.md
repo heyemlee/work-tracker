@@ -231,6 +231,28 @@ Ashby saves each answer to its server as it changes, and saves that overlap ther
 filled all at once showed every answer and still reported some missing on submit — so on Ashby fields are filled one
 at a time, each save finished (seen in the page's network timeline) before the next.
 
+A page the browser translates is read in its own words (2026-10-08, after a report from an Ashby form that turned
+Chinese while it was being filled). Chrome's page translation puts its words where the page's stood: each text in two
+nested `<font>`s, placeholders and the title too, in the document and in open shadow roots. It leaves what is marked
+`translate="no"`, closed shadow roots (the card's) and frames of another site, and it marks the document
+(`translated-ltr` on `<html>`) from before the first word changes for as long as the translation stands; what the
+page draws later is translated a moment after it is drawn. The rules read English, and a choice is planned by its
+wording, so a form translated between its reading and the fill lost every choice still to go in ("no matching
+option", the report's race and veteran status), and one translated before Fill lost the questions only a label names
+as well: sponsorship and "have you worked here" came out unknown, which is what goes to the model. So the content
+script keeps the page's words (`content/words.ts`): a field read once untranslated is given back in those words,
+label, description, choices and section, in every later reading taken while the document carries the mark, and so is
+the posting for as long as its address is the same. A choice goes into the control standing where the planned one was
+read (`choiceAt` in `content/apply.ts`): the controls stay as they were, and only read otherwise. And what the owner
+answers is remembered in the page's words (`readAnswer`). The words aren't kept from one step of a form or one address
+to the next, nor for a control that comes to read otherwise a second time or has another number of choices, since a
+page may draw another question in the same control. A form translated before it is first read has only the
+translation to go by, and fills as poorly as it did: the card reads a form within half a second of its being drawn,
+which is before a translation that starts with the page and after one that was on already. Tried on Ashby's own page
+code served locally, with Chrome's own translation switched on in the specs' browser (which sends the made-up page's
+text to Google, so that run isn't one of the specs): the translation arriving in the middle of a fill and before one,
+each followed by "Fill again".
+
 In two places the fill waits for what the page does rather than for a set time (decided 2026-10-07, each tried
 first on the site's own page code served locally; that code isn't in the repository). A react-select dropdown, which
 is what Greenhouse's are: its list is looked for again at once, and after a pick the fill goes on as soon as the list

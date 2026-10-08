@@ -14,7 +14,6 @@ import {
   setChecked,
   setFiles,
   setNativeValue,
-  setSelect,
   setText,
 } from './widgets';
 
@@ -32,14 +31,28 @@ const choiceLabel = (input: HTMLInputElement) =>
   textOf(input.closest('label')) ||
   input.value;
 
-/** The option to pick: the one resolved while planning if it's still offered, else resolved against what's there. */
-function resolveChoice(texts: string[], want: Want, planned: string | null): string | null {
-  if (planned !== null && texts.includes(planned)) return planned;
+/**
+ * Which of the choices to pick, by its place among them: the one resolved while planning if it's still offered.
+ * Where the choices stand as they were `read` and are only worded anew (a browser translating the page puts "亚裔"
+ * where "Asian" stood), the one standing where the planned one was read: it is the same control. Else resolved
+ * against what's there. -1 when none is.
+ */
+function choiceAt(texts: string[], want: Want, planned: string | null, read?: readonly string[]): number {
   if (planned !== null) {
-    const same = texts.find((text) => norm(text) === norm(planned));
-    if (same !== undefined) return same;
+    const still = texts.indexOf(planned);
+    if (still >= 0) return still;
+    const place = read?.length === texts.length ? read.indexOf(planned) : -1;
+    if (place >= 0) return place;
+    const same = texts.findIndex((text) => norm(text) === norm(planned));
+    if (same >= 0) return same;
   }
-  return pickOption(texts, want);
+  const picked = pickOption(texts, want);
+  return picked === null ? -1 : texts.indexOf(picked);
+}
+
+/** The option to pick out of a list the page has just drawn: nothing was read of it before. */
+function resolveChoice(texts: string[], want: Want, planned: string | null): string | null {
+  return texts[choiceAt(texts, want, planned)] ?? null;
 }
 
 const wantOf = (answer: Answer): Want | null => {
@@ -59,11 +72,15 @@ function formatDate(iso: string, input: HTMLInputElement): string {
   return `${month}/${day}/${year}`;
 }
 
-/** Puts one answer into the page. `file` loads a resume PDF on demand. */
+/**
+ * Puts one answer into the page. `file` loads a resume PDF on demand; `read` is the field's choices as they were
+ * worded when the page was read, for a page that words them otherwise by now.
+ */
 export async function applyAnswer(
   handle: Handle,
   answer: Answer,
   file: (resumeId: string) => Promise<File | null>,
+  read?: readonly string[],
 ): Promise<Applied> {
   try {
     switch (handle.type) {
@@ -104,7 +121,8 @@ export async function applyAnswer(
       }
 
       case 'select': {
-        const texts = [...handle.element.options].map((option) => option.text.trim());
+        const options = [...handle.element.options];
+        const texts = options.map((option) => option.text.trim());
         if (handle.element.multiple && answer.type === 'choices') {
           const picked = answer.texts
             .map((text) => findOption(texts, [text]))
@@ -114,35 +132,33 @@ export async function applyAnswer(
           return { ok: picked.length > 0, value: picked.join(', ') };
         }
         const want = wantOf(answer);
-        const choice = want
-          ? resolveChoice(texts, want, answer.type === 'choice' ? answer.option : null)
-          : null;
-        if (!choice || !setSelect(handle.element, choice)) return { ok: false, error: 'no matching option' };
-        return { ok: true, value: choice };
+        const at = want
+          ? choiceAt(texts, want, answer.type === 'choice' ? answer.option : null, withPrompt(texts, read))
+          : -1;
+        const option = options[at];
+        if (!option || !texts[at]) return { ok: false, error: 'no matching option' };
+        setNativeValue(handle.element, option.value);
+        return { ok: true, value: texts[at] };
       }
 
       case 'radio': {
         const labels = handle.inputs.map(choiceLabel);
         const want = wantOf(answer);
-        const choice = want
-          ? resolveChoice(labels, want, answer.type === 'choice' ? answer.option : null)
-          : null;
-        const input = choice === null ? undefined : handle.inputs[labels.indexOf(choice)];
+        const at = want ? choiceAt(labels, want, answer.type === 'choice' ? answer.option : null, read) : -1;
+        const input = handle.inputs[at];
         if (!input) return { ok: false, error: 'no matching option' };
         setChecked(input, true);
-        return { ok: true, value: choice ?? '' };
+        return { ok: true, value: labels[at] ?? '' };
       }
 
       case 'buttons': {
         const labels = handle.buttons.map((button) => textOf(button));
         const want = wantOf(answer);
-        const choice = want
-          ? resolveChoice(labels, want, answer.type === 'choice' ? answer.option : null)
-          : null;
-        const button = choice === null ? undefined : handle.buttons[labels.indexOf(choice)];
+        const at = want ? choiceAt(labels, want, answer.type === 'choice' ? answer.option : null, read) : -1;
+        const button = handle.buttons[at];
         if (!button) return { ok: false, error: 'no matching option' };
         if (button.getAttribute('aria-pressed') !== 'true') clickLikeAPerson(button);
-        return { ok: true, value: choice ?? '' };
+        return { ok: true, value: labels[at] ?? '' };
       }
 
       case 'checkbox': {
@@ -163,22 +179,26 @@ export async function applyAnswer(
 
       case 'multi': {
         const labels = handle.inputs.map(choiceLabel);
+        // An answer in its own words is looked for among the boxes as they read now, then as they were read.
+        const among = (texts: readonly string[], text: string) => {
+          const found = findOption(texts, [text]);
+          return found === null ? -1 : texts.indexOf(found);
+        };
+        const then = read?.length === labels.length ? read : [];
         const wanted =
           answer.type === 'choices'
-            ? answer.texts
-                .map((text) => findOption(labels, [text]))
-                .filter((text): text is string => text !== null)
-                .slice(0, answer.texts.length)
+            ? answer.texts.map((text) => {
+                const now = among(labels, text);
+                return now >= 0 ? now : among(then, text);
+              })
             : answer.type === 'choice'
-              ? [resolveChoice(labels, answer.want, answer.option)].filter(
-                  (text): text is string => text !== null,
-                )
+              ? [choiceAt(labels, answer.want, answer.option, read)]
               : [];
         // "Select all that apply" gets the first match per wanted text, not every loose match.
-        const unique = [...new Set(wanted)];
+        const unique = [...new Set(wanted.filter((at) => at >= 0))];
         if (unique.length === 0) return { ok: false, error: 'no matching option' };
-        handle.inputs.forEach((input, index) => setChecked(input, unique.includes(labels[index] ?? '')));
-        return { ok: true, value: unique.join(', ') };
+        handle.inputs.forEach((input, index) => setChecked(input, unique.includes(index)));
+        return { ok: true, value: unique.map((at) => labels[at]).join(', ') };
       }
 
       case 'combobox': {
@@ -256,15 +276,28 @@ export async function applyAnswer(
   }
 }
 
-/** What a field holds now, as an answer: for remembering what the owner typed and for form snapshots. */
-export function readAnswer(handle: Handle): Answer | null {
+/** A choice in the words it was `read` in, where the page words its choices otherwise by now. */
+const asRead = (texts: readonly string[], at: number, read?: readonly string[]) =>
+  (read?.length === texts.length ? read[at] : undefined) ?? texts[at] ?? '';
+
+/** A list is read without the prompt it starts with: the reading, lined up with the list as it stands. */
+const withPrompt = (texts: readonly string[], read?: readonly string[]) =>
+  read && texts.length === read.length + 1 ? [texts[0] ?? '', ...read] : read;
+
+/**
+ * What a field holds now, as an answer: for remembering what the owner typed and for form snapshots. A choice is
+ * told in the words it was `read` in.
+ */
+export function readAnswer(handle: Handle, read?: readonly string[]): Answer | null {
   switch (handle.type) {
     case 'input':
     case 'typeahead':
       return handle.element.value.trim() ? { type: 'text', text: handle.element.value.trim() } : null;
     case 'select': {
+      const options = [...handle.element.options];
+      const texts = options.map((option) => option.text.trim());
       const selected = [...handle.element.selectedOptions]
-        .map((option) => option.text.trim())
+        .map((option) => asRead(texts, options.indexOf(option), withPrompt(texts, read)))
         .filter(Boolean);
       if (handle.element.multiple) return selected.length ? { type: 'choices', texts: selected } : null;
       return selected[0] && handle.element.selectedIndex > 0
@@ -272,21 +305,26 @@ export function readAnswer(handle: Handle): Answer | null {
         : null;
     }
     case 'radio': {
-      const input = handle.inputs.find((item) => item.checked);
-      if (!input) return null;
-      const label = choiceLabel(input);
+      const at = handle.inputs.findIndex((item) => item.checked);
+      if (at < 0) return null;
+      const label = asRead(handle.inputs.map(choiceLabel), at, read);
       return { type: 'choice', want: { kind: 'like', texts: [label] }, option: label };
     }
     case 'buttons': {
-      const button = handle.buttons.find((item) => item.getAttribute('aria-pressed') === 'true');
-      if (!button) return null;
-      const label = textOf(button);
+      const at = handle.buttons.findIndex((item) => item.getAttribute('aria-pressed') === 'true');
+      if (at < 0) return null;
+      const label = asRead(
+        handle.buttons.map((button) => textOf(button)),
+        at,
+        read,
+      );
       return { type: 'choice', want: { kind: 'like', texts: [label] }, option: label };
     }
     case 'checkbox':
       return { type: 'check', checked: handle.element.checked };
     case 'multi': {
-      const texts = handle.inputs.filter((input) => input.checked).map(choiceLabel);
+      const labels = handle.inputs.map(choiceLabel);
+      const texts = handle.inputs.flatMap((input, at) => (input.checked ? [asRead(labels, at, read)] : []));
       return texts.length ? { type: 'choices', texts } : null;
     }
     case 'combobox': {

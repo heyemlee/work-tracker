@@ -9,6 +9,7 @@ import { heldBy, shownValue, watchHeld } from './held';
 import { formSnapshot } from './snapshot';
 import { watchSubmission } from './submit';
 import { fileFromBase64, readComboboxOptions } from './widgets';
+import { ownWords } from './words';
 
 /** How the page moves to a field: gliding, unless the owner's system asks for less motion. */
 const glide = (): ScrollBehavior =>
@@ -51,6 +52,10 @@ export function startContent(): () => void {
     ours(handle) &&
     attached.get(handle.element) === answer.resumeId;
 
+  // The page's own words, for a page the browser translates: answers are planned on them, put in by them and
+  // remembered in them.
+  const words = ownWords(document);
+
   const unchanged = (handle: Handle, answer: Answer) =>
     handle.type !== 'file' &&
     shownValue(handle) !== undefined &&
@@ -79,6 +84,12 @@ export function startContent(): () => void {
     const form = adapter.form(document);
     if (form && prepare && adapter.prepare && (await adapter.prepare(form, prepare))) await sleep(300);
     extraction = extractFields(adapter, document, frameId, ids);
+    const reading = {
+      fields: extraction.fields,
+      posting: adapter.posting(document, location.href),
+      step: adapter.step?.(document) ?? null,
+    };
+    words.keep(reading);
     for (const field of extraction.fields) {
       const handle = extraction.handles.get(field.id);
       if (!field.filled || !handle || !ours(handle)) continue;
@@ -89,14 +100,7 @@ export function startContent(): () => void {
     if (extraction.fields.length > 0) held ??= watchHeld(document, look, tell);
     // A page read afresh may not be as the card last heard: loaded again, or changed by the page itself.
     held?.soon();
-    return {
-      frameId,
-      ats: adapter.ats,
-      isApplication: extraction.fields.length > 0,
-      posting: adapter.posting(document, location.href),
-      fields: extraction.fields,
-      step: adapter.step?.(document) ?? null,
-    };
+    return { frameId, ats: adapter.ats, isApplication: extraction.fields.length > 0, ...reading };
   }
 
   const loadResume = async (resumeId: string) => {
@@ -140,7 +144,9 @@ export function startContent(): () => void {
         const anchor = extraction.anchors.get(entry.fieldId);
         if (entry.answer.type !== 'file') anchor?.scrollIntoView?.({ behavior: glide(), block: 'center' });
         const before = shownValue(handle);
-        results[entry.fieldId] = left(await applyAnswer(handle, entry.answer, loadResume));
+        results[entry.fieldId] = left(
+          await applyAnswer(handle, entry.answer, loadResume, words.choices(entry.fieldId)),
+        );
         if (!results[entry.fieldId]?.ok) continue;
         const shown = shownValue(handle);
         for (const element of controlsOf(handle)) {
@@ -165,7 +171,7 @@ export function startContent(): () => void {
     if (!extraction) return [];
     const answers: CapturedAnswer[] = [];
     for (const [fieldId, handle] of extraction.handles) {
-      const answer = readAnswer(handle);
+      const answer = readAnswer(handle, words.choices(fieldId));
       if (answer) answers.push({ fieldId, answer });
     }
     return answers;
