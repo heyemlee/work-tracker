@@ -74,34 +74,6 @@ export function Switch({ checked, onCheckedChange, label, id }: SwitchProps) {
   );
 }
 
-function hueOf(name: string): number {
-  let hue = 0;
-  for (const char of name) hue = (hue * 31 + (char.codePointAt(0) ?? 0)) % 360;
-  return hue;
-}
-
-/** A monogram tile. The hue is derived from the name, so a company keeps its color everywhere. */
-export function CompanyAvatar({ name, size = 36 }: { name: string; size?: number }) {
-  const hue = hueOf(name);
-  const initial = Array.from(name.trim())[0]?.toUpperCase() ?? '?';
-  return (
-    <span
-      aria-hidden="true"
-      className="grid shrink-0 place-items-center font-semibold select-none"
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size * 0.28,
-        fontSize: size * 0.42,
-        background: `oklch(var(--avatar-l) var(--avatar-c) ${hue})`,
-        color: `oklch(var(--avatar-fg-l) calc(var(--avatar-c) * 3.2) ${hue})`,
-      }}
-    >
-      {initial}
-    </span>
-  );
-}
-
 export function Section({
   title,
   children,

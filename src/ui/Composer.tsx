@@ -21,7 +21,7 @@ import { accountName, channelName, useI18n } from '../i18n/context';
 import { liveDefaults, updatePrefs, usePrefs, type LastUsed } from '../state/prefs';
 import { showToast } from '../state/toasts';
 import { useLiquidGlass } from './glass/useLiquidGlass';
-import { CompanyAvatar, IconButton } from './primitives';
+import { IconButton } from './primitives';
 
 type Suggestion = { kind: 'company'; company: Company; jobCount: number } | { kind: 'job'; row: JobRow };
 
@@ -310,7 +310,6 @@ function ComposerPanel({ snapshot, rows, onOpenJob, onOpenSettings, phone, onClo
 
             {attached ? (
               <div className="flex items-center gap-3 rounded-[14px] bg-fill p-2 pl-3">
-                <CompanyAvatar name={attached.company.name} size={32} />
                 <div className="min-w-0 flex-1 leading-tight">
                   <div className="text-[12px] text-fg-3">{t('composer.attached')}</div>
                   <div className="truncate text-[15px] font-semibold">
@@ -520,12 +519,11 @@ function SuggestionList({ suggestions, highlight, onHighlight, onPick, snapshot 
           className={clsx(
             'flex cursor-pointer items-center gap-3 rounded-[12px] px-2.5 py-2',
             index === highlight && 'bg-fill-2',
-            suggestion.kind === 'job' && 'pl-[52px]',
+            suggestion.kind === 'job' && 'pl-6',
           )}
         >
           {suggestion.kind === 'company' ? (
             <>
-              <CompanyAvatar name={suggestion.company.name} size={28} />
               <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
                 {suggestion.company.name}
               </span>

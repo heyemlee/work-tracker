@@ -9,7 +9,6 @@ import type { Account, Id, IsoDate } from '../domain/types';
 import { useI18n, type I18n } from '../i18n/context';
 import { formatMonth, formatTime } from '../i18n/format';
 import { ApplicationChip } from './ApplicationChip';
-import { CompanyAvatar } from './primitives';
 
 function groupLabel(key: GroupKey, today: IsoDate, { t, locale }: I18n): string {
   switch (key) {
@@ -114,10 +113,7 @@ const JobRowItem = memo(function JobRowItem({
         selected ? 'bg-selected' : 'hover:bg-fill',
       )}
     >
-      {!first && <span aria-hidden="true" className="absolute top-0 right-0 left-16 h-px bg-hairline" />}
-      <span className={clsx('[grid-area:avatar]', quiet && 'opacity-50')}>
-        <CompanyAvatar name={row.company.name} />
-      </span>
+      {!first && <span aria-hidden="true" className="absolute top-0 right-0 left-4 h-px bg-hairline" />}
       <span className={clsx('min-w-0 [grid-area:text]', quiet && 'opacity-50')}>
         <span className="block truncate text-[15px] font-semibold tracking-[-0.01em]">
           {row.company.name}

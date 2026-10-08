@@ -83,10 +83,6 @@
   --acc-green: #2e9e55;
   --acc-teal: #1a9fb0;
   --acc-gray: #8e8e93;
-
-  --avatar-l: 0.94;
-  --avatar-c: 0.03;
-  --avatar-fg-l: 0.42;
 }
 
 :root[data-theme='dark'] {
@@ -137,10 +133,6 @@
   --acc-green: #3fbf6a;
   --acc-teal: #33bccc;
   --acc-gray: #98989d;
-
-  --avatar-l: 0.32;
-  --avatar-c: 0.035;
-  --avatar-fg-l: 0.86;
 }
 
 :root[data-accent='blue'] {
@@ -282,10 +274,10 @@
 
   .job-row {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
-      'avatar text meta'
-      'avatar chips chips';
+      'text meta'
+      'chips chips';
     column-gap: 12px;
     row-gap: 8px;
     align-items: center;
@@ -294,8 +286,8 @@
   @media (min-width: 640px) {
     .job-row {
       /* Chips name the email that applied; long ones wrap rather than squeeze the company name. */
-      grid-template-columns: auto minmax(160px, 1fr) fit-content(58%) auto;
-      grid-template-areas: 'avatar text chips meta';
+      grid-template-columns: minmax(160px, 1fr) fit-content(58%) auto;
+      grid-template-areas: 'text chips meta';
     }
   }
 

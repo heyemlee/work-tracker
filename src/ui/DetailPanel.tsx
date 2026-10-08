@@ -24,7 +24,7 @@ import { formatDateTime, formatShortDate } from '../i18n/format';
 import { getPrefs, liveDefaults } from '../state/prefs';
 import { showToast } from '../state/toasts';
 import { useLiquidGlass } from './glass/useLiquidGlass';
-import { Button, CompanyAvatar, IconButton, Section, Switch } from './primitives';
+import { Button, IconButton, Section, Switch } from './primitives';
 import { SegmentedControl } from './SegmentedControl';
 
 interface DetailPanelProps {
@@ -160,7 +160,6 @@ function PanelBody({ row, snapshot, today, onClose, onGrab }: PanelBodyProps) {
       )}
 
       <header className="flex items-start gap-3 px-5 pt-5 pb-3">
-        <CompanyAvatar name={row.company.name} size={44} />
         <div className="min-w-0 flex-1">
           <Dialog.Title className="truncate text-[22px] leading-tight font-semibold tracking-[-0.02em]">
             {row.company.name}
