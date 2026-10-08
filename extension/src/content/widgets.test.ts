@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clickAway, pickFromCombobox, pickFromTypeahead } from './widgets';
+import { clickAway, pickFromCombobox, pickFromTypeahead, readComboboxOptions } from './widgets';
 
 const OPTIONS = ['United States Minor Outlying Islands (+1)', 'United States of America (+1)'];
 
@@ -158,5 +158,58 @@ describe('clicking away', () => {
     clickAway(input);
     expect(document.querySelector('#popup')).toBeNull();
     expect(document.activeElement).not.toBe(input);
+  });
+});
+
+describe('a dropdown whose list is drawn apart from its button', () => {
+  /**
+   * Gem's: a button with no word of what it opens, and a menu put at the end of the page while it is open. The
+   * voluntary questions' is a `menu` of menu items; a posting's own questions get a list box.
+   */
+  function gemDropdown(listbox: boolean) {
+    document.body.innerHTML =
+      '<div class="container-37"><div class="input-127"><div class="bodyImportant-47">Gender</div>' +
+      '<button type="button"><div class="buttonContentContainer-131">Please select</div></button></div></div>';
+    const button = document.querySelector<HTMLElement>('button')!;
+    const close = () => document.querySelector('#floating-ui-portal')?.remove();
+    button.addEventListener('click', () => {
+      if (document.querySelector('#floating-ui-portal')) return close();
+      const items = ['Male', 'Female', 'Decline to self-identify']
+        .map((text) => `<li role="${listbox ? 'option' : 'menuitem'}"><div>${text}</div></li>`)
+        .join('');
+      document.body.insertAdjacentHTML(
+        'beforeend',
+        `<div id="floating-ui-portal"><div data-floating-ui-portal=""><menu${listbox ? ' role="listbox"' : ''}>${items}</menu></div></div>`,
+      );
+      for (const item of document.querySelectorAll('#floating-ui-portal li'))
+        item.addEventListener('click', () => {
+          button.firstElementChild!.textContent = item.textContent;
+          close();
+        });
+    });
+    button.addEventListener('keydown', (event) => event.key === 'Escape' && close());
+    return button;
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  for (const listbox of [false, true]) {
+    it(`picks from ${listbox ? 'a list box' : 'a menu'} at the end of the page`, async () => {
+      const button = gemDropdown(listbox);
+      expect(
+        await pickFromCombobox(button, (texts) => texts.find((text) => /decline/i.test(text)) ?? null),
+      ).toBe('Decline to self-identify');
+      expect(button.textContent).toBe('Decline to self-identify');
+      expect(document.querySelector('#floating-ui-portal')).toBeNull();
+    });
+  }
+
+  it('reads the choices and closes the menu again', async () => {
+    const button = gemDropdown(false);
+    expect(await readComboboxOptions(button)).toEqual(['Male', 'Female', 'Decline to self-identify']);
+    expect(document.querySelector('#floating-ui-portal')).toBeNull();
+    expect(button.textContent).toBe('Please select');
   });
 });

@@ -177,7 +177,8 @@ export function isFilled(handle: Handle): boolean {
         (button) =>
           button.getAttribute('aria-pressed') === 'true' ||
           button.getAttribute('aria-checked') === 'true' ||
-          /selected|active/.test(button.className),
+          // Not "unselected", nor Gem's "interactiveButton", which every button of a rating carries.
+          /(?<![a-z])(selected|active)/.test(button.className),
       );
   }
 }

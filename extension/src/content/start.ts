@@ -27,12 +27,17 @@ export async function startFrame(ctx: ContentScriptContext, startOpen: boolean):
   if (window === window.top) await mountCard(ctx, startOpen);
   const adapter = adapterFor(location.href);
   if (adapter.ats === 'generic') return;
+  const tell = () => void toBackground('frame:form', {}).catch(() => undefined);
   const stop = watchForForm(
     document,
     () => `${location.href}\n${adapter.step?.(document) ?? ''}`,
     // What the card will read: a form with fields in it, not just the page that will hold one.
     () => extractFields(adapter, document, 0).fields.length > 0,
-    () => void toBackground('frame:form', {}).catch(() => undefined),
+    () => {
+      tell();
+      // Told again, the card reads the page again.
+      void adapter.postingLate?.(document).then((late) => late && tell());
+    },
   );
   ctx.onInvalidated(stop);
 }

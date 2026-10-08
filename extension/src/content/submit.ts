@@ -41,8 +41,10 @@ export function watchSubmission(
 
   const onSubmit = () => attempt();
   const onClick = (event: MouseEvent) => {
-    const button = adapter.submitButton(doc);
-    if (button && event.target instanceof Node && button.contains(event.target)) attempt();
+    const { target } = event;
+    if (!(target instanceof Node)) return;
+    const buttons = [adapter.submitButton(doc)].flat();
+    if (buttons.some((button) => button?.contains(target))) attempt();
   };
 
   doc.addEventListener('submit', onSubmit, true);

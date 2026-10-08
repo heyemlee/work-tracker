@@ -1,4 +1,5 @@
 import { ashby } from './ashby';
+import { gem } from './gem';
 import { generic } from './generic';
 import { greenhouse } from './greenhouse';
 import { lever } from './lever';
@@ -13,6 +14,7 @@ export function adapterFor(url: string): Adapter {
   if (isUnder(host, 'greenhouse.io')) return greenhouse;
   if (isUnder(host, 'lever.co')) return lever;
   if (host === 'jobs.ashbyhq.com') return ashby;
+  if (host === 'jobs.gem.com') return gem;
   if (isUnder(host, 'myworkdayjobs.com') || isUnder(host, 'myworkdaysite.com')) return workday;
   if (isUnder(host, 'linkedin.com')) return linkedin;
   return generic;

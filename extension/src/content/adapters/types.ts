@@ -53,7 +53,8 @@ export interface Adapter {
   skip?(control: Element): boolean;
   /** Fields drawn with custom widgets. Controls they cover are skipped by generic extraction. */
   custom?(form: Element): CustomField[];
-  submitButton(doc: Document): HTMLElement | null;
+  /** The button that sends the application, or the buttons where the page has more than one way to send it. */
+  submitButton(doc: Document): HTMLElement | HTMLElement[] | null;
   /** The page shows that an application went through. */
   confirmed(doc: Document, url: string): boolean;
   /** Waits after a field is filled until the page has taken the answer in, before the next field is touched. */
@@ -66,6 +67,11 @@ export interface Adapter {
   resumeRead?(doc: Document): Promise<void>;
   /** Workday's step name ("My Information"). */
   step?(doc: Document): string | null;
+  /**
+   * Resolves true if the posting came to be told more fully after the form was drawn: Gem writes the company's own
+   * name into the page a moment later. The card then reads the page again.
+   */
+  postingLate?(doc: Document): Promise<boolean>;
   /**
    * Gets the form ready before it's read: Workday shows no work-experience or education entries until "Add" is
    * pressed once per entry. Resolves true when it changed the page.

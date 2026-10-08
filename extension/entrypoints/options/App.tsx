@@ -392,6 +392,7 @@ const ATS_NAMES: Record<Ats, string> = {
   lever: 'Lever',
   ashby: 'Ashby',
   workday: 'Workday',
+  gem: 'Gem',
   linkedin: 'LinkedIn',
   generic: '',
 };

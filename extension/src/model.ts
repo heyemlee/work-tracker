@@ -1,5 +1,5 @@
 /** The applicant-tracking system a page belongs to. `generic` is any other site. */
-export type Ats = 'greenhouse' | 'lever' | 'ashby' | 'workday' | 'linkedin' | 'generic';
+export type Ats = 'greenhouse' | 'lever' | 'ashby' | 'workday' | 'gem' | 'linkedin' | 'generic';
 
 export type FieldKind =
   | 'text'

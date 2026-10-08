@@ -237,8 +237,25 @@ does Ashby, whose page says nothing of when it's through.
 | Lever      | `jobs.lever.co`, EU                                            | Plain HTML form; a thank-you page after submit             |
 | Ashby      | `jobs.ashbyhq.com`, embeds                                     | React; yes/no buttons; posting from `window.__appData`     |
 | Workday    | `*.myworkdayjobs.com`, `*.myworkdaysite.com`                   | One Fill per page; built from `data-automation-id` names   |
+| Gem        | `jobs.gem.com`                                                 | React, no `<form>`; fields named by the text beside them   |
 | LinkedIn   | `linkedin.com/jobs`                                            | No filling: Log to Outbox                                  |
 | Other      | Any                                                            | Dictionary only; card opens on a form with a resume upload |
+
+**Gem** (added 2026-10-07, after the card stayed away from an 11x posting) draws its form without a `<form>` tag, and
+its controls carry no name, id, label or `aria-label`: a question is a block with its text in one element and the
+control after it. Nothing generic could tell that page for an application or name a field on it, so Gem has an adapter
+(`adapters/gem.ts`) that reads every field from its block — text and long text, radios and checkboxes (which share no
+`name` there: the block is what groups them), uploads, a 1-to-5 rating drawn as buttons, and dropdowns. A dropdown is
+a bare button whose list is drawn at the end of the page while it is open (floating-ui): a list box for a posting's
+own questions, a `menu` of menu items for the voluntary questions. Text shown between questions has no control and is
+no field. The company comes from the posting data the page writes for search engines, else from the board's name in
+the address ("11x Ai" for 11x.ai); the page writes that data a moment after it draws the form, so the form's frame
+tells of its form once more when the data has come, and the card reads the page again (`postingLate`). Gem has two
+buttons that send an application, "Apply and save" and "Apply without saving", and its confirmation takes the form's
+place on the same address. Its class names are a component's rule name and a counter (`bodyImportant-47`), so the
+adapter matches the names. Tried on Gem's own page code served locally with a stand-in for its API, on a made-up
+posting holding each of its fields and kinds of question: Fill, the owner's own changes kept by "Fill again", and a
+press of its button through to the log.
 
 **The job's country** comes from the posting's location: a US state or city anywhere in it means the US ("San
 Francisco; London"), otherwise the country or large city abroad it names ("Belgrade" is Serbia; "Dublin, CA" stays
@@ -352,13 +369,14 @@ looking, its window goes into that frame as well, and appears in place as the se
 - **Unit** (Vitest, happy-dom): the dictionary, the critical-question rules, the match scan, the setters, each adapter
   on fixtures, submission detection.
 - **Fixtures:** 22 public application pages saved as served — 10 Greenhouse (4 of them embedded on a company's
-  site), 6 Lever, and 6 Ashby rendered in Chromium — plus 646 questions from about 115 public postings, whose
+  site), 6 Lever, and 6 Ashby rendered in Chromium — and one page Gem's code drew from a made-up posting with
+  each kind of question it has, plus 646 questions from about 115 public postings, whose
   answers are snapshot-tested. Workday's forms sit behind sign-in, so they come from the owner's snapshots.
 - **Fill accuracy** — answers correct over answers expected, and required fields filled, per system — is reported,
   gated in CI, and quoted in the README. Every expected answer was checked by hand. With rules only: Greenhouse
   172/172 (87% of required fields filled), Lever 115/115 (79%), Ashby 78/78 (77%).
 - **End to end** (Playwright): the built extension in Chromium against fixtures served on the real hosts through
-  request interception, logging to a mock Outbox: Greenhouse and Lever fill → submit → logged, Ashby fill.
+  request interception, logging to a mock Outbox: Greenhouse, Lever and Gem fill → submit → logged, Ashby fill.
   Playwright can't look into a closed shadow root any more than a page can, so the specs drive a build of their
   own: the one Chrome loads with the card's root left open and nothing else changed (`wxt.e2e.config.ts`), made as
   a run starts, in `.output/chrome-mv3-e2e`. One spec (`e2e/reach.spec.ts`) takes the build Chrome loads and tries

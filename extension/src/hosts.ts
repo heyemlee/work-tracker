@@ -7,6 +7,7 @@ export const ATS_MATCHES = [
   '*://jobs.lever.co/*',
   '*://jobs.eu.lever.co/*',
   '*://jobs.ashbyhq.com/*',
+  '*://jobs.gem.com/*',
   '*://*.myworkdayjobs.com/*',
   '*://*.myworkdaysite.com/*',
   '*://www.linkedin.com/jobs/*',

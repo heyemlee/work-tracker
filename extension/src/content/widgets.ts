@@ -88,13 +88,17 @@ function listboxFor(input: HTMLElement): HTMLElement | null {
     ) ?? input.parentElement;
   const near = container?.querySelector<HTMLElement>('[role="listbox"], .select__menu, [class*="menu"]');
   if (near) return near;
-  return doc.querySelector<HTMLElement>('[role="listbox"]:not([hidden])');
+  return (
+    doc.querySelector<HTMLElement>('[role="listbox"]:not([hidden])') ??
+    // A menu drawn apart from its button, at the end of the page, while it is open: Gem's dropdowns.
+    doc.querySelector<HTMLElement>('[data-floating-ui-portal] :is(menu, [role="menu"])')
+  );
 }
 
 function optionsIn(listbox: HTMLElement): HTMLElement[] {
   const found = [
     ...listbox.querySelectorAll<HTMLElement>(
-      '[role="option"], [data-automation-id="promptOption"], .select__option',
+      '[role="option"], [role="menuitem"], [data-automation-id="promptOption"], .select__option',
     ),
   ];
   return found.filter((option) => !isHidden(option));
