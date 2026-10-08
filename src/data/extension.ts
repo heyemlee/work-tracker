@@ -107,7 +107,7 @@ export function useExtension({ watch = false }: { watch?: boolean } = {}): Exten
   return useSyncExternalStore(subscribe, () => info);
 }
 
-/** Opens the extension's settings page in a new tab. Does nothing without the extension. */
+/** Has the extension show its settings, in a window of its own over this page. Does nothing without the extension. */
 export function openExtensionOptions(): void {
   send({ source: FROM_PAGE, type: 'open-options' });
 }

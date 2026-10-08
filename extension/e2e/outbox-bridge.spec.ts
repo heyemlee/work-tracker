@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test';
+import { expect, type BrowserContext } from '@playwright/test';
 import { seed, test } from './harness';
 
 // Outbox's profile page can't reach the extension itself: it asks through the content script on Outbox, which
@@ -12,12 +12,8 @@ const PAGE = `<!doctype html><title>Outbox</title><script>
 
 type Reply = { type: string; [key: string]: unknown };
 
-test('answers Outbox’s page: whether it can read a resume, and why not', async ({
-  context,
-  worker,
-  outbox,
-}) => {
-  await seed(worker, outbox.url);
+/** Outbox's page, open and signed out: what the extension answered it so far, and a way to ask it more. */
+async function openOutbox(context: BrowserContext) {
   await context.route('https://tracker.haoyang.us/**', (route) => {
     const signedOut = new URL(route.request().url()).pathname.startsWith('/api/');
     return signedOut
@@ -31,8 +27,18 @@ test('answers Outbox’s page: whether it can read a resume, and why not', async
       (message) => window.postMessage({ source: 'outbox-page', ...message }, location.origin),
       message,
     );
-
   await page.goto('https://tracker.haoyang.us/');
+  return { page, replies, ask };
+}
+
+test('answers Outbox’s page: whether it can read a resume, and why not', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  const { replies, ask } = await openOutbox(context);
+
   // The seeded settings have AI turned off.
   await expect
     .poll(replies)
@@ -66,4 +72,44 @@ test('answers Outbox’s page: whether it can read a resume, and why not', async
     error: 'no-key',
     detail: '',
   });
+});
+
+test('shows its settings over Outbox’s page when asked there, not in a tab', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  const { page, replies, ask } = await openOutbox(context);
+  const hellos = async () => (await replies()).filter((reply) => reply.type === 'hello');
+  // The seeded settings have AI turned off.
+  await expect.poll(hellos).toEqual([expect.objectContaining({ readiness: 'ai-off' })]);
+
+  await ask({ type: 'open-options' });
+  // The extension's own page in a frame, in a window of its own over Outbox: no tab opens, and no card.
+  const settings = page.frameLocator('outbox-autofill iframe');
+  await expect(settings.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  await expect(page.locator('outbox-autofill .card')).toHaveCount(0);
+  expect(context.pages()).toHaveLength(2);
+  // Asked again, it stays the one window.
+  await ask({ type: 'open-options' });
+  await ask({ type: 'ping' });
+  await expect.poll(hellos).toHaveLength(2);
+  await expect(page.locator('outbox-autofill')).toHaveCount(1);
+
+  // What's changed there reaches the page as the window closes, without its asking.
+  await settings.getByRole('tab', { name: 'AI' }).click();
+  await settings.getByRole('switch', { name: 'Use AI' }).click();
+  await settings.getByRole('button', { name: 'Close' }).click();
+  await expect(page.locator('outbox-autofill')).toHaveCount(0);
+  await expect.poll(async () => (await hellos()).at(-1)).toMatchObject({ readiness: 'no-key' });
+  expect(context.pages()).toHaveLength(2);
+
+  // Closed, the window opens again. Keys go to it from the start, and Escape closes it.
+  await ask({ type: 'open-options' });
+  await expect(settings.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => document.activeElement?.localName)).toBe('outbox-autofill');
+  // The key on its way down only: the frame it would come up in is gone by then.
+  await page.keyboard.down('Escape');
+  await expect(page.locator('outbox-autofill')).toHaveCount(0);
 });

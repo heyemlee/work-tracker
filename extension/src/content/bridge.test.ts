@@ -44,12 +44,23 @@ describe('the bridge to Outbox’s page', () => {
     expect(posted).toEqual([hello, hello]);
   });
 
-  it('opens its settings when the page asks', async () => {
-    const openOptions = vi.fn(async () => undefined);
-    const { send } = page({ openOptions });
+  it('shows its settings when the page asks, and says hello again once they’re closed', async () => {
+    let close = () => {};
+    const openOptions = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          close = resolve;
+        }),
+    );
+    const { posted, send } = page({ openOptions });
     send({ source: FROM_PAGE, type: 'open-options' });
     await settle();
     expect(openOptions).toHaveBeenCalledOnce();
+    // The hello it starts with, and nothing more while the settings are open.
+    expect(posted).toHaveLength(1);
+    close();
+    await settle();
+    expect(posted.map((message) => message.type)).toEqual(['hello', 'hello']);
   });
 
   it('reads a resume and answers with the same id', async () => {

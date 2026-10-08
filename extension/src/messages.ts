@@ -136,7 +136,7 @@ export interface ToBackground {
   /** Saves the posting for later: a job on Outbox with no applications. */
   'card:save': { request: Record<string, never>; response: CardState };
   'card:undo': { request: Record<string, never>; response: CardState };
-  /** Opens the settings in a tab of their own: for Outbox's page, and where a page won't take the window's frame. */
+  /** Opens the settings in a tab of their own: where a page won't take the window or its frame. */
   'card:options': { request: Record<string, never>; response: void };
   /** The card is about to show the settings in its window: a ticket for the framed page to draw with. */
   'settings:open': { request: Record<string, never>; response: { ticket: string } };

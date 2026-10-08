@@ -41,7 +41,7 @@ works. Still the single column and the floating glass toolbar; still the owner's
 ### Extension
 
 - [x] Bridge: Outbox can open the extension's settings, and learns its version and whether it has logged an
-      application.
+      application. The settings open in their window over Outbox's page, not in a tab (2026-10-07).
 - [x] Card on a posting without a form: Save for later (a saved job) and Mark as applied; LinkedIn keeps Mark as
       applied first. A saved posting says so when it's opened again. Undo.
 

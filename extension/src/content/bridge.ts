@@ -10,12 +10,13 @@ import type { BridgeStatus, ToBackground } from '../messages';
 export interface BridgeBackend {
   status(): Promise<BridgeStatus | undefined>;
   parse(pdf: string, text: string): Promise<ToBackground['resume:parse']['response'] | undefined>;
+  /** Shows the settings; settles once they're closed. */
   openOptions(): Promise<void>;
 }
 
 /**
  * Answers Outbox's page, which can't reach the extension itself: whether a resume can be read (and the version, and
- * whether an application was logged, for its setup checklist), the read resume, and opening the settings where the
+ * whether an application was logged, for its setup checklist), the read resume, and showing the settings where the
  * key goes. Only messages from this window and origin count. Returns a function that stops listening.
  */
 export function startBridge(win: Window, backend: BridgeBackend): () => void {
@@ -45,7 +46,8 @@ export function startBridge(win: Window, backend: BridgeBackend): () => void {
     } | null;
     if (!data || data.source !== FROM_PAGE) return;
     if (data.type === 'ping') void hello();
-    if (data.type === 'open-options') void backend.openOptions().catch(() => undefined);
+    // What the settings changed (a key added, AI turned on) reaches the page as they close.
+    if (data.type === 'open-options') void backend.openOptions().then(hello, () => undefined);
     if (data.type !== 'parse-resume' || typeof data.id !== 'string' || typeof data.pdf !== 'string') return;
     const id = data.id;
     const fail = (error: 'too-large' | 'failed' | 'no-key' | 'ai-off', detail = '') =>
