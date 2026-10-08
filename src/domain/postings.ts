@@ -38,6 +38,7 @@ const PATH_BOARDS = new Set([
   'jobs.lever.co',
   'jobs.eu.lever.co',
   'jobs.ashbyhq.com',
+  'jobs.gem.com',
   'jobs.smartrecruiters.com',
   'apply.workable.com',
   'jobs.jobvite.com',

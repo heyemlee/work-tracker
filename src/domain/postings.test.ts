@@ -17,6 +17,7 @@ describe('parsePosting', () => {
     ['https://boards.greenhouse.io/embed/job_app?for=figma&token=5230541004', 'figma'],
     ['https://jobs.lever.co/scale-ai/0f1e2d3c-aaaa-bbbb-cccc-1234567890ab', 'scale-ai'],
     ['https://jobs.ashbyhq.com/openai/2c4b6d8f-1111-2222-3333-444455556666', 'openai'],
+    ['https://jobs.gem.com/11x-ai/am9icG9zdDr2DjIQ3bPcrRLp0z2TjYKi', '11x-ai'],
     ['https://jobs.smartrecruiters.com/Visa/744000081234567-software-engineer', 'Visa'],
     ['https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Santa-Clara/X_JR1', 'nvidia'],
     ['https://wd1.myworkdaysite.com/recruiting/snapchat/snap/job/Palo-Alto/X_R1', 'snapchat'],
