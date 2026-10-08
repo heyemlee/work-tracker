@@ -246,12 +246,25 @@ the posting for as long as its address is the same. A choice goes into the contr
 read (`choiceAt` in `content/apply.ts`): the controls stay as they were, and only read otherwise. And what the owner
 answers is remembered in the page's words (`readAnswer`). The words aren't kept from one step of a form or one address
 to the next, nor for a control that comes to read otherwise a second time or has another number of choices, since a
-page may draw another question in the same control. A form translated before it is first read has only the
-translation to go by, and fills as poorly as it did: the card reads a form within half a second of its being drawn,
-which is before a translation that starts with the page and after one that was on already. Tried on Ashby's own page
-code served locally, with Chrome's own translation switched on in the specs' browser (which sends the made-up page's
-text to Google, so that run isn't one of the specs): the translation arriving in the middle of a fill and before one,
-each followed by "Fill again".
+page may draw another question in the same control.
+
+That leaves a form translated before it is first read, which has only the translation to go by: one drawn into a
+page already shown translated is reworded within a tenth of a second (words the page has shown before, within a
+hundredth), and the card reads it half a second on. So the form is kept out of the translation (the owner's choice,
+the same day: the form stays as the page wrote it, and the rest of the page is translated as they asked).
+`leaveUntranslated` in `content/words.ts` puts the page's own mark, `translate="no"`, on the adapter's form in the
+turn it is drawn in, on applicant-tracking hosts; on any other site finding the form takes a look over the whole
+page, so there it is marked each time it is read. And while the extension itself works the page, filling it or
+reading a dropdown's choices, the mark is on the page's body too (`holdTranslation`): the lists a fill opens are
+often drawn at the end of the page, outside the form. Once the body's mark comes off, the translation takes up what
+it skipped, by itself; the form's stays on. The page's words kept above are then for what was translated all the
+same: a form the browser had translated before the extension came to the page.
+
+Tried on Ashby's own page code served locally, with Chrome's own translation switched on in the specs' browser (which
+sends the made-up page's text to Google, so that run isn't one of the specs): the translation arriving in the middle
+of a fill, before one, and before the form is drawn, each followed by "Fill again"; and on the saved Lever,
+Greenhouse and Gem pages, whose forms are in the document from the start and were marked before the translation's
+first pass, some 0.9 s after the page was asked for.
 
 The card's two choices are told apart (same day, same report): choosing an account took the resume out of the tab's
 session, the card's message naming one of the two and the service worker reading it as naming both, while the card

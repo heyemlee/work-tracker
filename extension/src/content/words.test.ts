@@ -1,6 +1,6 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Posting, ScannedField } from '../model';
-import { isTranslated, ownWords } from './words';
+import { holdTranslation, isTranslated, leaveUntranslated, ownWords } from './words';
 
 const field = (
   id: string,
@@ -164,5 +164,83 @@ describe('the page’s own words', () => {
     // Another posting, in the same document: read as it is.
     const other = posting('数据工程师', 'https://jobs.ashbyhq.com/acme/2');
     expect(read(words, [], { posting: other }).posting?.title).toBe('数据工程师');
+  });
+});
+
+describe('a form the browser’s translation is to leave alone', () => {
+  const form = (doc: Document) => doc.querySelector('form.application');
+  const marked = () => document.querySelector('form.application')?.getAttribute('translate');
+  let stop = () => {};
+
+  afterEach(() => {
+    stop();
+    document.body.innerHTML = '';
+  });
+
+  it('is marked where it stands, and nothing else of the page is', () => {
+    document.body.innerHTML =
+      '<main><h1>Software Engineer</h1><form class="application"><input></form></main>';
+    stop = leaveUntranslated(document, form);
+    expect(marked()).toBe('no');
+    expect(document.querySelectorAll('[translate]')).toHaveLength(1);
+  });
+
+  it('is marked in the turn it is drawn in, and again when the page draws it anew', async () => {
+    document.body.innerHTML = '<main><h1>Software Engineer</h1></main>';
+    stop = leaveUntranslated(document, form);
+    const draw = () => {
+      document
+        .querySelector('main')!
+        .insertAdjacentHTML('beforeend', '<form class="application"><input></form>');
+    };
+    draw();
+    // Not a timer later: the translation of what a page draws comes within a fraction of a second.
+    await Promise.resolve();
+    expect(marked()).toBe('no');
+
+    document.querySelector('form.application')!.remove();
+    draw();
+    expect(marked()).toBeNull();
+    await Promise.resolve();
+    expect(marked()).toBe('no');
+  });
+
+  it('is left to the page once that is asked', async () => {
+    document.body.innerHTML = '<main></main>';
+    stop = leaveUntranslated(document, form);
+    stop();
+    document.querySelector('main')!.innerHTML = '<form class="application"><input></form>';
+    await vi.waitFor(() => expect(document.querySelector('form.application')).not.toBeNull());
+    await Promise.resolve();
+    expect(marked()).toBeNull();
+  });
+});
+
+describe('the translation held off while the page is worked', () => {
+  afterEach(() => document.body.removeAttribute('translate'));
+
+  it('marks the body for that while, and leaves it as the page had it', () => {
+    const letGo = holdTranslation(document);
+    expect(document.body.getAttribute('translate')).toBe('no');
+    letGo();
+    expect(document.body.hasAttribute('translate')).toBe(false);
+
+    document.body.setAttribute('translate', 'yes');
+    const again = holdTranslation(document);
+    expect(document.body.getAttribute('translate')).toBe('no');
+    again();
+    expect(document.body.getAttribute('translate')).toBe('yes');
+  });
+
+  it('holds until the last of several at once has let go', () => {
+    const fill = holdTranslation(document);
+    const options = holdTranslation(document);
+    fill();
+    expect(document.body.getAttribute('translate')).toBe('no');
+    // Letting go twice counts once.
+    fill();
+    expect(document.body.getAttribute('translate')).toBe('no');
+    options();
+    expect(document.body.hasAttribute('translate')).toBe(false);
   });
 });

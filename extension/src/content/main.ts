@@ -9,7 +9,7 @@ import { heldBy, shownValue, watchHeld } from './held';
 import { formSnapshot } from './snapshot';
 import { watchSubmission } from './submit';
 import { fileFromBase64, readComboboxOptions } from './widgets';
-import { ownWords } from './words';
+import { holdTranslation, leaveUntranslated, ownWords } from './words';
 
 /** How the page moves to a field: gliding, unless the owner's system asks for less motion. */
 const glide = (): ScrollBehavior =>
@@ -53,8 +53,11 @@ export function startContent(): () => void {
     attached.get(handle.element) === answer.resumeId;
 
   // The page's own words, for a page the browser translates: answers are planned on them, put in by them and
-  // remembered in them.
+  // remembered in them. An applicant-tracking form is kept out of the translation from the turn it is drawn in;
+  // on any other site finding the form takes a look over the whole page, so it is marked as it is read.
   const words = ownWords(document);
+  const stopMarking =
+    adapter.ats === 'generic' ? () => {} : leaveUntranslated(document, (doc) => adapter.form(doc));
 
   const unchanged = (handle: Handle, answer: Answer) =>
     handle.type !== 'file' &&
@@ -82,6 +85,7 @@ export function startContent(): () => void {
     prepare: { experience: number; education: number } | null,
   ): Promise<FrameScan> {
     const form = adapter.form(document);
+    form?.setAttribute('translate', 'no');
     if (form && prepare && adapter.prepare && (await adapter.prepare(form, prepare))) await sleep(300);
     extraction = extractFields(adapter, document, frameId, ids);
     const reading = {
@@ -118,6 +122,8 @@ export function startContent(): () => void {
     );
     // The fill's results say what it put where; the page is looked at again once it's through.
     held?.pause();
+    // The lists it opens are read as the page words them.
+    const letGo = holdTranslation(document);
     try {
       for (const entry of ordered) {
         const handle = extraction.handles.get(entry.fieldId);
@@ -162,6 +168,7 @@ export function startContent(): () => void {
         if (adapter.settle && (!before || shownValue(handle) !== before)) await adapter.settle();
       }
     } finally {
+      letGo();
       held?.resume();
     }
     return results;
@@ -186,9 +193,14 @@ export function startContent(): () => void {
           return fill(message.fields);
         case 'frame:options': {
           const options: Record<string, string[]> = {};
-          for (const id of message.fieldIds) {
-            const handle = extraction?.handles.get(id);
-            if (handle?.type === 'combobox') options[id] = await readComboboxOptions(handle.element);
+          const letGo = holdTranslation(document);
+          try {
+            for (const id of message.fieldIds) {
+              const handle = extraction?.handles.get(id);
+              if (handle?.type === 'combobox') options[id] = await readComboboxOptions(handle.element);
+            }
+          } finally {
+            letGo();
           }
           return options;
         }
@@ -229,5 +241,6 @@ export function startContent(): () => void {
   return () => {
     held?.stop();
     stopSubmission();
+    stopMarking();
   };
 }

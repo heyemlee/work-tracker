@@ -449,6 +449,14 @@ describe('a page the browser translates after it was read', () => {
     document.documentElement.className = '';
   });
 
+  it('has its form marked as not for translating, as it is read', async () => {
+    const ask = start();
+    document.body.innerHTML = VOLUNTARY;
+    expect(document.querySelector('form')?.hasAttribute('translate')).toBe(false);
+    await ask<FrameScan>({ type: 'frame:scan', frameId: 0, prepare: null });
+    expect(document.querySelector('form')?.getAttribute('translate')).toBe('no');
+  });
+
   it('is read, filled and told of in the page’s own words', async () => {
     const ask = start();
     document.body.innerHTML = VOLUNTARY;
