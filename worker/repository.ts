@@ -122,16 +122,6 @@ export function createD1Repository(db: Db, userId: Id, clock: Clock = systemCloc
     if (first) await db.batch([first, ...rest]);
   }
 
-  async function liveJob(id: Id): Promise<Job> {
-    const row = await db
-      .select()
-      .from(t.jobs)
-      .where(and(eq(t.jobs.id, id), eq(t.jobs.userId, userId), isNull(t.jobs.deletedAt)))
-      .get();
-    if (!row) throw new NotFoundError('Job', id);
-    return toJob(row);
-  }
-
   async function liveApplication(id: Id): Promise<Application> {
     const row = await db
       .select({ application: t.applications })
@@ -143,36 +133,76 @@ export function createD1Repository(db: Db, userId: Id, clock: Clock = systemCloc
     return toApplication(row.application);
   }
 
-  async function requireAccounts(ids: Id[]) {
-    if (ids.length === 0) return;
-    const rows = await db
-      .select({ id: t.identities.id })
-      .from(t.identities)
-      .where(and(eq(t.identities.userId, userId), inArray(t.identities.id, ids)))
-      .all();
-    const found = new Set(rows.map((row) => row.id));
-    const missing = ids.find((id) => !found.has(id));
-    if (missing) throw new NotFoundError('Account', missing);
-  }
-
-  /** Channel and resume ids must be built in or belong to this user. */
-  async function requireReferences(channelId: Id | null | undefined, resumeId: Id | null | undefined) {
-    if (channelId && !isBuiltinChannel(channelId)) {
-      const row = await db
-        .select({ id: t.channels.id })
-        .from(t.channels)
-        .where(and(eq(t.channels.id, channelId), eq(t.channels.userId, userId)))
-        .get();
-      if (!row) throw new NotFoundError('Channel', channelId);
-    }
-    if (resumeId) {
-      const row = await db
-        .select({ id: t.resumes.id })
-        .from(t.resumes)
-        .where(and(eq(t.resumes.id, resumeId), eq(t.resumes.userId, userId)))
-        .get();
-      if (!row) throw new NotFoundError('Resume', resumeId);
-    }
+  /** Independent ownership checks share one D1 round trip; no write starts until they all pass. */
+  async function requireReferences({
+    jobId,
+    accountIds = [],
+    channelId,
+    resumeId,
+  }: {
+    jobId?: Id | null;
+    accountIds?: Id[];
+    channelId?: Id | null;
+    resumeId?: Id | null;
+  }) {
+    const checks = [
+      ...(jobId
+        ? [
+            {
+              what: 'Job',
+              ids: [jobId],
+              query: db
+                .select({ id: t.jobs.id })
+                .from(t.jobs)
+                .where(and(eq(t.jobs.id, jobId), eq(t.jobs.userId, userId), isNull(t.jobs.deletedAt))),
+            },
+          ]
+        : []),
+      ...(accountIds.length
+        ? [
+            {
+              what: 'Account',
+              ids: accountIds,
+              query: db
+                .select({ id: t.identities.id })
+                .from(t.identities)
+                .where(and(eq(t.identities.userId, userId), inArray(t.identities.id, accountIds))),
+            },
+          ]
+        : []),
+      ...(channelId && !isBuiltinChannel(channelId)
+        ? [
+            {
+              what: 'Channel',
+              ids: [channelId],
+              query: db
+                .select({ id: t.channels.id })
+                .from(t.channels)
+                .where(and(eq(t.channels.id, channelId), eq(t.channels.userId, userId))),
+            },
+          ]
+        : []),
+      ...(resumeId
+        ? [
+            {
+              what: 'Resume',
+              ids: [resumeId],
+              query: db
+                .select({ id: t.resumes.id })
+                .from(t.resumes)
+                .where(and(eq(t.resumes.id, resumeId), eq(t.resumes.userId, userId))),
+            },
+          ]
+        : []),
+    ];
+    const [first, ...rest] = checks;
+    if (!first) return;
+    const results = await db.batch([first.query, ...rest.map((check) => check.query)]);
+    checks.forEach((check, at) => {
+      const found = new Set(results[at]?.map((row) => row.id));
+      const missing = check.ids.find((id) => !found.has(id));
+      if (missing) throw new NotFoundError(check.what, missing);
+    });
   }
 
   async function applyChange(change: ApplicationChange | null) {
@@ -252,29 +282,28 @@ export function createD1Repository(db: Db, userId: Id, clock: Clock = systemCloc
     },
 
     async quickAdd(input) {
-      if (input.jobId) await liveJob(input.jobId);
-      await requireAccounts(input.accountIds);
-      await requireReferences(input.channelId, input.resumeId);
-
-      const existingCompany = input.jobId
-        ? undefined
-        : await db
-            .select()
-            .from(t.companies)
-            .where(
-              and(
-                eq(t.companies.userId, userId),
-                eq(t.companies.normalizedName, normalizeCompanyName(input.companyName)),
-              ),
-            )
-            .get();
-      const taken = input.jobId
-        ? await db
-            .select({ accountId: t.applications.accountId })
-            .from(t.applications)
-            .where(and(eq(t.applications.userId, userId), eq(t.applications.jobId, input.jobId)))
-            .all()
-        : [];
+      const [, existingCompany, taken] = await Promise.all([
+        requireReferences(input),
+        input.jobId
+          ? undefined
+          : db
+              .select()
+              .from(t.companies)
+              .where(
+                and(
+                  eq(t.companies.userId, userId),
+                  eq(t.companies.normalizedName, normalizeCompanyName(input.companyName)),
+                ),
+              )
+              .get(),
+        input.jobId
+          ? db
+              .select({ accountId: t.applications.accountId })
+              .from(t.applications)
+              .where(and(eq(t.applications.userId, userId), eq(t.applications.jobId, input.jobId)))
+              .all()
+          : [],
+      ]);
 
       const plan = planQuickAdd(
         input,
@@ -343,14 +372,14 @@ export function createD1Repository(db: Db, userId: Id, clock: Clock = systemCloc
     },
 
     async addApplication(input) {
-      await liveJob(input.jobId);
-      await requireAccounts([input.accountId]);
-      await requireReferences(input.channelId, input.resumeId);
-      const existing = await db
-        .select({ id: t.applications.id })
-        .from(t.applications)
-        .where(and(eq(t.applications.jobId, input.jobId), eq(t.applications.accountId, input.accountId)))
-        .get();
+      const [, existing] = await Promise.all([
+        requireReferences({ ...input, accountIds: [input.accountId] }),
+        db
+          .select({ id: t.applications.id })
+          .from(t.applications)
+          .where(and(eq(t.applications.jobId, input.jobId), eq(t.applications.accountId, input.accountId)))
+          .get(),
+      ]);
       if (existing) throw new ConflictError('This account already applied to this job');
 
       const { application, event } = planAddApplication(input, clock);
@@ -379,7 +408,7 @@ export function createD1Repository(db: Db, userId: Id, clock: Clock = systemCloc
 
     async updateApplication(id, patch) {
       await liveApplication(id);
-      await requireReferences(patch.channelId, patch.resumeId);
+      await requireReferences(patch);
       await db
         .update(t.applications)
         .set({ ...patch, updatedAt: clock.now() })
@@ -387,19 +416,21 @@ export function createD1Repository(db: Db, userId: Id, clock: Clock = systemCloc
     },
 
     async updateJob(id, patch) {
-      await liveJob(id);
-      await db
+      const updated = await db
         .update(t.jobs)
         .set({ ...patch, updatedAt: clock.now() })
-        .where(and(eq(t.jobs.id, id), eq(t.jobs.userId, userId)));
+        .where(and(eq(t.jobs.id, id), eq(t.jobs.userId, userId), isNull(t.jobs.deletedAt)))
+        .returning({ id: t.jobs.id });
+      if (updated.length === 0) throw new NotFoundError('Job', id);
     },
 
     async deleteJob(id) {
-      await liveJob(id);
-      await db
+      const deleted = await db
         .update(t.jobs)
         .set({ deletedAt: clock.now() })
-        .where(and(eq(t.jobs.id, id), eq(t.jobs.userId, userId)));
+        .where(and(eq(t.jobs.id, id), eq(t.jobs.userId, userId), isNull(t.jobs.deletedAt)))
+        .returning({ id: t.jobs.id });
+      if (deleted.length === 0) throw new NotFoundError('Job', id);
     },
 
     async restoreJob(id) {

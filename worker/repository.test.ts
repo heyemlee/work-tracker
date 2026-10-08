@@ -89,6 +89,37 @@ describe('D1 repository isolation', () => {
     await bob.quickAdd(input(await bob.saveAccount({ label: 'B', email: '', color: 'teal' })));
     expect((await bob.load()).companies.map((c) => c.name)).toEqual(['Northwind AI']);
   });
+
+  it('validates every batched reference before creating a job or application', async () => {
+    const alice = createD1Repository(db, await newUser());
+    const bob = createD1Repository(db, await newUser());
+    const accountId = await bob.saveAccount({ label: 'B', email: '', color: 'blue' });
+    const aliceResume = await alice.saveResume({ name: 'Private' });
+    const aliceChannel = await alice.saveChannel({ name: 'Private' });
+    const { jobId } = await bob.quickAdd({ ...input(accountId), accountIds: [] });
+    const initial = await bob.load();
+
+    for (const reference of [{ resumeId: aliceResume }, { channelId: aliceChannel }]) {
+      await expect(bob.quickAdd({ ...input(accountId), ...reference })).rejects.toBeInstanceOf(NotFoundError);
+      await expect(
+        bob.addApplication({
+          jobId,
+          accountId,
+          channelId: null,
+          resumeId: null,
+          appliedAt: '2026-09-01',
+          ...reference,
+        }),
+      ).rejects.toBeInstanceOf(NotFoundError);
+      expect(await bob.load()).toEqual(initial);
+    }
+
+    await bob.deleteJob(jobId);
+    await expect(bob.quickAdd({ ...input(accountId), jobId })).rejects.toBeInstanceOf(NotFoundError);
+    await expect(bob.updateJob(jobId, { title: 'Deleted' })).rejects.toBeInstanceOf(NotFoundError);
+    await expect(bob.deleteJob(jobId)).rejects.toBeInstanceOf(NotFoundError);
+    await expect(alice.updateJob(jobId, { title: 'Someone else’s' })).rejects.toBeInstanceOf(NotFoundError);
+  });
 });
 
 describe('D1 resume files', () => {
