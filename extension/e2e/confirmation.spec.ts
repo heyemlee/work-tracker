@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import { fixture, seed, serve, test } from './harness';
 
 // An application that went through, told where the page's words can't be gone by: reworded by the browser before
-// they are read, or worded by the company itself.
+// they are read, worded by the company itself, or in the page's own other language.
 
 /**
  * Stands in for the browser's own page translation, which a spec can't switch on (it sends the page's text to a
@@ -139,4 +139,76 @@ test('logs an Ashby application the company thanks for in words of its own', asy
     accountIds: ['acc-1'],
   });
   await expect(card.getByText('Logged to Outbox')).toBeVisible();
+});
+
+/**
+ * Workday's forms sit behind a sign-in, so no page of its own is saved here. These two are drawn as its page code
+ * (read 2026-10-08) has them: the last step of an application, with its progress bar and the button at its foot,
+ * and the page someone signed in is taken to once the application is in, which draws what it says a moment after
+ * it loads. Both in Chinese, as Workday shows them to a browser set to it.
+ */
+const WORKDAY = 'acme.wd5.myworkdayjobs.com';
+const BOARD = '/zh-CN/External';
+const LAST_STEP = `<!doctype html><html lang="zh-CN"><head><title>审核</title></head><body><div id="root">
+<div data-automation-id="applyFlowPage">
+  <h2 data-automation-id="jobTitleHeading">Software Engineer</h2>
+  <div data-automation-id="progressBar">
+    <div data-automation-id="progressBarCompletedStep"><label>我的信息</label></div>
+    <div data-automation-id="progressBarActiveStep"><label>审核</label></div>
+  </div>
+  <div data-automation-id="formField-email"><label for="email">电子邮件地址*</label>
+    <input id="email" data-automation-id="email" type="text" value="alex@example.com"></div>
+  <div data-automation-id="pageFooter"><button type="button" data-automation-id="pageFooterBackButton">返回</button>
+    <button type="button" data-automation-id="pageFooterNextButton">提交</button></div>
+</div></div>
+<script>
+  document.querySelector('[data-automation-id="pageFooterNextButton"]').addEventListener('click', () =>
+    setTimeout(() => {
+      window.location.pathname = '${BOARD}/jobTasks/completed/application';
+    }, 300),
+  );
+</script></body></html>`;
+const TASKS = `<!doctype html><html lang="zh-CN"><head><title></title></head><body><div id="root"></div>
+<script>
+  setTimeout(() => {
+    document.querySelector('#root').innerHTML = '<h2>候选人主页</h2><p id="done">我们已收到您的申请。</p>';
+  }, 1000);
+</script></body></html>`;
+
+test('logs a Workday application sent in the page’s own Chinese, on the page it is taken to', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  await context.route(`https://${WORKDAY}/**`, (route) =>
+    route.fulfill({
+      contentType: 'text/html; charset=utf-8',
+      body: new URL(route.request().url()).pathname.includes('/jobTasks/') ? TASKS : LAST_STEP,
+    }),
+  );
+  const page = await context.newPage();
+  const posting = `https://${WORKDAY}${BOARD}/job/San-Jose-CA/Software-Engineer_R123`;
+  await page.goto(`${posting}/apply/applyManually`);
+
+  const card = page.locator('outbox-autofill');
+  await expect(card.getByRole('button', { name: /^Fill/ })).toBeVisible({ timeout: 15_000 });
+  await page.locator('[data-automation-id="pageFooterNextButton"]').click();
+
+  await page.waitForURL(/\/jobTasks\/completed\/application$/);
+  await expect.poll(() => outbox.quickAdds.length, { timeout: 15_000 }).toBe(1);
+  expect(outbox.quickAdds[0]).toMatchObject({
+    companyName: 'Acme',
+    title: 'Software Engineer',
+    url: posting,
+    accountIds: ['acc-1'],
+  });
+  // The card says so on that page, which names no posting itself, and goes on saying so once the page has drawn
+  // what it has to say in its own time and language: that tells of nothing more.
+  await expect(card.getByText('Logged to Outbox')).toBeVisible();
+  await expect(page.locator('#done')).toBeVisible();
+  await page.waitForTimeout(1500);
+  await expect(card.getByText('Logged to Outbox')).toBeVisible();
+  await expect(card.getByText('Acme · Software Engineer')).toBeVisible();
+  expect(outbox.quickAdds).toHaveLength(1);
 });

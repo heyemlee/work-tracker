@@ -470,10 +470,11 @@ a posting there shows a note. It is a note, not a block.
   an adapter is any page but the one with the form, so one that takes that page's place in the tab; and LinkedIn's
   Easy Apply, whose card has the Log button.
 - **How a page says so** (`confirmed` in each adapter). By its address, where the system has one for it:
-  Greenhouse's `/confirmation` and Lever's `/thanks`. By what takes the form's place: on Ashby the box its code
-  draws there (`ashby-application-form-success-container`), whose words are the company's to choose. By its words
-  otherwise: Gem's "Your application for … has been received" in the form's box, and the like on Workday and on a
-  site without an adapter. Words are the weakest of the three
+  Greenhouse's `/confirmation`, Lever's `/thanks`, and Workday's `/jobTasks/completed/application`, where someone
+  signed in is taken once the application is in. By what takes the form's place: on Ashby the box its code draws
+  there (`ashby-application-form-success-container`), whose words are the company's to choose. By its words
+  otherwise: Gem's "Your application for … has been received" in the form's box, the note Workday draws for someone
+  applying without an account, a thank-you on a site without an adapter. Words are the weakest of the three
   (2026-10-08). They hold for one language and one wording, and a page the browser translates has them reworded
   between 70 and 170 ms after it draws them, while the page was looked at every 600 ms: on a careers page whose
   thank-you takes the form's place, with Chrome's own translation on, 2 applications of 12 were logged, the two
@@ -487,6 +488,21 @@ a posting there shows a note. It is a note, not a block.
   stored session for the newer and lost the sending, so nothing was logged: the content script now tells of a
   confirmation once the sending has been answered, and a session read while another flow changes it is the changed
   one (`getSession` in `background/session.ts`).
+- **Workday** ends an application on another page than its form's, which wasn't known until 2026-10-08. Its page
+  code (`candidate-experience-apply-flow` on its CDN, read that day) takes someone signed in to
+  `…/jobTasks/completed/application`, a page that loads empty and is drawn by script after that, in the page's
+  language: after the one look the content script takes of a page it starts on, so a confirmation there was never
+  seen, and the dialog the adapter had looked for isn't in the code of the form's pages. The address tells now.
+  That page names no posting, and the card reads every page it comes up on: read as another posting's, it took
+  the log and its Undo off the card whenever that reading came after the log, and left the buttons of a posting
+  without a name. So the page a confirmation was told on stays the application's (`confirmedOn` in the tab's
+  session, kept by `readTab` while the page names no posting of its own). The press that sends the application
+  is told without its word too: the one button at the foot of every step (`pageFooterNextButton`) sends it on the
+  last, the step the progress bar shows none after (`progressBarInactiveStep`), and says "Submit" only where
+  Workday is in English, while some of the owner's Workday forms came in Chinese. The button and the bar are
+  inside the element kept out of the browser's translation. All of this is read from Workday's code and tried on
+  stand-ins drawn after it, not on an application: its forms sit behind a sign-in, and what the page after it
+  says wasn't seen.
 - **Which account.** The one whose email the form held as it was sent, whichever the card had chosen: the owner may
   have typed another's, or the site or another tool put one there. The emails are read from the form at the press
   of Submit (`emailsIn`), not from an earlier reading of it, which a page that has drawn its fields anew since would
@@ -547,8 +563,8 @@ looking, its window goes into that frame as well, and appears in place as the se
   a Greenhouse form filled in by hand → submit → logged under the account its email names, and two postings
   applied to from one document, each logged;
   an application logged though its thank-you is reworded a moment after it's drawn (a stand-in for the browser's
-  translation, which a spec can't switch on: it sends the page to a translator), and an Ashby one the company
-  thanks for in its own words;
+  translation, which a spec can't switch on: it sends the page to a translator), an Ashby one the company thanks
+  for in its own words, and a Workday one sent in Chinese and told on the page it's taken to;
   on Gem also the resume taken out at its ✕ and attached again, and a file dropped in by hand kept.
   Playwright can't look into a closed shadow root any more than a page can, so the specs drive a build of their
   own: the one Chrome loads with the card's root left open and nothing else changed (`wxt.e2e.config.ts`), made as

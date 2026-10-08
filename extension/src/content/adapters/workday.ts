@@ -8,7 +8,8 @@ import type { Adapter, CustomField } from './types';
 /**
  * Workday names nearly every control with `data-automation-id`, and those names have held steady across tenants.
  * Its forms sit behind a sign-in, so this adapter is written from those conventions and refined from the snapshots
- * the owner saves with "This page didn't fill right".
+ * the owner saves with "This page didn't fill right". The foot of a step, the progress bar and where an application
+ * ends are as its own page code has them (candidate-experience-apply-flow, read 2026-10-08).
  */
 
 const auto = (element: Element | null) => element?.getAttribute('data-automation-id') ?? '';
@@ -253,14 +254,27 @@ export const workday: Adapter = {
     return changed;
   },
 
-  submitButton: (doc) =>
-    [
-      ...doc.querySelectorAll<HTMLElement>(
-        'button[data-automation-id="bottom-navigation-next-button"], button[data-automation-id="pageFooterNextButton"]',
-      ),
-    ].find((button) => /submit/i.test(textOf(button))) ?? null,
+  // One button at the foot of every step moves the application on, and on the last step it sends it. The last step
+  // is the one the progress bar shows no step after. The button's own word for sending is in the page's language
+  // ("Submit" in English), so it tells only where no bar is drawn.
+  submitButton(doc) {
+    const last =
+      doc.querySelector('[data-automation-id="progressBarActiveStep"]') !== null &&
+      doc.querySelector('[data-automation-id="progressBarInactiveStep"]') === null;
+    return (
+      [
+        ...doc.querySelectorAll<HTMLElement>(
+          'button[data-automation-id="bottom-navigation-next-button"], button[data-automation-id="pageFooterNextButton"]',
+        ),
+      ].find((button) => last || /submit/i.test(textOf(button))) ?? null
+    );
+  },
 
-  confirmed(doc) {
+  // Once the application is in, someone signed in is taken to a page of their own tasks, at an address that says
+  // so: what that page says comes a moment after it loads, in the page's language. Someone applying without an
+  // account gets a note on the job board instead, which is told by its words.
+  confirmed(doc, url) {
+    if (/\/jobTasks\/completed\/application\/?$/.test(new URL(url).pathname)) return true;
     const text = textOf(
       doc.querySelector('[data-automation-id="applicationSubmittedDialog"], [role="dialog"], main, body'),
     ).slice(0, 4000);

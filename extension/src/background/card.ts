@@ -257,17 +257,24 @@ export async function readTab(tabId: number, url: string): Promise<CardState> {
   const session = await updateSession(tabId, url, (current) => {
     // Workday keeps one address across its steps: the step's name tells them apart.
     const samePage = current.url === url && current.step === found.step;
+    // The page an application was seen to end on may be at another address and name no posting: Workday takes
+    // the applicant to a page of their own tasks. It is still that application's page, and the posting stands.
+    const ended =
+      current.confirmedOn !== null && linkKey(current.confirmedOn) === linkKey(url) && !found.posting?.title;
     // Another posting in this tab starts over; its confirmation page (same posting) keeps the log and its Undo.
-    const samePosting = Boolean(
-      current.posting && found.posting && linkKey(found.posting.url) === linkKey(current.posting.url),
-    );
+    const samePosting =
+      ended ||
+      Boolean(
+        current.posting && found.posting && linkKey(found.posting.url) === linkKey(current.posting.url),
+      );
     return {
       url,
       ...found,
-      jobId: job?.job.id ?? null,
+      ...(ended ? { ats: current.ats, posting: current.posting } : {}),
+      jobId: ended ? current.jobId : (job?.job.id ?? null),
       accountId,
       resumeId,
-      match,
+      match: ended ? current.match : match,
       // A new page (another Workday step) starts a fresh checklist.
       plan: samePage ? current.plan : [],
       results: samePage ? current.results : {},
@@ -277,6 +284,7 @@ export async function readTab(tabId: number, url: string): Promise<CardState> {
       submittedAt: samePosting ? current.submittedAt : null,
       captured: samePosting ? current.captured : [],
       emails: samePosting ? current.emails : [],
+      confirmedOn: samePosting ? current.confirmedOn : null,
       error: null,
     };
   });
@@ -608,6 +616,8 @@ export async function submitConfirmed(tabId: number, url: string): Promise<void>
   const filledHere =
     session.plan.length > 0 && session.posting !== null && url.startsWith(session.posting.url);
   if (!sent && !filledHere) return;
+  // From here on the page that said so is this application's, whenever the card reads it (`readTab`).
+  await updateSession(tabId, url, () => ({ confirmedOn: url }));
   await logApplication(tabId, url, false);
 }
 

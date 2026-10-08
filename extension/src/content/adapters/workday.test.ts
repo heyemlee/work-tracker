@@ -199,3 +199,80 @@ describe('workday pages from snapshots', () => {
     expect(shot?.html).not.toContain('aria-label');
   });
 });
+
+// The last things of a step as Workday's own page code draws them (read 2026-10-08): the progress bar with a step
+// for each page of the application, and at the foot one button that moves it on, worded in the page's language.
+const step = (bar: ('Completed' | 'Active' | 'Inactive')[], next: string) => `
+<div data-automation-id="applyFlowPage">
+  ${
+    bar.length
+      ? `<div data-automation-id="progressBar">${bar
+          .map((kind) => `<div data-automation-id="progressBar${kind}Step"><label>A step</label></div>`)
+          .join('')}</div>`
+      : ''
+  }
+  <div data-automation-id="formField-email"><label for="email">Email Address*</label><input id="email" data-automation-id="email"></div>
+  <div data-automation-id="pageFooter">
+    <button data-automation-id="pageFooterBackButton">Back</button>
+    <button data-automation-id="pageFooterNextButton">${next}</button>
+  </div>
+</div>`;
+
+describe('sending a Workday application', () => {
+  const sends = (bar: Parameters<typeof step>[0], next: string) => {
+    document.body.innerHTML = step(bar, next);
+    return workday.submitButton(document);
+  };
+  const button = () => document.querySelector('[data-automation-id="pageFooterNextButton"]');
+
+  it('is the press of the button at the foot of the last step, whatever language it is worded in', () => {
+    for (const word of ['Submit', '提交', 'Envoyer']) {
+      expect(sends(['Completed', 'Completed', 'Active'], word), word).toBe(button());
+    }
+    // An application of one step.
+    expect(sends(['Active'], '提交')).toBe(button());
+  });
+
+  it('is no press of it while a step is left', () => {
+    for (const word of ['Save and Continue', '保存并继续', 'Next']) {
+      expect(sends(['Completed', 'Active', 'Inactive'], word), word).toBeNull();
+    }
+  });
+
+  it('is told by the button’s word where no progress bar is drawn', () => {
+    expect(sends([], 'Submit')).toBe(button());
+    expect(sends([], 'Save and Continue')).toBeNull();
+  });
+});
+
+describe('a Workday application that went through', () => {
+  const site = 'https://acme.wd1.myworkdayjobs.com/en-US/Careers';
+
+  it('is told by the address someone signed in is taken to, before that page has drawn a word', () => {
+    document.body.innerHTML = '<div id="root"></div>';
+    expect(workday.confirmed(document, `${site}/jobTasks/completed/application`)).toBe(true);
+    expect(workday.confirmed(document, `${site}/jobTasks/completed/application/?source=LinkedIn`)).toBe(true);
+  });
+
+  it('is none at the other addresses of a job board', () => {
+    document.body.innerHTML = '<div id="root"></div>';
+    for (const path of [
+      '',
+      '/userHome',
+      '/jobTasks/completed/questionnaire',
+      '/job/Santa-Clara/Software-Engineer_JR123',
+      '/job/Santa-Clara/Software-Engineer_JR123/apply/applyManually',
+    ]) {
+      expect(workday.confirmed(document, `${site}${path}`), path).toBe(false);
+    }
+  });
+
+  it('is told by the words of the note someone applying without an account gets', () => {
+    document.body.innerHTML =
+      '<div id="root"><h2>Search for Jobs</h2></div>' +
+      '<div role="dialog"><h2>Congratulations!</h2><p>Your application has successfully been submitted.</p></div>';
+    expect(workday.confirmed(document, `${site}?Job_Application_ID=abc123`)).toBe(true);
+    document.body.innerHTML = step(['Completed', 'Active'], 'Submit');
+    expect(workday.confirmed(document, `${site}/job/Santa-Clara/Software-Engineer_JR123/apply`)).toBe(false);
+  });
+});

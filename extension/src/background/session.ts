@@ -31,6 +31,8 @@ export interface TabSession {
   captured: CapturedAnswer[];
   /** The emails the form held as the owner sent it: the account applying is the one they name. */
   emails: string[];
+  /** The address of the page that said the application went through: that page is the application's. */
+  confirmedOn: string | null;
   logged: { result: QuickAddResult; undone: boolean; manual: boolean } | null;
   saved: { result: QuickAddResult; undone: boolean } | null;
 }
@@ -60,6 +62,7 @@ export function emptySession(tabId: number, url: string): TabSession {
     submittedAt: null,
     captured: [],
     emails: [],
+    confirmedOn: null,
     logged: null,
     saved: null,
   };
