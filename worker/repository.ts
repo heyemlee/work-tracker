@@ -234,14 +234,20 @@ export function createD1Repository(db: Db, userId: Id, clock: Clock = systemCloc
     },
 
     async loadEvents(jobId) {
-      await liveJob(jobId);
-      const rows = await db
-        .select()
-        .from(t.events)
-        .where(and(eq(t.events.userId, userId), eq(t.events.jobId, jobId)))
-        // Newest first; among same-instant events, the one recorded last comes first.
-        .orderBy(desc(t.events.at), desc(sql`rowid`))
-        .all();
+      // Asked for on every job opened: whose job it is and its timeline come in one round trip.
+      const [owned, rows] = await db.batch([
+        db
+          .select({ id: t.jobs.id })
+          .from(t.jobs)
+          .where(and(eq(t.jobs.id, jobId), eq(t.jobs.userId, userId), isNull(t.jobs.deletedAt))),
+        db
+          .select()
+          .from(t.events)
+          .where(and(eq(t.events.userId, userId), eq(t.events.jobId, jobId)))
+          // Newest first; among same-instant events, the one recorded last comes first.
+          .orderBy(desc(t.events.at), desc(sql`rowid`)),
+      ]);
+      if (owned.length === 0) throw new NotFoundError('Job', jobId);
       return rows.map(toEvent);
     },
 
