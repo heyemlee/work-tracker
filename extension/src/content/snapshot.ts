@@ -42,6 +42,8 @@ export function formSnapshot(
   for (const element of copy.querySelectorAll('[aria-pressed="true"], [aria-checked="true"]')) {
     element.setAttribute(element.hasAttribute('aria-pressed') ? 'aria-pressed' : 'aria-checked', 'false');
   }
+  // And what only the page's adapter knows to hold an answer.
+  adapter.blank?.(copy);
   const location = doc.location;
   return {
     ats: adapter.ats,

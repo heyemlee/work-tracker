@@ -85,4 +85,9 @@ export interface Adapter {
    * pressed once per entry. Resolves true when it changed the page.
    */
   prepare?(form: Element, counts: { experience: number; education: number }): Promise<boolean>;
+  /**
+   * Takes out of a copy of the form, made for a fill report, the answers the page keeps in markup of its own, where
+   * emptying the inputs doesn't reach: on Gem a dropdown is a bare button that reads its pick.
+   */
+  blank?(form: Element): void;
 }

@@ -18,6 +18,14 @@ const FILE = '[class*="fileContainer"] > :not(button)';
 /** What a dropdown's button says while nothing is chosen. */
 const PROMPT = /^(please select|select an option)$/i;
 
+/**
+ * The box of the fields and the posting's own questions. The voluntary questions come after it, and their dropdowns
+ * prompt in the other words.
+ */
+const QUESTIONS = '[class^="form-"], [class*=" form-"]';
+/** The circle or box Gem draws for a choice, in the label after its input: filled in while the choice is taken. */
+const MARK = 'input[type="radio"] + label > span, input[type="checkbox"] + label > span';
+
 /** The block of the question a label heads; null for text shown between questions, which has no control. */
 function blockOf(label: Element): Element | null {
   for (let node = label.parentElement; node && !node.matches(FORM); node = node.parentElement) {
@@ -99,6 +107,54 @@ function fieldOf(label: Element): CustomField | null {
       };
 }
 
+/** Every field of the form, each read from its block. */
+const fieldsOf = (form: Element) =>
+  [...form.querySelectorAll(LABEL)].flatMap((label) => {
+    const field = fieldOf(label);
+    return field ? [field] : [];
+  });
+
+/** The class an element has from a rule of Gem's stylesheet: "secondary-133" from the rule "secondary". */
+const ruleClass = (element: Element, rule: string) =>
+  [...element.classList].find((name) => name.startsWith(`${rule}-`));
+
+/**
+ * Takes the answers out of a copy of the form, for a fill report. Gem keeps them in markup of its own, where
+ * emptying the inputs doesn't reach, and each goes back to what Gem draws for a question still unanswered.
+ */
+function blank(form: Element): void {
+  // A long answer is repeated on the box round its textarea, which grows to fit the text.
+  for (const box of form.querySelectorAll('[data-value]')) box.setAttribute('data-value', '');
+  // A file an upload holds is named over its box, and the box offers to replace it.
+  for (const named of form.querySelectorAll('[class*="fileContainer"]')) named.remove();
+  for (const offer of form.querySelectorAll('[class*="promptText"]'))
+    offer.textContent = (offer.textContent ?? '').replace('Click to replace', 'Click to upload');
+  // A choice's mark is left bare, the same whether the choice was taken or not: its first class makes it a circle
+  // or a box, and the others, with what's drawn inside it, tell a taken one from the rest.
+  for (const mark of form.querySelectorAll(MARK)) {
+    mark.className = mark.classList.item(0) ?? '';
+    mark.replaceChildren();
+  }
+  // Bare buttons are told apart by their block, as they are when the form is read.
+  for (const { handle, anchor } of fieldsOf(form)) {
+    if (handle.type === 'combobox' && !PROMPT.test(textOf(handle.element))) {
+      // A dropdown's button reads its pick. It prompts again: left empty, it would pass for one that holds a pick.
+      const says = handle.element.querySelector('[class*="buttonContentContainer"]') ?? handle.element;
+      for (const node of [...says.childNodes]) if (node.nodeType === Node.TEXT_NODE) node.remove();
+      says.prepend(anchor.closest(QUESTIONS) ? 'Select an option' : 'Please select');
+    } else if (handle.type === 'buttons') {
+      // A rating's number, once pressed, is "selected", and a "primary" button where the others are "secondary".
+      const idle = handle.buttons.find((button) => !button.classList.contains('selected'));
+      const plain = idle && ruleClass(idle, 'secondary');
+      for (const button of handle.buttons) {
+        const pressed = ruleClass(button, 'primary');
+        if (pressed && plain) button.classList.replace(pressed, plain);
+        button.classList.remove('selected');
+      }
+    }
+  }
+}
+
 /** The posting as Gem describes it to search engines, where the board has that turned on. */
 function structured(doc: Document): { title?: string; hiringOrganization?: { name?: string } } | null {
   for (const script of doc.querySelectorAll('script[type="application/ld+json"]')) {
@@ -146,11 +202,9 @@ export const gem: Adapter = {
   // Nothing here names itself: every field is read from its block.
   skip: () => true,
 
-  custom: (form) =>
-    [...form.querySelectorAll(LABEL)].flatMap((label) => {
-      const field = fieldOf(label);
-      return field ? [field] : [];
-    }),
+  custom: fieldsOf,
+
+  blank,
 
   // The form is drawn first, and the posting's data for search engines once the page has asked whether the board
   // gives any: until then the company is known by the board's name in the address ("11x Ai" for 11x.ai).

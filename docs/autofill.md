@@ -297,6 +297,19 @@ problems: pressed again on the same form, the newer snapshot
 takes the older one's place, and a snapshot leaves the list when a build that fixes it is loaded — its id goes into
 `src/background/fixed.ts` with the fix.
 
+Emptying the inputs doesn't take every value out of a page that keeps answers in markup of its own, so an adapter
+can finish the job on the snapshot's copy of the form (`blank`). Gem's does (2026-10-08). There a dropdown is a
+button that reads its pick, a radio's circle, a checkbox's box and a rating's number are drawn in the look of the one
+taken, a long answer is repeated on the box that grows with it (`data-value`), and an attached file is named over its
+upload: a snapshot of a Gem page kept all of these, the voluntary answers among them, and lost only what was typed
+into a one-line field. Each now goes back to what Gem draws for a question still unanswered — a dropdown to its
+prompt (with no text, its button would read as holding a pick), a pressed number to the look of the others, the
+file's line gone and its box offering to upload again — and a choice's circle or box is left bare, the same whether
+the choice was taken or not. The snapshot of an answered Gem page is then the snapshot of that page unanswered, and
+reads back as the same fields with nothing filled in. Tried on Gem's own page code as above: a form answered by Fill
+and by hand (text, a long answer, three files, a radio, ticked boxes, both kinds of dropdown, a rating) saves what
+the same form saves before any of it.
+
 ## 6. AI
 
 - Claude is called from the service worker with `@anthropic-ai/sdk` — not through the Worker, so the free Workers
