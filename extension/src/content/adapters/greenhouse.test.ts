@@ -4,6 +4,7 @@ import { pickOption } from '../../rules/options';
 import { loadFixture } from '../../test/fixtures';
 import { makeProfile } from '../../test/profiles';
 import { extractFields } from '../extract';
+import { formSnapshot } from '../snapshot';
 import { greenhouse } from './greenhouse';
 
 describe('greenhouse', () => {
@@ -136,5 +137,100 @@ describe('greenhouse education', () => {
       { type: 'text', text: '2025' },
       { type: 'text', text: 'Two weeks after an offer' },
     ]);
+  });
+});
+
+// What "This page didn't fill right" saves of a Greenhouse page. The saved page has none of Greenhouse's code, so
+// each answer is drawn here as that code drew it on its own page, served from this machine (2026-10-08).
+describe('a fill report of a Greenhouse page', () => {
+  const url = 'https://job-boards.greenhouse.io/embed/job_app?for=stripe&token=8044460';
+  const page = () => loadFixture('greenhouse/stripe-embed.html', url);
+  const report = (doc: Document) => formSnapshot(greenhouse, doc, extractFields(greenhouse, doc, 0), [])!;
+
+  /** The phone box as intl-tel-input draws it round the input, once the page's code has run. */
+  function phone(doc: Document, country: { name: string; code: string; flag: string } | null): void {
+    const input = doc.querySelector('#phone')!;
+    const box = doc.createElement('div');
+    box.className = 'iti iti--allow-dropdown iti--show-flags iti--inline-dropdown';
+    input.replaceWith(box);
+    box.innerHTML =
+      '<div class="iti__country-container" style="left: 0px;"><button type="button" class="iti__selected-country"' +
+      ` aria-expanded="false" aria-label="${country ? `Change country, selected ${country.name} (${country.code})` : 'Select country'}"` +
+      ` aria-haspopup="dialog" aria-controls="iti-0__dropdown-content" title="${country?.name ?? 'Select country'}">` +
+      `<div class="iti__selected-country-primary"><div class="iti__flag iti__${country?.flag ?? 'globe'}"></div>` +
+      '<div class="iti__arrow" aria-hidden="true"></div></div></button></div>';
+    box.append(input);
+  }
+
+  /** A file an upload holds: named where its buttons were, with a button to take it off. */
+  function attach(doc: Document, field: string, name: string): void {
+    doc.querySelector(`[aria-labelledby="upload-label-${field}"] .file-upload__wrapper`)!.innerHTML =
+      '<div class="file-upload__filename"><svg class="svg-icon" viewBox="0 0 24 24"></svg>' +
+      `<p class="body body__secondary">${name}</p><button type="button" class="icon-button icon-button--sm"` +
+      ' aria-label="Remove file"><svg class="svg-icon" viewBox="0 0 24 24"></svg></button></div>';
+  }
+
+  /** Answers one question of each kind whose answer Greenhouse keeps in markup of its own. */
+  function answer(doc: Document): void {
+    // Typed text: React keeps the input's value attribute in step with it.
+    const first = doc.querySelector<HTMLInputElement>('#first_name')!;
+    first.value = 'Alexandra';
+    first.setAttribute('value', 'Alexandra');
+    // A dropdown's pick, where its prompt was.
+    const box = doc.getElementById('gender')!.closest('.select__value-container')!;
+    box.classList.add('select__value-container--has-value');
+    box.querySelector('.select__placeholder')!.outerHTML =
+      '<div class="select__single-value remix-css-1dimb5e-singleValue">Decline To Self Identify</div>';
+    phone(doc, { name: 'United Kingdom', code: '+44', flag: 'gb' });
+    attach(doc, 'resume', 'Alex_Chen_Resume.pdf');
+    attach(doc, 'cover_letter', 'Alex_Chen_Cover_Letter.pdf');
+  }
+
+  it('names neither an attached file nor the country of the phone number', () => {
+    const doc = page();
+    answer(doc);
+    const { html } = report(doc);
+    for (const text of [
+      'Alexandra',
+      'Decline To Self Identify',
+      'Alex_Chen',
+      'United Kingdom',
+      '+44',
+      'iti__gb',
+    ])
+      expect(html).not.toContain(text);
+    // An upload still shows that it holds a file, as a dropdown shows that it holds a pick: not which.
+    const saved = document.implementation.createHTMLDocument('');
+    saved.body.innerHTML = html;
+    expect([...saved.querySelectorAll('.file-upload__filename')].map((line) => line.innerHTML)).toEqual([
+      '',
+      '',
+    ]);
+    expect(
+      saved.querySelector('.select__value-container--has-value .select__single-value')?.textContent,
+    ).toBe('');
+  });
+
+  it('saves the phone box the same with a country chosen as with none', () => {
+    const chosen = page();
+    phone(chosen, { name: 'United Kingdom', code: '+44', flag: 'gb' });
+    const none = page();
+    phone(none, null);
+    expect(report(chosen).html).toBe(report(none).html);
+  });
+
+  it('still reads as the form it was', () => {
+    const doc = page();
+    answer(doc);
+    const saved = document.implementation.createHTMLDocument('');
+    saved.body.innerHTML = report(doc).html;
+    const read = (from: Document) =>
+      extractFields(greenhouse, from, 0).fields.map(({ label, kind, options, required }) => ({
+        label,
+        kind,
+        options,
+        required,
+      }));
+    expect(read(saved)).toEqual(read(doc));
   });
 });

@@ -310,6 +310,31 @@ reads back as the same fields with nothing filled in. Tried on Gem's own page co
 and by hand (text, a long answer, three files, a radio, ticked boxes, both kinds of dropdown, a rating) saves what
 the same form saves before any of it.
 
+The other sites were checked the same way the same day, each on its own page code: a report saved before anything
+was answered against one saved after Fill and after every kind of control the page has was answered by hand.
+
+- **Greenhouse** (four postings' pages: text, long text, dropdowns that take one pick or several, the city and
+  school searches, a checkbox group, two uploads, the voluntary questions) kept two things. The name of each
+  attached file, in a line of its own where the upload's buttons were (`file-upload__filename`); and the country of
+  the phone number, which intl-tel-input writes on its button as a tooltip, as a label for screen readers and as
+  the class of a flag. The snapshot takes both out itself now, with no adapter's help: a file's name wherever a
+  class says "filename" (Lever's already was), and what intl-tel-input's button says wherever that library is.
+  What react-select repeats of its search box (`data-value`) and tells a screen reader ("option …, selected") is on
+  the page only while the dropdown has the focus, and a press on the card takes the focus away: neither was in any
+  report, whether the form was the page itself or sat in a frame on a company's site.
+- **Lever** (two postings' pages) keeps its answers in plain controls, which a copy of the markup doesn't hold,
+  but for the list it draws with select2 (the school): the pick stood in the report as text and again as a
+  tooltip. The snapshot empties that too.
+
+A report still tells that something was held, though not what: a dropdown that had a pick (react-select's
+`--has-value`, which has told the bug queue more than once that the owner had answered by hand), an upload that held
+a file on Greenhouse and Lever, a select2 list whose prompt is gone. And it shows the form as it stood, so a question
+that only comes up after a certain answer (Greenhouse's race question once "Hispanic or Latino?" is "No", the box
+under "I prefer to self describe") is in the report because it was on the page. Workday couldn't be checked this
+way: its forms sit behind a sign-in, so there is no page of its own to serve. Its dropdown buttons, chips and
+checked marks are emptied by rules written from the owner's earlier snapshots; whether its date boxes, its uploads
+or anything else keep an answer isn't known.
+
 ## 6. AI
 
 - Claude is called from the service worker with `@anthropic-ai/sdk` — not through the Worker, so the free Workers

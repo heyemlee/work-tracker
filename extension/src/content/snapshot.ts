@@ -3,9 +3,12 @@ import type { FormSnapshot } from '../storage';
 import type { Adapter } from './adapters/types';
 import type { Extraction } from './extract';
 
-/** Elements whose text shows what was typed or chosen: emptied in a snapshot. */
+/**
+ * Elements whose text shows what was typed or chosen: emptied in a snapshot. An attached file is named in an element
+ * of its own ("filename" on Lever, "file-upload__filename" on Greenhouse), and a resume's name is often the owner's.
+ */
 const SHOWS_VALUE =
-  '[class*="single-value"], [class*="multi-value"], .filename, [data-automation-id="selectedItem"], [class*="selected-value"], output';
+  '[class*="single-value"], [class*="multi-value"], [class*="filename"], [data-automation-id="selectedItem"], [class*="selected-value"], output';
 
 /**
  * The form's structure for a test fixture: labels, kinds, options, and what the extension did, with every value
@@ -33,6 +36,18 @@ export function formSnapshot(
   for (const textarea of copy.querySelectorAll('textarea')) textarea.textContent = '';
   for (const option of copy.querySelectorAll('option')) option.removeAttribute('selected');
   for (const shown of copy.querySelectorAll(SHOWS_VALUE)) shown.textContent = '';
+  // select2 (Lever's school list) shows a pick as its text and again as its tooltip; with none, it shows its prompt.
+  for (const pick of copy.querySelectorAll('.select2-selection__rendered[title]')) {
+    pick.textContent = '';
+    pick.removeAttribute('title');
+  }
+  // intl-tel-input (Greenhouse's phone box) names the number's country on its button, for a tooltip and a screen
+  // reader, and draws that country's flag by a class.
+  for (const country of copy.querySelectorAll('.iti__selected-country')) {
+    country.removeAttribute('title');
+    country.removeAttribute('aria-label');
+    for (const flag of country.querySelectorAll('.iti__flag')) flag.className = 'iti__flag';
+  }
   // Workday's dropdown buttons carry the chosen option as their text, value and label.
   for (const button of copy.querySelectorAll('button[aria-haspopup="listbox"]')) {
     button.textContent = '';
