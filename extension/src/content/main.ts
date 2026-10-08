@@ -231,11 +231,19 @@ export function startContent(): () => void {
     () => undefined,
   );
 
+  // A page may say an application went through within a moment of its being sent. The service worker logs it by
+  // the sending, so it is told of the confirmation once it has taken the sending in.
+  let sent: Promise<unknown> = Promise.resolve();
   const stopSubmission = watchSubmission(
     adapter,
     document,
-    (emails) => void toBackground('submit:attempt', { answers: capture(), emails }).catch(() => undefined),
-    () => void toBackground('submit:confirmed', { url: location.href }).catch(() => undefined),
+    (emails) => {
+      sent = toBackground('submit:attempt', { answers: capture(), emails }).catch(() => undefined);
+    },
+    () => {
+      const url = location.href;
+      void sent.then(() => toBackground('submit:confirmed', { url })).catch(() => undefined);
+    },
   );
 
   return () => {

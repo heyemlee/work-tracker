@@ -433,6 +433,39 @@ describe('what the form holds, told as it changes', () => {
   });
 });
 
+describe('a form sent, and the page saying at once that it went through', () => {
+  it('tells of the confirmation once the sending has been taken in, at the address it was seen at', async () => {
+    start();
+    document.body.innerHTML = FORM;
+    // The service worker takes a while over the sending: it may have been asleep.
+    let taken = () => {};
+    const told: string[] = [];
+    vi.mocked(fakeBrowser.runtime.sendMessage).mockImplementation(((message: {
+      type: string;
+      url?: string;
+    }) => {
+      told.push(message.url ? `${message.type} ${message.url}` : message.type);
+      return message.type === 'submit:attempt'
+        ? new Promise<void>((resolve) => (taken = resolve))
+        : Promise.resolve();
+    }) as never);
+
+    document.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    const here = location.href;
+    document.body.innerHTML = '<main><h1>Thank you for applying.</h1></main>';
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(told.filter((type) => type.startsWith('submit:'))).toEqual(['submit:attempt']);
+
+    taken();
+    await vi.waitFor(() =>
+      expect(told.filter((type) => type.startsWith('submit:'))).toEqual([
+        'submit:attempt',
+        `submit:confirmed ${here}`,
+      ]),
+    );
+  });
+});
+
 describe('a page the browser translates after it was read', () => {
   const VOLUNTARY = FORM.replace(
     '</form>',

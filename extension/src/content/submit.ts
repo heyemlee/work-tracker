@@ -29,6 +29,7 @@ export function watchSubmission(
 ): () => void {
   let confirmed = false;
   let watching: ReturnType<typeof setInterval> | null = null;
+  let since = 0;
 
   const says = () => adapter.confirmed(doc, doc.location?.href ?? '');
 
@@ -38,16 +39,30 @@ export function watchSubmission(
     onConfirmed();
   };
 
-  const startWatching = () => {
+  const look = () => {
+    if (says()) confirm();
+    if (confirmed || Date.now() - since > 120_000) stopWatching();
+  };
+
+  // A page the browser translates has what it draws put into the other language a tenth of a second or so later,
+  // and a thank-you read after that no longer says so in words the adapters know. So the page is read in the turn
+  // it draws something in as well, while the words are still its own. A look costs a fraction of a millisecond, and
+  // there are only as many as the page draws in the two minutes after a form is sent.
+  const drawn = new MutationObserver((records) => {
+    if (records.some((record) => record.type === 'characterData' || record.addedNodes.length > 0)) look();
+  });
+
+  function stopWatching(): void {
     if (watching) clearInterval(watching);
-    const started = Date.now();
-    watching = setInterval(() => {
-      if (says()) confirm();
-      if (confirmed || Date.now() - started > 120_000) {
-        if (watching) clearInterval(watching);
-        watching = null;
-      }
-    }, 600);
+    watching = null;
+    drawn.disconnect();
+  }
+
+  const startWatching = () => {
+    stopWatching();
+    since = Date.now();
+    watching = setInterval(look, 600);
+    drawn.observe(doc, { childList: true, subtree: true, characterData: true });
   };
 
   const attempt = () => {
@@ -82,6 +97,6 @@ export function watchSubmission(
   return () => {
     doc.removeEventListener('submit', onSubmit, true);
     doc.removeEventListener('click', onClick, true);
-    if (watching) clearInterval(watching);
+    stopWatching();
   };
 }

@@ -259,7 +259,9 @@ page, so there it is marked each time it is read. And while the extension itself
 reading a dropdown's choices, the mark is on the page's body too (`holdTranslation`): the lists a fill opens are
 often drawn at the end of the page, outside the form. Once the body's mark comes off, the translation takes up what
 it skipped, by itself; the form's stays on. The page's words kept above are then for what was translated all the
-same: a form the browser had translated before the extension came to the page.
+same: a form the browser had translated before the extension came to the page. What a page says once the form is
+sent is no part of the form, and is translated like the rest of the page wherever it isn't drawn inside the form's
+own element: [Logging to Outbox](#8-logging-to-outbox) says how it's read all the same.
 
 Tried on Ashby's own page code served locally, with Chrome's own translation switched on in the specs' browser (which
 sends the made-up page's text to Google, so that run isn't one of the specs): the translation arriving in the middle
@@ -467,6 +469,22 @@ a posting there shows a note. It is a note, not a block.
   unrecorded). Not seen at all: a thank-you on a page that doesn't run the content script, which on a site without
   an adapter is any page but the one with the form, so one that takes that page's place in the tab; and LinkedIn's
   Easy Apply, whose card has the Log button.
+- **How a page says so** (`confirmed` in each adapter). By its address, where the system has one for it:
+  Greenhouse's `/confirmation` and Lever's `/thanks`. By its words otherwise: Ashby's "Your application was
+  successfully submitted", Gem's "Your application for … has been received" in the form's box, and the like on
+  Workday and on a site without an adapter. Words are the weaker of the two
+  (2026-10-08). They hold for one language and one wording, and a page the browser translates has them reworded
+  between 70 and 170 ms after it draws them, while the page was looked at every 600 ms: on a careers page whose
+  thank-you takes the form's place, with Chrome's own translation on, 2 applications of 12 were logged, the two
+  whose thank-you came just before a look. So after a form is sent the page is also read in the turn it draws
+  anything in (a `MutationObserver` in `content/submit.ts`; a look takes 0.03 to 0.4 ms on the saved pages), while
+  the words are still its own: 12 of 12. A thank-you drawn inside the form's own element is under the form's mark
+  and isn't translated at all, which is why Ashby's and Gem's were recognized on a translated page before this, on
+  their own page code served locally. Read that soon, a confirmation can reach the service worker right behind the
+  sending it is logged by, where it used to come at least 600 ms after. One just woken by the two took the
+  stored session for the newer and lost the sending, so nothing was logged: the content script now tells of a
+  confirmation once the sending has been answered, and a session read while another flow changes it is the changed
+  one (`getSession` in `background/session.ts`).
 - **Which account.** The one whose email the form held as it was sent, whichever the card had chosen: the owner may
   have typed another's, or the site or another tool put one there. The emails are read from the form at the press
   of Submit (`emailsIn`), not from an earlier reading of it, which a page that has drawn its fields anew since would
@@ -526,6 +544,8 @@ looking, its window goes into that frame as well, and appears in place as the se
   request interception, logging to a mock Outbox: Greenhouse, Lever and Gem fill → submit → logged, Ashby fill;
   a Greenhouse form filled in by hand → submit → logged under the account its email names, and two postings
   applied to from one document, each logged;
+  an application logged though its thank-you is reworded a moment after it's drawn (a stand-in for the browser's
+  translation, which a spec can't switch on: it sends the page to a translator);
   on Gem also the resume taken out at its ✕ and attached again, and a file dropped in by hand kept.
   Playwright can't look into a closed shadow root any more than a page can, so the specs drive a build of their
   own: the one Chrome loads with the card's root left open and nothing else changed (`wxt.e2e.config.ts`), made as

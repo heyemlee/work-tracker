@@ -31,6 +31,7 @@ describe('watching for a submission', () => {
   });
   afterEach(() => {
     stop();
+    vi.restoreAllMocks();
     vi.useRealTimers();
     document.body.innerHTML = '';
   });
@@ -121,6 +122,69 @@ describe('watching for a submission', () => {
     document.body.innerHTML = '<h1>Thank you for applying.</h1>';
     await vi.advanceTimersByTimeAsync(3000);
     expect(confirmed).not.toHaveBeenCalled();
+  });
+
+  it('reads a thank-you in the turn the page draws it, before the browser’s translation has reworded it', async () => {
+    const confirmed = vi.fn();
+    stop = watchSubmission(adapter, document, vi.fn(), confirmed);
+    document.querySelector<HTMLElement>('#send')!.click();
+    await vi.advanceTimersByTimeAsync(100);
+
+    document.body.innerHTML = '<h1>Thank you for applying.</h1>';
+    // Chrome's translation puts its words where the page's stood within a tenth of a second: long before the page
+    // is next looked at by the clock.
+    await vi.advanceTimersByTimeAsync(80);
+    document.querySelector('h1')!.innerHTML =
+      '<font dir="auto" style="vertical-align: inherit;"><font>感谢您的申请。</font></font>';
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(confirmed).toHaveBeenCalledTimes(1);
+  });
+
+  it('looks when the page draws something, not when it only takes something away or marks it', async () => {
+    const looks = vi.spyOn(adapter, 'confirmed');
+    stop = watchSubmission(adapter, document, vi.fn(), vi.fn());
+    document.querySelector<HTMLElement>('#send')!.click();
+    await vi.advanceTimersByTimeAsync(0);
+    looks.mockClear();
+
+    document.querySelector('#name')!.remove();
+    document.querySelector('form')!.className = 'sending';
+    await vi.advanceTimersByTimeAsync(0);
+    expect(looks).not.toHaveBeenCalled();
+
+    document.body.insertAdjacentHTML('beforeend', '<p>Sending…</p>');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(looks).toHaveBeenCalledTimes(1);
+    // Words changed where they stand are drawn too.
+    document.querySelector('p')!.firstChild!.nodeValue = 'Sent.';
+    await vi.advanceTimersByTimeAsync(0);
+    expect(looks).toHaveBeenCalledTimes(2);
+  });
+
+  it('no longer looks at what the page draws once the confirmation is told, two minutes are up, or it is stopped', async () => {
+    const looks = vi.spyOn(adapter, 'confirmed');
+    const draw = async () => {
+      looks.mockClear();
+      document.body.insertAdjacentHTML('beforeend', '<p>We will be in touch.</p>');
+      await vi.advanceTimersByTimeAsync(5000);
+      return looks.mock.calls.length;
+    };
+    stop = watchSubmission(adapter, document, vi.fn(), vi.fn());
+    document.querySelector<HTMLElement>('#send')!.click();
+    document.body.insertAdjacentHTML('afterbegin', '<h1>Thank you for applying.</h1>');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(await draw()).toBe(0);
+
+    stop();
+    document.body.innerHTML = FORM;
+    stop = watchSubmission(adapter, document, vi.fn(), vi.fn());
+    document.querySelector<HTMLElement>('#send')!.click();
+    await vi.advanceTimersByTimeAsync(121_000);
+    expect(await draw()).toBe(0);
+
+    document.querySelector<HTMLElement>('#send')!.click();
+    stop();
+    expect(await draw()).toBe(0);
   });
 
   it('tells of a confirmation page it starts on: the form was sent from the page before', async () => {

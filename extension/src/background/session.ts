@@ -69,6 +69,11 @@ export async function getSession(tabId: number): Promise<TabSession | null> {
   const cached = memory.get(tabId);
   if (cached) return cached;
   const stored = await storage.getItem<TabSession>(key(tabId));
+  // A flow that changed the session while this one waited has the newer one: the stored copy read before that
+  // doesn't take its place. A service worker just woken has nothing cached, and a form's sending and the page's
+  // confirmation can reach it one behind the other.
+  const changed = memory.get(tabId);
+  if (changed) return changed;
   if (stored) memory.set(tabId, stored);
   return stored;
 }
