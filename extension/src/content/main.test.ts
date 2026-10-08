@@ -158,6 +158,44 @@ describe('filling again once the owner has gone on by hand', () => {
 });
 
 describe('filling again: what isn’t redone while it stands', () => {
+  it('does not fire page saves again for unchanged answers, but applies changes and fills cleared fields', async () => {
+    const ask = start();
+    document.body.innerHTML =
+      FORM +
+      `
+      <form><label for="location">Location</label>
+        <select id="location"><option value="">Select</option><option>California</option><option>New York</option></select>
+      </form>`;
+    // Keep the extra control in the form found by the generic adapter.
+    document.querySelector('form')!.append(document.querySelector('#location')!);
+    const changed = vi.fn();
+    document.querySelector('form')!.addEventListener('change', changed);
+    const fill = async (answers = ANSWERS, location = 'California') => {
+      const scan = await ask<FrameScan>({ type: 'frame:scan', frameId: 0, prepare: null });
+      const fields = plan(scan, answers).filter((entry) => entry.answer?.type !== 'file');
+      const select = scan.fields.find((field) => field.kind === 'select')!;
+      const entry = fields.find((field) => field.fieldId === select.id)!;
+      entry.answer = { type: 'choice', want: { kind: 'like', texts: [location] }, option: location };
+      return ask<Record<string, { ok: boolean; value?: string }>>({ type: 'frame:fill', fields });
+    };
+    await fill();
+    expect(changed).toHaveBeenCalledTimes(6);
+    changed.mockClear();
+    const repeated = await fill();
+    expect(changed).not.toHaveBeenCalled();
+    expect(Object.values(repeated).every((result) => result.ok)).toBe(true);
+
+    await fill({ ...ANSWERS, email: 'another@example.com' }, 'New York');
+    expect(changed).toHaveBeenCalledTimes(2);
+    expect(input('email').value).toBe('another@example.com');
+    expect(document.querySelector<HTMLSelectElement>('#location')!.value).toBe('New York');
+    changed.mockClear();
+    input('phone').value = '';
+    await fill({ ...ANSWERS, email: 'another@example.com' }, 'New York');
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(input('phone').value).toBe(ANSWERS.phone);
+  });
+
   const ESSAY = `
     <form>
       <label for="name">Full name</label><input id="name">

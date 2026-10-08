@@ -215,6 +215,12 @@ looked for in the dropdown's own box (`pickBox` in `content/extract.ts`). Until 
 wrapper round the search input, which react-select calls a container too, so on Greenhouse's own pages a dropdown the
 owner had answered read as empty: a fill wrote over it, and the answer wasn't remembered at submit.
 
+For ordinary answers too, a repeated fill now skips a field when both the requested answer and the value the
+page shows are unchanged. This avoids reopening dropdown searches and triggering the site's saves again. A
+changed profile or account still updates the extension's own answer; an emptied field or one whose value cannot
+be read is tried again. The content-script tests check page change events, and the browser test checks that
+repeating a Greenhouse fill does not search again for an already selected city or school.
+
 An answer can bring up another question (Greenhouse asks for race once "Hispanic or Latino?" is answered), so after
 filling the page is read again and what appeared is filled too, twice at most; a field keeps its id across reads.
 Ashby saves each answer to its server as it changes, and saves that overlap there overwrite each other — a form

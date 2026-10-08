@@ -165,6 +165,25 @@ test('searches for the city and the school, and picks the applicant’s', async 
   await expect(page.locator('[data-list="schools"] .select__single-value')).toHaveText(
     'Santa Clara University',
   );
+
+  // A second fill with the same profile must keep both picks without reopening their remote searches.
+  await page.evaluate(() => {
+    document.body.dataset.repeatSearches = '0';
+    document.addEventListener('keyup', (event) => {
+      if ((event.target as Element).matches('.select-shell input'))
+        document.body.dataset.repeatSearches = String(Number(document.body.dataset.repeatSearches) + 1);
+    });
+  });
+  await card.getByRole('button', { name: /^Fill/ }).click();
+  await expect(card.locator('.progress')).toBeVisible();
+  await expect(card.getByRole('button', { name: /^Fill/ })).toBeEnabled();
+  await expect(page.locator('body')).toHaveAttribute('data-repeat-searches', '0');
+  await expect(page.locator('[data-list="cities"] .select__single-value')).toHaveText(
+    'Santa Clara, California, United States',
+  );
+  await expect(page.locator('[data-list="schools"] .select__single-value')).toHaveText(
+    'Santa Clara University',
+  );
 });
 
 // After a fill the owner goes on by hand. This stand-in asks one thing the rules have no answer for.

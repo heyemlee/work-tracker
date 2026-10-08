@@ -32,6 +32,8 @@ export function startContent(): () => void {
   // as it left them. Any other value in the form stays: the page's, and the owner's, who may have put theirs in
   // place of this script's.
   const wrote = new WeakMap<Element, string | undefined>();
+  // Remember the request as well as the displayed value: typeaheads can show a longer label than we asked for.
+  const requested = new WeakMap<Element, string>();
   const ours = (handle: Handle) => {
     const control = controlsOf(handle).find((element) => wrote.has(element));
     return control !== undefined && wrote.get(control) === shownValue(handle);
@@ -48,6 +50,12 @@ export function startContent(): () => void {
     answer.type === 'file' &&
     ours(handle) &&
     attached.get(handle.element) === answer.resumeId;
+
+  const unchanged = (handle: Handle, answer: Answer) =>
+    handle.type !== 'file' &&
+    shownValue(handle) !== undefined &&
+    ours(handle) &&
+    controlsOf(handle).every((element) => requested.get(element) === JSON.stringify(answer));
 
   // After a fill the owner goes on by hand: what each field holds is told as it changes, for the card's list. The
   // page is watched from the first form read on it, and a page without one never is.
@@ -116,10 +124,14 @@ export function startContent(): () => void {
           results[entry.fieldId] = left({ ok: true, value: shownValue(handle) });
           continue;
         }
-        // Filling again redoes this script's own answers, except what AI wrote and a resume already attached, and
-        // except where a second pick wouldn't replace the first: a multi-select would show both ("East Asian", then
-        // "South Asian" as the nearest option left).
-        if (drafted(handle) || sameResume(handle, entry.answer) || holdsPicks(handle)) {
+        // Only redo changed requests. Reopening an unchanged dropdown needlessly searches and saves again. Keep
+        // AI drafts and attached resumes too, and multi-select picks where a second pick would append to the first.
+        if (
+          drafted(handle) ||
+          sameResume(handle, entry.answer) ||
+          holdsPicks(handle) ||
+          unchanged(handle, entry.answer)
+        ) {
           results[entry.fieldId] = left({ ok: true, value: shownValue(handle) });
           continue;
         }
@@ -133,6 +145,7 @@ export function startContent(): () => void {
         const shown = shownValue(handle);
         for (const element of controlsOf(handle)) {
           wrote.set(element, shown);
+          requested.set(element, JSON.stringify(entry.answer));
           if (entry.source === 'ai') byAi.add(element);
           else byAi.delete(element);
         }
