@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { planForm } from '../plan';
+import { loadFixture } from '../test/fixtures';
+import { makeProfile } from '../test/profiles';
+import { greenhouse } from './adapters/greenhouse';
 import type { Handle } from './adapters/types';
 import { applyAnswer, readAnswer } from './apply';
+import { extractFields } from './extract';
 
 const noFile = async () => null;
 
@@ -248,5 +253,41 @@ describe('applyAnswer', () => {
       noFile,
     );
     expect(result).toEqual({ ok: false, error: 'no matching option' });
+  });
+});
+
+// Stripe's embedded form, as saved: "countries you anticipate working in" is a group of boxes that name countries
+// in short ("UK", "US"), and the profile spells its country out.
+describe('a saved page’s boxes', () => {
+  const url = 'https://job-boards.greenhouse.io/embed/job_app?for=stripe&token=8044460';
+
+  it('ticks the applicant’s country among boxes that name it in short', async () => {
+    const doc = loadFixture('greenhouse/stripe-embed.html', url);
+    const { fields, handles } = extractFields(greenhouse, doc, 0);
+    const field = fields.find((item) => /countries you anticipate working in/.test(item.label));
+    expect(field).toMatchObject({ kind: 'multi', required: true });
+    expect(field?.options.slice(-4)).toEqual(['The Netherlands', 'UAE', 'UK', 'US']);
+    const [planned] = planForm(
+      [field!],
+      {
+        profile: makeProfile(),
+        email: 'alex@example.com',
+        resumeId: null,
+        posting: greenhouse.posting(doc, url),
+        today: '2026-10-08',
+        appliedBefore: false,
+      },
+      [],
+    );
+    expect(planned).toMatchObject({ status: 'filled', key: 'workCountries' });
+
+    const handle = handles.get(field!.id);
+    if (handle?.type !== 'multi') throw new Error('not a group of boxes');
+    expect(await applyAnswer(handle, planned!.answer!, noFile)).toEqual({ ok: true, value: 'US' });
+    const ticked = handle.inputs
+      .filter((input) => input.checked)
+      .map((input) => doc.querySelector(`label[for="${input.id}"]`)?.textContent);
+    expect(ticked).toEqual(['US']);
+    expect(readAnswer(handle)).toEqual({ type: 'choices', texts: ['US'] });
   });
 });

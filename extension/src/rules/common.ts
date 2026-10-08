@@ -86,6 +86,12 @@ export const LANGUAGE_NAMES = ['english', 'mandarin', 'chinese', 'cantonese', 's
 // ahead of "United States of America" in Workday's lists. An exact "United States" still matches on its turn.
 const COUNTRY_US = ['United States of America', 'United States', 'USA', 'US', 'U.S.', 'America'];
 
+// Other countries a list may name in short, as Stripe's does ("UK", "UAE"): each under its names, the full one first.
+const COUNTRY_NAMES = [
+  ['United Kingdom', 'UK', 'U.K.', 'Great Britain'],
+  ['United Arab Emirates', 'UAE', 'U.A.E.'],
+];
+
 const HEARD_SYNONYMS: Record<string, string[]> = {
   // Without a LinkedIn option, a job board is what LinkedIn is; the company's own site isn't.
   linkedin: [
@@ -202,6 +208,24 @@ const abroadPosting = (ctx: RuleContext) => {
 
 /** The hiring company, for "have you worked at X?" questions. */
 const company = (ctx: RuleContext) => ctx.posting?.company ?? '';
+
+/** The names a list may have for a country, in the order to look for them; a country of one name, that name. */
+function countryNames(country: string): string[] {
+  if (isUnitedStates(country)) return COUNTRY_US;
+  const name = norm(country);
+  return COUNTRY_NAMES.find((names) => names.some((other) => norm(other) === name)) ?? [country];
+}
+
+/**
+ * The applicant's country: typed, the profile's own spelling; from a list, the first of its names the list has,
+ * a dropdown's options and a group of boxes alike.
+ */
+function ownCountry(key: string, field: ScannedField, ctx: RuleContext): Resolution {
+  const country = ctx.profile.address.country;
+  if (isTextKind(field.kind)) return text(key, field, country);
+  const [name = country, ...others] = countryNames(country);
+  return text(key, field, name, others);
+}
 
 function relocationChoice(field: ScannedField, ctx: RuleContext, willing: boolean): Resolution | null {
   // Options like "Yes, I live here" / "Yes, I plan to relocate" / "No": pick by where the posting is.
@@ -379,12 +403,7 @@ export const RULES: readonly Rule[] = [
     key: 'address.country',
     test: /^country$|country of residence|what country are you (currently )?(based|located|living|residing) in|country (you|do you) (live|reside)|current country|^country region|^location country|country where you (currently )?(live|reside)/,
     not: /code|citizenship|authori/,
-    answer: (field, ctx) => {
-      const country = ctx.profile.address.country;
-      // Typed, the profile's own spelling; from a list, the names in COUNTRY_US's order.
-      if (!isUnitedStates(country) || isTextKind(field.kind)) return text('address.country', field, country);
-      return text('address.country', field, COUNTRY_US[0] ?? country, COUNTRY_US.slice(1));
-    },
+    answer: (field, ctx) => ownCountry('address.country', field, ctx),
   },
   {
     key: 'address.state',
@@ -843,7 +862,7 @@ export const RULES: readonly Rule[] = [
   {
     key: 'workCountries',
     test: /countr(y|ies) you (anticipate|plan|intend|will be|expect) (to )?(working|work)|which countr(y|ies) (will|would) you work/,
-    answer: (field, ctx) => several('workCountries', field, [ctx.profile.address.country]),
+    answer: (field, ctx) => ownCountry('workCountries', field, ctx),
   },
   // "Are you fluent in Arabic?": yes only for a language the profile lists.
   {

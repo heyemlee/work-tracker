@@ -57,8 +57,9 @@ export function choose(key: string, field: ScannedField, want: Want, options: Op
 }
 
 /**
- * A text value that adapts to the field: typed into text fields, matched against options in choice fields,
- * joined for multi-selects. Empty values leave the field empty.
+ * A text value that adapts to the field: typed into text fields, matched against options in choice fields. A group
+ * of boxes takes it as a dropdown does, in one box: the alternatives are the answer's other names ("US" for the
+ * United States), not answers of their own. Empty values leave the field empty.
  */
 export function text(
   key: string,
@@ -69,8 +70,7 @@ export function text(
 ): Resolution {
   if (!value) return empty(key, field, options.note ?? null, options.critical);
   if (isTextKind(field.kind)) return done(key, { type: 'text', text: value }, options);
-  if (field.kind === 'multi') return done(key, { type: 'choices', texts: [value, ...alternatives] }, options);
-  if (isChoiceKind(field.kind))
+  if (isChoiceKind(field.kind) || field.kind === 'multi')
     return choose(key, field, { kind: 'like', texts: [value, ...alternatives] }, options);
   if (field.kind === 'date') return empty(key, field, options.note ?? null, options.critical);
   return done(key, { type: 'text', text: value }, options);

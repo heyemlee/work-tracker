@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ScannedField } from './model';
-import { planForm } from './plan';
+import { aiCandidates, planForm } from './plan';
 import { memoryKey } from './rules/memory';
 import { makeProfile } from './test/profiles';
 
@@ -144,5 +144,25 @@ describe("questions from the owner's snapshots", () => {
     expect(
       answer(question('Graduation date (2024-2026 graduates)', 'select', ['2024', '2025', '2026'])),
     ).toMatchObject({ answer: { option: '2025' } });
+  });
+});
+
+describe('a group of boxes none of which carries the answer', () => {
+  // A list of offices to tick, none of them in Santa Clara: the plan used to count the question as filled.
+  const offices = question('In what location(s) are you available to work?', 'multi', [
+    'San Francisco',
+    'San Jose (Campbell)',
+    'Remote',
+  ]);
+
+  it('is the owner’s to fill, and AI’s to try, as a dropdown would be', () => {
+    const plan = planForm([offices], ctx, []);
+    expect(plan[0]).toMatchObject({
+      status: 'missing',
+      key: 'location',
+      answer: null,
+      note: 'no matching option',
+    });
+    expect(aiCandidates([offices], plan)).toEqual([offices]);
   });
 });
