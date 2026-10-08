@@ -461,9 +461,12 @@ a posting there shows a note. It is a note, not a block.
   none, though the page is still watched for what it says after it. Where no press was seen, a confirmation at the
   posting's own address is still logged for a form the extension filled, and for no other: such a page can be opened
   without applying.
-- Not seen at all: a thank-you on a page that doesn't run the content script, which on a site without an adapter
-  is any page but the one with the form, so one that takes that page's place in the tab; and LinkedIn's Easy Apply,
-  whose card has the Log button.
+- A board that moves between postings without loading a page has each application told of in its turn: a document
+  tells of a confirmation once, and of the next when another form is sent from it after that confirmation has left
+  the page (until 2026-10-08 it told of one and no more, so a second posting applied to in the same tab went
+  unrecorded). Not seen at all: a thank-you on a page that doesn't run the content script, which on a site without
+  an adapter is any page but the one with the form, so one that takes that page's place in the tab; and LinkedIn's
+  Easy Apply, whose card has the Log button.
 - **Which account.** The one whose email the form held as it was sent, whichever the card had chosen: the owner may
   have typed another's, or the site or another tool put one there. The emails are read from the form at the press
   of Submit (`emailsIn`), not from an earlier reading of it, which a page that has drawn its fields anew since would
@@ -521,7 +524,8 @@ looking, its window goes into that frame as well, and appears in place as the se
   172/172 (87% of required fields filled), Lever 115/115 (79%), Ashby 78/78 (77%).
 - **End to end** (Playwright): the built extension in Chromium against fixtures served on the real hosts through
   request interception, logging to a mock Outbox: Greenhouse, Lever and Gem fill → submit → logged, Ashby fill;
-  a Greenhouse form filled in by hand → submit → logged under the account its email names;
+  a Greenhouse form filled in by hand → submit → logged under the account its email names, and two postings
+  applied to from one document, each logged;
   on Gem also the resume taken out at its ✕ and attached again, and a file dropped in by hand kept.
   Playwright can't look into a closed shadow root any more than a page can, so the specs drive a build of their
   own: the one Chrome loads with the card's root left open and nothing else changed (`wxt.e2e.config.ts`), made as

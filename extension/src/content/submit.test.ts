@@ -83,6 +83,38 @@ describe('watching for a submission', () => {
     expect(confirmed).toHaveBeenCalledTimes(1);
   });
 
+  it('tells of the next application sent from the same document, once the last one’s confirmation has left the page', async () => {
+    const attempt = vi.fn();
+    const confirmed = vi.fn();
+    stop = watchSubmission(adapter, document, attempt, confirmed);
+    document.querySelector<HTMLElement>('#send')!.click();
+    document.body.innerHTML = '<h1>Thank you for applying.</h1>';
+    await vi.advanceTimersByTimeAsync(1300);
+    expect(confirmed).toHaveBeenCalledTimes(1);
+
+    // The board moves on to another posting without loading a page, and that one's form is sent too.
+    document.body.innerHTML = FORM;
+    await vi.advanceTimersByTimeAsync(1300);
+    document.querySelector<HTMLElement>('#send')!.click();
+    await vi.advanceTimersByTimeAsync(1300);
+    expect(confirmed).toHaveBeenCalledTimes(1);
+    document.body.innerHTML = '<h1>Thank you for applying.</h1>';
+    await vi.advanceTimersByTimeAsync(1300);
+    expect(attempt).toHaveBeenCalledTimes(2);
+    expect(confirmed).toHaveBeenCalledTimes(2);
+  });
+
+  it('doesn’t tell of a confirmation again for a form sent while it still stands', async () => {
+    const confirmed = vi.fn();
+    stop = watchSubmission(adapter, document, vi.fn(), confirmed);
+    document.querySelector<HTMLElement>('#send')!.click();
+    document.body.insertAdjacentHTML('afterbegin', '<h1>Thank you for applying.</h1>');
+    await vi.advanceTimersByTimeAsync(1300);
+    document.querySelector<HTMLElement>('#send')!.click();
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(confirmed).toHaveBeenCalledTimes(1);
+  });
+
   it('says nothing of a confirmation while no form was sent', async () => {
     const confirmed = vi.fn();
     stop = watchSubmission(adapter, document, vi.fn(), confirmed);

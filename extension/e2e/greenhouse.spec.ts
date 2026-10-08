@@ -341,3 +341,59 @@ for (const rebuilt of [false, true]) {
     await expect(card.getByText('Logged to Outbox')).toBeVisible();
   });
 }
+
+// A board that moves from one posting to the next without loading a page: one document, two applications. It tells
+// a submission by its address, as Greenhouse does, which this page moves along itself.
+const BOARD = `<!doctype html><html><head><title>Jobs at Acme</title></head><body><main></main>
+<script>
+  const JOBS = { 123: 'Software Engineer', 456: 'Data Engineer' };
+  const show = (id, sent) => {
+    history.pushState(null, '', '/acme/jobs/' + id + (sent ? '/confirmation' : ''));
+    document.title = 'Job Application for ' + JOBS[id] + ' at Acme';
+    document.querySelector('main').innerHTML = sent
+      ? '<h1>Received.</h1><p><button id="next">See the next opening</button></p>'
+      : '<form id="application-form"><label for="first_name">First Name</label><input id="first_name" type="text">' +
+        '<label for="email">Email</label><input id="email" type="text">' +
+        '<p><button type="submit">Send</button></p></form>';
+    document.querySelector('form')?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      show(id, true);
+    });
+    document.querySelector('#next')?.addEventListener('click', () => show(456, false));
+  };
+  show(123, false);
+</script></body></html>`;
+
+test('logs each application sent from a board that moves between postings without loading a page', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  await serve(context, 'job-boards.greenhouse.io', BOARD, THANKS);
+  const page = await context.newPage();
+  await page.goto('https://job-boards.greenhouse.io/acme/jobs/123');
+
+  const card = page.locator('outbox-autofill');
+  const send = async (title: string) => {
+    // The card has read the posting the page now shows.
+    await expect(card.getByText(title)).toBeVisible();
+    await expect(card.getByRole('button', { name: /^Fill/ })).toBeVisible();
+    await page.locator('#first_name').fill('Alex');
+    await page.locator('#email').fill('alex@example.com');
+    await page.locator('button[type="submit"]').click();
+  };
+
+  await send('Software Engineer');
+  await expect.poll(() => outbox.quickAdds.length, { timeout: 15_000 }).toBe(1);
+  await expect(card.getByText('Logged to Outbox')).toBeVisible();
+
+  await page.locator('#next').click();
+  await send('Data Engineer');
+  await expect.poll(() => outbox.quickAdds.length, { timeout: 15_000 }).toBe(2);
+  expect(outbox.quickAdds).toMatchObject([
+    { title: 'Software Engineer', url: 'https://job-boards.greenhouse.io/acme/jobs/123' },
+    { title: 'Data Engineer', url: 'https://job-boards.greenhouse.io/acme/jobs/456' },
+  ]);
+  await expect(card.getByText('Logged to Outbox')).toBeVisible();
+});
