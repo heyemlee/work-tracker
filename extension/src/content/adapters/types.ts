@@ -12,7 +12,15 @@ export type Handle =
   | { type: 'multi'; inputs: HTMLInputElement[] }
   /** Choices drawn as buttons, like Ashby's Yes/No. */
   | { type: 'buttons'; buttons: HTMLElement[] }
-  | { type: 'file'; element: HTMLInputElement }
+  | {
+      type: 'file';
+      element: HTMLInputElement;
+      /**
+       * The name of the file the page shows it holds, null when it shows none. Given where the page and not the
+       * input says what the upload holds, as on Gem; without it the input is read (`attachedFile`).
+       */
+      shown?: () => string | null;
+    }
   /** A date typed into separate month, day and year boxes (Workday). */
   | {
       type: 'dateParts';

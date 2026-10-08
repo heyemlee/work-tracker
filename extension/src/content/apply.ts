@@ -1,10 +1,10 @@
 import type { Answer, Want } from '../model';
 import { pickPlace } from '../rules/geo';
 import { pickOption } from '../rules/options';
-import { findOption, norm } from '../text';
+import { clean, findOption, norm } from '../text';
 import type { Handle } from './adapters/types';
 import { holdsChoice } from './adapters/workday';
-import { sleep, textOf } from './dom';
+import { sleep, textOf, waitFor } from './dom';
 import { chipsOf, pickBox } from './extract';
 import {
   clickLikeAPerson,
@@ -72,6 +72,11 @@ export async function applyAnswer(
         const pdf = await file(answer.resumeId);
         if (!pdf) return { ok: false, error: 'resume not found' };
         setFiles(handle.element, [pdf]);
+        // Where the page says what the upload holds, the file is in once the page shows it: Gem names it a moment
+        // after its input changes. A file the page doesn't come to show, it didn't take.
+        const { shown } = handle;
+        if (shown && !(await waitFor(() => clean(shown() ?? '') === clean(pdf.name), 2000, 50, true)))
+          return { ok: false, error: 'the page did not take the file' };
         return { ok: true, value: pdf.name };
       }
 

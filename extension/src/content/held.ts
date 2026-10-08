@@ -2,14 +2,14 @@ import type { Held } from '../model';
 import type { Handle } from './adapters/types';
 import { readAnswer } from './apply';
 import { textOf } from './dom';
-import { attachedFile, chipsOf, controlsOf, isFilled } from './extract';
+import { chipsOf, controlsOf, heldFile, isFilled } from './extract';
 
 /**
  * What a field shows as its answer: for the checklist, and for telling an answer this script put in from one the
  * owner has since put in its place.
  */
 export function shownValue(handle: Handle): string | undefined {
-  if (handle.type === 'file') return attachedFile(handle.element) ?? undefined;
+  if (handle.type === 'file') return heldFile(handle) ?? undefined;
   if (handle.type === 'combobox' || handle.type === 'typeahead') {
     const select = handle.element.closest('[class*="select__control"]');
     if (select) {
@@ -76,6 +76,10 @@ export function heldBy(handle: Handle): Held | null {
         return held(handle.element.getAttribute('value') !== '', shownValue(handle), true);
       break;
     }
+    case 'file':
+      // Where the page itself says what the upload holds, its showing none is the upload being empty.
+      if (handle.shown) return held(isFilled(handle), shownValue(handle), true);
+      break;
     default:
       break;
   }

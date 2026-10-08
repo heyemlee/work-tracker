@@ -120,6 +120,57 @@ describe('applyAnswer', () => {
   });
 
   /**
+   * An upload whose page says what it holds, as Gem's does: it names a file a moment after its input takes one,
+   * if it takes it.
+   */
+  function namedUpload(takes: boolean) {
+    html('<input id="resume" type="file"><p id="held">Earlier.pdf</p>');
+    const input = $<HTMLInputElement>('#resume');
+    const held = $<HTMLElement>('#held');
+    input.addEventListener('change', () => {
+      const name = input.files?.[0]?.name ?? '';
+      if (takes) setTimeout(() => (held.textContent = name), 20);
+    });
+    const handle: Handle = { type: 'file', element: input, shown: () => held.textContent || null };
+    return { input, held, handle };
+  }
+  const resume = async () => new File(['%PDF-1.4'], 'Alex_Chen_Resume.pdf', { type: 'application/pdf' });
+
+  it('attaches a file where the input says what the upload holds, without waiting on the page', async () => {
+    const { input, held } = namedUpload(false);
+    const result = await applyAnswer(
+      { type: 'file', element: input },
+      { type: 'file', resumeId: 'res-1' },
+      resume,
+    );
+    expect(result).toEqual({ ok: true, value: 'Alex_Chen_Resume.pdf' });
+    expect(input.files?.[0]?.name).toBe('Alex_Chen_Resume.pdf');
+    expect(held.textContent).toBe('Earlier.pdf');
+  });
+
+  it('counts a file as attached once the page shows it, where the page says what its upload holds', async () => {
+    // The page shows the file it held before until it has taken the new one in.
+    const { held, handle } = namedUpload(true);
+    const result = await applyAnswer(handle, { type: 'file', resumeId: 'res-1' }, resume);
+    expect(result).toEqual({ ok: true, value: 'Alex_Chen_Resume.pdf' });
+    expect(held.textContent).toBe('Alex_Chen_Resume.pdf');
+  });
+
+  it('says so when such a page doesn’t come to show the file', async () => {
+    vi.useFakeTimers();
+    try {
+      const { input, handle } = namedUpload(false);
+      const pending = applyAnswer(handle, { type: 'file', resumeId: 'res-1' }, resume);
+      await vi.advanceTimersByTimeAsync(2500);
+      expect(await pending).toEqual({ ok: false, error: 'the page did not take the file' });
+      // The input holds the file all the same, which is why it isn't asked.
+      expect(input.files?.[0]?.name).toBe('Alex_Chen_Resume.pdf');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  /**
    * Greenhouse's city search as its react-select draws it: no list until something is typed, then suggestions
    * beside the control; a pick shows beside the input, which empties. Above it, the phone widget's country list,
    * hidden by a stylesheet the test doesn't load.

@@ -196,7 +196,8 @@ worker keeps each frame's latest look in the tab's session and sends the card it
 asking Outbox for nothing. Of a look at a field and the fill's own result for it, the later counts, by the page's
 clock; while the script itself fills it doesn't look. Where it can't tell, a field keeps the standing the fill gave
 it: a widget that draws its value its own way and shows none, an upload with no file to see (the page may have taken
-the file and emptied the input), a control the page has since replaced. A react-select holds a pick when it shows
+the file and emptied the input), a control the page has since replaced. Gem's uploads it can tell: there the page
+names the file it holds, and no name is no file (see Gem below). A react-select holds a pick when it shows
 one or its value box says so (it stops drawing the pick while something is typed over it); what's typed into its
 search box isn't one. Tried on Greenhouse's own page code served locally, as the waits below were.
 
@@ -235,7 +236,8 @@ of a dozen dropdowns. Any other dropdown, Workday's and Ashby's among them, keep
 there's no page of theirs to try shorter waits on. And Lever's resume: after it's attached the fill goes on when
 Lever's "Analyzing resume..." gives way to how it went, eight seconds later at most; it used to wait 2.5 s whatever
 Lever did, so a read that took longer was typed over. A Lever page that shows no such note gets the 2.5 s, and so
-does Ashby, whose page says nothing of when it's through.
+does Ashby, whose page says nothing of when it's through. Gem's uploads have a wait of this kind too: a file is
+attached once Gem names it (below).
 
 | System     | Hosts                                                          | Notes                                                      |
 | ---------- | -------------------------------------------------------------- | ---------------------------------------------------------- |
@@ -262,6 +264,25 @@ place on the same address. Its class names are a component's rule name and a cou
 adapter matches the names. Tried on Gem's own page code served locally with a stand-in for its API, on a made-up
 posting holding each of its fields and kinds of question: Fill, the owner's own changes kept by "Fill again", and a
 press of its button through to the log.
+
+An upload on Gem holds the file Gem names over its box, which isn't always the one in its input (2026-10-07). The ✕
+beside the name makes Gem forget the file and leaves it in the input; a file the owner drops onto the box, or picks
+in the dialog the box opens, goes into Gem's own state and never reaches the input (in Chrome the box asks the
+browser for files itself). Read by its input, a resume taken out at the ✕ went on showing as attached on the card
+and "Fill again" attached nothing, while Gem's own Apply answered "Please upload a resume."; and a file put in by
+hand showed under the earlier file's name, or under none. So on Gem an upload's handle reads the page (`shown` on a
+file handle; `heldFile` in `content/extract.ts` asks it before the input): the scan, the list and "Fill again" go by
+the name Gem shows, and no name is no file, so the list asks for the resume again and "Fill again" attaches it
+again. A file counts as attached once Gem names it, which takes it a few milliseconds and is waited for two
+seconds at most; one Gem doesn't come to name is reported as not taken. A file the owner put in by hand is theirs,
+as on any other site: the list shows its name, and it stays when another resume is chosen on the card (Gem's ✕
+makes room for the card's). Tried on Gem's own page code as above, the unfixed build beside the fixed one: ✕ and
+"Fill again", another resume and back, a file dropped onto the box, one picked through the box's dialog (the
+dialog itself stood in for), a cover letter put in and taken out, and Gem's Apply refusing a form without a resume.
+A first fill and a repeated one took as long as before on a posting of nine fields (1.37 s and 0.85 s from the
+card's bar coming up to its going, six runs each, headless Chromium). A saved Gem page has none of Gem's code, so
+an attach replayed on one waits its two seconds and reports the file as not taken: the specs put a stand-in for
+that code into the page.
 
 **The job's country** comes from the posting's location: a US state or city anywhere in it means the US ("San
 Francisco; London"), otherwise the country or large city abroad it names ("Belgrade" is Serbia; "Dublin, CA" stays
@@ -382,7 +403,8 @@ looking, its window goes into that frame as well, and appears in place as the se
   gated in CI, and quoted in the README. Every expected answer was checked by hand. With rules only: Greenhouse
   172/172 (87% of required fields filled), Lever 115/115 (79%), Ashby 78/78 (77%).
 - **End to end** (Playwright): the built extension in Chromium against fixtures served on the real hosts through
-  request interception, logging to a mock Outbox: Greenhouse, Lever and Gem fill → submit → logged, Ashby fill.
+  request interception, logging to a mock Outbox: Greenhouse, Lever and Gem fill → submit → logged, Ashby fill;
+  on Gem also the resume taken out at its ✕ and attached again, and a file dropped in by hand kept.
   Playwright can't look into a closed shadow root any more than a page can, so the specs drive a build of their
   own: the one Chrome loads with the card's root left open and nothing else changed (`wxt.e2e.config.ts`), made as
   a run starts, in `.output/chrome-mv3-e2e`. One spec (`e2e/reach.spec.ts`) takes the build Chrome loads and tries

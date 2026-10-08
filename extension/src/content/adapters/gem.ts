@@ -1,7 +1,6 @@
 import { cleanLink, companyFromSlug, parsePosting } from '@domain/postings';
 import type { Posting } from '../../model';
 import { attributeValue, textOf, waitFor } from '../dom';
-import { attachedFile } from '../extract';
 import type { Adapter, CustomField } from './types';
 
 /**
@@ -13,6 +12,8 @@ const FORM = '[class*="formContainer"]';
 const LABEL = '[class*="bodyImportant"]';
 const REQUIRED = '[class*="requiredAsterisk"]';
 const CONTROL = 'input, textarea, button';
+/** The name of the file an upload holds, drawn over its box with a ✕ beside it for as long as it holds one. */
+const FILE = '[class*="fileContainer"] > :not(button)';
 
 /** What a dropdown's button says while nothing is chosen. */
 const PROMPT = /^(please select|select an option)$/i;
@@ -65,9 +66,10 @@ function fieldOf(label: Element): CustomField | null {
       ...about,
       kind: 'file',
       options: [],
-      handle: { type: 'file', element: upload },
-      // A file dropped onto the box isn't in the input: the box then offers to replace it.
-      filled: attachedFile(upload) !== null || /click to replace/i.test(textOf(block)),
+      // The file Gem holds is the one it names over the box, and not always the input's: its ✕ there forgets a
+      // file the input goes on holding, and a file the owner drops onto the box, or picks in the dialog the box
+      // opens, never reaches the input.
+      handle: { type: 'file', element: upload, shown: () => textOf(block.querySelector(FILE)) || null },
     };
   const typed = block.querySelector<HTMLInputElement | HTMLTextAreaElement>('textarea, input');
   if (typed)

@@ -4,10 +4,36 @@ import { fixture, seed, serve, test } from './harness';
 const POSTING = 'https://jobs.gem.com/acme-robotics/am9icG9zdDr2DjIQ3bPcrRLp0z2TjYKi';
 
 /**
- * Stands in for Gem's own script at the end: either button sends the application, and the form gives way to the
- * confirmation, on the same address.
+ * Stands in for Gem's own script where the saved page needs it. Round an upload, as its page was seen to behave: a
+ * file the input takes is named over the box a moment later, beside a ✕ that forgets it while the input keeps its
+ * own, and a file dropped onto the box is named without the input ever holding it. At the end: either button
+ * sends the application, and the form gives way to the confirmation, on the same address.
  */
-const SENDS = `<script>
+const GEM = `<script>
+  for (const box of document.querySelectorAll('[class*="formContainer"] [role="presentation"]')) {
+    const input = box.querySelector('input[type="file"]');
+    const outer = box.parentElement.parentElement;
+    const holds = (name) => {
+      outer.parentElement.querySelector('[class*="fileContainer"]')?.remove();
+      if (name) {
+        outer.insertAdjacentHTML(
+          'beforebegin',
+          '<div class="fileContainer-163"><div class="body-41 primary-44"></div>' +
+            '<button type="button" aria-label="cross" style="width: 16px; height: 16px"></button></div>',
+        );
+        const shown = outer.previousElementSibling;
+        shown.firstElementChild.textContent = name;
+        shown.lastElementChild.addEventListener('click', () => holds(null));
+      }
+      box.querySelector('[class*="promptText"]').textContent =
+        'Click to ' + (name ? 'replace' : 'upload') + ' or drag and drop here';
+    };
+    input.addEventListener('change', () => {
+      const name = input.files[0]?.name;
+      setTimeout(() => holds(name), 3);
+    });
+    box.addEventListener('drop', (event) => holds(event.dataTransfer.files[0]?.name));
+  }
   for (const button of document.querySelectorAll('button[type="submit"]'))
     button.addEventListener('click', () => {
       document.querySelector('[class*="formContainer"]').innerHTML =
@@ -15,13 +41,16 @@ const SENDS = `<script>
     });
 </script>`;
 
+/** The saved page with that script at its end. */
+const formPage = () => fixture('gem/acme.html').replace('</body>', `${GEM}</body>`);
+
 test('opens by itself on a Gem posting, fills its nameless fields, and logs the application', async ({
   context,
   worker,
   outbox,
 }) => {
   await seed(worker, outbox.url);
-  await serve(context, 'jobs.gem.com', fixture('gem/acme.html').replace('</body>', `${SENDS}</body>`), '');
+  await serve(context, 'jobs.gem.com', formPage(), '');
   const page = await context.newPage();
   await page.goto(POSTING);
 
@@ -45,6 +74,8 @@ test('opens by itself on a Gem posting, fills its nameless fields, and logs the 
       .evaluateAll((uploads: HTMLInputElement[]) => uploads.map((upload) => upload.files?.[0]?.name ?? null)),
     // The resume, and neither the cover letter nor the portfolio.
   ).toEqual(['Alex_Chen_Resume.pdf', null, null]);
+  // Gem names the file it took, over the upload's box.
+  await expect(page.locator('[class*="fileContainer"]')).toHaveText(['Alex_Chen_Resume.pdf']);
   // Its radios share no name either: the question is the block they sit in. On OPT, sponsorship comes later.
   await expect(page.getByLabel('Yes', { exact: true })).toBeChecked();
   await expect(page.getByLabel('N/A', { exact: true })).not.toBeChecked();
@@ -95,4 +126,64 @@ test('takes the company’s own name once Gem writes it into the page, a moment 
   // Until then, the board's name in the address.
   await expect(card.getByTitle(/^Acme Robotics · Software Engineer/)).toBeVisible({ timeout: 15_000 });
   await expect(card.getByTitle(/^ACME robotics\.ai · Software Engineer/)).toBeVisible();
+});
+
+test('goes by what Gem shows of the resume: taken out at its ✕, it’s asked for again and attached again', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  await serve(context, 'jobs.gem.com', formPage(), '');
+  const page = await context.newPage();
+  await page.goto(POSTING);
+
+  const card = page.locator('outbox-autofill');
+  await card.getByRole('button', { name: /^Fill/ }).click();
+  await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });
+
+  const resume = page.locator('xpath=//span[starts-with(normalize-space(.), "Resume")]/parent::div');
+  const named = resume.locator('[class*="fileContainer"]');
+  const inInput = () =>
+    resume
+      .locator('input[type="file"]')
+      .evaluate((input: HTMLInputElement) => input.files?.[0]?.name ?? null);
+  // The card's line for the resume, done or to fill.
+  const done = card.getByTitle('Resume', { exact: true });
+  const wanted = card.getByTitle('Fill: Resume');
+  // "Fill again", through to the end: the fill's bar stands where the list was, and gives way to it again.
+  const fillAgain = async () => {
+    const bar = card.getByRole('progressbar', { name: /^(Reading the page|Filling)$/ });
+    await card.getByRole('button', { name: 'Fill again' }).click();
+    await expect(bar).toBeVisible();
+    await expect(bar).toBeHidden({ timeout: 45_000 });
+  };
+  await expect(named).toHaveText('Alex_Chen_Resume.pdf');
+  await expect(done).toContainText('Alex_Chen_Resume.pdf');
+  await expect(card.getByText('Filled 8/11 required')).toBeVisible();
+
+  // Gem's own ✕: the page holds no resume now, though the input still does. The card says what the page does.
+  await named.getByRole('button', { name: 'cross' }).click();
+  await expect(named).toHaveCount(0);
+  expect(await inInput()).toBe('Alex_Chen_Resume.pdf');
+  await expect(wanted).toContainText('Required');
+  await expect(card.getByText('Filled 7/11 required')).toBeVisible();
+
+  await fillAgain();
+  await expect(named).toHaveText('Alex_Chen_Resume.pdf');
+  await expect(done).toContainText('Alex_Chen_Resume.pdf');
+  await expect(card.getByText('Filled 8/11 required')).toBeVisible();
+
+  // The owner's own file, dropped onto the box: Gem holds it and the input never gets it. It's theirs, and stays.
+  const dropped = await page.evaluateHandle(() => {
+    const data = new DataTransfer();
+    data.items.add(new File(['%PDF-1.4'], 'Dropped_By_Hand.pdf', { type: 'application/pdf' }));
+    return data;
+  });
+  await resume.locator('[role="presentation"]').dispatchEvent('drop', { dataTransfer: dropped });
+  await expect(done).toContainText('Dropped_By_Hand.pdf');
+  await fillAgain();
+  await expect(named).toHaveText('Dropped_By_Hand.pdf');
+  await expect(done).toContainText('Dropped_By_Hand.pdf');
+  expect(await inInput()).toBe('Alex_Chen_Resume.pdf');
 });

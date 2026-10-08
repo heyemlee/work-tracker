@@ -100,6 +100,11 @@ export function attachedFile(input: HTMLInputElement): string | null {
   return null;
 }
 
+/** The file an upload's field holds: the one the page shows, where the adapter reads that, else as the input tells. */
+export function heldFile(handle: Extract<Handle, { type: 'file' }>): string | null {
+  return handle.shown ? handle.shown() : attachedFile(handle.element);
+}
+
 /**
  * The box of a custom dropdown that shows its pick beside the search input: react-select's control, or another
  * library's container. Not the wrapper round the input alone, which react-select calls a container too and which
@@ -157,7 +162,7 @@ export function isFilled(handle: Handle): boolean {
     case 'checkbox':
       return handle.element.checked;
     case 'file':
-      return attachedFile(handle.element) !== null;
+      return heldFile(handle) !== null;
     case 'combobox': {
       // react-select shows the chosen option in a "single value" element beside the input's own box.
       return Boolean(

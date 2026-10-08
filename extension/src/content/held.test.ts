@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Held } from '../model';
 import { greenhouse } from './adapters/greenhouse';
-import type { Adapter } from './adapters/types';
+import type { Adapter, Handle } from './adapters/types';
 import { workday } from './adapters/workday';
 import { extractFields } from './extract';
 import { heldBy, watchHeld } from './held';
@@ -112,6 +112,19 @@ describe('what a field holds', () => {
       .querySelector('.field')!
       .insertAdjacentHTML('beforeend', '<span class="filename">Alex_Chen_Resume.pdf</span>');
     expect(heldBy(resume)).toEqual({ filled: true, value: 'Alex_Chen_Resume.pdf' });
+  });
+
+  it('says an upload is empty where the page itself tells what it holds and shows no file', () => {
+    const resume = field(
+      form('<div class="field"><label for="r">Resume</label><input id="r" type="file"></div>'),
+    );
+    if (resume.type !== 'file') throw new Error('not an upload');
+    let shown: string | null = 'Alex_Chen_Resume.pdf';
+    const read: Handle = { ...resume, shown: () => shown };
+    expect(heldBy(read)).toEqual({ filled: true, value: 'Alex_Chen_Resume.pdf' });
+    // Taken out again on the page: no file shown is no file held, and the list says so.
+    shown = null;
+    expect(heldBy(read)).toEqual({ filled: false });
   });
 
   it('says nothing of a widget that draws its value its own way and shows none', () => {

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { greenhouse } from './adapters/greenhouse';
 import { readAnswer } from './apply';
-import { attachedFile, extractFields, fieldIds } from './extract';
+import { attachedFile, extractFields, fieldIds, heldFile, isFilled } from './extract';
+import { setFiles } from './widgets';
 
 const upload = (markup: string) => {
   document.body.innerHTML = markup;
@@ -25,6 +26,23 @@ describe('attachedFile', () => {
       '<div class="field"><label>Resume</label><input type="file"><p>Accepted file types: pdf, doc, docx</p><p>Supported: .pdf, .docx</p><span>Upload .pdf</span><span class="filename"></span></div>',
     );
     expect(attachedFile(input)).toBeNull();
+  });
+});
+
+describe('heldFile', () => {
+  it('takes the page’s word for what an upload holds, where the adapter reads it, over the input’s', () => {
+    const input = upload('<div class="field"><label>Resume</label><input type="file"></div>');
+    setFiles(input, [new File(['%PDF-1.4'], 'Alex_Chen_Resume.pdf', { type: 'application/pdf' })]);
+    let shown: string | null = null;
+    const read = { type: 'file' as const, element: input, shown: () => shown };
+    // The input holds a file the page has let go of.
+    expect(heldFile({ type: 'file', element: input })).toBe('Alex_Chen_Resume.pdf');
+    expect(heldFile(read)).toBeNull();
+    expect(isFilled(read)).toBe(false);
+    // And the page holds one that never reached the input.
+    shown = 'Dropped_By_Hand.pdf';
+    expect(heldFile(read)).toBe('Dropped_By_Hand.pdf');
+    expect(isFilled(read)).toBe(true);
   });
 });
 
