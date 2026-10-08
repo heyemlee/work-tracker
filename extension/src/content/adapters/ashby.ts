@@ -213,13 +213,15 @@ export const ashby: Adapter = {
     }, 2000);
   },
 
+  // The form gives way to a box of Ashby's own, and the button that sent it is gone. What the box says is the
+  // company's to word ("Your application was successfully submitted…" where it words nothing), so the box is what
+  // tells, and its words only where there's no such box.
   confirmed(doc) {
-    const success = doc.querySelector('[class*="success"], .ashby-application-form-success-container');
-    const text = textOf(success ?? doc.body).slice(0, 3000);
-    return (
-      /thank you for applying|thanks for applying|application (was |has been )?(submitted|received)|successfully submitted/i.test(
-        text,
-      ) && !doc.querySelector('.ashby-application-form-submit-button')
+    if (doc.querySelector('.ashby-application-form-submit-button')) return false;
+    if (doc.querySelector('.ashby-application-form-success-container')) return true;
+    const text = textOf(doc.querySelector('[class*="success"]') ?? doc.body).slice(0, 3000);
+    return /thank you for applying|thanks for applying|application (was |has been )?(submitted|received)|successfully submitted/i.test(
+      text,
     );
   },
 };

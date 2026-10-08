@@ -139,6 +139,59 @@ function stillStudent(doc: Document): void {
   }
 }
 
+/**
+ * The application sent: the form gives way to a box that says so, drawn here as Ashby's own code drew it on its own
+ * page, served from this machine. Its words are Ashby's unless the company has written its own.
+ */
+function sent(
+  doc: Document,
+  words = "Your application was successfully submitted. We'll contact you if there are next steps.",
+) {
+  doc.querySelector('#form')!.innerHTML =
+    '<div role="status" aria-live="polite" tabindex="-1" class="ashby-application-form-success-container ' +
+    '_positive_f7cvd_112 _highlighted_f7cvd_138 _container_f7cvd_28" data-highlight="positive">' +
+    `<h2 class="_heading_f7cvd_52 ">Success</h2><p>${words}</p></div>`;
+}
+
+describe('an Ashby application that went through', () => {
+  it('is none while the form stands', () => {
+    expect(ashby.confirmed(page(), url)).toBe(false);
+  });
+
+  it('is told by the box the form gives way to', () => {
+    const doc = page();
+    sent(doc);
+    expect(ashby.confirmed(doc, url)).toBe(true);
+  });
+
+  it('is told whatever the company has the box say, and in whatever language it is read', () => {
+    for (const words of [
+      'Thanks for your interest in Acme Robotics! Our recruiting team will read what you sent and get back to you.',
+      '您的申请已成功提交。如有后续步骤，我们会与您联系。',
+    ]) {
+      const doc = page();
+      sent(doc, words);
+      expect(ashby.confirmed(doc, url), words).toBe(true);
+    }
+  });
+
+  it('is none where the box stands and the button that sends the form does too', () => {
+    const doc = page();
+    doc
+      .querySelector('#form')!
+      .insertAdjacentHTML('afterbegin', '<div class="ashby-application-form-success-container"></div>');
+    expect(ashby.confirmed(doc, url)).toBe(false);
+  });
+
+  it('is told by its words where the page draws no such box', () => {
+    const doc = page();
+    doc.querySelector('#form')!.innerHTML = '<div class="_success_1"><p>Thanks for applying.</p></div>';
+    expect(ashby.confirmed(doc, url)).toBe(true);
+    doc.querySelector('#form')!.innerHTML = '<div class="_success_1"><p>Saved.</p></div>';
+    expect(ashby.confirmed(doc, url)).toBe(false);
+  });
+});
+
 describe('a fill report of an Ashby page', () => {
   it('holds no answer, though Ashby draws them in markup of its own', () => {
     const doc = page();

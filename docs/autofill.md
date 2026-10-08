@@ -470,9 +470,10 @@ a posting there shows a note. It is a note, not a block.
   an adapter is any page but the one with the form, so one that takes that page's place in the tab; and LinkedIn's
   Easy Apply, whose card has the Log button.
 - **How a page says so** (`confirmed` in each adapter). By its address, where the system has one for it:
-  Greenhouse's `/confirmation` and Lever's `/thanks`. By its words otherwise: Ashby's "Your application was
-  successfully submitted", Gem's "Your application for … has been received" in the form's box, and the like on
-  Workday and on a site without an adapter. Words are the weaker of the two
+  Greenhouse's `/confirmation` and Lever's `/thanks`. By what takes the form's place: on Ashby the box its code
+  draws there (`ashby-application-form-success-container`), whose words are the company's to choose. By its words
+  otherwise: Gem's "Your application for … has been received" in the form's box, and the like on Workday and on a
+  site without an adapter. Words are the weakest of the three
   (2026-10-08). They hold for one language and one wording, and a page the browser translates has them reworded
   between 70 and 170 ms after it draws them, while the page was looked at every 600 ms: on a careers page whose
   thank-you takes the form's place, with Chrome's own translation on, 2 applications of 12 were logged, the two
@@ -480,7 +481,8 @@ a posting there shows a note. It is a note, not a block.
   anything in (a `MutationObserver` in `content/submit.ts`; a look takes 0.03 to 0.4 ms on the saved pages), while
   the words are still its own: 12 of 12. A thank-you drawn inside the form's own element is under the form's mark
   and isn't translated at all, which is why Ashby's and Gem's were recognized on a translated page before this, on
-  their own page code served locally. Read that soon, a confirmation can reach the service worker right behind the
+  their own page code served locally. Ashby's wasn't where the company had written its own, translated or not: it
+  was told by Ashby's default words. Read that soon, a confirmation can reach the service worker right behind the
   sending it is logged by, where it used to come at least 600 ms after. One just woken by the two took the
   stored session for the newer and lost the sending, so nothing was logged: the content script now tells of a
   confirmation once the sending has been answered, and a session read while another flow changes it is the changed
@@ -545,7 +547,8 @@ looking, its window goes into that frame as well, and appears in place as the se
   a Greenhouse form filled in by hand → submit → logged under the account its email names, and two postings
   applied to from one document, each logged;
   an application logged though its thank-you is reworded a moment after it's drawn (a stand-in for the browser's
-  translation, which a spec can't switch on: it sends the page to a translator);
+  translation, which a spec can't switch on: it sends the page to a translator), and an Ashby one the company
+  thanks for in its own words;
   on Gem also the resume taken out at its ✕ and attached again, and a file dropped in by hand kept.
   Playwright can't look into a closed shadow root any more than a page can, so the specs drive a build of their
   own: the one Chrome loads with the card's root left open and nothing else changed (`wxt.e2e.config.ts`), made as

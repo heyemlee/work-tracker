@@ -1,8 +1,8 @@
 import { expect } from '@playwright/test';
-import { seed, serve, test } from './harness';
+import { fixture, seed, serve, test } from './harness';
 
 // An application that went through, told where the page's words can't be gone by: reworded by the browser before
-// they are read.
+// they are read, or worded by the company itself.
 
 /**
  * Stands in for the browser's own page translation, which a spec can't switch on (it sends the page's text to a
@@ -85,6 +85,58 @@ test('logs an application whose thank-you the browser’s translation rewords a 
     title: 'Robotics Engineer',
     accountIds: ['acc-1'],
     channelId: 'ch_company_site',
+  });
+  await expect(card.getByText('Logged to Outbox')).toBeVisible();
+});
+
+const ASHBY_POSTING = 'https://jobs.ashbyhq.com/acme-robotics/3f1c0d7e-8a53-4c1e-9d0b-2b7f6c1e0a11';
+
+/**
+ * Stands in for Ashby's own script where the saved page needs it: its button sends the application, and the form
+ * gives way to the box that says so, drawn as that script draws it, in words this company wrote for it.
+ */
+const ASHBY_SENDS = `<script>
+  document.querySelector('.ashby-application-form-submit-button').addEventListener('click', () =>
+    setTimeout(() => {
+      document.querySelector('#form').innerHTML =
+        '<div role="status" aria-live="polite" tabindex="-1" class="ashby-application-form-success-container ' +
+        '_positive_f7cvd_112 _highlighted_f7cvd_138 _container_f7cvd_28" data-highlight="positive">' +
+        '<h2 class="_heading_f7cvd_52 ">Success</h2><p>Thanks for your interest in Acme Robotics! Our recruiting ' +
+        'team will read what you sent and get back to you.</p></div>';
+    }, 300),
+  );
+</script>`;
+
+test('logs an Ashby application the company thanks for in words of its own', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  await serve(
+    context,
+    'jobs.ashbyhq.com',
+    fixture('ashby/acme.html').replace('</body>', `${ASHBY_SENDS}</body>`),
+    '',
+  );
+  const page = await context.newPage();
+  await page.goto(`${ASHBY_POSTING}/application`);
+
+  const card = page.locator('outbox-autofill');
+  await expect(card.getByRole('button', { name: /^Fill/ })).toBeVisible({ timeout: 15_000 });
+  await page.locator('#_systemfield_email').fill('alex@example.com');
+  // The card lies over the form's right side at this width, and the button under it.
+  await page
+    .locator('.ashby-application-form-submit-button')
+    .evaluate((button: HTMLElement) => button.click());
+
+  await expect(page.locator('.ashby-application-form-success-container')).toContainText('Thanks for your');
+  await expect.poll(() => outbox.quickAdds.length, { timeout: 15_000 }).toBe(1);
+  expect(outbox.quickAdds[0]).toMatchObject({
+    companyName: 'Acme Robotics',
+    title: 'Software Engineer',
+    url: ASHBY_POSTING,
+    accountIds: ['acc-1'],
   });
   await expect(card.getByText('Logged to Outbox')).toBeVisible();
 });
