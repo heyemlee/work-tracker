@@ -325,6 +325,16 @@ was answered against one saved after Fill and after every kind of control the pa
 - **Lever** (two postings' pages) keeps its answers in plain controls, which a copy of the markup doesn't hold,
   but for the list it draws with select2 (the school): the pick stood in the report as text and again as a
   tooltip. The snapshot empties that too.
+- **Ashby** (a made-up posting with one field of each kind its form has, and its voluntary questions) kept the
+  most. A pressed Yes or No, by a class on the button (`_active_…`: only `aria-pressed` was reset); a chosen radio
+  and a ticked box, by a class on the circle or box and on the label (`_checked_…`), by `data-checked`, and on a
+  radio's row by the word "true" — the voluntary questions and the work-authorization ones among them; a rating's
+  number; every attached file's name; and a school's dates, which each bound the other's lists, so that the months
+  and years left to choose from tell them. Ashby's adapter has a `blank` for these, and the report of an answered
+  Ashby page is then the report of that page unanswered, to the character. Ashby's page runs from this machine
+  with its shell, its one bundle and stand-ins for the calls of its API that a form makes (`ApiJobPosting`,
+  `ApiOrganizationFromHostedJobsPageName`, `ApiSetFormValue`, the three for files, the city and school searches);
+  the form comes from the first of those, so a made-up one can hold every kind of field.
 
 A report still tells that something was held, though not what: a dropdown that had a pick (react-select's
 `--has-value`, which has told the bug queue more than once that the owner had answered by hand), an upload that held
@@ -434,8 +444,8 @@ looking, its window goes into that frame as well, and appears in place as the se
 - **Unit** (Vitest, happy-dom): the dictionary, the critical-question rules, the match scan, the setters, each adapter
   on fixtures, submission detection.
 - **Fixtures:** 22 public application pages saved as served — 10 Greenhouse (4 of them embedded on a company's
-  site), 6 Lever, and 6 Ashby rendered in Chromium — and one page Gem's code drew from a made-up posting with
-  each kind of question it has, plus 646 questions from about 115 public postings, whose
+  site), 6 Lever, and 6 Ashby rendered in Chromium — and one page each that Gem's and Ashby's code drew from a
+  made-up posting with each kind of question they have, plus 646 questions from about 115 public postings, whose
   answers are snapshot-tested. Workday's forms sit behind sign-in, so they come from the owner's snapshots.
 - **Fill accuracy** — answers correct over answers expected, and required fields filled, per system — is reported,
   gated in CI, and quoted in the README. Every expected answer was checked by hand. With rules only: Greenhouse

@@ -43,6 +43,82 @@ function watchSaves(): void {
 const live = () =>
   performance.getEntriesByType('resource').some((entry) => entry.name.includes('/api/non-user-graphql'));
 
+/**
+ * Rules of Ashby's stylesheet that tell of an answer, by being on an element or by being gone from it: a class
+ * "_checked_1258i_57" is the rule "checked". A chosen radio and a ticked box are drawn by "checked", a pressed Yes or
+ * No by "active", a rating's number by "valueSelected" (and the end of its scale by "labelActive"); a dropdown that
+ * still prompts is "placeholder".
+ */
+const TELLS = /^_(checked|active|valueSelected|labelActive|placeholder)_/;
+
+/** What an upload's button says while its box is empty. Holding a file it says "Replace", or "Add" where it takes several. */
+const UPLOAD = { one: 'Upload File', several: 'Upload File(s)' };
+
+/** Gives two lists of the same kind every choice either has. Months climb from January, years fall from next year. */
+function shareChoices(one: HTMLSelectElement | undefined, other: HTMLSelectElement | undefined): void {
+  if (!one || !other) return;
+  const choices = new Map<number, string>();
+  for (const option of [...one.options, ...other.options])
+    if (option.value) choices.set(Number(option.value), option.text);
+  const values = [...choices.keys()].sort((a, b) => a - b);
+  // Anything but numbered months or years isn't a date's list: left as it is.
+  if (values.some((value) => !Number.isInteger(value))) return;
+  if (Math.max(...values) > 12) values.reverse();
+  for (const list of [one, other]) {
+    for (const option of [...list.options]) if (option.value) option.remove();
+    for (const value of values) {
+      const option = list.ownerDocument.createElement('option');
+      option.value = String(value);
+      option.textContent = choices.get(value) ?? '';
+      list.append(option);
+    }
+  }
+}
+
+/**
+ * Takes the answers out of a copy of the form, for a fill report. Ashby draws them in markup of its own, where
+ * emptying the inputs doesn't reach, and each goes back to what Ashby draws for a question still unanswered.
+ */
+function blank(form: Element): void {
+  // A chosen radio, a ticked box, a pressed Yes or No and a rating's number are each drawn by a class, on the
+  // control and on what's round it. Every class list is written again without those, so that it reads the same
+  // whether one was there or not: Ashby leaves a gap where a class it left out would have stood.
+  for (const element of form.querySelectorAll('[class]'))
+    element.setAttribute('class', [...element.classList].filter((name) => !TELLS.test(name)).join(' '));
+  for (const marked of form.querySelectorAll('[data-checked]')) marked.removeAttribute('data-checked');
+  // A radio's row also says in so many words whether it is the chosen one.
+  for (const row of form.querySelectorAll('.ashby-application-form-input-radio-group-option'))
+    row.classList.replace('true', 'false');
+  // A file an upload holds is listed by name over its box, and the button then offers to replace it or add to it.
+  for (const box of form.querySelectorAll('.ashby-application-form-input-file')) {
+    const held = [...box.querySelectorAll('.ashby-application-form-input-file-item')];
+    if (!held.length) continue;
+    for (const item of held) item.remove();
+    const button = box.querySelector('.ashby-application-form-input-file-dropzone-upload');
+    const several = box.querySelector('input[type="file"]')?.hasAttribute('multiple');
+    if (button) button.innerHTML = `<span><span>${several ? UPLOAD.several : UPLOAD.one}</span></span>`;
+  }
+  // A school's two dates bound each other's lists, so that no end comes before its start: the months and years left
+  // to choose from in one tell the other. And "Still Student?" shuts the end date.
+  const starts = [...form.querySelectorAll('[id$="-startDate"]')];
+  const ends = [...form.querySelectorAll('[id$="-endDate"]')];
+  if (starts.length === ends.length)
+    starts.forEach((start, index) => {
+      const [from, to] = [start, ends[index]!].map((date) => [...date.querySelectorAll('select')]);
+      for (const part of [0, 1]) shareChoices(from![part], to![part]);
+    });
+  for (const end of ends) {
+    for (const list of end.querySelectorAll('select')) list.removeAttribute('disabled');
+    for (const shut of end.querySelectorAll('[data-disabled]')) {
+      shut.removeAttribute('data-disabled');
+      shut.setAttribute(
+        'class',
+        [...shut.classList].filter((name) => !name.startsWith('_disabled_')).join(' '),
+      );
+    }
+  }
+}
+
 /** Ashby renders in the browser from `window.__appData`, which the page ships as a script the content script can read. */
 function appData(doc: Document): AppData | null {
   for (const script of doc.querySelectorAll('script')) {
@@ -109,6 +185,8 @@ export const ashby: Adapter = {
       };
     });
   },
+
+  blank,
 
   submitButton: (doc) => doc.querySelector<HTMLElement>('.ashby-application-form-submit-button'),
 
