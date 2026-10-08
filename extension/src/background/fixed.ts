@@ -28,6 +28,9 @@ export const FIXED_SNAPSHOTS: ReadonlySet<string> = new Set([
   // Fixed 2026-10-07: Robinhood's three required questions stayed "to fill" in the list after the owner had
   // answered them by hand. The list follows the page now.
   '808dd626-d3e8-4442-8da5-4f27fbe79366',
+  // Fixed 2026-10-08: on Crusoe's Ashby form no resume went in once an account had been chosen on the card, and the
+  // page, which the browser translated while it was filled, lost its race and veteran status.
+  'e3f6bca8-632a-40e6-967e-9df73e256551',
 ]);
 
 /** Takes the reports this build fixes off the list. */

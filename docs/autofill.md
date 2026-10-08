@@ -253,6 +253,11 @@ code served locally, with Chrome's own translation switched on in the specs' bro
 text to Google, so that run isn't one of the specs): the translation arriving in the middle of a fill and before one,
 each followed by "Fill again".
 
+The card's two choices are told apart (same day, same report): choosing an account took the resume out of the tab's
+session, the card's message naming one of the two and the service worker reading it as naming both, while the card
+went on showing the first resume. The next Fill then planned the resume as missing and attached none, until the tab
+was read again. `select` in `background/card.ts` changes the one that was chosen.
+
 In two places the fill waits for what the page does rather than for a set time (decided 2026-10-07, each tried
 first on the site's own page code served locally; that code isn't in the repository). A react-select dropdown, which
 is what Greenhouse's are: its list is looked for again at once, and after a pick the fill goes on as soon as the list

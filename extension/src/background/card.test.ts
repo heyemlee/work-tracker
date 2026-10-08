@@ -34,7 +34,8 @@ vi.mock('./ai', async (original) => ({
   draftAnswer,
 }));
 
-const { cardState, fill, logApplication, pageHolds, saveJob, snapshot, undo } = await import('./card');
+const { cardState, fill, logApplication, pageHolds, saveJob, select, snapshot, undo } =
+  await import('./card');
 const { getSession, updateSession } = await import('./session');
 const { DEFAULT_SETTINGS, loggedItem, openaiKeyItem, profileItem, settingsItem, snapshotsItem } =
   await import('../storage');
@@ -470,6 +471,39 @@ describe('filling', () => {
     ]);
     // The card heard of each stage on the way, and none of that went back to Outbox.
     expect(loadSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the resume when an account is chosen on the card, and the account when a resume is', async () => {
+    const file = { name: 'Resume.pdf', size: 9, uploadedAt: T0 };
+    loadSnapshot.mockResolvedValue({
+      ...empty,
+      accounts: [
+        { id: 'a1', label: '', email: 'one@example.com', color: 'blue', createdAt: T0 },
+        { id: 'a2', label: '', email: 'two@example.com', color: 'green', createdAt: T0 },
+      ],
+      resumes: [
+        { id: 'r1', name: 'SDE', createdAt: T0, file },
+        { id: 'r2', name: 'Agent', createdAt: T0, file },
+      ],
+    });
+    scanFrames.mockResolvedValue(
+      form([field('0:email', 'Email', { kind: 'email' }), field('0:resume', 'Resume', { kind: 'file' })]),
+    );
+    await updateSession(tab, URL_, () => ({ accountId: 'a1', resumeId: 'r1' }));
+
+    // As the card's message arrives: the one that was chosen, and nothing for the other.
+    const chosen = await select(tab, URL_, { accountId: 'a2', resumeId: undefined });
+    expect(chosen).toMatchObject({ accountId: 'a2', resumeId: 'r1' });
+    await fill(tab, URL_);
+    expect(fillFrames).toHaveBeenCalledWith(tab, [
+      expect.objectContaining({ fieldId: '0:email', answer: { type: 'text', text: 'two@example.com' } }),
+      expect.objectContaining({ fieldId: '0:resume', answer: { type: 'file', resumeId: 'r1' } }),
+    ]);
+
+    expect(await select(tab, URL_, { accountId: undefined, resumeId: 'r2' })).toMatchObject({
+      accountId: 'a2',
+      resumeId: 'r2',
+    });
   });
 
   describe('with AI for what the rules leave', () => {

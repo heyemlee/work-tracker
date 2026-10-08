@@ -287,7 +287,12 @@ export async function select(
   url: string,
   change: { accountId?: string | null; resumeId?: string | null },
 ): Promise<CardState> {
-  const session = await updateSession(tabId, url, () => change);
+  // The card says which of the two was chosen, and the other one stays as it was: left out of the change, not
+  // taken as chosen away.
+  const session = await updateSession(tabId, url, (current) => ({
+    accountId: change.accountId === undefined ? current.accountId : change.accountId,
+    resumeId: change.resumeId === undefined ? current.resumeId : change.resumeId,
+  }));
   const last = await lastUsedItem.getValue();
   await lastUsedItem.setValue({
     accountId: session.accountId ?? last.accountId,
