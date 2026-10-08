@@ -1,5 +1,5 @@
 import { AtSign, Send } from 'lucide-react';
-import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { memo, useDeferredValue, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { computeStats } from '../domain/insights';
 import { countByFilter, filterRows, groupRows, searchRows, type Filter, type JobRow } from '../domain/rows';
 import type { Id, Snapshot } from '../domain/types';
@@ -27,7 +27,22 @@ interface ApplicationsPageProps {
 }
 
 /** The home page: what's left to set up, today's numbers, and every job, newest first. */
-export function ApplicationsPage({ snapshot, rows, query, selectedId, onSelect }: ApplicationsPageProps) {
+export function ApplicationsPage({ query, ...page }: ApplicationsPageProps) {
+  // While the search box is typed in, the list follows a beat behind, so each letter shows at once. Deferred
+  // here and not above: a page opened with a query (a search begun on another page) starts from that query,
+  // where one handed the query late would draw every job first.
+  const deferredQuery = useDeferredValue(query);
+  return <Applications {...page} query={deferredQuery} />;
+}
+
+/** The page itself. Memoized, so a letter typed costs it nothing until the deferred query catches up. */
+const Applications = memo(function Applications({
+  snapshot,
+  rows,
+  query,
+  selectedId,
+  onSelect,
+}: ApplicationsPageProps) {
   const { t } = useI18n();
   const today = useToday();
   const hideRejected = usePrefs((p) => p.hideRejected);
@@ -94,7 +109,7 @@ export function ApplicationsPage({ snapshot, rows, query, selectedId, onSelect }
       <DetailPanel row={selected} snapshot={snapshot} today={today} onClose={() => onSelect(null)} />
     </div>
   );
-}
+});
 
 function EmptyState({
   icon,
