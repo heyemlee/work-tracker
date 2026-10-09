@@ -365,9 +365,12 @@ function Checklist({ items, t }: { items: ChecklistItem[]; t: Translate }) {
   );
 }
 
+/** Where the card is: up, put aside as a tab at the window's edge, or closed until the page moves on. */
+type View = 'open' | 'aside' | 'closed';
+
 export function Card({ startOpen }: { startOpen: boolean }) {
   const [state, setState] = useState<CardState | null>(null);
-  const [open, setOpen] = useState(startOpen);
+  const [view, setView] = useState<View>(startOpen ? 'open' : 'closed');
   // The glass takes the page's side, light or dark: see scheme.ts.
   const [dark, setDark] = useState(() => pageIsDark());
   const [t, setT] = useState<Translate>(() => translator('en'));
@@ -394,17 +397,17 @@ export function Card({ startOpen }: { startOpen: boolean }) {
         setDark(pageIsDark());
         // Open where there's something to do: an application form, a posting on an applicant-tracking site or
         // LinkedIn (its match check, before applying), the confirmation page with its Undo. Elsewhere the detect
-        // script opens the card for a form with a resume upload.
+        // script opens the card for a form with a resume upload. Put aside, it stays there: its tab is in sight.
         const show =
           (next.ats !== 'generic' && (next.hasForm || Boolean(next.posting?.title))) ||
           (next.logged && !next.logged.undone);
-        if (show) setOpen(true);
+        if (show) setView((now) => (now === 'closed' ? 'open' : now));
       })
       .catch(() => undefined);
   }, []);
 
   const fill = useCallback(() => {
-    setOpen(true);
+    setView('open');
     toBackground('card:fill', {})
       .then(apply)
       .catch(() => undefined);
@@ -423,7 +426,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     readSettings();
     refresh();
     const listener = (
-      message: { type?: string; state?: CardState; checklist?: ChecklistItem[] },
+      message: { type?: string; state?: CardState; checklist?: ChecklistItem[]; asked?: boolean },
       _sender: unknown,
       // Answering tells the service worker there's a card here.
       sendResponse: (reply: boolean) => void,
@@ -431,7 +434,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
       if (message.type === 'card:update' && message.state) {
         setState(message.state);
         if (message.state.logged && !message.state.logged.undone) {
-          setOpen(true);
+          setView('open');
           setLoggedHere(true);
         }
       }
@@ -441,7 +444,8 @@ export function Card({ startOpen }: { startOpen: boolean }) {
         setState((current) => current && { ...current, checklist });
       }
       if (message.type === 'card:open') {
-        setOpen(true);
+        // A form showing opens a closed card; one put aside waits for the owner to ask for it.
+        setView((now) => (now === 'aside' && !message.asked ? now : 'open'));
         refresh();
         sendResponse(true);
       }
@@ -490,8 +494,19 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     return () => clearTimeout(timer);
   }, [ending]);
 
+  // Put aside or brought back by hand, the keyboard goes along: to the tab, and back to the button it was put
+  // aside with.
+  const tabButton = useRef<HTMLButtonElement>(null);
+  const asideButton = useRef<HTMLButtonElement>(null);
+  const byHand = useRef(false);
+  useEffect(() => {
+    if (!byHand.current) return;
+    byHand.current = false;
+    (view === 'aside' ? tabButton : asideButton).current?.focus({ preventScroll: true });
+  }, [view]);
+
   // Closed, the card is gone until the page changes or the toolbar button is pressed; no pill waits in the corner.
-  if (!state || !open) return null;
+  if (!state || view === 'closed') return null;
 
   const log = () =>
     void toBackground('card:log', {})
@@ -509,12 +524,35 @@ export function Card({ startOpen }: { startOpen: boolean }) {
       .then(apply)
       .catch(() => undefined);
   const close = (
-    <button className="icon-button" onClick={() => setOpen(false)} aria-label={t('close')} title={t('close')}>
+    <button
+      className="icon-button"
+      onClick={() => setView('closed')}
+      aria-label={t('close')}
+      title={t('close')}
+    >
       <X size={14} />
     </button>
   );
   const posting = [state.posting?.company, state.posting?.title].filter(Boolean).join(' · ');
-  const frame = `card glass${dark ? ' dark' : ''}`;
+  const aside = view === 'aside';
+  const frame = `card glass${dark ? ' dark' : ''}${aside ? ' aside' : ''}`;
+  const move = (next: View) => {
+    byHand.current = true;
+    setView(next);
+  };
+  // Put aside, the card is out of the page's way, as it was left, and Outbox's mark waits at the window's edge:
+  // pressed, it brings the card back. Whatever the card shows, the tab goes with it.
+  const tab = (
+    <button
+      ref={tabButton}
+      className={`tab glass${dark ? ' dark' : ''}${aside ? ' on' : ''}`}
+      onClick={() => move('open')}
+      aria-label={t('back')}
+      title={t('back')}
+    >
+      <BrandMark size={24} />
+    </button>
+  );
   const openSettings = () => setSettingsOpen(true);
   // What the settings changed shows at once: the language, the key AI was missing, Outbox's address.
   const closeSettings = () => {
@@ -543,30 +581,33 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   if (state.logged && (loggedHere || !state.hasForm)) {
     const { undone } = state.logged;
     return (
-      <div className={frame} role="dialog" aria-label="Outbox Autofill">
-        <div className="done">
-          {undone ? (
-            <RotateCcw size={16} className="done-icon" />
-          ) : (
-            <CircleCheck size={18} className="done-icon ok" />
-          )}
-          <div className="done-text">
-            <div className="done-title">{undone ? t('undone') : t('logged')}</div>
-            {posting && <div className="done-posting">{posting}</div>}
+      <>
+        <div className={frame} role="dialog" aria-label="Outbox Autofill">
+          <div className="done">
+            {undone ? (
+              <RotateCcw size={16} className="done-icon" />
+            ) : (
+              <CircleCheck size={18} className="done-icon ok" />
+            )}
+            <div className="done-text">
+              <div className="done-title">{undone ? t('undone') : t('logged')}</div>
+              {posting && <div className="done-posting">{posting}</div>}
+            </div>
+            {undone ? (
+              <button className="secondary" onClick={log}>
+                {t('relog')}
+              </button>
+            ) : (
+              <button className="secondary" onClick={undo}>
+                {t('undo')}
+              </button>
+            )}
+            {close}
           </div>
-          {undone ? (
-            <button className="secondary" onClick={log}>
-              {t('relog')}
-            </button>
-          ) : (
-            <button className="secondary" onClick={undo}>
-              {t('undo')}
-            </button>
-          )}
-          {close}
+          {state.error && <div className="body">{noticeLine}</div>}
         </div>
-        {state.error && <div className="body">{noticeLine}</div>}
-      </div>
+        {tab}
+      </>
     );
   }
 
@@ -574,24 +615,27 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   if (state.saved && !state.hasForm) {
     const { undone } = state.saved;
     return (
-      <div className={frame} role="dialog" aria-label="Outbox Autofill">
-        <div className="done">
-          {undone ? (
-            <RotateCcw size={16} className="done-icon" />
-          ) : (
-            <CircleCheck size={18} className="done-icon ok" />
-          )}
-          <div className="done-text">
-            <div className="done-title">{undone ? t('undone') : t('savedDone')}</div>
-            {posting && <div className="done-posting">{posting}</div>}
+      <>
+        <div className={frame} role="dialog" aria-label="Outbox Autofill">
+          <div className="done">
+            {undone ? (
+              <RotateCcw size={16} className="done-icon" />
+            ) : (
+              <CircleCheck size={18} className="done-icon ok" />
+            )}
+            <div className="done-text">
+              <div className="done-title">{undone ? t('undone') : t('savedDone')}</div>
+              {posting && <div className="done-posting">{posting}</div>}
+            </div>
+            <button className="secondary" onClick={undone ? save : undo}>
+              {undone ? t('save') : t('undo')}
+            </button>
+            {close}
           </div>
-          <button className="secondary" onClick={undone ? save : undo}>
-            {undone ? t('save') : t('undo')}
-          </button>
-          {close}
+          {state.error && <div className="body">{noticeLine}</div>}
         </div>
-        {state.error && <div className="body">{noticeLine}</div>}
-      </div>
+        {tab}
+      </>
     );
   }
 
@@ -750,6 +794,15 @@ export function Card({ startOpen }: { startOpen: boolean }) {
             )}
           </div>
           <Menu items={menu} label={t('more')} />
+          <button
+            ref={asideButton}
+            className="icon-button"
+            onClick={() => move('aside')}
+            aria-label={t('aside')}
+            title={t('aside')}
+          >
+            <Minus size={14} />
+          </button>
           {close}
         </header>
 
@@ -835,6 +888,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
           {flash && <div className="hint">{flash}</div>}
         </div>
       </div>
+      {tab}
       {editing && <ProfileSheet t={t} dark={dark} onClose={() => setEditing(false)} onSaved={apply} />}
       {settingsOpen && <SettingsFrame t={t} dark={dark} onClose={closeSettings} />}
     </>

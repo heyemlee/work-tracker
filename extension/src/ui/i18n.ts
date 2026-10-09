@@ -4,6 +4,8 @@ import { profileEn, profileZh } from './profileStrings';
 const en = {
   outbox: 'Outbox',
   close: 'Close',
+  aside: 'Minimize',
+  back: 'Show Outbox Autofill',
   more: 'More',
   options: 'Settings',
   'match.red': 'Likely screened out',
@@ -79,6 +81,8 @@ type Key = keyof typeof en;
 const zh: Record<Key, string> = {
   outbox: 'Outbox',
   close: '关闭',
+  aside: '收起',
+  back: '展开 Outbox Autofill',
   more: '更多',
   options: '设置',
   'match.red': '大概率会被筛掉',

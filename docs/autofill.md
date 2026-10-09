@@ -53,7 +53,10 @@ the password. On LinkedIn the card leads with **Log to Outbox**, since Easy Appl
 later beside it. On other sites the card opens by itself on a form
 with a resume upload and a name or email field — not on a job board's own apply flow, such as LinkedIn's or Indeed's
 — or from the toolbar, and fills what the field dictionary recognizes. Closed, the card stays closed on that page;
-the toolbar button brings it back.
+the toolbar button brings it back. Where it lies over something the owner wants to see, its – button puts it aside:
+the page has that place back, and Outbox's mark stays at the window's right edge as a tab that brings the card back
+as it was left. So do the toolbar button and the shortcut, and a log, which the card comes back to say; a form the
+page shows next doesn't.
 
 ## 3. Architecture
 
@@ -84,7 +87,10 @@ flowchart LR
 - **Card** in the top frame, in a closed shadow root, which keeps the page's CSS out and its scripts from looking
   into the card or pressing anything in it ([what they still learn](#9-privacy)): a panel the window's height for an
   application, a card for a posting or a log, both pinned to the right edge from the top (the bottom of a page
-  belongs to its Submit button, chat bubbles and reCAPTCHA's badge). Its element goes back into a page that drops it
+  belongs to its Submit button, chat bubbles and reCAPTCHA's badge). Put aside, it slides out past that edge and
+  stays drawn there, hidden, so it comes back with its list where it was scrolled to; presses on its place go to the
+  page; and `card:open` says whether the owner asked for the card (`asked`), since a form showing on the page opens
+  a closed card but leaves one put aside where it is. Its element goes back into a page that drops it
   with its own markup (`keepInPage` in `ui/card/shadow.tsx`): where what a server sent doesn't match what the page's
   React draws, React throws the document away, `<html>` and all, and builds another — Greenhouse's boards with a font
   of their own do, a moment after loading — so the watchers observe the document, not its root element. Outbox's

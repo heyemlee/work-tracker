@@ -45,7 +45,7 @@ describe('bringing in the card', () => {
     const injected = tab([0, 3], [0, 3]);
     await showForm(2, 3);
     expect(injected).toEqual([]);
-    expect(toFrame).toHaveBeenCalledWith(2, 0, 'card:open', {});
+    expect(toFrame).toHaveBeenCalledWith(2, 0, 'card:open', { asked: false });
   });
 
   it('brings in one card when two frames show forms at once', async () => {
@@ -59,5 +59,11 @@ describe('bringing in the card', () => {
     const injected = tab([0, 2, 4], [2]);
     await openCard(4);
     expect(injected).toEqual([[4], [0]]);
+  });
+
+  it('tells the card that is there that the owner asked for it, when the toolbar button is pressed', async () => {
+    tab([0], [0]);
+    await openCard(5);
+    expect(toFrame).toHaveBeenCalledWith(5, 0, 'card:open', { asked: true });
   });
 });

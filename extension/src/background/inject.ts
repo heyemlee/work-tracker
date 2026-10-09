@@ -31,9 +31,9 @@ async function bringIn(tabId: number, frameIds?: number[]): Promise<boolean> {
   return true;
 }
 
-async function bringInAndOpen(tabId: number, frameIds?: number[]): Promise<void> {
+async function bringInAndOpen(tabId: number, asked: boolean, frameIds?: number[]): Promise<void> {
   if (await bringIn(tabId, frameIds)) return;
-  await toFrame(tabId, 0, 'card:open', {}).catch(() => undefined);
+  await toFrame(tabId, 0, 'card:open', { asked }).catch(() => undefined);
 }
 
 const turns = new Map<number, Promise<void>>();
@@ -48,12 +48,12 @@ function inTurn(tabId: number, task: () => Promise<void>): Promise<void> {
 
 /** A frame shows an application form: the content script in it, the card in the top frame, and the card open. */
 export function showForm(tabId: number, frameId: number): Promise<void> {
-  return inTurn(tabId, () => bringInAndOpen(tabId, frameId === 0 ? [0] : [frameId, 0]));
+  return inTurn(tabId, () => bringInAndOpen(tabId, false, frameId === 0 ? [0] : [frameId, 0]));
 }
 
 /** The toolbar button, on any page: the content script in every frame, and the card open. */
 export function openCard(tabId: number): Promise<void> {
-  return inTurn(tabId, () => bringInAndOpen(tabId));
+  return inTurn(tabId, () => bringInAndOpen(tabId, true));
 }
 
 export function forgetTab(tabId: number): void {

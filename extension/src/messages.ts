@@ -185,8 +185,11 @@ export interface ToFrame {
   'card:update': { request: { state: CardState }; response: void };
   /** The list alone, as the page was seen to change under it; the rest of the card stands. */
   'card:checklist': { request: { checklist: ChecklistItem[] }; response: void };
-  /** The card answers true, so the service worker knows there is one. */
-  'card:open': { request: Record<string, never>; response: boolean };
+  /**
+   * The card answers true, so the service worker knows there is one. `asked` when the owner called for it (the
+   * toolbar button), which brings back a card put aside; a form showing on the page opens a closed one only.
+   */
+  'card:open': { request: { asked: boolean }; response: boolean };
   'card:fill': { request: Record<string, never>; response: boolean };
   /** The settings page drew in the card's window. */
   'settings:shown': { request: Record<string, never>; response: void };
