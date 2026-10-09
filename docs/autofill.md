@@ -26,9 +26,10 @@ typing, fingerprint spoofing, CAPTCHA solving); automating LinkedIn, whose terms
    this posting are disabled — and the resume in use, which drops open to the other versions when pressed. Under
    them, whose profile the form is filled from and how many of the blanks most forms ask about it still has;
    pressing it opens the profile in a window over the page, to edit it right there. A posting whose form isn't
-   showing yet gets a card in the top-right corner instead, for its match check and two buttons: **Save for
-   later**, which adds it to Outbox as a saved job, and **Mark as applied**. A posting Outbox already saved says so
-   when it's opened again.
+   showing yet gets a card in the top-right corner instead, for its match check and two buttons: **Mark as
+   applied**, first and the one that stands out, since it's what the owner mostly presses there, and **Save for
+   later**, which adds the posting to Outbox as a saved job. A posting Outbox already saved says so when it's opened
+   again.
 2. Press **Fill** (or the shortcut). Recognized fields fill in about a second and the resume PDF is attached; the
    button turns into a bar that fills meanwhile. Its count is paced by the stage the fill is at (reading the page,
    then filling), not measured field by field.
@@ -49,8 +50,8 @@ right", the settings — is in its ⋯ menu.
 
 Workday runs over several pages: Fill once per page. It draws each page's fields a while after the page loads, so
 the card opens when they appear. On its sign-up page the extension fills the email and Chrome generates and saves
-the password. On LinkedIn the card leads with **Log to Outbox**, since Easy Apply happens right there, with Save for
-later beside it. On other sites the card opens by itself on a form
+the password. On LinkedIn the first of a posting's two buttons reads **Log to Outbox**, since Easy Apply happens
+right there, and stays for a posting already applied to. On other sites the card opens by itself on a form
 with a resume upload and a name or email field — not on a job board's own apply flow, such as LinkedIn's or Indeed's
 — or from the toolbar, and fills what the field dictionary recognizes. Closed, the card stays closed on that page;
 the toolbar button brings it back. Where it lies over something the owner wants to see, its – button puts it aside:

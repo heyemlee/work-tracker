@@ -735,17 +735,17 @@ export function Card({ startOpen }: { startOpen: boolean }) {
         </div>
       );
   } else if (postingPage) {
-    // A posting without a form yet: save it for later, or say it was applied to. On LinkedIn, applying happens right
-    // there (Easy Apply), so logging comes first.
+    // A posting without a form yet: say it was applied to, or save it for later. Saying so comes first and stands
+    // out: it's what the owner mostly presses there, and on LinkedIn applying happens right on the page (Easy Apply).
     const saveButton =
       state.tracked !== null ? null : (
-        <button className={linkedin ? 'secondary' : 'primary'} onClick={save}>
+        <button className="secondary" onClick={save}>
           <Bookmark size={14} />
           {t('save')}
         </button>
       );
     const logButton = canLog && (
-      <button className={linkedin || !saveButton ? 'primary' : 'secondary'} onClick={log}>
+      <button className="primary" onClick={log}>
         {linkedin ? t('log') : t('markApplied')}
       </button>
     );
@@ -753,17 +753,8 @@ export function Card({ startOpen }: { startOpen: boolean }) {
       <>
         {state.tracked === 'saved' && <div className="hint">{t('alreadySaved')}</div>}
         <div className="actions">
-          {linkedin ? (
-            <>
-              {logButton}
-              {saveButton}
-            </>
-          ) : (
-            <>
-              {saveButton}
-              {logButton}
-            </>
-          )}
+          {logButton}
+          {saveButton}
         </div>
       </>
     );
