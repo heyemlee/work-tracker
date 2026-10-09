@@ -39,6 +39,8 @@
   --red-dot: #f93a37;
   --yellow-dot: #f4ac00;
   --green-dot: #10a37f;
+  --caution-fill: rgb(244 172 0 / 0.14);
+  --caution-edge: rgb(168 95 0 / 0.22);
   --acc-blue: #3478f6;
   --acc-purple: #9a5de0;
   --acc-pink: #e0569b;
@@ -91,6 +93,8 @@
   --yellow: #f2b84b;
   --green: #19c37d;
   --on-green: #0d0d0d;
+  --caution-fill: rgb(244 172 0 / 0.16);
+  --caution-edge: rgb(242 184 75 / 0.3);
   --acc-blue: #4c8dff;
   --acc-purple: #b17cf2;
   --acc-pink: #f06aa8;
@@ -451,6 +455,64 @@ a:focus-visible {
   cursor: pointer;
 }
 
+/* The posting was applied to before: the one thing the card says in color before a form is filled. Who applied
+   and when, a line each. */
+.applied {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--caution-fill);
+  box-shadow: inset 0 0 0 1px var(--caution-edge);
+}
+
+.applied-icon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--yellow);
+}
+
+.applied-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.applied-title {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.applied-by {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fg-2);
+}
+
+.applied-who {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.applied-when {
+  flex: none;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.applied-more {
+  font-size: 12px;
+  color: var(--yellow);
+  text-wrap: balance;
+}
+
 .section {
   display: flex;
   flex-direction: column;
@@ -573,6 +635,16 @@ a:focus-visible {
 .choice-note {
   flex: none;
   font-size: 12px;
+}
+
+/* An account that applied already can't be chosen, and says why in the color of the line above the accounts. */
+.choice:disabled .choice-note {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--caution-fill);
+  color: var(--yellow);
+  font-size: 11px;
+  font-weight: 600;
 }
 
 /* A line that opens something: the profile, in its own window. */

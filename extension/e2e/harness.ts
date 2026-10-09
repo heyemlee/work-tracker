@@ -4,6 +4,7 @@ import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { Snapshot } from '../../src/domain/types';
 import { makeProfile } from '../src/test/profiles';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -14,7 +15,7 @@ export const fixture = (path: string) => readFileSync(resolve(here, '../test/fix
 const RESUME_PDF = '%PDF-1.4\n% Outbox Autofill test resume\n';
 
 /** What Outbox answers: one account, one resume version with its PDF, nothing applied yet. */
-export const SNAPSHOT = {
+export const SNAPSHOT: Snapshot = {
   accounts: [
     {
       id: 'acc-1',
@@ -41,7 +42,7 @@ export const SNAPSHOT = {
 export interface OutboxMock {
   url: string;
   /** What Outbox answers for its snapshot: `SNAPSHOT`, until a spec puts another in its place. */
-  snapshot: typeof SNAPSHOT;
+  snapshot: Snapshot;
   quickAdds: Record<string, unknown>[];
   /** Profiles saved from the card's own window, oldest first. */
   profiles: Record<string, unknown>[];

@@ -153,14 +153,17 @@ export async function cardState(session: TabSession, outbox?: OutboxState): Prom
     aiKey(),
   ]);
   const job = matchedJob(snapshot, session);
-  const applied = new Set(job?.applications.map((application) => application.accountId) ?? []);
+  // The day each account applied to this posting: the later one, of two.
+  const applied = new Map<string, string>();
+  for (const { accountId, appliedAt } of job?.applications ?? [])
+    if (appliedAt > (applied.get(accountId) ?? '')) applied.set(accountId, appliedAt);
   const accounts = (snapshot?.accounts ?? []).map((account) => ({
     id: account.id,
     email: account.email || account.label,
     color: account.color,
-    applied: applied.has(account.id),
+    appliedAt: applied.get(account.id) ?? null,
   }));
-  const otherApplied = [...applied].some((id) => id !== session.accountId);
+  const otherApplied = [...applied.keys()].some((id) => id !== session.accountId);
   // The page may have been seen to change while the rest was read, and its list sent on its own (`pageHolds`): the
   // list here is of the tab as it is now, so that it never takes an older one's place on the card.
   const latest = (await getSession(session.tabId)) ?? session;

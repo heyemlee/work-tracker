@@ -40,8 +40,8 @@ export interface CardAccount {
   id: string;
   email: string;
   color: AccountColor;
-  /** Already applied to this posting from this account. */
-  applied: boolean;
+  /** The day this account applied to this posting, when it has. */
+  appliedAt: string | null;
 }
 
 export interface CardResume {

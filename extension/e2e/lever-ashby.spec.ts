@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { fixture, seed, serve, test } from './harness';
+import { fixture, seed, serve, SNAPSHOT, test } from './harness';
 
 const THANKS =
   '<!doctype html><title>Thanks</title><div class="content"><h3>Application submitted!</h3><p>Thanks for applying.</p></div>';
@@ -208,6 +208,71 @@ test('fills an Ashby application: system fields, yes/no buttons, radio groups', 
   await expect(page.getByLabel('Decline to self-identify').first()).toBeChecked();
   await expect(page.getByLabel('LinkedIn', { exact: true })).toBeChecked();
   await page.locator('outbox-autofill .card').screenshot({ path: 'e2e/output/ashby-card.png' });
+});
+
+test('says first that a posting was applied to before: who did, when, and what a second account risks', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  const at = '2026-09-01T00:00:00.000Z';
+  const day = new Date(Date.now() - 3 * 86_400_000);
+  outbox.snapshot = {
+    ...SNAPSHOT,
+    accounts: [
+      ...SNAPSHOT.accounts,
+      { ...SNAPSHOT.accounts[0]!, id: 'acc-2', email: 'alex.chen@example.org', color: 'purple' },
+    ],
+    companies: [{ id: 'com-1', name: 'Notion', createdAt: at }],
+    jobs: [
+      {
+        id: 'job-1',
+        companyId: 'com-1',
+        title: 'Software Engineer, Developer Platform',
+        url: 'https://jobs.ashbyhq.com/notion/1fc309c8-da20-4ff2-84c7-8b863ece2b0a',
+        notes: '',
+        createdAt: at,
+        updatedAt: at,
+      },
+    ],
+    applications: [
+      {
+        id: 'app-1',
+        jobId: 'job-1',
+        accountId: 'acc-2',
+        channelId: null,
+        resumeId: null,
+        stage: 'applied',
+        rejected: false,
+        appliedAt: `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`,
+        source: 'user',
+        createdAt: at,
+        updatedAt: at,
+      },
+    ],
+  };
+  await serve(context, 'jobs.ashbyhq.com', fixture('ashby/notion.html'), THANKS);
+  const page = await context.newPage();
+  await page.goto('https://jobs.ashbyhq.com/notion/1fc309c8-da20-4ff2-84c7-8b863ece2b0a/application');
+
+  const card = page.locator('outbox-autofill');
+  const said = card.getByRole('status');
+  await expect(said).toContainText('Already applied to this posting');
+  await expect(said).toContainText('alex.chen@example.org');
+  await expect(said).toContainText('3 days ago');
+  // Ashby merges candidates by name: the account still free to apply is one more of the same person.
+  await expect(said).toContainText('a second account may count as a duplicate');
+  // It stands above the accounts, where the one that applied can't be chosen.
+  expect(
+    await said.evaluate(
+      (line) =>
+        line.compareDocumentPosition(line.parentElement!.querySelector('[role="radiogroup"]')!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ),
+  ).toBeTruthy();
+  await expect(card.getByRole('radio', { name: /alex\.chen@example\.org/ })).toBeDisabled();
+  await expect(card.getByRole('radio', { name: 'alex@example.com' })).toBeChecked();
 });
 
 // Ashby saves each answer to its server as it changes, and there saves that overlap overwrite each other: a form

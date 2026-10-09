@@ -128,9 +128,13 @@ describe('saving a posting for later', () => {
     const state = await saveJob(TAB, URL_);
     expect(quickAddOrQueue).not.toHaveBeenCalled();
     expect(state.tracked).toBe('saved');
+    expect(state.accounts[0]?.appliedAt).toBeNull();
 
+    // Applied to: by which account, and on what day.
     loadSnapshot.mockResolvedValue(tracked(true));
-    expect((await saveJob(TAB, URL_)).tracked).toBe('applied');
+    const applied = await saveJob(TAB, URL_);
+    expect(applied.tracked).toBe('applied');
+    expect(applied.accounts).toEqual([expect.objectContaining({ id: 'a1', appliedAt: '2026-09-28' })]);
   });
 
   it('only counts a log with an account as the first application', async () => {

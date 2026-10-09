@@ -3,6 +3,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  CircleAlert,
   CircleCheck,
   Ellipsis,
   FileText,
@@ -19,6 +20,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
+import { parseIsoDate, toIsoDate } from '@domain/dates';
 import { browser } from 'wxt/browser';
 import { BrandMark } from '../../../../src/ui/BrandMark';
 import { adapterFor } from '../../content/adapters';
@@ -140,6 +142,14 @@ function Choices({
       </Track>
     </div>
   );
+}
+
+/** How long ago a day was: today, yesterday, so many days ago. */
+function ago(day: string, t: Translate): string {
+  const today = parseIsoDate(toIsoDate(new Date())).getTime();
+  // Rounded: a day the clocks change on isn't 24 hours long.
+  const days = Math.max(0, Math.round((today - parseIsoDate(day).getTime()) / 86_400_000));
+  return days === 0 ? t('ago.today') : days === 1 ? t('ago.yesterday') : t('ago.days', { n: days });
 }
 
 /** At most one line above the controls: what's wrong, and where to fix it. */
@@ -746,6 +756,28 @@ export function Card({ startOpen }: { startOpen: boolean }) {
         <div className="body">
           {noticeLine}
 
+          {/* Applied to before: said first and in color, with who did and when. A form is as quick to fill a second
+            time as the first. */}
+          {state.tracked === 'applied' && (
+            <div className="applied" role="status">
+              <CircleAlert size={16} className="applied-icon" />
+              <div className="applied-text">
+                <div className="applied-title">{t('appliedBefore')}</div>
+                {state.accounts.map(
+                  (item) =>
+                    item.appliedAt && (
+                      <div key={item.id} className="applied-by">
+                        <span className="dot" style={{ background: `var(--acc-${item.color})` }} />
+                        <span className="applied-who">{item.email}</span>
+                        <span className="applied-when">{ago(item.appliedAt, t)}</span>
+                      </div>
+                    ),
+                )}
+                {state.duplicateHint && <div className="applied-more">{t('duplicate')}</div>}
+              </div>
+            </div>
+          )}
+
           {/* Who applies and with which resume, each choice on its own line: an address or a file name cut short
             tells nothing. */}
           {(state.hasForm || linkedin) && state.accounts.length > 0 && (
@@ -758,8 +790,8 @@ export function Card({ startOpen }: { startOpen: boolean }) {
                   id: item.id,
                   icon: <span className="dot" style={{ background: `var(--acc-${item.color})` }} />,
                   text: item.email,
-                  note: item.applied ? t('applied') : undefined,
-                  disabled: item.applied,
+                  note: item.appliedAt ? t('applied') : undefined,
+                  disabled: Boolean(item.appliedAt),
                 }))}
                 onChoose={(accountId) => select({ accountId })}
               />
@@ -798,8 +830,6 @@ export function Card({ startOpen }: { startOpen: boolean }) {
               </button>
             </section>
           )}
-          {state.duplicateHint && <div className="hint">{t('duplicate')}</div>}
-
           {main}
           {!busy && !ending && <Checklist items={state.checklist} t={t} />}
           {flash && <div className="hint">{flash}</div>}

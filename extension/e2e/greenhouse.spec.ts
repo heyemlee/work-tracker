@@ -297,7 +297,7 @@ const SECOND_ACCOUNT = {
   ...SNAPSHOT.accounts[0]!,
   id: 'acc-2',
   email: 'alex.chen@example.org',
-  color: 'green',
+  color: 'green' as const,
 };
 
 for (const rebuilt of [false, true]) {
