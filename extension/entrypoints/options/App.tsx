@@ -8,9 +8,9 @@ import type { Ats } from '../../src/model';
 import { missingItems } from '../../src/profile/profile';
 import {
   apiKeyItem,
-  DEFAULT_SETTINGS,
   finalsItem,
   memoryItem,
+  MODELS,
   OPENAI_MODELS,
   openaiKeyItem,
   pendingLogsItem,
@@ -19,6 +19,7 @@ import {
   settingsItem,
   snapshotsItem,
   usageItem,
+  withDefaults,
   type Effort,
   type FormSnapshot,
   type Settings,
@@ -316,11 +317,11 @@ function Ai({ s, settings }: Props) {
               <Choice
                 label={s('model')}
                 value={settings.model}
-                options={[
-                  { value: 'claude-opus-5', label: 'Claude Opus 5' },
-                  { value: 'claude-sonnet-5', label: 'Claude Sonnet 5' },
-                ]}
-                onChange={(model) => save(settings, { model })}
+                options={MODELS.map((model) => ({ value: model.id, label: model.name }))}
+                onChange={(model) => {
+                  setResult(null);
+                  save(settings, { model });
+                }}
               />
             )}
             <Field label={s('key')}>
@@ -561,7 +562,7 @@ function General({ s, settings }: Props) {
  */
 export function App({ framed, dark }: { framed: boolean; dark: boolean }) {
   const kept = useItem(settingsItem);
-  const settings = { ...DEFAULT_SETTINGS, ...(kept ?? {}) };
+  const settings = withDefaults(kept);
   const s = strings(resolveLanguage(settings.language));
   const [section, setSection] = useState<Section>('connection');
 

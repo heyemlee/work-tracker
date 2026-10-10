@@ -167,7 +167,7 @@ One release with everything below, no MVP. Design: [autofill.md](autofill.md).
       `extension/.output/chrome-mv3`.
 - [ ] Paste the API key for `https://api.kabi.pro` under AI on the options page and press Save, which tries it
       (or pick Anthropic and use a Console key with a monthly spend limit).
-- [ ] Run the free-text eval once (about $1) and choose Opus 5 or Sonnet 5 from its report.
+- [ ] Run the free-text eval once (about $1) and choose Opus 5.5 or Sonnet 5.5 from its report.
 - [ ] On each Workday page, pick "This page didn't fill right" in the card's ⋯ menu once: Workday's forms are behind sign-in, so these
       snapshots are its only fixtures.
 - [ ] After the next Workday application, look for it in Outbox: what tells a Workday submission (2026-10-08) is

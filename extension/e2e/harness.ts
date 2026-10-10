@@ -147,7 +147,7 @@ export async function seed(worker: Worker, outboxUrl: string): Promise<void> {
       await chrome.storage.local.set({
         settings: {
           outboxUrl,
-          model: 'claude-opus-5',
+          model: 'claude-opus-5-5',
           sameCompanyLimit: 3,
           language: 'en',
           aiEnabled: false,

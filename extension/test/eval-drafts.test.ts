@@ -20,7 +20,7 @@ import { questions } from './eval-questions';
  * A run costs about $1 and writes `evals/drafts-<date>.md`. It needs RUN_EVAL, so it never runs with the tests.
  */
 
-const MODELS: Model[] = ['claude-opus-5', 'claude-sonnet-5'];
+const MODELS: Model[] = ['claude-opus-5-5', 'claude-sonnet-5-5'];
 
 // What DRAFT_SYSTEM tells the model not to write.
 const BANNED =

@@ -411,8 +411,14 @@ or anything else keep an answer isn't known.
 - Claude is called from the service worker with `@anthropic-ai/sdk` — not through the Worker, so the free Workers
   plan is enough. The owner's API key stays in `chrome.storage.local`; the monthly spend limit is set in the Anthropic
   Console.
-- **Model:** Claude Opus 5 by default, Claude Sonnet 5 selectable; the free-text eval decides whether to switch.
-  Server-side refusal fallback is on.
+- **Model:** the four on Anthropic's own list (`MODELS` in `storage.ts`: Claude Fable 5.1, Opus 5.5, Sonnet 5.5 and
+  Haiku 5.5; since 2026-10-09, when the owner found the settings still offering Opus 5 and Sonnet 5). Opus 5.5 by
+  default; the free-text eval decides between it and Sonnet 5.5. A choice saved under an older name is read as the
+  model that took its place (`withDefaults`). Server-side refusal fallback is on, except for Haiku 5.5, which has
+  none. Each request names its own effort and sends no `thinking`, so the newer models needed nothing else; the key
+  check's limit went from 200 to 1024 tokens, since these models think before they answer and thinking counts
+  against it. Spend is counted at each model's list price, the cache's own rates included (`PRICES` in
+  `background/ai.ts`).
 - **Or an OpenAI-compatible endpoint** (added 2026-09-28, and the default since): OpenAI's chat completions API at any
   address — the owner uses a proxy at `https://api.kabi.pro` (`/v1` is added to a bare address) with GPT-5.6 Terra.
   Its own key, also only in `chrome.storage.local`. Structured output goes as a strict `json_schema`, a resume as a PDF
@@ -436,7 +442,8 @@ or anything else keep an answer isn't known.
   another). One that fails among the others gets a second go alone, since a proxy may turn a crowd away; one that
   fails twice ends the AI's part with its error, and what the others drafted stays.
 - Page text is data, never instructions, and critical questions never reach the model.
-- **Cost estimate** at 30 applications a day: about $20 a month on Opus 5, under $10 on Sonnet 5.
+- **Cost estimate** at 30 applications a day: about $20 a month on Opus 5, under $10 on Sonnet 5. It was made on
+  those two and not again: per token, Opus 5.5 costs a fifth less than Opus 5, and Sonnet 5.5 the same as Sonnet 5.
 
 ## 7. Match check
 

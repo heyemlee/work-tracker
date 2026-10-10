@@ -25,11 +25,19 @@ import {
 } from '../storage';
 import { norm, overlap } from '../text';
 
-/** List prices, US dollars per million tokens: [input, output]. */
-const PRICES: Record<Model, [number, number]> = {
-  'claude-opus-5': [5, 25],
-  'claude-sonnet-5': [2, 10],
+/**
+ * List prices, US dollars per million tokens. Writing to the cache costs 1.25 times the input price on each; what
+ * reading from it costs differs. Haiku 5.5's are for prompts of up to 100,000 tokens, which nothing here comes near.
+ */
+const PRICES: Record<Model, { input: number; output: number; cacheRead: number }> = {
+  'claude-fable-5-1': { input: 10, output: 50, cacheRead: 0.25 },
+  'claude-opus-5-5': { input: 4, output: 20, cacheRead: 0.2 },
+  'claude-sonnet-5-5': { input: 2, output: 10, cacheRead: 0.1 },
+  'claude-haiku-5-5': { input: 0.1, output: 0.5, cacheRead: 0.01 },
 };
+
+/** A request these models decline goes to another model on Anthropic's side. Haiku 5.5 has no such fallback. */
+const fallsBack = (model: Model) => model !== 'claude-haiku-5-5';
 
 export class NoApiKey extends Error {
   constructor() {
@@ -51,14 +59,14 @@ async function client(): Promise<{ anthropic: Anthropic; model: Model }> {
 
 async function recordUsage(message: BetaMessage, model: Model): Promise<void> {
   const usage = message.usage;
-  const [inputPrice, outputPrice] = PRICES[model];
+  const price = PRICES[model];
   const cachedRead = usage.cache_read_input_tokens ?? 0;
   const cachedWrite = usage.cache_creation_input_tokens ?? 0;
   const cost =
-    (usage.input_tokens * inputPrice +
-      cachedRead * inputPrice * 0.1 +
-      cachedWrite * inputPrice * 1.25 +
-      usage.output_tokens * outputPrice) /
+    (usage.input_tokens * price.input +
+      cachedRead * price.cacheRead +
+      cachedWrite * price.input * 1.25 +
+      usage.output_tokens * price.output) /
     1e6;
   await addUsage(usage.input_tokens + cachedRead + cachedWrite, usage.output_tokens, cost);
 }
@@ -94,8 +102,8 @@ function addUsage(inputTokens: number, outputTokens: number, cost: number): Prom
 }
 
 /**
- * One request. Claude Opus 5 may decline a request its safety classifiers flag; the server-side fallback then
- * re-runs it on another model instead of returning the refusal.
+ * One request. Claude's models may decline a request their safety classifiers flag; the server-side fallback then
+ * re-runs it on another model instead of returning the refusal, where the model has one.
  */
 interface AskParams {
   system: string;
@@ -130,8 +138,9 @@ async function request(params: AskParams): Promise<Reply> {
   const message = await anthropic.beta.messages.create({
     model,
     max_tokens: params.maxTokens,
-    betas: ['server-side-fallback-2026-07-01'],
-    fallbacks: 'default',
+    ...(fallsBack(model)
+      ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' as const }
+      : {}),
     output_config: {
       effort: params.effort,
       ...(params.schema ? { format: { type: 'json_schema', schema: params.schema } } : {}),
@@ -454,7 +463,8 @@ export async function parseResume(pdf: string, pdfText = ''): Promise<ResumeFact
 
 /**
  * A tiny request to check the key works, for the settings. It goes out as any other would, so it also tells
- * whether the endpoint takes the reasoning effort it's sent.
+ * whether the endpoint takes the reasoning effort it's sent. These models think before they answer, and thinking
+ * counts against the limit: there's room for it beside the one word.
  */
 export async function checkKey(): Promise<{ ok: boolean; error?: string; effortRefused?: boolean }> {
   try {
@@ -463,9 +473,12 @@ export async function checkKey(): Promise<{ ok: boolean; error?: string; effortR
       material: 'Key check.',
       prompt: 'Say OK.',
       effort: 'low',
-      maxTokens: 200,
+      maxTokens: 1024,
     });
-    return { ok: reply.text !== null, effortRefused: reply.effortRefused ?? false };
+    const effortRefused = reply.effortRefused ?? false;
+    return reply.text === null
+      ? { ok: false, error: reply.why ?? undefined, effortRefused }
+      : { ok: true, effortRefused };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) };
   }

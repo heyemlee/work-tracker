@@ -3,7 +3,19 @@ import type { Answer, Ats, FieldKind, FieldStatus, Hint } from './model';
 import type { Profile } from './profile/schema';
 import type { MemoryEntry } from './rules/memory';
 
-export type Model = 'claude-opus-5' | 'claude-sonnet-5';
+/** Anthropic's current models, the most capable first, under the names its API and its site give them. */
+export const MODELS = [
+  { id: 'claude-fable-5-1', name: 'Claude Fable 5.1' },
+  { id: 'claude-opus-5-5', name: 'Claude Opus 5.5' },
+  { id: 'claude-sonnet-5-5', name: 'Claude Sonnet 5.5' },
+  { id: 'claude-haiku-5-5', name: 'Claude Haiku 5.5' },
+] as const;
+export type Model = (typeof MODELS)[number]['id'];
+/** The models the settings offered before these, and the one that took each one's place. */
+const SUCCEEDED_BY: Record<string, Model> = {
+  'claude-opus-5': 'claude-opus-5-5',
+  'claude-sonnet-5': 'claude-sonnet-5-5',
+};
 /** Who answers the AI requests: Anthropic, or any endpoint speaking OpenAI's chat completions API. */
 export type Provider = 'anthropic' | 'openai';
 export type Language = 'auto' | 'en' | 'zh';
@@ -33,7 +45,7 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   outboxUrl: 'https://tracker.haoyang.us',
   provider: 'openai',
-  model: 'claude-opus-5',
+  model: 'claude-opus-5-5',
   openaiBaseUrl: 'https://api.kabi.pro',
   openaiModel: 'gpt-5.6-terra',
   openaiEffort: 'auto',
@@ -114,9 +126,19 @@ export const lastUsedItem = storage.defineItem<{ accountId: string | null; resum
   },
 );
 
-/** Settings merged over the defaults, so settings saved by an older version still carry every key. */
+/**
+ * Settings as they were kept, over the defaults: those saved by an older version still carry every key, and a model
+ * that's no longer offered gives way to the one after it.
+ */
+export function withDefaults(kept: Partial<Settings> | null | undefined): Settings {
+  const settings = { ...DEFAULT_SETTINGS, ...kept };
+  const model: string = settings.model;
+  if (MODELS.some((offered) => offered.id === model)) return settings;
+  return { ...settings, model: SUCCEEDED_BY[model] ?? DEFAULT_SETTINGS.model };
+}
+
 export async function getSettings(): Promise<Settings> {
-  return { ...DEFAULT_SETTINGS, ...(await settingsItem.getValue()) };
+  return withDefaults(await settingsItem.getValue());
 }
 
 /** The key for the provider in use; empty when there's none. */

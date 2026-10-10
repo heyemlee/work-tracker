@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { afterEach } from 'vitest';
-import { apiKeyItem, DEFAULT_SETTINGS, openaiKeyItem, settingsItem, usageItem } from '../storage';
+import {
+  apiKeyItem,
+  DEFAULT_SETTINGS,
+  openaiKeyItem,
+  settingsItem,
+  usageItem,
+  type Settings,
+} from '../storage';
 import { makeProfile } from '../test/profiles';
 
 const create = vi.fn();
@@ -88,18 +95,63 @@ describe('answerFields', () => {
     const request = JSON.stringify(create.mock.calls[0]?.[0]);
     expect(request).not.toMatch(/F-1|STEM OPT|sponsor|citizenship|decline|veteran|disability/i);
     expect(create.mock.calls[0]?.[0]).toMatchObject({
-      model: 'claude-opus-5',
+      model: 'claude-opus-5-5',
       fallbacks: 'default',
       betas: ['server-side-fallback-2026-07-01'],
     });
+  });
+
+  it('asks for no fallback of the model that has none', async () => {
+    await settingsItem.setValue({ ...DEFAULT_SETTINGS, provider: 'anthropic', model: 'claude-haiku-5-5' });
+    create.mockResolvedValue(reply(JSON.stringify({ answers: [] })));
+    await answerFields(questions, makeProfile(), null, '2026-09-27');
+    const sent = create.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(sent.model).toBe('claude-haiku-5-5');
+    expect(sent).not.toHaveProperty('fallbacks');
+    expect(sent).not.toHaveProperty('betas');
+  });
+
+  it('asks the model that took the place of one the settings no longer offer', async () => {
+    // As an older version of the settings saved it.
+    await settingsItem.setValue({
+      ...DEFAULT_SETTINGS,
+      provider: 'anthropic',
+      model: 'claude-sonnet-5',
+    } as unknown as Settings);
+    create.mockResolvedValue(reply(JSON.stringify({ answers: [] })));
+    await answerFields(questions, makeProfile(), null, '2026-09-27');
+    expect(create.mock.calls[0]?.[0]).toMatchObject({ model: 'claude-sonnet-5-5', fallbacks: 'default' });
   });
 
   it('records what each request cost', async () => {
     create.mockResolvedValue(reply(JSON.stringify({ answers: [] })));
     await answerFields(questions, makeProfile(), null, '2026-09-27');
     const [today] = await usageItem.getValue();
-    // Opus 5 at $5 in / $25 out per million tokens: 1000 × 5 + 200 × 25 = 10,000 micro-dollars.
-    expect(today?.cost).toBeCloseTo(0.01, 6);
+    // Opus 5.5 at $4 in / $20 out per million tokens: 1000 × 4 + 200 × 20 = 8,000 micro-dollars.
+    expect(today?.cost).toBeCloseTo(0.008, 6);
+  });
+
+  it.each([
+    // In micro-dollars: 1000 in, 100,000 read from the cache, 10,000 written to it (1.25 × in), 200 out.
+    ['claude-fable-5-1', 1000 * 10 + 100_000 * 0.25 + 10_000 * 12.5 + 200 * 50],
+    ['claude-opus-5-5', 1000 * 4 + 100_000 * 0.2 + 10_000 * 5 + 200 * 20],
+    ['claude-sonnet-5-5', 1000 * 2 + 100_000 * 0.1 + 10_000 * 2.5 + 200 * 10],
+    ['claude-haiku-5-5', 1000 * 0.1 + 100_000 * 0.01 + 10_000 * 0.125 + 200 * 0.5],
+  ] as const)('prices %s by its own list, the cache included', async (model, microDollars) => {
+    await settingsItem.setValue({ ...DEFAULT_SETTINGS, provider: 'anthropic', model });
+    create.mockResolvedValue({
+      ...reply(JSON.stringify({ answers: [] })),
+      usage: {
+        input_tokens: 1000,
+        output_tokens: 200,
+        cache_read_input_tokens: 100_000,
+        cache_creation_input_tokens: 10_000,
+      },
+    });
+    await answerFields(questions, makeProfile(), null, '2026-09-27');
+    const [today] = await usageItem.getValue();
+    expect(today?.cost).toBeCloseTo(microDollars / 1e6, 9);
+    expect(today?.inputTokens).toBe(111_000);
   });
 
   it('counts every request of a form, though they come back together', async () => {
@@ -224,6 +276,34 @@ describe('parseResume', () => {
     expect(facts.name).toEqual({ first: 'Alex', last: 'Chen', preferred: '' });
     expect(facts.education[0]).toMatchObject({ school: 'MIT', gpa: '3.9', start: '' });
     expect(facts.skills).toEqual(['Python', 'Go', 'SQL']);
+  });
+});
+
+describe('checkKey', () => {
+  beforeEach(async () => {
+    create.mockReset();
+    await apiKeyItem.setValue('sk-ant-test');
+    await settingsItem.setValue({ ...DEFAULT_SETTINGS, provider: 'anthropic' });
+    await usageItem.setValue([]);
+  });
+
+  it('leaves the model room to think before its one word', async () => {
+    create.mockResolvedValue(reply('OK'));
+    expect(await checkKey()).toEqual({ ok: true, effortRefused: false });
+    expect(create.mock.calls[0]?.[0]).toMatchObject({ max_tokens: 1024, output_config: { effort: 'low' } });
+  });
+
+  it('says what the provider said of a key it turns away', async () => {
+    create.mockRejectedValue(new Error('401 {"type":"error","error":{"message":"invalid x-api-key"}}'));
+    expect(await checkKey()).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('invalid x-api-key'),
+    });
+  });
+
+  it('says why when the request went through and no answer came of it', async () => {
+    create.mockResolvedValue(reply('', 'max_tokens'));
+    expect(await checkKey()).toMatchObject({ ok: false, error: 'the answer was cut off at the token limit' });
   });
 });
 

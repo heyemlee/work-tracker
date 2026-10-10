@@ -135,6 +135,79 @@ test('offers the models the owner settled on, and how hard they think', async ({
     .toMatchObject({ openaiModel: 'gpt-5.6-sol', openaiEffort: 'high' });
 });
 
+test('offers Anthropic’s current models, and asks the one chosen as that model is asked', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  // Anthropic, stood in for: what it's sent is kept, and every key is let in.
+  const sent: { beta: string | undefined; body: Record<string, unknown> }[] = [];
+  await context.route('https://api.anthropic.com/**', (route) => {
+    const body = route.request().postDataJSON() as Record<string, unknown>;
+    sent.push({ beta: route.request().headers()['anthropic-beta'], body });
+    return route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'msg_1',
+        type: 'message',
+        role: 'assistant',
+        model: body.model,
+        content: [{ type: 'text', text: 'OK' }],
+        stop_reason: 'end_turn',
+        stop_sequence: null,
+        usage: { input_tokens: 20, output_tokens: 3 },
+      }),
+    });
+  });
+  await seed(worker, outbox.url);
+  await worker.evaluate(async () => {
+    const { local } = (globalThis as unknown as Extension).chrome.storage;
+    const { settings } = (await local.get('settings')) as { settings: object };
+    // As the settings saved it while Sonnet 5 was the one on offer.
+    await local.set({
+      settings: { ...settings, aiEnabled: true, provider: 'anthropic', model: 'claude-sonnet-5' },
+      anthropicKey: 'sk-ant-test-1234',
+    });
+  });
+  await serve(context, 'careers.acme-robotics.com', FORM, THANKS);
+  const page = await context.newPage();
+  await page.goto('https://careers.acme-robotics.com/jobs/42/apply');
+  const card = page.locator('outbox-autofill');
+  await card.getByRole('button', { name: 'More' }).click({ timeout: 15_000 });
+  await card.getByRole('menuitem', { name: 'Settings' }).click();
+  const settings = page.frameLocator('outbox-autofill iframe');
+  await settings.getByRole('tab', { name: 'AI' }).click();
+
+  // The four on Anthropic's own list, and the older choice moved to the one that took its place.
+  const model = settings.getByLabel('Model');
+  await expect(model.locator('option')).toHaveText([
+    'Claude Fable 5.1',
+    'Claude Opus 5.5',
+    'Claude Sonnet 5.5',
+    'Claude Haiku 5.5',
+  ]);
+  await expect(model).toHaveValue('claude-sonnet-5-5');
+  const check = async () => {
+    await settings.getByRole('button', { name: 'Check' }).click();
+    await expect(settings.getByText('The key works.')).toBeVisible();
+    return sent.at(-1);
+  };
+  // A request it declines is run again on another model, on Anthropic's side.
+  expect(await check()).toMatchObject({
+    beta: 'server-side-fallback-2026-07-01',
+    body: { model: 'claude-sonnet-5-5', fallbacks: 'default', output_config: { effort: 'low' } },
+  });
+
+  // Haiku 5.5 has no such fallback, and isn't asked for one.
+  await model.selectOption('claude-haiku-5-5');
+  await expect.poll(() => stored(worker, 'settings')).toMatchObject({ model: 'claude-haiku-5-5' });
+  await expect(settings.getByText('The key works.')).toHaveCount(0);
+  const asked = await check();
+  expect(asked?.body).toMatchObject({ model: 'claude-haiku-5-5' });
+  expect(asked?.body).not.toHaveProperty('fallbacks');
+  expect(asked?.beta).toBeUndefined();
+});
+
 test('deletes what the extension keeps in this browser, asked twice', async ({ context, worker, outbox }) => {
   await seed(worker, outbox.url);
   await worker.evaluate(
