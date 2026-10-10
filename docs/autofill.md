@@ -455,7 +455,9 @@ else keep an answer isn't known.
   sent as `reasoning_effort`. Thinking is paid for in output tokens, so a request made with more effort than it was
   sized for gets more room in step (`roomFor` in `background/ai.ts`), up to the largest limit a request already
   uses. An endpoint that refuses the parameter gets the request again without it, and the settings' key check says
-  so.
+  so. A model kept empty, as it could be while the model's name was typed into a field, is read as the default
+  (2026-10-10): the list that took the field's place showed its first model as if that were chosen, and no request
+  could go out for want of one.
 - **Field fallback:** one structured-output request per form listing the unplaced fields; each answer comes back with
   a confidence.
 - **Free-text drafts** ("Why this company?") are grounded in real material: the resume, STAR stories, approved

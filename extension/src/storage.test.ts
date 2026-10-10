@@ -28,6 +28,12 @@ describe('withDefaults', () => {
     expect(withDefaults(older({ model: 'claude-3-opus' })).model).toBe(DEFAULT_SETTINGS.model);
   });
 
+  it('takes an OpenAI-compatible model kept empty as none chosen', () => {
+    expect(withDefaults(older({ openaiModel: '' })).openaiModel).toBe(DEFAULT_SETTINGS.openaiModel);
+    expect(withDefaults(older({ openaiModel: '  ' })).openaiModel).toBe(DEFAULT_SETTINGS.openaiModel);
+    expect(withDefaults({ openaiModel: 'gpt-5.6-luna' }).openaiModel).toBe('gpt-5.6-luna');
+  });
+
   it('offers the default itself', () => {
     expect(MODELS.map((model) => model.id)).toContain(DEFAULT_SETTINGS.model);
   });

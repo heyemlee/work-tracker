@@ -113,7 +113,8 @@ test('offers the models the owner settled on, and how hard they think', async ({
   await worker.evaluate(async () => {
     const { local } = (globalThis as unknown as Extension).chrome.storage;
     const { settings } = (await local.get('settings')) as { settings: object };
-    await local.set({ settings: { ...settings, aiEnabled: true, provider: 'openai' } });
+    // The model kept empty, as it could be while its name was typed into a field.
+    await local.set({ settings: { ...settings, aiEnabled: true, provider: 'openai', openaiModel: '' } });
   });
   await serve(context, 'careers.acme-robotics.com', FORM, THANKS);
   const page = await context.newPage();
@@ -124,7 +125,8 @@ test('offers the models the owner settled on, and how hard they think', async ({
   const settings = page.frameLocator('outbox-autofill iframe');
   await settings.getByRole('tab', { name: 'AI' }).click();
 
-  // Three models to pick from, not everything the endpoint lists.
+  // Three models to pick from, not everything the endpoint lists. With none kept, the list shows the one requests
+  // go to, not its first as if that were chosen.
   const model = settings.getByLabel('Model');
   await expect(model.locator('option')).toHaveText(['gpt-5.6-luna', 'gpt-5.6-sol', 'gpt-5.6-terra']);
   await expect(model).toHaveValue('gpt-5.6-terra');

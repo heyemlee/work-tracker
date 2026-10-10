@@ -329,6 +329,15 @@ describe('an OpenAI-compatible provider', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
+  it('asks the default model where the settings kept none', async () => {
+    // As the settings could be left while the model's name was typed, not picked.
+    await settingsItem.setValue({ ...DEFAULT_SETTINGS, provider: 'openai', openaiModel: '' });
+    fetchMock.mockImplementation(async () => answer('OK'));
+    expect(await checkKey()).toMatchObject({ ok: true });
+    const body = JSON.parse(String((fetchMock.mock.calls[0]?.[1] as RequestInit).body)) as { model: string };
+    expect(body.model).toBe(DEFAULT_SETTINGS.openaiModel);
+  });
+
   it('adds /v1 to a bare address', () => {
     expect(openaiEndpoint('https://api.kabi.pro')).toBe('https://api.kabi.pro/v1');
     expect(openaiEndpoint('https://api.kabi.pro/')).toBe('https://api.kabi.pro/v1');

@@ -128,10 +128,13 @@ export const lastUsedItem = storage.defineItem<{ accountId: string | null; resum
 
 /**
  * Settings as they were kept, over the defaults: those saved by an older version still carry every key, and a model
- * that's no longer offered gives way to the one after it.
+ * that's no longer offered gives way to the one after it. An OpenAI-compatible model kept empty is none chosen: it
+ * could be while its name was typed, and the list that took the field's place would show its first model as if that
+ * were the one in use, while no request could go out.
  */
 export function withDefaults(kept: Partial<Settings> | null | undefined): Settings {
   const settings = { ...DEFAULT_SETTINGS, ...kept };
+  if (!settings.openaiModel.trim()) settings.openaiModel = DEFAULT_SETTINGS.openaiModel;
   const model: string = settings.model;
   if (MODELS.some((offered) => offered.id === model)) return settings;
   return { ...settings, model: SUCCEEDED_BY[model] ?? DEFAULT_SETTINGS.model };
