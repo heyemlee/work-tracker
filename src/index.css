@@ -85,6 +85,10 @@
   --acc-gray: #8e8e93;
 }
 
+:root[data-theme='white'] {
+  --canvas: #ffffff;
+}
+
 :root[data-theme='dark'] {
   color-scheme: dark;
   --canvas: #000000;
@@ -209,6 +213,11 @@
       radial-gradient(36% 32% at 92% 10%, var(--glow-2), transparent 70%),
       radial-gradient(44% 38% at 80% 100%, var(--glow-3), transparent 70%),
       radial-gradient(32% 30% at 4% 92%, var(--glow-4), transparent 70%);
+  }
+
+  /* White is the light theme on a plain page. */
+  [data-theme='white'] .ambient {
+    display: none;
   }
 
   /* Liquid glass. Refraction, when supported, replaces backdrop-filter inline (see useLiquidGlass). */

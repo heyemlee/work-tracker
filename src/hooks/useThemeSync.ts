@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
-import { usePrefs } from '../state/prefs';
+import { usePrefs, type ThemePref } from '../state/prefs';
 import { useMediaQuery } from './useMediaQuery';
 
 /** Mirrors the theme preference and visual tweaks onto <html>, where the CSS tokens read them. */
-export function useThemeSync(): 'light' | 'dark' {
+export function useThemeSync(): Exclude<ThemePref, 'system'> {
   const theme = usePrefs((p) => p.theme);
   const tweaks = usePrefs((p) => p.tweaks);
   const systemDark = useMediaQuery('(prefers-color-scheme: dark)');

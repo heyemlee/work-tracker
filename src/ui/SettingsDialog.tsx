@@ -368,15 +368,18 @@ function GeneralSettings({ snapshot }: { snapshot: Snapshot }) {
           onChange={(value) => updatePrefs({ locale: value })}
         />
       </Row>
-      <Row className="justify-between pl-3">
-        <span className="text-[14px]">{t('settings.theme')}</span>
+      {/* Four segments are wider than a phone leaves beside the label: the control drops to a line of its own. */}
+      <Row className="flex-wrap justify-between gap-y-0 pl-3">
+        <span className="py-1.5 text-[14px]">{t('settings.theme')}</span>
         <SegmentedControl<ThemePref>
           size="sm"
+          className="ml-auto"
           label={t('settings.theme')}
           layoutId="settings-theme"
           segments={[
             { value: 'system', label: t('theme.system') },
             { value: 'light', label: t('theme.light') },
+            { value: 'white', label: t('theme.white') },
             { value: 'dark', label: t('theme.dark') },
           ]}
           value={theme}

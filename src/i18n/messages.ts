@@ -118,6 +118,7 @@ const en = {
 
   'theme.system': 'System',
   'theme.light': 'Light',
+  'theme.white': 'White',
   'theme.dark': 'Dark',
 
   'channel.company_site': 'Company site',
@@ -632,6 +633,7 @@ const zh: Record<MessageKey, string> = {
 
   'theme.system': '跟随系统',
   'theme.light': '浅色',
+  'theme.white': '纯白',
   'theme.dark': '深色',
 
   'channel.company_site': '官网',

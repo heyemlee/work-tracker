@@ -62,6 +62,7 @@ export function TweakPanel() {
           segments={[
             { value: 'system', label: t('theme.system') },
             { value: 'light', label: t('theme.light') },
+            { value: 'white', label: t('theme.white') },
             { value: 'dark', label: t('theme.dark') },
           ]}
           value={theme}

@@ -3,7 +3,7 @@ import type { Nudge } from '../domain/setup';
 import type { Id, Snapshot } from '../domain/types';
 
 export type Locale = 'en' | 'zh';
-export type ThemePref = 'system' | 'light' | 'dark';
+export type ThemePref = 'system' | 'light' | 'white' | 'dark';
 export const ACCENTS = ['mono', 'blue', 'indigo', 'teal'] as const;
 export type Accent = (typeof ACCENTS)[number];
 
