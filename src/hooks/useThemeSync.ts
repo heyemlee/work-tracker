@@ -12,6 +12,11 @@ export function useThemeSync(): Exclude<ThemePref, 'system'> {
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.theme = resolved;
+    // The browser's own bars take the page's color: index.html's tags only know the system's light and dark.
+    const canvas = getComputedStyle(root).getPropertyValue('--canvas').trim();
+    for (const meta of document.querySelectorAll('meta[name="theme-color"]')) {
+      meta.setAttribute('content', canvas);
+    }
     root.dataset.accent = tweaks.accent;
     root.style.setProperty('--glass-blur', `${tweaks.blur}px`);
     root.style.setProperty('--glass-k', String(tweaks.tint));

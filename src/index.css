@@ -114,11 +114,6 @@
   --glass-sheen: rgb(255 255 255 / 0.1);
   --glass-shadow: 0 22px 54px -18px rgb(0 0 0 / 0.75), 0 4px 12px -6px rgb(0 0 0 / 0.5);
 
-  --glow-1: rgb(60 100 255 / 0.3);
-  --glow-2: rgb(190 70 150 / 0.22);
-  --glow-3: rgb(30 160 140 / 0.22);
-  --glow-4: rgb(210 130 50 / 0.16);
-
   --st-saved: #a1a1a6;
   --st-saved-bg: rgb(255 255 255 / 0.08);
   --st-applied: #a6bfe2;
@@ -215,8 +210,9 @@
       radial-gradient(32% 30% at 4% 92%, var(--glow-4), transparent 70%);
   }
 
-  /* White is the light theme on a plain page. */
-  [data-theme='white'] .ambient {
+  /* Only light has the glow: white and dark are plain pages. */
+  [data-theme='white'] .ambient,
+  [data-theme='dark'] .ambient {
     display: none;
   }
 

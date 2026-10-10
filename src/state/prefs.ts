@@ -51,7 +51,7 @@ export const DEFAULT_TWEAKS: Tweaks = { accent: 'mono', blur: 20, tint: 1, refra
 
 const DEFAULTS: Prefs = {
   locale: 'en',
-  theme: 'system',
+  theme: 'white',
   hideRejected: false,
   tweaks: DEFAULT_TWEAKS,
   lastUsed: { accountIds: [], channelId: 'ch_company_site', resumeId: null },
