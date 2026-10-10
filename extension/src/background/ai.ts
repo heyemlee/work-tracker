@@ -15,6 +15,8 @@ import {
 import { resumeShape } from '../ai/resumeShape';
 import type { Profile } from '../profile/schema';
 import {
+  ANTHROPIC_API,
+  anthropicAddress,
   apiKeyItem,
   getSettings,
   openaiKeyItem,
@@ -46,18 +48,29 @@ export class NoApiKey extends Error {
   }
 }
 
-async function client(): Promise<{ anthropic: Anthropic; model: Model }> {
+/** Claude, where the settings say it is. `own`: at Anthropic's own API, not at a proxy speaking for it. */
+async function client(): Promise<{ anthropic: Anthropic; model: Model; own: boolean }> {
   const key = await apiKeyItem.getValue();
   if (!key) throw new NoApiKey();
-  const { model } = await getSettings();
+  const { model, anthropicBaseUrl } = await getSettings();
+  const address = anthropicAddress(anthropicBaseUrl);
+  const own = address === ANTHROPIC_API;
   // The service worker is the only place the key is used; it never reaches a page.
   return {
-    anthropic: new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true, maxRetries: 2, timeout: 90_000 }),
+    anthropic: new Anthropic({
+      apiKey: key,
+      ...(own ? {} : { baseURL: address }),
+      dangerouslyAllowBrowser: true,
+      maxRetries: 2,
+      timeout: 90_000,
+    }),
     model,
+    own,
   };
 }
 
-async function recordUsage(message: BetaMessage, model: Model): Promise<void> {
+/** A request's tokens, and what they cost at Anthropic's list price: a proxy's own prices aren't known. */
+async function recordUsage(message: BetaMessage, model: Model, own: boolean): Promise<void> {
   const usage = message.usage;
   const price = PRICES[model];
   const cachedRead = usage.cache_read_input_tokens ?? 0;
@@ -68,7 +81,7 @@ async function recordUsage(message: BetaMessage, model: Model): Promise<void> {
       cachedWrite * price.input * 1.25 +
       usage.output_tokens * price.output) /
     1e6;
-  await addUsage(usage.input_tokens + cachedRead + cachedWrite, usage.output_tokens, cost);
+  await addUsage(usage.input_tokens + cachedRead + cachedWrite, usage.output_tokens, own ? cost : 0);
 }
 
 /** The last request's count, still being written or done: a form's requests can come back together. */
@@ -76,8 +89,8 @@ let counted: Promise<void> = Promise.resolve();
 
 /**
  * Adds a request to today's line, once the request before it has been added: two that read the line at the same
- * time would each write their own sum, and one would be lost. An OpenAI-compatible endpoint's prices aren't known,
- * so its cost stays 0.
+ * time would each write their own sum, and one would be lost. A proxy's prices aren't known, nor an
+ * OpenAI-compatible endpoint's, so their cost stays 0.
  */
 function addUsage(inputTokens: number, outputTokens: number, cost: number): Promise<void> {
   const added = counted.then(async () => {
@@ -131,21 +144,29 @@ async function ask(params: AskParams): Promise<string | null> {
   return (await request(params)).text;
 }
 
+/** The system prompt with the answer's shape spelled out, for an endpoint that may drop structured output. */
+const shaped = (system: string, schema: Record<string, unknown>) =>
+  `${system}\n\nReply with JSON only, in exactly the shape of this JSON schema: every key it lists, and no others.\n${JSON.stringify(schema)}`;
+
 async function request(params: AskParams): Promise<Reply> {
   const settings = await getSettings();
   if (settings.provider === 'openai') return askOpenAI(params, settings);
-  const { anthropic, model } = await client();
+  const { anthropic, model, own } = await client();
+  // A proxy gets the request Anthropic's own API does, but for the fallback, which only that API has. It may hand
+  // the request on without the structured output, so the prompt shows the shape too.
   const message = await anthropic.beta.messages.create({
     model,
     max_tokens: params.maxTokens,
-    ...(fallsBack(model)
+    ...(own && fallsBack(model)
       ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' as const }
       : {}),
     output_config: {
       effort: params.effort,
       ...(params.schema ? { format: { type: 'json_schema', schema: params.schema } } : {}),
     },
-    system: [{ type: 'text', text: params.system }],
+    system: [
+      { type: 'text', text: params.schema && !own ? shaped(params.system, params.schema) : params.system },
+    ],
     messages: [
       {
         role: 'user',
@@ -177,7 +198,7 @@ async function request(params: AskParams): Promise<Reply> {
       },
     ],
   });
-  await recordUsage(message, model);
+  await recordUsage(message, model, own);
   if (message.stop_reason === 'refusal') return { text: null, why: 'the model declined' };
   if (message.stop_reason === 'max_tokens')
     return { text: null, why: 'the answer was cut off at the token limit' };
@@ -243,9 +264,7 @@ async function askOpenAI(params: AskParams, settings: Settings): Promise<Reply> 
       {
         role: 'system',
         // A proxy may drop structured output; the schema in the prompt still shows the model the shape.
-        content: params.schema
-          ? `${params.system}\n\nReply with JSON only, in exactly the shape of this JSON schema: every key it lists, and no others.\n${JSON.stringify(params.schema)}`
-          : params.system,
+        content: params.schema ? shaped(params.system, params.schema) : params.system,
       },
       { role: 'user', content },
     ],

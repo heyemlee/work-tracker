@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SETTINGS, MODELS, withDefaults, type Settings } from './storage';
+import {
+  ANTHROPIC_API,
+  anthropicAddress,
+  DEFAULT_SETTINGS,
+  MODELS,
+  withDefaults,
+  type Settings,
+} from './storage';
 
 /** Settings as an older version saved them: any keys, any model's name. */
 const older = (kept: Record<string, unknown>) => kept as unknown as Partial<Settings>;
@@ -36,5 +43,30 @@ describe('withDefaults', () => {
 
   it('offers the default itself', () => {
     expect(MODELS.map((model) => model.id)).toContain(DEFAULT_SETTINGS.model);
+  });
+});
+
+describe('anthropicAddress', () => {
+  it('is Anthropic’s own where none is given', () => {
+    expect(anthropicAddress('')).toBe(ANTHROPIC_API);
+    expect(anthropicAddress('   ')).toBe(ANTHROPIC_API);
+    expect(DEFAULT_SETTINGS.anthropicBaseUrl).toBe(ANTHROPIC_API);
+  });
+
+  it('is without what the SDK adds itself', () => {
+    expect(anthropicAddress('https://relay.example/v1')).toBe('https://relay.example');
+    expect(anthropicAddress(' https://relay.example/v1/ ')).toBe('https://relay.example');
+    expect(anthropicAddress('https://relay.example/')).toBe('https://relay.example');
+    expect(anthropicAddress('https://relay.example/claude/v1')).toBe('https://relay.example/claude');
+  });
+
+  it('is https where no scheme is typed, and as typed where one is', () => {
+    expect(anthropicAddress('relay.example')).toBe('https://relay.example');
+    expect(anthropicAddress('http://127.0.0.1:8787')).toBe('http://127.0.0.1:8787');
+  });
+
+  it('is Anthropic’s own however that is typed', () => {
+    expect(anthropicAddress('https://api.anthropic.com/')).toBe(ANTHROPIC_API);
+    expect(anthropicAddress('api.anthropic.com/v1')).toBe(ANTHROPIC_API);
   });
 });

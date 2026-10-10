@@ -16,6 +16,8 @@ import { toBackground, type SettingsStatus } from '../../src/messages';
 import type { Ats } from '../../src/model';
 import { missingItems } from '../../src/profile/profile';
 import {
+  ANTHROPIC_API,
+  anthropicAddress,
   apiKeyItem,
   finalsItem,
   memoryItem,
@@ -485,8 +487,10 @@ function Ai({ s, settings }: Props) {
               ]}
               onChange={(provider) => change({ provider })}
             />
+            {/* Each provider has an address of its own, and a key: one half typed for the one isn't the other's. */}
             {openai ? (
               <Kept
+                key="openaiBaseUrl"
                 s={s}
                 label={s('baseUrl')}
                 name="openaiBaseUrl"
@@ -495,15 +499,18 @@ function Ai({ s, settings }: Props) {
                 onSave={(openaiBaseUrl) => change({ openaiBaseUrl })}
               />
             ) : (
-              <Choice
-                label={s('model')}
-                note={<Saved s={s} name="model" />}
-                value={settings.model}
-                options={MODELS.map((model) => ({ value: model.id, label: model.name }))}
-                onChange={(model) => change({ model })}
+              // Anthropic's own API unless another address is typed; emptied, it's Anthropic's own again.
+              <Kept
+                key="anthropicBaseUrl"
+                s={s}
+                label={s('baseUrl')}
+                name="anthropicBaseUrl"
+                value={settings.anthropicBaseUrl}
+                placeholder={ANTHROPIC_API}
+                clean={anthropicAddress}
+                onSave={(anthropicBaseUrl) => change({ anthropicBaseUrl })}
               />
             )}
-            {/* Each provider has a key of its own: one half typed for the one isn't the other's. */}
             <Key
               key={settings.provider}
               s={s}
@@ -512,13 +519,21 @@ function Ai({ s, settings }: Props) {
               onKept={forget}
               onCheck={(written) => void check(written)}
             />
-            {openai && (
+            {openai ? (
               <Choice
                 label={s('model')}
                 note={<Saved s={s} name="openaiModel" />}
                 value={settings.openaiModel}
                 options={models.map((model) => ({ value: model, label: model }))}
                 onChange={(openaiModel) => change({ openaiModel })}
+              />
+            ) : (
+              <Choice
+                label={s('model')}
+                note={<Saved s={s} name="model" />}
+                value={settings.model}
+                options={MODELS.map((model) => ({ value: model.id, label: model.name }))}
+                onChange={(model) => change({ model })}
               />
             )}
             {openai && (
@@ -537,9 +552,10 @@ function Ai({ s, settings }: Props) {
               {verdict.text}
             </p>
           )}
-          {/* An OpenAI-compatible endpoint's prices aren't known here: its tokens, not its cost. */}
+          {/* What Anthropic's own API costs is known here; a proxy's prices aren't, nor an OpenAI-compatible
+              endpoint's: their tokens, not their cost. */}
           <Note>
-            {openai
+            {openai || anthropicAddress(settings.anthropicBaseUrl) !== ANTHROPIC_API
               ? s('usageTokens', { tokens: tokens.toLocaleString() })
               : s('usageCost', { cost: cost.toFixed(2) })}
           </Note>

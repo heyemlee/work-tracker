@@ -11,10 +11,15 @@ import {
 import { makeProfile } from '../test/profiles';
 
 const create = vi.fn();
+/** What each client was made with: the key, and the address where it isn't Anthropic's own. */
+const made = vi.fn();
 
 vi.mock('@anthropic-ai/sdk', () => ({
   default: class {
     beta = { messages: { create } };
+    constructor(options: unknown) {
+      made(options);
+    }
   },
 }));
 
@@ -276,6 +281,64 @@ describe('parseResume', () => {
     expect(facts.name).toEqual({ first: 'Alex', last: 'Chen', preferred: '' });
     expect(facts.education[0]).toMatchObject({ school: 'MIT', gpa: '3.9', start: '' });
     expect(facts.skills).toEqual(['Python', 'Go', 'SQL']);
+  });
+});
+
+describe('Claude at another address than Anthropic’s', () => {
+  const at = (anthropicBaseUrl: string) =>
+    settingsItem.setValue({ ...DEFAULT_SETTINGS, provider: 'anthropic', anthropicBaseUrl });
+  const asked = async () => {
+    create.mockResolvedValue(reply(JSON.stringify({ answers: [] })));
+    await answerFields(questions, makeProfile(), null, '2026-09-27');
+    const sent = create.mock.calls.at(-1)?.[0] as {
+      system: { text: string }[];
+      output_config: unknown;
+    } & Record<string, unknown>;
+    return { sent, client: made.mock.calls.at(-1)?.[0] as Record<string, unknown> };
+  };
+
+  beforeEach(async () => {
+    create.mockReset();
+    made.mockReset();
+    await apiKeyItem.setValue('sk-relay-test');
+    await at('https://relay.example');
+    await usageItem.setValue([]);
+  });
+
+  it('is asked there, with the same key', async () => {
+    const { client } = await asked();
+    expect(client).toMatchObject({ apiKey: 'sk-relay-test', baseURL: 'https://relay.example' });
+    // However the address was saved: the SDK adds `/v1` itself.
+    await at('relay.example/v1/');
+    expect((await asked()).client).toMatchObject({ baseURL: 'https://relay.example' });
+  });
+
+  it('isn’t asked for the fallback, which only Anthropic’s own API has, and is told the answer’s shape in words too', async () => {
+    const { sent } = await asked();
+    expect(sent.model).toBe('claude-opus-5-5');
+    expect(sent).not.toHaveProperty('fallbacks');
+    expect(sent).not.toHaveProperty('betas');
+    expect(sent.output_config).toMatchObject({ effort: 'low', format: { type: 'json_schema' } });
+    expect(sent.system[0]?.text).toContain('Reply with JSON only');
+    expect(sent.system[0]?.text).toContain('"confidence"');
+  });
+
+  it('has its tokens counted, and no cost: its prices aren’t Anthropic’s', async () => {
+    await asked();
+    const [today] = await usageItem.getValue();
+    expect(today).toMatchObject({ inputTokens: 1000, outputTokens: 200, cost: 0 });
+  });
+
+  it('is Anthropic’s own API again where the settings name it, or none', async () => {
+    for (const address of ['https://api.anthropic.com', 'api.anthropic.com/v1/', '']) {
+      await at(address);
+      const { sent, client } = await asked();
+      expect(client).not.toHaveProperty('baseURL');
+      expect(sent).toMatchObject({ fallbacks: 'default' });
+      expect(sent.system[0]?.text).not.toContain('Reply with JSON only');
+    }
+    const [today] = await usageItem.getValue();
+    expect(today?.cost).toBeGreaterThan(0);
   });
 });
 

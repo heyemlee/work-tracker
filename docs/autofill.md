@@ -444,6 +444,15 @@ else keep an answer isn't known.
   check's limit went from 200 to 1024 tokens, since these models think before they answer and thinking counts
   against it. Spend is counted at each model's list price, the cache's own rates included (`PRICES` in
   `background/ai.ts`).
+- **Another address for Claude** (2026-10-10; the owner asked for an `ANTHROPIC_BASE_URL`, as the OpenAI-compatible
+  provider has its address): the Anthropic provider has an address in the settings too, Anthropic's own unless
+  another is typed. A proxy speaking the Messages API is asked as Anthropic is, with the same `x-api-key` and the
+  SDK's `/v1/messages` under the address, but for two things. It isn't asked for the server-side fallback, which
+  only Anthropic's own API has; and the answer's schema is spelled out in the system prompt as well, since a proxy
+  may hand a request on without its structured output. Its tokens are counted and no cost: a proxy's prices aren't
+  Anthropic's. The address is kept as the SDK takes one (a `/v1` typed at its end comes off, a bare host gets
+  `https://`), and a field emptied goes back to Anthropic's own. Tried on a stand-in; no proxy of the owner's was
+  asked, so whether theirs takes `x-api-key` and these requests is for the settings' key check to tell.
 - **Or an OpenAI-compatible endpoint** (added 2026-09-28, and the default since): OpenAI's chat completions API at any
   address — the owner uses a proxy at `https://api.kabi.pro` (`/v1` is added to a bare address) with GPT-5.6 Terra.
   Its own key, also only in `chrome.storage.local`. Structured output goes as a strict `json_schema`, a resume as a PDF

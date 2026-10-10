@@ -16,6 +16,20 @@ const SUCCEEDED_BY: Record<string, Model> = {
   'claude-opus-5': 'claude-opus-5-5',
   'claude-sonnet-5': 'claude-sonnet-5-5',
 };
+/** Where Anthropic's own API is. Its provider goes there unless the settings name another address. */
+export const ANTHROPIC_API = 'https://api.anthropic.com';
+
+/**
+ * An address for Claude as the SDK takes one, which adds `/v1` itself: `relay.example/v1/` is
+ * `https://relay.example`. With none given, Anthropic's own.
+ */
+export function anthropicAddress(typed: string): string {
+  const trimmed = typed.trim();
+  if (!trimmed) return ANTHROPIC_API;
+  const whole = /^[a-z][a-z\d+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  return whole.replace(/\/+$/, '').replace(/\/v1$/i, '').replace(/\/+$/, '');
+}
+
 /** Who answers the AI requests: Anthropic, or any endpoint speaking OpenAI's chat completions API. */
 export type Provider = 'anthropic' | 'openai';
 export type Language = 'auto' | 'en' | 'zh';
@@ -30,6 +44,8 @@ export interface Settings {
   outboxUrl: string;
   provider: Provider;
   model: Model;
+  /** Where Claude is asked: Anthropic's own API, or a proxy speaking its Messages API. */
+  anthropicBaseUrl: string;
   /** An OpenAI-compatible endpoint: OpenAI's own, or a proxy. `/v1` is added when it has no path. */
   openaiBaseUrl: string;
   /** Whatever model name the endpoint accepts. */
@@ -46,6 +62,7 @@ export const DEFAULT_SETTINGS: Settings = {
   outboxUrl: 'https://tracker.haoyang.us',
   provider: 'openai',
   model: 'claude-opus-5-5',
+  anthropicBaseUrl: ANTHROPIC_API,
   openaiBaseUrl: 'https://api.kabi.pro',
   openaiModel: 'gpt-5.6-terra',
   openaiEffort: 'auto',
