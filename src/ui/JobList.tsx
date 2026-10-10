@@ -45,7 +45,7 @@ export function JobList({ groups, accounts, today, selectedId, onSelect }: JobLi
           <section key={group.key} aria-label={label}>
             <h2 className="mb-2 flex items-baseline gap-2 px-1 text-[13px] font-semibold text-fg-2">
               {label}
-              <span className="font-normal text-fg-3 tabular-nums">{group.rows.length}</span>
+              <span className="font-normal text-fg-3 tabular-nums">{group.total}</span>
             </h2>
             <div className="card overflow-hidden">
               {group.rows.map((row, index) => (

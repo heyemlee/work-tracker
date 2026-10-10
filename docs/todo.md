@@ -16,7 +16,8 @@ works. Still the single column and the floating glass toolbar; still the owner's
       an account menu with Settings, language, CSV export, the setup guide and sign-out. (Since 2026-10-10 the
       status and the menu are one ⋯ menu after New, with a dot only while the extension needs something; the
       language toggle is in Settings.)
-- [x] The status filter moves above the list, with a count on each segment.
+- [x] The status filter moves above the list, with a count on each segment. (Since 2026-10-10 the list comes 25
+      jobs to a page, with a pager at the filter's right and under the list.)
 - [x] Phones: a glass tab bar at the bottom and a round New button beside it.
 - [x] Profile page, from the panel: a completeness score weighted by what forms ask, each blank a link to its
       section.

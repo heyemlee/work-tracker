@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRows, countByFilter, filterRows, groupRows, searchRows } from './rows';
+import { buildRows, countByFilter, filterRows, groupRows, pageGroups, searchRows } from './rows';
 import { account, application, company, job, snapshot } from './testing';
 
 const accounts = [account('a', 'A'), account('b', 'B')];
@@ -71,5 +71,58 @@ describe('groupRows', () => {
       ['yesterday', ['j3']],
       ['lastWeek', ['j1']],
     ]);
+  });
+});
+
+describe('pageGroups', () => {
+  // Three jobs applied to today, three yesterday, one last week.
+  const days = [
+    '2026-09-23',
+    '2026-09-23',
+    '2026-09-23',
+    '2026-09-22',
+    '2026-09-22',
+    '2026-09-22',
+    '2026-09-15',
+  ];
+  const groups = groupRows(
+    buildRows(
+      snapshot({
+        accounts,
+        companies: [company('c1', 'Northwind AI')],
+        jobs: days.map((_, i) => job(`k${i}`, 'c1')),
+        applications: days.map((appliedAt, i) =>
+          application(`q${i}`, `k${i}`, 'a', { appliedAt, createdAt: `2026-09-23T1${9 - i}:00:00.000Z` }),
+        ),
+      }),
+    ),
+    '2026-09-23',
+  );
+  const shown = (page: number) =>
+    pageGroups(groups, page, 2).groups.map((g) => [g.key, g.rows.map((r) => r.job.id), g.total]);
+
+  it('cuts the sections into pages, a cut section showing on both with its whole count', () => {
+    expect(shown(0)).toEqual([['today', ['k0', 'k1'], 3]]);
+    expect(shown(1)).toEqual([
+      ['today', ['k2'], 3],
+      ['yesterday', ['k3'], 3],
+    ]);
+    expect(shown(2)).toEqual([['yesterday', ['k4', 'k5'], 3]]);
+    expect(shown(3)).toEqual([['lastWeek', ['k6'], 1]]);
+  });
+
+  it('shows the last page for one past it, and the first for one before it', () => {
+    expect(pageGroups(groups, 9, 2)).toMatchObject({ page: 3, pages: 4 });
+    expect(shown(9)).toEqual(shown(3));
+    expect(pageGroups(groups, -1, 2)).toMatchObject({ page: 0, pages: 4 });
+  });
+
+  it('leaves a list that fits on one page as it is', () => {
+    expect(pageGroups(groups, 0)).toEqual({ groups, page: 0, pages: 1 });
+    expect(pageGroups(groups, 0, 7)).toEqual({ groups, page: 0, pages: 1 });
+  });
+
+  it('has no pages for an empty list', () => {
+    expect(pageGroups([], 0)).toEqual({ groups: [], page: 0, pages: 0 });
   });
 });

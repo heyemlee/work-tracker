@@ -1,7 +1,15 @@
 import { AtSign, Send } from 'lucide-react';
-import { memo, useDeferredValue, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { memo, useDeferredValue, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { computeStats } from '../domain/insights';
-import { countByFilter, filterRows, groupRows, searchRows, type Filter, type JobRow } from '../domain/rows';
+import {
+  countByFilter,
+  filterRows,
+  groupRows,
+  pageGroups,
+  searchRows,
+  type Filter,
+  type JobRow,
+} from '../domain/rows';
 import type { Id, Snapshot } from '../domain/types';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useToday } from '../hooks/useToday';
@@ -10,6 +18,7 @@ import { usePrefs } from '../state/prefs';
 import { navigate, PAGE_PATHS } from '../state/router';
 import { DetailPanel } from './DetailPanel';
 import { JobList } from './JobList';
+import { Pager } from './Pager';
 import { Button } from './primitives';
 import { SetupChecklist } from './SetupChecklist';
 import { StatsRow } from './StatsRow';
@@ -17,6 +26,9 @@ import { FilterControl } from './Toolbar';
 
 /** Width the open inspector takes from the page on wide screens: panel + its margin. */
 const PANEL_RESERVE = 444;
+
+/** How far down the window the filter sits once a page is turned from below it: just clear of the toolbar. */
+const LIST_TOP = 84;
 
 interface ApplicationsPageProps {
   snapshot: Snapshot;
@@ -49,15 +61,28 @@ const Applications = memo(function Applications({
   const goal = usePrefs((p) => p.dailyGoal);
   const wide = useMediaQuery('(min-width: 1180px)');
   const [filter, setFilter] = useState<Filter>('all');
+  // A page is a page of what's listed: another filter or another search starts from the first one again.
+  const listed = `${filter}\n${hideRejected}\n${query}`;
+  const [turned, setTurned] = useState({ listed, page: 0 });
+  if (turned.listed !== listed) setTurned({ listed, page: 0 });
+  const filterRow = useRef<HTMLDivElement>(null);
 
   const searched = useMemo(
     () => searchRows(rows, { query, hideRejected, accounts: snapshot.accounts }),
     [rows, query, hideRejected, snapshot.accounts],
   );
   const counts = useMemo(() => countByFilter(searched), [searched]);
-  const groups = useMemo(() => groupRows(filterRows(searched, filter), today), [searched, filter, today]);
+  const sections = useMemo(() => groupRows(filterRows(searched, filter), today), [searched, filter, today]);
+  const { groups, page, pages } = useMemo(() => pageGroups(sections, turned.page), [sections, turned.page]);
   const stats = useMemo(() => computeStats(snapshot.applications, today), [snapshot.applications, today]);
   const selected = selectedId ? (rows.find((row) => row.job.id === selectedId) ?? null) : null;
+
+  const turnTo = (next: number) => {
+    setTurned({ listed, page: next });
+    // Turned from the foot of a page, the next one starts at its top; turned from the top, nothing moves.
+    const top = filterRow.current?.getBoundingClientRect().top ?? LIST_TOP;
+    if (top < LIST_TOP) window.scrollBy(0, top - LIST_TOP);
+  };
 
   return (
     <div style={{ '--reserve': `${selected && wide ? PANEL_RESERVE : 0}px` } as CSSProperties}>
@@ -66,24 +91,42 @@ const Applications = memo(function Applications({
           <SetupChecklist snapshot={snapshot} />
           <StatsRow stats={stats} today={today} goal={goal} />
 
-          <div className="mt-10 mb-3 -mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
-            <FilterControl
-              filter={filter}
-              onFilter={setFilter}
-              counts={counts}
-              layoutId="filter"
-              size={wide ? 'md' : 'sm'}
-            />
+          <div ref={filterRow} className="mt-10 mb-3 flex items-center justify-between gap-3">
+            <div className="-mx-4 min-w-0 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
+              <FilterControl
+                filter={filter}
+                onFilter={setFilter}
+                counts={counts}
+                layoutId="filter"
+                size={wide ? 'md' : 'sm'}
+              />
+            </div>
+            {pages > 1 && (
+              <Pager
+                page={page}
+                pages={pages}
+                onPage={turnTo}
+                size={wide ? 'md' : 'sm'}
+                className="shrink-0 max-sm:hidden"
+              />
+            )}
           </div>
 
           {groups.length > 0 ? (
-            <JobList
-              groups={groups}
-              accounts={snapshot.accounts}
-              today={today}
-              selectedId={selectedId}
-              onSelect={onSelect}
-            />
+            <>
+              <JobList
+                groups={groups}
+                accounts={snapshot.accounts}
+                today={today}
+                selectedId={selectedId}
+                onSelect={onSelect}
+              />
+              {pages > 1 && (
+                <div className="mt-6 flex justify-center">
+                  <Pager page={page} pages={pages} onPage={turnTo} />
+                </div>
+              )}
+            </>
           ) : rows.length > 0 ? (
             <p className="py-16 text-center text-[14px] text-fg-2">{t('list.noMatch')}</p>
           ) : snapshot.accounts.length === 0 ? (

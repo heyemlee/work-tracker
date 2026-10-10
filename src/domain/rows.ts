@@ -98,6 +98,8 @@ export function countByFilter(rows: readonly JobRow[]): Record<Filter, number> {
 export interface RowGroup {
   key: GroupKey;
   rows: JobRow[];
+  /** How many jobs the section holds in all: more than `rows` on a page that shows part of it. */
+  total: number;
 }
 
 /** Splits already-sorted rows into date sections, preserving order. */
@@ -106,8 +108,43 @@ export function groupRows(rows: readonly JobRow[], today: IsoDate): RowGroup[] {
   for (const row of rows) {
     const key = groupKeyFor(row.sortDate, today);
     const last = groups.at(-1);
-    if (last?.key === key) last.rows.push(row);
-    else groups.push({ key, rows: [row] });
+    if (last?.key === key) {
+      last.rows.push(row);
+      last.total += 1;
+    } else groups.push({ key, rows: [row], total: 1 });
   }
   return groups;
+}
+
+/** Jobs on one page of the list: about a day's applications, so the page is as long after a year as after a week. */
+export const PAGE_SIZE = 25;
+
+export interface RowPage {
+  groups: RowGroup[];
+  /** Zero-based. The last page, when a later one was asked for. */
+  page: number;
+  pages: number;
+}
+
+/** One page of the sections. A section the page cuts shows again on the next one, with its whole count on both. */
+export function pageGroups(groups: readonly RowGroup[], page: number, size = PAGE_SIZE): RowPage {
+  const count = groups.reduce((sum, group) => sum + group.rows.length, 0);
+  const pages = Math.ceil(count / size);
+  const shown = Math.min(Math.max(page, 0), Math.max(pages - 1, 0));
+
+  const cut: RowGroup[] = [];
+  let skip = shown * size;
+  let room = size;
+  for (const group of groups) {
+    if (room === 0) break;
+    if (skip >= group.rows.length) {
+      skip -= group.rows.length;
+      continue;
+    }
+    const rows = group.rows.slice(skip, skip + room);
+    cut.push({ ...group, rows });
+    skip = 0;
+    room -= rows.length;
+  }
+  return { groups: cut, page: shown, pages };
 }

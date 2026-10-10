@@ -66,6 +66,15 @@ rejected, it displays the furthest rejected one, dimmed. Filters use the rollup.
   that applied is a chip showing its own status. Rejected jobs are dimmed, and so are jobs whose applications got
   no reply in 30 days; one click hides rejected ones. Accounts are shown by their email address everywhere, since
   that's what tells them apart.
+- **Paging** — the list comes 25 jobs to a page since 2026-10-10, about a day's applications, so the page is as
+  long after a year as after a week and only 25 rows are ever drawn. A pager (`‹ 1 / 3 ›`) sits at the right of the
+  filter and again under the list (under it alone on a phone), and not at all while everything fits on one page.
+  A section a page cuts shows again on the next one, with its whole count on both. Another filter or another
+  search starts from the first page; search and the filter's counts still cover every job. Turned from the foot
+  of a page, the next one starts at its top. The owner's first idea was a page that is whatever the window holds,
+  with no scrolling: measured, that is 12 rows on their window and 7 on a laptop's, so every day's applications
+  would be cut into two to five pages, and a page would change with the window. No keys turn the page, the
+  address doesn't keep it, and its size isn't a setting.
 - **Header** — a KPI row (applied today against the daily goal, the last 7 days, active OAs), then a segmented
   control `All · Saved · Applied · OA · Offer` with a count on each. The OA rate over 30 days was on the row until
   2026-10-07; Insights has it.
