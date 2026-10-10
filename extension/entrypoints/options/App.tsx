@@ -447,9 +447,11 @@ function Ai({ s, settings }: Props) {
     await written;
     const found = await checkKey();
     if (mine !== asked.current) return;
+    const detail = found.error ?? '';
     setVerdict(
       !found.ok
-        ? { tone: 'bad', text: s('keyBad', { detail: found.error ?? '' }) }
+        ? // Both providers' errors begin with the status. A 401 is the key itself turned away: said in plain words.
+          { tone: 'bad', text: s(/^401\b/.test(detail) ? 'keyRefused' : 'keyBad', { detail }) }
         : found.effortRefused && openai && settings.openaiEffort !== 'auto'
           ? { tone: 'warn', text: s('keyOkNoEffort') }
           : { tone: 'good', text: s('keyOk') },

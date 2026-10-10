@@ -142,8 +142,8 @@ what they'd typed was saved): "Press Enter to save" while an address or a key is
 is kept when Enter is pressed or the field is left, and an address emptied goes back to the one kept. A key can't be
 read back once typed, so its label says "Saved" for as long as one is kept, and the field shows its last four
 characters as a field that's filled. Left without a press it's kept like any other field, and tried only at Enter or
-the button: a key goes to the provider when the owner asks. The check's line says the two things apart: "The saved
-key didn't pass the check", and then what the provider answered. The window appears in
+the button: a key goes to the provider when the owner asks. The check's line says the two things apart — "The saved
+key didn't pass the check" — and words a 401 plainly instead of showing the provider's JSON. The window appears in
 place rather than gliding in: Chrome drops presses on a frame from another origin while it moves and for half a
 second after. Where a page won't show the frame, the settings open in a tab after 6 s. Outbox's own page asks for
 the settings too ("Open extension settings", in its toolbar and its setup guide), and since 2026-10-07 gets the same

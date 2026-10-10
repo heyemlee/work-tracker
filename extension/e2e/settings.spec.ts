@@ -215,7 +215,7 @@ test('says how to save what’s typed, then that it’s saved, and of a key the 
     // Tried, it isn't let in: the key stays kept all the same, and the line says which of the two failed.
     await settings.getByRole('button', { name: 'Check' }).click();
     await expect(
-      settings.getByText(/^The saved key didn’t pass the check: 401 .*Incorrect API key/),
+      settings.getByText(/^The saved key didn’t pass the check: the provider doesn’t recognize it \(401\)/),
     ).toBeVisible();
     expect(await stored(worker, 'openaiKey')).toBe('sk-wrong-key-1234');
 
