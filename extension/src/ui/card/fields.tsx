@@ -17,17 +17,27 @@ export function Field({
   label,
   wide,
   bare,
+  note,
   children,
 }: {
   label: string;
   wide?: boolean;
   /** The label is said, not shown: the entry's own title already names the field. */
   bare?: boolean;
+  /** Something said of the field at the end of its label's line: that what's in it was saved. */
+  note?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <label className={`field${wide ? ' wide' : ''}`}>
-      <span className={bare ? 'unseen' : undefined}>{label}</span>
+      {note === undefined ? (
+        <span className={bare ? 'unseen' : undefined}>{label}</span>
+      ) : (
+        <span className="field-head">
+          {label}
+          {note}
+        </span>
+      )}
       {children}
     </label>
   );
@@ -135,14 +145,16 @@ export function Choice<T extends string>({
   value,
   options,
   onChange,
+  note,
 }: {
   label: string;
   value: T;
   options: { value: T; label: string }[];
   onChange: (value: T) => void;
+  note?: ReactNode;
 }) {
   return (
-    <Field label={label}>
+    <Field label={label} note={note}>
       <span className="select">
         <select className="input" value={value} onChange={(event) => onChange(event.target.value as T)}>
           {options.map((option) => (
@@ -328,15 +340,17 @@ export function Count({
   onChange,
   max,
   placeholder,
+  note,
 }: {
   label: string;
   value: number | null;
   onChange: (value: number | null) => void;
   max: number;
   placeholder?: string;
+  note?: ReactNode;
 }) {
   return (
-    <Field label={label}>
+    <Field label={label} note={note}>
       <input
         className="input"
         type="number"

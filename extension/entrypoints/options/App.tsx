@@ -1,5 +1,14 @@
-import { X } from 'lucide-react';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { Check, X } from 'lucide-react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { WxtStorageItem } from 'wxt/utils/storage';
 import { BrandMark } from '../../../src/ui/BrandMark';
 import { checkKey } from '../../src/background/ai';
@@ -56,8 +65,67 @@ function download(name: string, data: unknown) {
   URL.revokeObjectURL(url);
 }
 
-const save = (settings: Settings, change: Partial<Settings>) =>
-  void settingsItem.setValue({ ...settings, ...change });
+/** What was written last, and whether the browser kept it: the field it belongs to says so. */
+interface Mark {
+  name: string;
+  kept: boolean;
+  at: number;
+}
+
+interface Saving {
+  mark: Mark | null;
+  /** Says at the field called `name` how a write to the browser's storage ended; resolves to whether it held. */
+  wrote: (name: string, write: Promise<unknown>) => Promise<boolean>;
+}
+
+const SavingContext = createContext<Saving>({ mark: null, wrote: async () => true });
+
+/** How long a field says it was saved, in milliseconds. */
+const SAID_FOR = 2500;
+
+/** Changes the settings, and has the field of what changed say so. */
+function useSave(settings: Settings): (change: Partial<Settings>) => void {
+  const { wrote } = useContext(SavingContext);
+  return (change) =>
+    void wrote(Object.keys(change)[0] ?? '', settingsItem.setValue({ ...settings, ...change }));
+}
+
+/**
+ * At the end of a field's label: how to keep what's typed there while it isn't kept, then, for a moment, that it
+ * is. Nothing here has a Save button of its own to tell it by.
+ */
+function Saved({
+  s,
+  name,
+  typing = false,
+  held = false,
+}: {
+  s: Strings;
+  name: string;
+  /** Something is typed in the field that isn't kept yet. */
+  typing?: boolean;
+  /** What's kept can't be read in the field (a key): that it's there is said the whole time. */
+  held?: boolean;
+}) {
+  const { mark } = useContext(SavingContext);
+  const mine = mark?.name === name ? mark : null;
+  if (mine && !mine.kept)
+    return (
+      <span className="saved bad" role="status">
+        {s('notSaved')}
+      </span>
+    );
+  if (typing) return <span className="saved">{s('enterSaves')}</span>;
+  if (mine)
+    return (
+      <span className="saved fresh" role="status">
+        <Check size={11} strokeWidth={3.5} />
+        {s('saved')}
+      </span>
+    );
+  return held ? <span className="saved">{s('saved')}</span> : null;
+}
+
 const today = () => new Date().toISOString().slice(0, 10);
 const when = (iso: string) =>
   new Date(iso).toLocaleString(undefined, {
@@ -78,37 +146,60 @@ function Row({ label, action, children }: { label: string; action?: ReactNode; c
   );
 }
 
-/** A text setting, saved when the field is left or Enter is pressed: an address half typed is no address. */
+/**
+ * A text setting, saved when the field is left or Enter is pressed: an address half typed is no address. Until
+ * then its label says how to save it, and afterwards that it's saved. Emptied, it goes back to what's kept.
+ */
 function Kept({
+  s,
+  label,
+  name,
   value,
   onSave,
+  clean = (text) => text,
   placeholder,
+  wide,
 }: {
+  s: Strings;
+  label: string;
+  /** The setting it holds, as `Settings` names it. */
+  name: keyof Settings;
   value: string;
   onSave: (value: string) => void;
+  /** What's typed, as it's kept. */
+  clean?: (text: string) => string;
   placeholder?: string;
+  wide?: boolean;
 }) {
   const [text, setText] = useState(value);
-  // The setting changed elsewhere (another tab, a default restored).
+  // The setting changed elsewhere (another tab, a default restored), or was saved in another form than typed.
   const [seen, setSeen] = useState(value);
   if (value !== seen) {
     setSeen(value);
     setText(value);
   }
+  const typed = clean(text.trim());
   const commit = () => {
-    if (text.trim() !== value) onSave(text.trim());
+    if (typed && typed !== value) onSave(typed);
+    else setText(value);
   };
   return (
-    <input
-      className="input"
-      value={text}
-      placeholder={placeholder}
-      onChange={(event) => setText(event.target.value)}
-      onBlur={commit}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter') commit();
-      }}
-    />
+    <Field
+      label={label}
+      wide={wide}
+      note={<Saved s={s} name={name} typing={typed !== '' && typed !== value} />}
+    >
+      <input
+        className="input"
+        value={text}
+        placeholder={placeholder}
+        onChange={(event) => setText(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') commit();
+        }}
+      />
+    </Field>
   );
 }
 
@@ -147,6 +238,7 @@ const DOWN: SettingsStatus = { outbox: { state: 'unreachable', detail: '' }, res
 
 /** Outbox, and what this browser copies from it: the profile and the resumes. Asked when the section opens. */
 function Connection({ s, settings }: Props) {
+  const save = useSave(settings);
   const profile = useItem(profileItem);
   const source = useItem(profileSourceItem);
   const pending = useItem(pendingLogsItem) ?? [];
@@ -231,49 +323,137 @@ function Connection({ s, settings }: Props) {
         )}
       </div>
       <Grid>
-        <Field label={s('outboxUrl')} wide>
-          <Kept
-            value={settings.outboxUrl}
-            onSave={(address) => {
-              const next = address.replace(/\/$/, '');
-              if (next) save(settings, { outboxUrl: next });
-            }}
-          />
-        </Field>
+        <Kept
+          s={s}
+          label={s('outboxUrl')}
+          name="outboxUrl"
+          wide
+          value={settings.outboxUrl}
+          clean={(address) => address.replace(/\/$/, '')}
+          onSave={(outboxUrl) => save({ outboxUrl })}
+        />
       </Grid>
     </>
   );
 }
 
-function Ai({ s, settings }: Props) {
+/** What a check of the key came to, or that one is under way. */
+interface Verdict {
+  tone: 'wait' | 'good' | 'warn' | 'bad';
+  text: string;
+}
+
+/**
+ * The provider's key. Once typed it's never shown again, so its label says the whole time that one is saved. A key
+ * typed in is saved when the field is left, as any setting is; Enter and the button save it and have it tried.
+ */
+function Key({
+  s,
+  settings,
+  checking,
+  onKept,
+  onCheck,
+}: Props & {
+  checking: boolean;
+  /** Another key is kept than the one a check was of. */
+  onKept: () => void;
+  /** Try the kept key, once the write that's handed over is through. */
+  onCheck: (written: Promise<unknown>) => void;
+}) {
   const openai = settings.provider === 'openai';
-  const keyItem = openai ? openaiKeyItem : apiKeyItem;
-  const key = useItem(keyItem) ?? '';
-  const usage = useItem(usageItem) ?? [];
+  const item = openai ? openaiKeyItem : apiKeyItem;
+  const stored = useItem(item) ?? '';
+  const { wrote } = useContext(SavingContext);
   const [draft, setDraft] = useState('');
-  const [result, setResult] = useState<{ tone: 'good' | 'warn' | 'bad'; text: string } | null>(null);
+  // The key typed last, from the moment it's handed over until the browser's own copy says the same (or another,
+  // changed elsewhere): the field has no moment in between when no key seems kept.
+  const [fresh, setFresh] = useState<string | null>(null);
+  const [seen, setSeen] = useState(stored);
+  if (stored !== seen) {
+    setSeen(stored);
+    setFresh(null);
+  }
+  const key = fresh ?? stored;
+  // The write of a key under way, or the last one: a check waits for it, so that it tries the key just typed.
+  const writing = useRef<Promise<unknown>>(Promise.resolve());
+
+  const keep = (): Promise<unknown> => {
+    const next = draft.trim();
+    setDraft('');
+    if (!next) return writing.current;
+    setFresh(next);
+    onKept();
+    writing.current = wrote(item.key, item.setValue(next)).then((kept) => {
+      if (!kept) setFresh(null);
+    });
+    return writing.current;
+  };
+  return (
+    <Field
+      label={s('key')}
+      // Each provider's key is a thing kept of its own: one just saved says nothing of the other.
+      note={<Saved s={s} name={item.key} typing={draft.trim() !== ''} held={key !== ''} />}
+    >
+      <span className="with-action">
+        <input
+          className={`input${key ? ' held' : ''}`}
+          type="password"
+          autoComplete="off"
+          placeholder={key ? `••••${key.slice(-4)}` : openai ? 'sk-…' : 'sk-ant-…'}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={() => void keep()}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') onCheck(keep());
+          }}
+        />
+        <button
+          type="button"
+          className="secondary"
+          disabled={checking || (!draft.trim() && !key)}
+          onClick={() => onCheck(keep())}
+        >
+          {draft.trim() ? s('save') : s('check')}
+        </button>
+      </span>
+    </Field>
+  );
+}
+
+function Ai({ s, settings }: Props) {
+  const save = useSave(settings);
+  const openai = settings.provider === 'openai';
+  const usage = useItem(usageItem) ?? [];
+  const [verdict, setVerdict] = useState<Verdict | null>(null);
   const month = new Date().toLocaleDateString('en-CA').slice(0, 7);
   const thisMonth = usage.filter((day) => day.day.startsWith(month));
   const cost = thisMonth.reduce((sum, day) => sum + day.cost, 0);
   const tokens = thisMonth.reduce((sum, day) => sum + day.inputTokens + day.outputTokens, 0);
+  // Which check the line under the fields is waiting for. One asked before the key, the provider, the address or
+  // the model changed answers for a request that's no longer the one in use: it's dropped.
+  const asked = useRef(0);
+  const forget = () => {
+    asked.current += 1;
+    setVerdict(null);
+  };
+  const change = (to: Partial<Settings>) => {
+    forget();
+    save(to);
+  };
   // The check goes out as any request would: it also tells whether the endpoint takes the effort chosen here.
-  const verify = () =>
-    checkKey().then((check) =>
-      setResult(
-        !check.ok
-          ? { tone: 'bad', text: s('keyBad', { detail: check.error ?? '' }) }
-          : check.effortRefused && openai && settings.openaiEffort !== 'auto'
-            ? { tone: 'warn', text: s('keyOkNoEffort') }
-            : { tone: 'good', text: s('keyOk') },
-      ),
+  const check = async (written: Promise<unknown>) => {
+    const mine = ++asked.current;
+    setVerdict({ tone: 'wait', text: s('checking') });
+    await written;
+    const found = await checkKey();
+    if (mine !== asked.current) return;
+    setVerdict(
+      !found.ok
+        ? { tone: 'bad', text: s('keyBad', { detail: found.error ?? '' }) }
+        : found.effortRefused && openai && settings.openaiEffort !== 'auto'
+          ? { tone: 'warn', text: s('keyOkNoEffort') }
+          : { tone: 'good', text: s('keyOk') },
     );
-  // A key typed in is saved, then tried; with none typed, the saved key is tried.
-  const saveKey = async () => {
-    if (draft.trim()) {
-      await keyItem.setValue(draft.trim());
-      setDraft('');
-    }
-    await verify();
   };
   // The models the owner settled on, and whatever else the setting already holds.
   const models = OPENAI_MODELS.includes(settings.openaiModel)
@@ -285,7 +465,7 @@ function Ai({ s, settings }: Props) {
         <Toggle
           label={s('aiEnabled')}
           checked={settings.aiEnabled}
-          onChange={(aiEnabled) => save(settings, { aiEnabled })}
+          onChange={(aiEnabled) => save({ aiEnabled })}
         />
       </Toggles>
       {!settings.aiEnabled ? (
@@ -295,85 +475,64 @@ function Ai({ s, settings }: Props) {
           <Grid>
             <Choice
               label={s('provider')}
+              note={<Saved s={s} name="provider" />}
               value={settings.provider}
               options={[
                 { value: 'openai', label: s('providerOpenai') },
                 { value: 'anthropic', label: s('providerAnthropic') },
               ]}
-              onChange={(provider) => {
-                setResult(null);
-                save(settings, { provider });
-              }}
+              onChange={(provider) => change({ provider })}
             />
             {openai ? (
-              <Field label={s('baseUrl')}>
-                <Kept
-                  value={settings.openaiBaseUrl}
-                  placeholder="https://api.openai.com/v1"
-                  onSave={(openaiBaseUrl) => save(settings, { openaiBaseUrl })}
-                />
-              </Field>
+              <Kept
+                s={s}
+                label={s('baseUrl')}
+                name="openaiBaseUrl"
+                value={settings.openaiBaseUrl}
+                placeholder="https://api.openai.com/v1"
+                onSave={(openaiBaseUrl) => change({ openaiBaseUrl })}
+              />
             ) : (
               <Choice
                 label={s('model')}
+                note={<Saved s={s} name="model" />}
                 value={settings.model}
                 options={MODELS.map((model) => ({ value: model.id, label: model.name }))}
-                onChange={(model) => {
-                  setResult(null);
-                  save(settings, { model });
-                }}
+                onChange={(model) => change({ model })}
               />
             )}
-            <Field label={s('key')}>
-              <span className="with-action">
-                <input
-                  className="input"
-                  type="password"
-                  autoComplete="off"
-                  placeholder={key ? `••••${key.slice(-4)}` : openai ? 'sk-…' : 'sk-ant-…'}
-                  value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') void saveKey();
-                  }}
-                />
-                <button
-                  type="button"
-                  className="secondary"
-                  disabled={!draft.trim() && !key}
-                  onClick={() => void saveKey()}
-                >
-                  {draft.trim() ? s('save') : s('check')}
-                </button>
-              </span>
-            </Field>
+            {/* Each provider has a key of its own: one half typed for the one isn't the other's. */}
+            <Key
+              key={settings.provider}
+              s={s}
+              settings={settings}
+              checking={verdict?.tone === 'wait'}
+              onKept={forget}
+              onCheck={(written) => void check(written)}
+            />
             {openai && (
               <Choice
                 label={s('model')}
+                note={<Saved s={s} name="openaiModel" />}
                 value={settings.openaiModel}
                 options={models.map((model) => ({ value: model, label: model }))}
-                onChange={(openaiModel) => {
-                  setResult(null);
-                  save(settings, { openaiModel });
-                }}
+                onChange={(openaiModel) => change({ openaiModel })}
               />
             )}
             {openai && (
               <Choice
                 label={s('effort')}
+                note={<Saved s={s} name="openaiEffort" />}
                 value={settings.openaiEffort}
                 options={EFFORTS.map((effort) => ({ value: effort, label: s(`effort.${effort}`) }))}
-                onChange={(openaiEffort) => {
-                  setResult(null);
-                  save(settings, { openaiEffort });
-                }}
+                onChange={(openaiEffort) => change({ openaiEffort })}
               />
             )}
           </Grid>
           {openai && <Note>{s('effortHelp')}</Note>}
-          {result && (
-            <p className={`sheet-note ${result.tone}`} role="status">
-              {result.text}
+          {verdict && (
+            <p className={`sheet-note ${verdict.tone}`} role="status">
+              {verdict.text}
             </p>
           )}
           {/* An OpenAI-compatible endpoint's prices aren't known here: its tokens, not its cost. */}
@@ -491,6 +650,7 @@ function Memory({ s }: Props) {
 }
 
 function General({ s, settings }: Props) {
+  const save = useSave(settings);
   // Deleting everything is asked twice, here in the window.
   const [confirming, setConfirming] = useState(false);
   const exportAll = async () =>
@@ -507,19 +667,21 @@ function General({ s, settings }: Props) {
       <Grid>
         <Choice
           label={s('language')}
+          note={<Saved s={s} name="language" />}
           value={settings.language}
           options={[
             { value: 'auto', label: s('auto') },
             { value: 'en', label: 'English' },
             { value: 'zh', label: '简体中文' },
           ]}
-          onChange={(language) => save(settings, { language })}
+          onChange={(language) => save({ language })}
         />
         <Count
           label={s('limit')}
+          note={<Saved s={s} name="sameCompanyLimit" />}
           max={20}
           value={settings.sameCompanyLimit}
-          onChange={(limit) => save(settings, { sameCompanyLimit: limit && limit > 0 ? limit : 3 })}
+          onChange={(limit) => save({ sameCompanyLimit: limit && limit > 0 ? limit : 3 })}
         />
       </Grid>
       <Note>{s('limitHelp')}</Note>
@@ -558,13 +720,30 @@ function General({ s, settings }: Props) {
 /**
  * The settings: sections down the left, the one open to its right, as in the profile's window. Framed, they fill the
  * card's window over a page and close back to it; in a tab of their own they're that window on a plain ground.
- * Everything saves as it's changed.
+ * Everything saves as it's changed, and says so where it was changed.
  */
 export function App({ framed, dark }: { framed: boolean; dark: boolean }) {
   const kept = useItem(settingsItem);
   const settings = withDefaults(kept);
   const s = strings(resolveLanguage(settings.language));
   const [section, setSection] = useState<Section>('connection');
+
+  const [mark, setMark] = useState<Mark | null>(null);
+  const wrote = useCallback<Saving['wrote']>(async (name, write) => {
+    const held = await write.then(
+      () => true,
+      () => false,
+    );
+    setMark({ name, kept: held, at: Date.now() });
+    return held;
+  }, []);
+  // That something was saved is said for a moment; that it wasn't, until the next thing is written.
+  useEffect(() => {
+    if (!mark?.kept) return undefined;
+    const timer = setTimeout(() => setMark(null), SAID_FOR);
+    return () => clearTimeout(timer);
+  }, [mark]);
+  const saving = useMemo(() => ({ mark, wrote }), [mark, wrote]);
 
   const close = useCallback(() => void toBackground('settings:close', {}).catch(() => undefined), []);
   useEffect(() => {
@@ -616,10 +795,15 @@ export function App({ framed, dark }: { framed: boolean; dark: boolean }) {
       </div>
     </div>
   );
-  if (framed) return pane;
   return (
-    <div className={`tab-page${dark ? ' dark' : ''}`}>
-      <div className={`sheet glass${dark ? ' dark' : ''}`}>{pane}</div>
-    </div>
+    <SavingContext.Provider value={saving}>
+      {framed ? (
+        pane
+      ) : (
+        <div className={`tab-page${dark ? ' dark' : ''}`}>
+          <div className={`sheet glass${dark ? ' dark' : ''}`}>{pane}</div>
+        </div>
+      )}
+    </SavingContext.Provider>
   );
 }

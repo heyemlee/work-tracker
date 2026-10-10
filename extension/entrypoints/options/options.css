@@ -133,6 +133,51 @@ a.ghost {
   color: var(--green);
 }
 
+/* At the end of a field's label: how to save what's typed there, then, for a moment, that it's saved. */
+.saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 400;
+  color: var(--fg-3);
+  white-space: nowrap;
+}
+
+.saved.fresh {
+  color: var(--fg);
+  animation: saved-in 0.25s ease;
+}
+
+.saved.fresh > svg {
+  color: var(--green);
+}
+
+.saved.bad {
+  color: var(--red);
+}
+
+@keyframes saved-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saved.fresh {
+    animation: none;
+  }
+}
+
+/* A key that's kept reads as a field that's filled; with the caret in it, as the hint it is. */
+.input.held::placeholder {
+  color: var(--fg);
+}
+
+.input.held:focus::placeholder {
+  color: var(--fg-3);
+}
+
 /* A field with a button beside it: a key to save, a list to load. */
 .with-action {
   display: flex;

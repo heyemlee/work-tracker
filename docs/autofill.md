@@ -135,7 +135,15 @@ no place for an API key. Nothing crosses a frame of the extension's origin. The 
 address from any site, so framed it draws only on a ticket the card asked the service worker for, for its tab, good
 once (`background/settings.ts`); in a tab of its own (the browser's "Options") it draws as it is. Five sections —
 Connection (Outbox, the profile's and resumes' copies, Outbox's address), AI, Fill reports, Remembered answers,
-General (language, the same-company warning, export and delete) — each saving as it's changed. The window appears in
+General (language, the same-company warning, export and delete) — each saving as it's changed, with no Save button
+to tell it by. So a field says it at the end of its label (decided 2026-10-09, when the owner couldn't tell whether
+what they'd typed was saved): "Press Enter to save" while an address or a key is typed and not yet kept, then
+"✓ Saved" for a moment once the browser has kept it, after a choice from a list too; "Couldn't save" if it didn't. Text
+is kept when Enter is pressed or the field is left, and an address emptied goes back to the one kept. A key can't be
+read back once typed, so its label says "Saved" for as long as one is kept, and the field shows its last four
+characters as a field that's filled. Left without a press it's kept like any other field, and tried only at Enter or
+the button: a key goes to the provider when the owner asks. The check's line says the two things apart: "The saved
+key didn't pass the check", and then what the provider answered. The window appears in
 place rather than gliding in: Chrome drops presses on a frame from another origin while it moves and for half a
 second after. Where a page won't show the frame, the settings open in a tab after 6 s. Outbox's own page asks for
 the settings too ("Open extension settings", in its toolbar and its setup guide), and since 2026-10-07 gets the same

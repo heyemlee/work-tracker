@@ -7,6 +7,9 @@ const en = {
   'tab.memory': 'Remembered answers',
   'tab.general': 'General',
   notHere: 'Open the settings from the Outbox Autofill card.',
+  saved: 'Saved',
+  enterSaves: 'Press Enter to save',
+  notSaved: 'Couldn’t save',
 
   checking: 'Checking…',
   connected: 'Connected · {n} accounts',
@@ -38,7 +41,7 @@ const en = {
   keyOk: 'The key works.',
   keyOkNoEffort:
     'The key works, but this endpoint doesn’t take a reasoning effort: the setting has no effect.',
-  keyBad: 'The key didn’t work: {detail}',
+  keyBad: 'The saved key didn’t pass the check: {detail}',
   model: 'Model',
   effort: 'Reasoning effort',
   'effort.auto': 'Auto',
@@ -86,6 +89,9 @@ const zh: Record<Key, string> = {
   'tab.memory': '记住的回答',
   'tab.general': '通用',
   notHere: '请从 Outbox Autofill 的卡片里打开设置。',
+  saved: '已保存',
+  enterSaves: '按回车保存',
+  notSaved: '没保存上',
 
   checking: '正在检查…',
   connected: '已连接 · {n} 个账号',
@@ -116,7 +122,7 @@ const zh: Record<Key, string> = {
   check: '检查',
   keyOk: 'Key 可以用。',
   keyOkNoEffort: 'Key 可以用，但这个接口不接受推理强度，这项设置不会生效。',
-  keyBad: 'Key 不可用：{detail}',
+  keyBad: '保存的 key 没通过检查：{detail}',
   model: '模型',
   effort: '推理强度',
   'effort.auto': '自动',

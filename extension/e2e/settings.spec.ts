@@ -1,4 +1,6 @@
 import { expect, type Worker } from '@playwright/test';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { seed, serve, test } from './harness';
 
 const THANKS = '<!doctype html><title>Thanks</title><main><h1>Thank you for applying.</h1></main>';
@@ -133,6 +135,105 @@ test('offers the models the owner settled on, and how hard they think', async ({
   await expect
     .poll(() => stored(worker, 'settings'))
     .toMatchObject({ openaiModel: 'gpt-5.6-sol', openaiEffort: 'high' });
+});
+
+/** A stand-in for an OpenAI-compatible endpoint that knows one key: asked with it, it says OK; with another, 401. */
+async function endpoint(known: string) {
+  const server = createServer((request, response) => {
+    request.resume();
+    request.on('end', () => {
+      const letIn = request.headers.authorization === `Bearer ${known}`;
+      response.writeHead(letIn ? 200 : 401, { 'content-type': 'application/json' });
+      response.end(
+        JSON.stringify(
+          letIn
+            ? {
+                choices: [{ message: { content: 'OK' }, finish_reason: 'stop' }],
+                usage: { prompt_tokens: 1, completion_tokens: 1 },
+              }
+            : { error: { message: 'Incorrect API key provided' } },
+        ),
+      );
+    });
+  });
+  await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
+  return {
+    url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+    close: () => new Promise<void>((done) => server.close(() => done())),
+  };
+}
+
+test('says how to save what’s typed, then that it’s saved, and of a key the whole time', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  const api = await endpoint('sk-good-key-7777');
+  try {
+    await seed(worker, outbox.url);
+    await worker.evaluate(async () => {
+      const { local } = (globalThis as unknown as Extension).chrome.storage;
+      const { settings } = (await local.get('settings')) as { settings: object };
+      await local.set({ settings: { ...settings, aiEnabled: true, provider: 'openai' } });
+    });
+    await serve(context, 'careers.acme-robotics.com', FORM, THANKS);
+    const page = await context.newPage();
+    await page.goto('https://careers.acme-robotics.com/jobs/42/apply');
+    const card = page.locator('outbox-autofill');
+    await card.getByRole('button', { name: 'More' }).click({ timeout: 15_000 });
+    await card.getByRole('menuitem', { name: 'Settings' }).click();
+    const settings = page.frameLocator('outbox-autofill iframe');
+    await settings.getByRole('tab', { name: 'AI' }).click();
+    const said = (field: string) => settings.locator('label.field', { hasText: field }).locator('.saved');
+
+    // An address: nothing is kept while it's typed, and the field says what keeps it.
+    const address = settings.getByLabel('Address');
+    await address.fill(`${api.url}/`);
+    await expect(said('Address')).toHaveText('Press Enter to save');
+    expect(await stored(worker, 'settings')).not.toMatchObject({ openaiBaseUrl: `${api.url}/` });
+    await address.press('Enter');
+    await expect(said('Address')).toHaveText('Saved');
+    expect(await stored(worker, 'settings')).toMatchObject({ openaiBaseUrl: `${api.url}/` });
+    // Said for a moment, not for good: the address is there to read.
+    await expect(said('Address')).toHaveCount(0);
+
+    // A key: kept when the field is left, though nothing was pressed. It can't be read back, so its label goes on
+    // saying that one is kept.
+    const key = settings.getByLabel('API key');
+    await expect(said('API key')).toHaveCount(0);
+    await key.fill('sk-wrong-key-1234');
+    await expect(said('API key')).toHaveText('Press Enter to save');
+    await expect(settings.getByRole('button', { name: 'Save' })).toBeVisible();
+    await settings.getByText('This month').click();
+    await expect(said('API key')).toHaveText('Saved');
+    expect(await stored(worker, 'openaiKey')).toBe('sk-wrong-key-1234');
+    await expect(key).toHaveValue('');
+    await expect(key).toHaveAttribute('placeholder', '••••1234');
+    await page.waitForTimeout(3000);
+    await expect(said('API key')).toHaveText('Saved');
+
+    // Tried, it isn't let in: the key stays kept all the same, and the line says which of the two failed.
+    await settings.getByRole('button', { name: 'Check' }).click();
+    await expect(
+      settings.getByText(/^The saved key didn’t pass the check: 401 .*Incorrect API key/),
+    ).toBeVisible();
+    expect(await stored(worker, 'openaiKey')).toBe('sk-wrong-key-1234');
+
+    // Another typed over it, and the button pressed: saved and tried in one go. The verdict of the last one goes.
+    await key.fill('sk-good-key-7777');
+    await settings.getByRole('button', { name: 'Save' }).click();
+    await expect(settings.getByText('The key works.')).toBeVisible();
+    await expect(settings.getByText(/didn’t pass the check/)).toHaveCount(0);
+    expect(await stored(worker, 'openaiKey')).toBe('sk-good-key-7777');
+    await expect(key).toHaveAttribute('placeholder', '••••7777');
+
+    // A choice says it too.
+    await settings.getByLabel('Model').selectOption('gpt-5.6-sol');
+    await expect(said('Model')).toHaveText('Saved');
+    await expect(settings.getByText('The key works.')).toHaveCount(0);
+  } finally {
+    await api.close();
+  }
 });
 
 test('offers Anthropic’s current models, and asks the one chosen as that model is asked', async ({
