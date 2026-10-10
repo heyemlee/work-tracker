@@ -1,15 +1,5 @@
 import clsx from 'clsx';
-import {
-  Download,
-  LogOut,
-  Map as MapIcon,
-  Plus,
-  Puzzle,
-  Search,
-  Settings2,
-  UserRound,
-  X,
-} from 'lucide-react';
+import { Download, Ellipsis, LogOut, Map as MapIcon, Plus, Puzzle, Search, Settings2, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Popover } from 'radix-ui';
 import { useRef, useState, type ReactNode } from 'react';
@@ -20,14 +10,14 @@ import { localRepository, useCurrentUser } from '../data/store';
 import { FILTERS, type Filter } from '../domain/rows';
 import type { Snapshot } from '../domain/types';
 import { useHotkey } from '../hooks/useHotkey';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useI18n } from '../i18n/context';
 import type { MessageKey } from '../i18n/messages';
-import { updatePrefs, usePrefs, type Locale } from '../state/prefs';
 import { navigate, PAGE_PATHS, type Page } from '../state/router';
 import { useLiquidGlass } from './glass/useLiquidGlass';
 import { Link } from './Link';
 import { PAGES, useProfileBlanks } from './pages';
-import { Brand, Button } from './primitives';
+import { Brand } from './primitives';
 import { SegmentedControl } from './SegmentedControl';
 
 interface FilterControlProps {
@@ -86,7 +76,7 @@ export function Toolbar({ page, query, onQuery, onCompose, onOpenSettings, snaps
       <div
         ref={paneRef}
         style={glass.style}
-        className="glass mx-auto flex h-14 max-w-[1040px] items-center gap-2 rounded-[22px] pr-2 pl-3"
+        className="glass mx-auto flex h-14 max-w-[1040px] items-center gap-2 rounded-[22px] pr-2.5 pl-3"
       >
         {glass.filter}
         <Link to={PAGE_PATHS.applications} aria-label="Outbox" className="rounded-full">
@@ -129,7 +119,7 @@ export function Toolbar({ page, query, onQuery, onCompose, onOpenSettings, snaps
             })}
           </div>
         </nav>
-        <div className="ml-auto flex min-w-0 items-center gap-1 md:ml-0">
+        <div className="ml-auto flex min-w-0 items-center gap-2 md:ml-0">
           <label className="flex h-9 min-w-0 items-center gap-2 rounded-full bg-fill px-3 text-fg-2 transition-colors focus-within:bg-fill-2 focus-within:text-fg sm:w-[210px]">
             <Search className="size-4 shrink-0" aria-hidden="true" />
             <input
@@ -159,18 +149,17 @@ export function Toolbar({ page, query, onQuery, onCompose, onOpenSettings, snaps
               <kbd className="kbd hidden sm:inline-grid">/</kbd>
             )}
           </label>
-          <ExtensionStatus />
           <button
             type="button"
             onClick={onCompose}
             aria-label={t('composer.label')}
             title={`${t('composer.label')} (N)`}
-            className="ml-1 flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 text-[13px] font-semibold text-on-accent transition hover:opacity-90 active:scale-[0.97] max-md:hidden sm:pr-3.5"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 text-[13px] font-semibold text-on-accent transition hover:opacity-90 active:scale-[0.97] max-md:hidden sm:pr-3.5"
           >
             <Plus className="size-[18px]" aria-hidden="true" />
             <span>{t('toolbar.new')}</span>
           </button>
-          <AccountMenu snapshot={snapshot} onOpenSettings={onOpenSettings} />
+          <MoreMenu snapshot={snapshot} onOpenSettings={onOpenSettings} />
         </div>
       </div>
     </header>
@@ -185,28 +174,45 @@ const STATUS_COLOR: Record<ExtensionInfo['state'], string | null> = {
   ready: 'var(--acc-green)',
 };
 
-/** The extension at a glance: a dot on its icon, and what to do about it on click. Hidden on phones. */
-function ExtensionStatus() {
+/**
+ * Everything that is neither a page nor New, behind one button: settings, the extension's, CSV export, the setup
+ * guide and signing out. The button carries a dot only while the extension needs something.
+ */
+function MoreMenu({ snapshot, onOpenSettings }: { snapshot: Snapshot; onOpenSettings: () => void }) {
   const { t } = useI18n();
+  const { data: user } = useCurrentUser();
   const extension = useExtension();
+  // Extensions run in Chrome on a computer: a phone has nothing to say about one.
+  const desktop = useMediaQuery('(min-width: 768px)');
+  const [open, setOpen] = useState(false);
+  const choose = (action: () => void) => {
+    setOpen(false);
+    action();
+  };
+
+  const ready = extension.state === 'ready';
+  const missing = extension.state === 'missing';
   const color = STATUS_COLOR[extension.state];
-  const summary = extension.state === 'ready' ? t('ext.ready') : t(`ext.${extension.state}` as MessageKey);
+  const summary = ready ? t('ext.ready') : t(`ext.${extension.state}` as MessageKey);
+  const status = color && <Status color={color}>{summary}</Status>;
+  const dot = desktop && !ready && color;
+  const label = dot ? `${t('menu.label')} · ${summary}` : t('menu.label');
 
   return (
-    <Popover.Root>
+    <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
         <button
           type="button"
-          aria-label={`${t('ext.name')}: ${summary}`}
-          title={`${t('ext.name')}: ${summary}`}
-          className="relative grid size-9 shrink-0 place-items-center rounded-full text-fg-2 transition-colors hover:bg-fill hover:text-fg max-md:hidden"
+          aria-label={label}
+          title={label}
+          className="relative grid size-9 shrink-0 place-items-center rounded-full bg-fill text-fg-2 transition-colors hover:bg-fill-2 hover:text-fg data-[state=open]:bg-fill-2 data-[state=open]:text-fg"
         >
-          <Puzzle className="size-[18px]" aria-hidden="true" />
-          {color && (
+          <Ellipsis className="size-[18px]" aria-hidden="true" />
+          {dot && (
             <span
               aria-hidden="true"
-              className="absolute top-[7px] right-[7px] size-2 rounded-full ring-2 ring-canvas"
-              style={{ background: color }}
+              className="absolute top-0.5 right-0.5 size-2 rounded-full ring-2 ring-canvas"
+              style={{ background: dot }}
             />
           )}
         </button>
@@ -217,86 +223,7 @@ function ExtensionStatus() {
           align="end"
           sideOffset={8}
           collisionPadding={12}
-          className="glass glass-strong z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-[18px] p-3.5 outline-none data-[state=open]:animate-[pop-in_160ms_ease-out]"
-        >
-          <p className="flex items-center gap-2 text-[14px] font-semibold">
-            {color && <span className="size-2 rounded-full" style={{ background: color }} />}
-            {t('ext.name')}
-          </p>
-          <p className="mt-1 text-[13px] text-fg-2">
-            {summary}
-            {extension.version && extension.state === 'ready' && (
-              <span className="text-fg-3"> · {t('ext.version', { version: extension.version })}</span>
-            )}
-          </p>
-          {extension.state === 'missing' && (
-            <p className="mt-1 text-[12px] text-fg-3">{t('ext.missingHint')}</p>
-          )}
-          <div className="mt-3 flex flex-wrap gap-2">
-            {extension.state === 'missing' ? (
-              <>
-                <Popover.Close asChild>
-                  <Button onClick={() => navigate(`${PAGE_PATHS.welcome}?step=3`)}>{t('ext.howTo')}</Button>
-                </Popover.Close>
-                <Button variant="ghost" onClick={() => window.location.reload()}>
-                  {t('ext.reload')}
-                </Button>
-              </>
-            ) : (
-              extension.state !== 'checking' && (
-                <Popover.Close asChild>
-                  <Button
-                    variant={extension.state === 'ready' ? 'secondary' : 'primary'}
-                    onClick={openExtensionOptions}
-                  >
-                    {t('ext.openOptions')}
-                  </Button>
-                </Popover.Close>
-              )
-            )}
-          </div>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
-  );
-}
-
-/** Settings, language, export, the setup guide and signing out, behind the owner's avatar. */
-function AccountMenu({ snapshot, onOpenSettings }: { snapshot: Snapshot; onOpenSettings: () => void }) {
-  const { t } = useI18n();
-  const { data: user } = useCurrentUser();
-  const locale = usePrefs((p) => p.locale);
-  const [open, setOpen] = useState(false);
-  const choose = (action: () => void) => {
-    setOpen(false);
-    action();
-  };
-
-  return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Trigger asChild>
-        <button
-          type="button"
-          aria-label={t('menu.label')}
-          title={t('menu.label')}
-          className="grid size-9 shrink-0 place-items-center rounded-full transition-colors hover:bg-fill"
-        >
-          {user?.image ? (
-            <img src={user.image} alt="" referrerPolicy="no-referrer" className="size-7 rounded-full" />
-          ) : (
-            <span className="grid size-7 place-items-center rounded-full bg-fill-2 text-fg-2">
-              <UserRound className="size-4" aria-hidden="true" />
-            </span>
-          )}
-        </button>
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          side="bottom"
-          align="end"
-          sideOffset={8}
-          collisionPadding={12}
-          className="glass glass-strong z-50 w-64 origin-(--radix-popover-content-transform-origin) rounded-[18px] p-1.5 outline-none data-[state=open]:animate-[pop-in_160ms_ease-out]"
+          className="glass glass-strong z-50 w-[272px] origin-(--radix-popover-content-transform-origin) rounded-[18px] p-1.5 outline-none data-[state=open]:animate-[pop-in_160ms_ease-out]"
         >
           {user && (
             <>
@@ -307,20 +234,22 @@ function AccountMenu({ snapshot, onOpenSettings }: { snapshot: Snapshot; onOpenS
           <MenuItem icon={<Settings2 className="size-4" />} onClick={() => choose(onOpenSettings)}>
             {t('menu.settings')}
           </MenuItem>
-          <div className="flex items-center justify-between gap-2 px-2.5 py-1.5">
-            <span className="text-[14px]">{t('menu.language')}</span>
-            <SegmentedControl<Locale>
-              size="sm"
-              label={t('menu.language')}
-              layoutId="menu-locale"
-              segments={[
-                { value: 'en', label: 'EN' },
-                { value: 'zh', label: '中文' },
-              ]}
-              value={locale}
-              onChange={(value) => updatePrefs({ locale: value })}
-            />
-          </div>
+          {/* Connected says so beside the label; anything else says what it needs on a line of its own. */}
+          {desktop && (
+            <MenuItem
+              icon={<Puzzle className="size-4" />}
+              title={
+                ready && extension.version ? t('ext.version', { version: extension.version }) : undefined
+              }
+              aside={ready && status}
+              note={!ready && status}
+              onClick={() =>
+                choose(missing ? () => navigate(`${PAGE_PATHS.welcome}?step=3`) : openExtensionOptions)
+              }
+            >
+              {missing ? t('guide.ext.install') : t('menu.extension')}
+            </MenuItem>
+          )}
           <MenuItem
             icon={<Download className="size-4" />}
             onClick={() => choose(() => downloadCsv(snapshot))}
@@ -347,25 +276,49 @@ function AccountMenu({ snapshot, onOpenSettings }: { snapshot: Snapshot; onOpenS
   );
 }
 
-function MenuItem({
-  icon,
-  onClick,
-  children,
-}: {
+/** The extension's state in a few words, behind its dot. */
+function Status({ color, children }: { color: string; children: ReactNode }) {
+  return (
+    <span className="flex gap-1.5 text-[12px] leading-4 font-normal text-fg-2">
+      <span
+        aria-hidden="true"
+        className="mt-[5px] size-1.5 shrink-0 rounded-full"
+        style={{ background: color }}
+      />
+      {children}
+    </span>
+  );
+}
+
+interface MenuItemProps {
   icon: ReactNode;
   onClick: () => void;
+  title?: string;
+  /** Beside the label, at the row's end. */
+  aside?: ReactNode;
+  /** A line of its own under the label. */
+  note?: ReactNode;
   children: ReactNode;
-}) {
+}
+
+function MenuItem({ icon, onClick, title, aside, note, children }: MenuItemProps) {
   return (
     <button
       type="button"
+      title={title}
       onClick={onClick}
-      className="flex w-full items-center gap-2.5 rounded-[12px] px-2.5 py-2 text-left text-[14px] transition-colors hover:bg-fill focus-visible:bg-fill focus-visible:outline-none"
+      className="flex w-full items-start gap-2.5 rounded-[12px] px-2.5 py-2 text-left text-[14px] leading-5 transition-colors hover:bg-fill focus-visible:bg-fill focus-visible:outline-none"
     >
-      <span className="text-fg-2" aria-hidden="true">
+      <span className="flex h-5 items-center text-fg-2" aria-hidden="true">
         {icon}
       </span>
-      {children}
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center justify-between gap-3">
+          {children}
+          {aside}
+        </span>
+        {note && <span className="mt-0.5 block">{note}</span>}
+      </span>
     </button>
   );
 }

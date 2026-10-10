@@ -13,7 +13,9 @@ works. Still the single column and the floating glass toolbar; still the owner's
       `/insights`, the guide `/welcome`. Leaving the profile with unsaved edits asks first.
 - [x] Toolbar: Applications · Resumes · Profile · Insights, labelled, the profile's blanks counted on its tab;
       search; the extension's status as a dot (connected, needs a key, not installed) that explains itself; New;
-      an account menu with Settings, language, CSV export, the setup guide and sign-out.
+      an account menu with Settings, language, CSV export, the setup guide and sign-out. (Since 2026-10-10 the
+      status and the menu are one ⋯ menu after New, with a dot only while the extension needs something; the
+      language toggle is in Settings.)
 - [x] The status filter moves above the list, with a count on each segment.
 - [x] Phones: a glass tab bar at the bottom and a round New button beside it.
 - [x] Profile page, from the panel: a completeness score weighted by what forms ask, each blank a link to its

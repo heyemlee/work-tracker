@@ -50,10 +50,13 @@ rejected, it displays the furthest rejected one, dimmed. Filters use the rollup.
 
 - **Pages** — Applications `/`, Resumes `/resumes`, Profile `/profile` and Insights `/insights`, each with its own
   address, as labelled tabs in the floating toolbar (a glass tab bar at the bottom on phones, with a round New
-  button beside it). The toolbar also holds search, the extension's status as a dot (connected, needs its key, not
-  installed; click for what to do), New, and an account menu: Settings, language, CSV export, the setup guide,
-  sign-out. Jobright's sidebar was the alternative; a sidebar was tried and dropped on 2026-09-24, and Simplify
-  gets by with a top bar alone.
+  button beside it). The toolbar also holds search, New, and one ⋯ menu for everything else: Settings, the
+  extension's settings, CSV export, the setup guide, sign-out. The extension's state is on its row there
+  (connected, or what it needs in a line under it: its key, AI turned on, installing), and the ⋯ button carries a
+  dot only while it needs something. Until 2026-10-10 the state had a button of its own, lit green when all was
+  well, and the menu sat behind the account's picture with a language toggle that Settings has too. Jobright's
+  sidebar was the alternative; a sidebar was tried and dropped on 2026-09-24, and Simplify gets by with a top bar
+  alone.
 - **First run** — a guide at `/welcome`, six steps, each skippable: the emails applied with, the resumes, the
   extension and its key (checked live), a resume read into the profile, the answers no resume holds (work
   authorization, preferences, EEO — rules only, never AI), done (with a daily goal). It opens by itself for an
