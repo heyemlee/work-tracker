@@ -358,6 +358,20 @@ owner's to fill, or AI's. Until then the plan held the profile's spelling and co
 Stripe's form, whose boxes say "US", none was ticked. Tried on Greenhouse's own page code served locally, with a
 second fill and boxes changed by hand.
 
+**Workday's groups of boxes and its dates** (2026-10-09, from two reports on Palo Alto Networks' form, where the race
+boxes, the disability form's boxes and the date it's signed on had stayed empty). A group of boxes there is a fieldset
+of its own, drawn row by row, inside the fieldset whose legend asks the question, and a date's box is a `role="group"`
+with no label in it: both were read without their question, so no rule knew them, and the list showed them nameless.
+The adapter now reads each `…-CheckboxGroup` as one field, named by the legend of its own `formField-…` wrapper, with
+every box a choice — the disabled ones too: where a group takes one answer (the disability form's "check one"),
+Workday disables the other boxes while one is ticked. Workday's own names tell the voluntary ones whatever language
+the page is in: `ethnicityMulti`, `disabilityStatus`, and `dateSignedOn`, which it takes only as today's date. Ticks
+that go are taken off before ticks that come are put on, since a box that's shut can't be pressed. A date is written
+into its three parts and the field is then left: Workday's form gets a date only as its field loses the focus, and
+until then shows it in the field alone, where the list would have called it filled. All of this is read from Workday's
+page code (`candidate-experience-apply-flow` 2026.40.17) and tried on a stand-in drawn and wired after it in React
+(`e2e/workday-page.tsx`): its own pages can't be run without a sign-in.
+
 **When a page fills badly**, "This page didn't fill right" in the card's ⋯ menu saves the form's structure — labels, kinds,
 options, what each layer did — without any values. Those snapshots become test fixtures. Workday's adapter is built
 from its `data-automation-id` conventions, not from a saved form, so its first real pages are the ones to snapshot.
@@ -587,6 +601,8 @@ looking, its window goes into that frame as well, and appears in place as the se
   an application logged though its thank-you is reworded a moment after it's drawn (a stand-in for the browser's
   translation, which a spec can't switch on: it sends the page to a translator), an Ashby one the company thanks
   for in its own words, and a Workday one sent in Chinese and told on the page it's taken to;
+  Workday's groups of boxes and the date of its disability form on a stand-in drawn after its page code, where the
+  form holds a date only once its field is left and shuts a group's other boxes while one is ticked;
   on Gem also the resume taken out at its ✕ and attached again, and a file dropped in by hand kept.
   Playwright can't look into a closed shadow root any more than a page can, so the specs drive a build of their
   own: the one Chrome loads with the card's root left open and nothing else changed (`wxt.e2e.config.ts`), made as

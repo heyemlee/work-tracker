@@ -1,7 +1,7 @@
 import { cleanLink, companyFromSlug, parsePosting } from '@domain/postings';
 import type { Entry, Hint, Posting } from '../../model';
 import { clean } from '../../text';
-import { isHidden, sleep, textOf } from '../dom';
+import { attributeValue, isHidden, sleep, textOf } from '../dom';
 import { clickLikeAPerson } from '../widgets';
 import type { Adapter, CustomField } from './types';
 
@@ -38,7 +38,11 @@ const HINTS: Record<string, Hint> = {
   hispanicOrLatino: 'eeo.hispanic',
   ethnicityDropdown: 'eeo.race',
   ethnicityMultiselect: 'eeo.race',
+  ethnicityMulti: 'eeo.race',
   veteranStatus: 'eeo.veteran',
+  // The disability form (CC-305): its boxes, and the date it's signed on, which Workday takes only as today's.
+  disabilityStatus: 'eeo.disability',
+  dateSignedOn: 'signatureDate',
 };
 
 const ENTRY_HINTS: Record<string, Hint> = {
@@ -81,8 +85,14 @@ function hintOf(element: Element): Hint | null {
   return HINTS[name] ?? HINTS[auto(element)] ?? null;
 }
 
+/**
+ * What a field is called: the label or legend of its own wrapper, before any group nearer the control. A date's box
+ * is a group itself with no label in it, and a group of boxes sits in a fieldset of its own inside the one that
+ * carries the question.
+ */
 function labelNear(element: Element): string {
-  const wrapper = element.closest('[data-automation-id^="formField-"], fieldset, [role="group"]');
+  const wrapper =
+    element.closest('[data-automation-id^="formField-"]') ?? element.closest('fieldset, [role="group"]');
   const label = wrapper?.querySelector('label, legend');
   return clean(textOf(label).replace(/\*$/, ''));
 }
@@ -197,6 +207,24 @@ export const workday: Adapter = {
         entry: entryOf(container),
         handle: { type: 'prompt', element: input },
         anchor: container.closest('[data-automation-id^="formField-"]') ?? container,
+      });
+    }
+    // Groups of boxes: "choose all that apply", and the disability form's "check one". Where a group takes one
+    // answer, the other boxes are disabled while one is ticked: they are its choices all the same.
+    for (const group of form.querySelectorAll('[data-automation-id$="-CheckboxGroup"]')) {
+      const inputs = [...group.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')];
+      if (inputs.length === 0 || isHidden(group)) continue;
+      fields.push({
+        label: labelNear(group),
+        kind: 'multi',
+        options: inputs.map((input) =>
+          textOf(group.querySelector(`label[for="${attributeValue(input.id)}"]`) ?? input.closest('label')),
+        ),
+        required: required(group),
+        hint: hintOf(group),
+        entry: entryOf(group),
+        handle: { type: 'multi', inputs },
+        anchor: group.closest('[data-automation-id^="formField-"]') ?? group,
       });
     }
     // Dates typed as month / day / year.

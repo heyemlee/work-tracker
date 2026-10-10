@@ -31,6 +31,10 @@ export const FIXED_SNAPSHOTS: ReadonlySet<string> = new Set([
   // Fixed 2026-10-08: on Crusoe's Ashby form no resume went in once an account had been chosen on the card, and the
   // page, which the browser translated while it was filled, lost its race and veteran status.
   'e3f6bca8-632a-40e6-967e-9df73e256551',
+  // Fixed 2026-10-09: on Palo Alto Networks' Workday form the race boxes, the disability form's boxes and the date
+  // it's signed on were read without their questions, and stayed empty.
+  '0a21376d-d791-4755-a478-d11cc9ec908e',
+  '9a183bff-c572-4e3d-bcec-6e007715f06f',
 ]);
 
 /** Takes the reports this build fixes off the list. */

@@ -67,7 +67,9 @@ export type Hint =
   | 'education.gpa'
   | 'education.start'
   | 'education.end'
-  | 'website';
+  | 'website'
+  /** The date a form is signed on: today's. */
+  | 'signatureDate';
 
 /** A repeatable entry a field belongs to, like Workday's "Work Experience 2". */
 export interface Entry {

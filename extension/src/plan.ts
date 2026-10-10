@@ -217,6 +217,7 @@ const HINT_RULE_KEYS: Partial<Record<Hint, string>> = {
   'education.degree': 'education.degree',
   'education.field': 'education.field',
   'education.gpa': 'education.gpa',
+  signatureDate: 'signatureDate',
 };
 
 function resolveHint(hint: Hint, field: ScannedField, ctx: RuleContext): Resolution | null {

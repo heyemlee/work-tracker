@@ -197,8 +197,15 @@ export async function applyAnswer(
         // "Select all that apply" gets the first match per wanted text, not every loose match.
         const unique = [...new Set(wanted.filter((at) => at >= 0))];
         if (unique.length === 0) return { ok: false, error: 'no matching option' };
-        handle.inputs.forEach((input, index) => setChecked(input, unique.includes(index)));
-        return { ok: true, value: unique.map((at) => labels[at]).join(', ') };
+        // The boxes that go are unticked before the ones that come are ticked: where a group takes one answer
+        // (Workday's disability form), the page holds the other boxes disabled while one is ticked.
+        handle.inputs.forEach((input, index) => {
+          if (!unique.includes(index)) setChecked(input, false);
+        });
+        const open = unique.filter((at) => handle.inputs[at]?.disabled === false);
+        if (open.length === 0) return { ok: false, error: 'the box can’t be ticked' };
+        for (const at of open) setChecked(handle.inputs[at] as HTMLInputElement, true);
+        return { ok: true, value: open.map((at) => labels[at]).join(', ') };
       }
 
       case 'combobox': {
@@ -268,6 +275,11 @@ export async function applyAnswer(
         if (handle.day) setNativeValue(handle.day, day);
         setNativeValue(handle.year, year);
         await sleep(20);
+        // Workday's form gets a date only as its field is left, and until then shows it in the field alone. The
+        // field moves the focus among its parts itself: wherever it came to rest, it leaves from there.
+        const parts: (Element | null)[] = [handle.month, handle.day, handle.year];
+        const active = handle.year.ownerDocument.activeElement;
+        if (active instanceof HTMLElement && parts.includes(active)) active.blur();
         return { ok: true, value: [month, handle.day ? day : null, year].filter(Boolean).join('/') };
       }
     }

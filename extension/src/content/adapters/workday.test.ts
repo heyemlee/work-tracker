@@ -3,7 +3,7 @@ import type { Want } from '../../model';
 import { planForm } from '../../plan';
 import { pickOption } from '../../rules/options';
 import { makeProfile } from '../../test/profiles';
-import { readAnswer } from '../apply';
+import { applyAnswer, readAnswer } from '../apply';
 import { extractFields } from '../extract';
 import { formSnapshot } from '../snapshot';
 import { workday } from './workday';
@@ -141,6 +141,297 @@ const LEGAL_NAME = `
     <div data-automation-id="formField-preferredCheck"><label for="name--preferredCheck">I have a preferred name</label><input id="name--preferredCheck" type="checkbox" name="preferredCheck"></div>
   </div>
 </div>`;
+
+// From the owner's reports of 2026-10-09 (values stripped), Palo Alto Networks' Voluntary Disclosures and Self
+// Identify steps: a group of boxes is a fieldset of its own, drawn row by row, inside the fieldset whose legend asks
+// the question; a date is three number boxes in a group of their own, under a legend too.
+const boxes = (name: string, choices: [id: string, label: string][]) => `
+  <div><div><span data-automation-id="223135091-rows_${choices.length}">
+    <fieldset data-automation-id="${name}-CheckboxGroup" id="form--${name}" aria-required="true">
+      <div><div aria-label="grid" aria-readonly="true" class="ReactVirtualized__Grid ReactVirtualized__List" role="grid" tabindex="0">
+        <div class="ReactVirtualized__Grid__innerScrollContainer" role="row">${choices
+          .map(
+            ([id, label]) => `
+          <div role="row"><div role="cell"><div class="css-1utp272">
+            <div class="css-d3pjdr"><input id="${id}-${name}" type="checkbox" aria-checked="false" aria-required="true" class="css-12iq04x"><span class="css-15ws53q"></span><div class="css-1ikf28c"><div class="css-wwg2k6"></div></div></div>
+            <label cursor="pointer" for="${id}-${name}" class="css-1ew7hmu">${label}</label>
+          </div></div></div>`,
+          )
+          .join('')}
+        </div>
+      </div></div>
+    </fieldset>
+  </span></div></div>`;
+const asked = (id: string, question: string) =>
+  `<legend><label id="${id}"><span>${question}<abbr aria-hidden="true">*</abbr></span></label></legend>`;
+const US = '(United States of America)';
+
+const VOLUNTARY = `
+<div data-automation-id="applyFlowPage">
+  <h3 tabindex="-1">Voluntary Disclosures</h3>
+  <div data-automation-id="applyFlowVoluntaryDisclosuresPage"><div role="group" aria-labelledby="personalInfoUS-section">
+    <div data-fkit-id="personalInfoUS--null">
+      <div data-automation-id="formField-gender" data-fkit-id="personalInfoUS--gender">
+        <label for="personalInfoUS--gender"><span>Please indicate your gender.<abbr aria-hidden="true">*</abbr></span></label>
+        <div><button aria-haspopup="listbox" type="button" value="" name="gender" id="personalInfoUS--gender"></button></div>
+      </div>
+      <div data-automation-id="formField-ethnicityMulti" data-fkit-id="personalInfoUS--ethnicityMulti">
+        <fieldset>
+          ${asked('label383', 'Please indicate your race / ethnic group (choose all that apply).')}
+          ${boxes('ethnicityMulti', [
+            [
+              '5aa443c785ff104457aecf7432eb0315',
+              `American Indian or Alaska Native (Not Hispanic or Latino) ${US}`,
+            ],
+            ['5aa443c785ff104457aead1ce4b30300', `Asian (Not Hispanic or Latino) ${US}`],
+            ['5aa443c785ff104457aec7dd77130310', `Black or African American (Not Hispanic or Latino) ${US}`],
+            ['5aa443c785ff104457aec938677b0311', `Hispanic or Latino ${US}`],
+            [
+              '5aa443c785ff104457aecaeed1db0312',
+              `Native Hawaiian or Other Pacific Islander (Not Hispanic or Latino) ${US}`,
+            ],
+            ['5aa443c785ff104457aecc4fa6130313', `Two or More Races (Not Hispanic or Latino) ${US}`],
+            ['5aa443c785ff104457aecdaca9bb0314', `White (Not Hispanic or Latino) ${US}`],
+            ['5aa443c785ff104457aff6ba35e30360', `Wish Not To Answer ${US}`],
+          ])}
+        </fieldset>
+      </div>
+      <div data-automation-id="formField-hispanicOrLatino" data-fkit-id="personalInfoUS--hispanicOrLatino">
+        <label for="personalInfoUS--hispanicOrLatino"><span>Are you hispanic or Latino descent?<abbr aria-hidden="true">*</abbr></span></label>
+        <div><button aria-haspopup="listbox" type="button" value="" name="hispanicOrLatino" id="personalInfoUS--hispanicOrLatino"></button></div>
+      </div>
+    </div>
+  </div></div>
+</div>`;
+
+const SELF_IDENTIFY = `
+<div data-automation-id="applyFlowPage">
+  <h3 tabindex="-1">Self Identify</h3>
+  <div data-automation-id="applyFlowSelfIdentifyPage"><div role="group" aria-labelledby="selfIdentifiedDisabilityData-section">
+    <div data-fkit-id="selfIdentifiedDisabilityData--null"><div lang="en-US">
+      <h3>Voluntary Self-Identification of Disability</h3>
+      <div data-automation-id="formField-name" data-fkit-id="selfIdentifiedDisabilityData--name">
+        <label for="selfIdentifiedDisabilityData--name"><span>Name<abbr aria-hidden="true">*</abbr></span></label>
+        <div><input type="text" id="selfIdentifiedDisabilityData--name" name="name" aria-required="true"></div>
+      </div>
+      <div data-automation-id="formField-dateSignedOn" data-fkit-id="selfIdentifiedDisabilityData--dateSignedOn">
+        <fieldset>
+          ${asked('label423', 'Date')}
+          <div><div>
+            <div aria-hidden="true" id="helpText-selfIdentifiedDisabilityData--dateSignedOn">current value is MM/DD/YYYY</div>
+            <div id="selfIdentifiedDisabilityData--dateSignedOn" aria-labelledby="hiddenDateValueId-selfIdentifiedDisabilityData--dateSignedOn" role="group" data-automation-id="dateInputWrapper">
+              <div tabindex="-1">${[
+                ['Month', 'MM', 12],
+                ['Day', 'DD', 31],
+                ['Year', 'YYYY', 9999],
+              ]
+                .map(
+                  ([part, shown, most]) => `
+                <div id="selfIdentifiedDisabilityData--dateSignedOn-dateSection${part}" tabindex="-1">
+                  <div aria-hidden="true" data-automation-id="dateSection${part}-display">${shown}</div>
+                  <input role="spinbutton" aria-label="${part}" aria-valuemax="${most}" aria-valuemin="1" aria-valuetext="${shown}"
+                    id="selfIdentifiedDisabilityData--dateSignedOn-dateSection${part}-input" data-automation-id="dateSection${part}-input">
+                </div>`,
+                )
+                .join('<div>/</div>')}
+              </div>
+              <div aria-label="Calendar" data-automation-id="dateIcon" role="button" tabindex="0"></div>
+            </div>
+          </div></div>
+        </fieldset>
+      </div>
+      <div data-automation-id="formField-disabilityStatus" data-fkit-id="selfIdentifiedDisabilityData--disabilityStatus">
+        <fieldset>
+          ${asked('label424', 'Please check one of the boxes below:')}
+          ${boxes('disabilityStatus', [
+            ['64cbff5f364f10000ae7a421cf210000', 'Yes, I have a disability, or have had one in the past'],
+            [
+              '64cbff5f364f10000aeec521b4ec0000',
+              'No, I do not have a disability and have not had one in the past',
+            ],
+            ['64cbff5f364f10000af3af293a050000', 'I do not want to answer'],
+          ])}
+        </fieldset>
+      </div>
+    </div></div>
+  </div></div>
+</div>`;
+
+describe('workday’s voluntary questions, from the owner’s reports', () => {
+  const ctx = {
+    profile: makeProfile(),
+    email: 'alex@example.com',
+    resumeId: null,
+    posting: null,
+    today: '2026-10-09',
+    appliedBefore: false,
+  };
+  const noFile = async () => null;
+  const read = (page: string) => {
+    document.body.innerHTML = page;
+    const extraction = extractFields(workday, document, 0);
+    const byHint = (hint: string) => extraction.fields.find((field) => field.hint === hint)!;
+    return { ...extraction, byHint };
+  };
+  const ticked = () =>
+    [...document.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')]
+      .filter((input) => input.checked)
+      .map((input) => document.querySelector(`label[for="${input.id}"]`)?.textContent);
+  /** As Workday's page does where a group takes one answer: while a box is ticked, the others can't be pressed. */
+  const oneAnswerOnly = () => {
+    const group = [...document.querySelectorAll<HTMLInputElement>('input[id$="-disabilityStatus"]')];
+    for (const input of group)
+      input.addEventListener('change', () => {
+        for (const other of group) other.disabled = group.some((one) => one.checked) && !other.checked;
+      });
+  };
+
+  it('names a group of boxes and a date by the question over them, whatever is nearer', () => {
+    const race = read(VOLUNTARY).byHint('eeo.race');
+    expect(race).toMatchObject({
+      label: 'Please indicate your race / ethnic group (choose all that apply).',
+      kind: 'multi',
+      required: true,
+      filled: false,
+    });
+    expect(race.options).toHaveLength(8);
+    expect(race.options[1]).toBe(`Asian (Not Hispanic or Latino) ${US}`);
+
+    const { fields, byHint } = read(SELF_IDENTIFY);
+    expect(byHint('eeo.disability')).toMatchObject({
+      label: 'Please check one of the boxes below:',
+      kind: 'multi',
+      required: true,
+      options: [
+        'Yes, I have a disability, or have had one in the past',
+        'No, I do not have a disability and have not had one in the past',
+        'I do not want to answer',
+      ],
+    });
+    expect(byHint('signatureDate')).toMatchObject({ label: 'Date', kind: 'date', required: true });
+    // Each box belongs to its group, and each part of the date to the date: none is a field of its own.
+    expect(fields.map((field) => field.label)).toEqual([
+      'Please check one of the boxes below:',
+      'Date',
+      'Name',
+    ]);
+  });
+
+  it('answers them from the profile, and dates the form today', () => {
+    const profile = makeProfile({ eeo: { race: 'asian', disability: 'no' } });
+    const answers = (page: string, who = profile) => {
+      const { fields } = read(page);
+      const plan = planForm(fields, { ...ctx, profile: who }, []);
+      return Object.fromEntries(
+        fields.map((field, at) => {
+          const { status, answer } = plan[at]!;
+          const put = answer?.type === 'choice' ? answer.option : answer?.type === 'date' ? answer.iso : null;
+          return [field.hint ?? field.label, [status, put]];
+        }),
+      );
+    };
+    expect(answers(VOLUNTARY)['eeo.race']).toEqual(['filled', `Asian (Not Hispanic or Latino) ${US}`]);
+    expect(answers(SELF_IDENTIFY)).toMatchObject({
+      'eeo.disability': ['filled', 'No, I do not have a disability and have not had one in the past'],
+      signatureDate: ['filled', '2026-10-09'],
+    });
+    // Someone who'd rather not say gets each form's own words for that.
+    expect(answers(VOLUNTARY, ctx.profile)['eeo.race']).toEqual(['filled', `Wish Not To Answer ${US}`]);
+    expect(answers(SELF_IDENTIFY, ctx.profile)['eeo.disability']).toEqual([
+      'filled',
+      'I do not want to answer',
+    ]);
+  });
+
+  it('dates the form today in whatever language the page words the question', () => {
+    const { fields } = read(SELF_IDENTIFY.replace('<span>Date<abbr', '<span>Fecha<abbr'));
+    const date = fields.find((field) => field.kind === 'date')!;
+    expect(date.label).toBe('Fecha');
+    expect(planForm([date], ctx, [])[0]).toMatchObject({
+      key: 'signatureDate',
+      answer: { type: 'date', iso: '2026-10-09' },
+    });
+  });
+
+  it('ticks the one box of a group, and leaves the others', async () => {
+    const { fields, handles, byHint } = read(VOLUNTARY);
+    const profile = makeProfile({ eeo: { race: 'two-or-more' } });
+    const race = byHint('eeo.race');
+    const answer = planForm(fields, { ...ctx, profile }, []).find(
+      (entry) => entry.fieldId === race.id,
+    )!.answer!;
+    expect(await applyAnswer(handles.get(race.id)!, answer, noFile)).toEqual({
+      ok: true,
+      value: `Two or More Races (Not Hispanic or Latino) ${US}`,
+    });
+    expect(ticked()).toEqual([`Two or More Races (Not Hispanic or Latino) ${US}`]);
+    expect(
+      extractFields(workday, document, 0).fields.find((field) => field.hint === 'eeo.race'),
+    ).toMatchObject({
+      filled: true,
+    });
+  });
+
+  it('keeps the boxes Workday shuts while one is ticked among the question’s choices', () => {
+    const before = read(SELF_IDENTIFY).byHint('eeo.disability');
+    oneAnswerOnly();
+    document.querySelector<HTMLInputElement>('[id$="aeec521b4ec0000-disabilityStatus"]')!.click();
+    expect(document.querySelectorAll('input[type="checkbox"]:disabled')).toHaveLength(2);
+    const after = extractFields(workday, document, 0).fields.find((field) => field.hint === 'eeo.disability');
+    expect(after).toMatchObject({
+      kind: 'multi',
+      filled: true,
+      label: before.label,
+      options: before.options,
+    });
+  });
+
+  it('moves a tick of its own: the old one off before the new one on', async () => {
+    const { handles, byHint } = read(SELF_IDENTIFY);
+    oneAnswerOnly();
+    const handle = handles.get(byHint('eeo.disability').id)!;
+    const want = (value: string) =>
+      ({ type: 'choice', want: { kind: 'eeo', field: 'disability', value }, option: null }) as const;
+    await applyAnswer(handle, want('no'), noFile);
+    expect(ticked()).toEqual(['No, I do not have a disability and have not had one in the past']);
+    // "Yes" stands before "No", and can't be pressed while "No" is ticked.
+    expect(await applyAnswer(handle, want('yes'), noFile)).toMatchObject({ ok: true });
+    expect(ticked()).toEqual(['Yes, I have a disability, or have had one in the past']);
+  });
+
+  it('says so when the box it wants can’t be ticked', async () => {
+    const { handles, byHint } = read(SELF_IDENTIFY);
+    const handle = handles.get(byHint('eeo.disability').id)!;
+    // Shut for a reason that unticking the others doesn't lift.
+    for (const input of document.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'))
+      input.disabled = true;
+    const answer = { type: 'choice', want: { kind: 'decline' }, option: 'I do not want to answer' } as const;
+    expect(await applyAnswer(handle, answer, noFile)).toMatchObject({ ok: false });
+    expect(ticked()).toEqual([]);
+  });
+
+  it('writes a date into its three parts, and leaves the field: the form takes a date only then', async () => {
+    const { handles, byHint } = read(SELF_IDENTIFY);
+    const part = (name: string) =>
+      document.querySelector<HTMLInputElement>(`[data-automation-id="dateSection${name}-input"]`)!;
+    let left = 0;
+    document
+      .querySelector('[data-automation-id="dateInputWrapper"]')!
+      .addEventListener('focusout', (event) => {
+        const next = (event as FocusEvent).relatedTarget ?? document.activeElement;
+        if (!(next instanceof Node && (event.currentTarget as Element).contains(next))) left++;
+      });
+    const result = await applyAnswer(
+      handles.get(byHint('signatureDate').id)!,
+      { type: 'date', iso: '2026-10-09' },
+      noFile,
+    );
+    expect(result).toEqual({ ok: true, value: '10/09/2026' });
+    expect([part('Month').value, part('Day').value, part('Year').value]).toEqual(['10', '09', '2026']);
+    expect(left).toBe(1);
+    expect(document.activeElement).toBe(document.body);
+  });
+});
 
 describe('workday pages from snapshots', () => {
   const ctx = {
