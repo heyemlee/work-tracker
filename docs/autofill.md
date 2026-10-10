@@ -424,9 +424,12 @@ A report still tells that something was held, though not what: a dropdown that h
 a file on Greenhouse and Lever, a select2 list whose prompt is gone. And it shows the form as it stood, so a question
 that only comes up after a certain answer (Greenhouse's race question once "Hispanic or Latino?" is "No", the box
 under "I prefer to self describe") is in the report because it was on the page. Workday couldn't be checked this
-way: its forms sit behind a sign-in, so there is no page of its own to serve. Its dropdown buttons, chips and
-checked marks are emptied by rules written from the owner's earlier snapshots; whether its date boxes, its uploads
-or anything else keep an answer isn't known.
+way: its forms sit behind a sign-in, so there is no page of its own to serve. Its dropdown buttons, chips and checked
+marks are emptied by rules written from the owner's earlier snapshots. Since 2026-10-09 so are its dates and its boxes
+(`workday.blank`), after its page code and two more of the owner's reports: a date's readouts and what a screen reader
+is told of it, the mark a ticked box draws, and the styles and the disabled state that tell a group's ticked box from
+the rest — taken from every date and box, answered or not, so that the two read alike. Whether its uploads or anything
+else keep an answer isn't known.
 
 ## 6. AI
 

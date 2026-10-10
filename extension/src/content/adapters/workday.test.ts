@@ -433,6 +433,56 @@ describe('workday’s voluntary questions, from the owner’s reports', () => {
   });
 });
 
+describe('a report of a Workday page', () => {
+  const report = () => formSnapshot(workday, document, extractFields(workday, document, 0), [])!.html;
+
+  it('keeps no answer of a group of boxes or of a date: answered, the page reads as it does unanswered', () => {
+    document.body.innerHTML = SELF_IDENTIFY;
+    const unanswered = report();
+
+    // The same page as Workday draws it once "No" is ticked and the form dated: the mark in the ticked box, the
+    // other boxes shut and greyed, the date in the readouts and in what a screen reader is told.
+    document.body.innerHTML = SELF_IDENTIFY;
+    const [yes, no, rather] = [
+      ...document.querySelectorAll<HTMLInputElement>('input[id$="-disabilityStatus"]'),
+    ];
+    no!.checked = true;
+    no!.setAttribute('aria-checked', 'true');
+    no!.nextElementSibling!.nextElementSibling!.innerHTML =
+      '<div class="css-1lijdsm"><span class="css-1kdudgw"></span></div>';
+    for (const shut of [yes!, rather!]) {
+      shut.disabled = true;
+      shut.parentElement!.className = 'css-1b7l3y9';
+      document.querySelector(`label[for="${shut.id}"]`)!.className = 'css-zs5a3q';
+    }
+    for (const [part, value] of [
+      ['Month', '10'],
+      ['Day', '09'],
+      ['Year', '2026'],
+    ]) {
+      document.querySelector(`[data-automation-id="dateSection${part}-display"]`)!.textContent = value!;
+      const input = document.querySelector<HTMLInputElement>(
+        `[data-automation-id="dateSection${part}-input"]`,
+      )!;
+      input.value = String(Number(value));
+      input.setAttribute('aria-valuenow', String(Number(value)));
+      input.setAttribute('aria-valuetext', String(Number(value)));
+    }
+    document.querySelector('[id^="helpText-"]')!.textContent = 'current value is 10/09/2026';
+
+    const answered = report();
+    expect(answered).toBe(unanswered);
+    expect(answered).not.toMatch(/2026|css-1lijdsm|disabled/);
+    // The page's structure is all still there to read a field from.
+    document.body.innerHTML = answered;
+    expect(extractFields(workday, document, 0).fields.map((field) => [field.label, field.kind])).toEqual([
+      ['Please check one of the boxes below:', 'multi'],
+      ['Date', 'date'],
+      ['Name', 'text'],
+    ]);
+  });
+});
+
 describe('workday pages from snapshots', () => {
   const ctx = {
     profile: makeProfile(),

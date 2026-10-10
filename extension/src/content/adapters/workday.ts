@@ -259,6 +259,33 @@ export const workday: Adapter = {
 
   step: (doc) => textOf(doc.querySelector('[data-automation-id="progressBarActiveStep"]')) || null,
 
+  // What a fill report would keep of the answers, beyond the inputs' own values. A date is shown in a readout over
+  // each of its parts and said whole to a screen reader. A ticked box, or a chosen radio, is drawn by an element
+  // beside it and by the styles of what's round it, and where a group takes one answer the boxes left over are
+  // disabled. All of it goes from every date and every box, answered or not, so that the two read alike.
+  blank(form) {
+    for (const date of form.querySelectorAll('[data-automation-id="dateInputWrapper"]')) {
+      for (const readout of date.querySelectorAll('[data-automation-id$="-display"]'))
+        readout.textContent = '';
+      for (const part of date.querySelectorAll('input')) {
+        part.removeAttribute('aria-valuenow');
+        part.removeAttribute('aria-valuetext');
+      }
+      for (const said of date.parentElement?.querySelectorAll('[id^="helpText-"]') ?? [])
+        said.textContent = '';
+    }
+    for (const input of form.querySelectorAll('input[type="checkbox"], input[type="radio"]')) {
+      input.removeAttribute('disabled');
+      // The box's own wrapper: the input, and the mark drawn for it.
+      const box = input.parentElement;
+      if (!box || box.querySelectorAll('input, select, textarea, button').length !== 1) continue;
+      const label = input.id ? form.querySelector(`label[for="${attributeValue(input.id)}"]`) : null;
+      for (const element of [box, ...box.querySelectorAll('*'), ...(label ? [label] : [])])
+        element.removeAttribute('class');
+      for (const mark of [...box.children].filter((child) => child.tagName === 'DIV')) mark.replaceChildren();
+    }
+  },
+
   async prepare(form, counts) {
     let changed = false;
     const sections: [string, number, string][] = [
