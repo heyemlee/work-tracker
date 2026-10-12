@@ -43,6 +43,8 @@ export interface OutboxMock {
   url: string;
   /** What Outbox answers for its snapshot: `SNAPSHOT`, until a spec puts another in its place. */
   snapshot: Snapshot;
+  /** The PDF Outbox holds for each resume version, by the version's id: `res-1`'s, until a spec says otherwise. */
+  pdfs: Record<string, string>;
   quickAdds: Record<string, unknown>[];
   /** Profiles saved from the card's own window, oldest first. */
   profiles: Record<string, unknown>[];
@@ -62,20 +64,27 @@ export const test = base.extend<{
   outbox: async ({}, provide) => {
     const quickAdds: Record<string, unknown>[] = [];
     const profiles: Record<string, unknown>[] = [];
-    const mock: OutboxMock = { url: '', snapshot: SNAPSHOT, quickAdds, profiles };
+    const mock: OutboxMock = {
+      url: '',
+      snapshot: SNAPSHOT,
+      pdfs: { 'res-1': RESUME_PDF },
+      quickAdds,
+      profiles,
+    };
     const server = createServer((request, response) => {
       const send = (status: number, body?: unknown) => {
         response.writeHead(status, { 'content-type': 'application/json' });
         response.end(body === undefined ? '' : JSON.stringify(body));
       };
       if (request.method === 'GET' && request.url === '/api/snapshot') return send(200, mock.snapshot);
-      // Resume PDFs live on Outbox; the extension downloads the one it attaches.
-      if (request.method === 'GET' && request.url === '/api/resumes/res-1/file') {
+      // Resume PDFs live on Outbox; the extension downloads the one it attaches, or shows.
+      const pdf = mock.pdfs[/^\/api\/resumes\/([^/]+)\/file$/.exec(request.url ?? '')?.[1] ?? ''];
+      if (request.method === 'GET' && pdf !== undefined) {
         response.writeHead(200, {
           'content-type': 'application/pdf',
           'content-disposition': "inline; filename*=UTF-8''Alex_Chen_Resume.pdf",
         });
-        return response.end(RESUME_PDF);
+        return response.end(pdf);
       }
       // The profile lives on Outbox; the extension fetches it before filling.
       if (request.method === 'GET' && request.url === '/api/profile')

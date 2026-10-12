@@ -6,12 +6,14 @@ import {
   CircleAlert,
   CircleCheck,
   Ellipsis,
+  Eye,
   FileText,
   Minus,
   RotateCcw,
   X,
 } from 'lucide-react';
 import {
+  Fragment,
   useCallback,
   useEffect,
   useRef,
@@ -24,10 +26,11 @@ import { parseIsoDate, toIsoDate } from '@domain/dates';
 import { browser } from 'wxt/browser';
 import { BrandMark } from '../../../../src/ui/BrandMark';
 import { adapterFor } from '../../content/adapters';
-import { isDone, toBackground, type CardState, type ChecklistItem } from '../../messages';
+import { isDone, toBackground, type CardResume, type CardState, type ChecklistItem } from '../../messages';
 import type { Signal } from '../../match/scan';
 import { DEFAULT_SETTINGS, getSettings } from '../../storage';
 import { resolveLanguage, translator, type MessageKey, type Translate } from '../i18n';
+import { Framed } from './Framed';
 import { ProfileSheet } from './ProfileSheet';
 import { pageIsDark } from './scheme';
 import { SettingsFrame } from './SettingsFrame';
@@ -51,7 +54,8 @@ interface Choice {
 /**
  * One of several, each on its line: the highlight sits on the chosen one and slides to the next. Arrow keys move
  * the choice. With `fold`, only the chosen line shows, like a closed dropdown: pressed, the lines drop open, and
- * they close once another is chosen.
+ * they close once another is chosen. With `peek`, a line ends in a button that shows what it stands for without
+ * choosing it.
  */
 function Choices({
   label,
@@ -59,12 +63,18 @@ function Choices({
   choices,
   onChoose,
   fold = false,
+  peek,
+  held = false,
 }: {
   label: string;
   value: string | null;
   choices: Choice[];
   onChoose: (id: string) => void;
   fold?: boolean;
+  /** The button at a line's end: its tip, its name for that line, and what it does, told where it was pressed. */
+  peek?: { tip: string; name: (choice: Choice) => string; run: (choice: Choice, at: HTMLElement) => void };
+  /** Something a line's button opened is up over the card: the lines wait as they were left. */
+  held?: boolean;
 }) {
   const folds = fold && choices.length > 1;
   const [open, setOpen] = useState(false);
@@ -79,7 +89,8 @@ function Choices({
   const move = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') setOpen(false);
     const step = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[event.key];
-    if (!step || free.length === 0) return;
+    // The arrows move the choice from a line, not from the button at its end.
+    if (!step || free.length === 0 || !(event.target as HTMLElement).dataset.key) return;
     event.preventDefault();
     const from = free.findIndex((choice) => choice.id === (event.target as HTMLElement).dataset.key);
     const next = free[(from + step + free.length) % free.length]!;
@@ -105,38 +116,69 @@ function Choices({
           : undefined
       }
       onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
+        if (!held && !event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
       }}
     >
-      <Track className="lines" current={value} role="radiogroup" aria-label={label} onKeyDown={move}>
-        {choices.map((choice) => {
+      <Track
+        className={`lines${peek ? ' peeks' : ''}`}
+        current={value}
+        role="radiogroup"
+        aria-label={label}
+        onKeyDown={move}
+      >
+        {choices.map((choice, at) => {
           const chosen = choice.id === value;
+          const away = shut && !chosen;
+          // A line and its button share a row: the button lies over the line's end.
+          const row = peek ? { gridRow: at + 1 } : undefined;
           return (
-            <button
-              key={choice.id}
-              data-key={choice.id}
-              type="button"
-              role="radio"
-              aria-checked={chosen}
-              aria-hidden={shut && !chosen ? true : undefined}
-              disabled={choice.disabled}
-              tabIndex={choice.id === stop ? 0 : -1}
-              className="choice"
-              onClick={() => {
-                clearTimeout(closing.current);
-                if (shut) setOpen(true);
-                else if (chosen) setOpen(false);
-                else {
-                  onChoose(choice.id);
-                  if (folds) closing.current = setTimeout(() => setOpen(false), 280);
-                }
-              }}
-            >
-              <span className="choice-icon">{choice.icon}</span>
-              <span className="choice-text">{choice.text}</span>
-              {choice.note && <span className="choice-note">{choice.note}</span>}
-              {folds && chosen && <ChevronDown size={14} className={`choice-fold${open ? ' up' : ''}`} />}
-            </button>
+            <Fragment key={choice.id}>
+              <button
+                data-key={choice.id}
+                type="button"
+                role="radio"
+                aria-checked={chosen}
+                aria-hidden={away ? true : undefined}
+                disabled={choice.disabled}
+                tabIndex={choice.id === stop ? 0 : -1}
+                className="choice"
+                style={row}
+                onClick={() => {
+                  clearTimeout(closing.current);
+                  if (shut) setOpen(true);
+                  else if (chosen) setOpen(false);
+                  else {
+                    onChoose(choice.id);
+                    if (folds) closing.current = setTimeout(() => setOpen(false), 280);
+                  }
+                }}
+              >
+                <span className="choice-icon">{choice.icon}</span>
+                <span className="choice-text">{choice.text}</span>
+                {choice.note && <span className="choice-note">{choice.note}</span>}
+                {/* The arrow's place stays free on the other lines, so the buttons stand in one column. */}
+                {folds &&
+                  (chosen ? (
+                    <ChevronDown size={14} className={`choice-fold${open ? ' up' : ''}`} />
+                  ) : (
+                    peek && <span className="choice-fold" />
+                  ))}
+              </button>
+              {peek && (
+                <button
+                  type="button"
+                  className="icon-button peek"
+                  style={row}
+                  aria-label={peek.name(choice)}
+                  aria-hidden={away ? true : undefined}
+                  tabIndex={away ? -1 : 0}
+                  title={peek.tip}
+                  onClick={(event) => peek.run(choice, event.currentTarget)}
+                >
+                  <Eye size={14} />
+                </button>
+              )}
+            </Fragment>
           );
         })}
       </Track>
@@ -382,6 +424,9 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   // The profile's own window is open, over the page; or the settings'.
   const [editing, setEditing] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // A resume looked at before it's sent, in a window of its own; and the button that asked for the look.
+  const [previewing, setPreviewing] = useState<CardResume | null>(null);
+  const peeked = useRef<HTMLElement>(null);
 
   // A request that failed in the service worker answers nothing: the card keeps what it shows.
   const apply = useCallback((next: CardState | undefined) => {
@@ -643,6 +688,11 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     void toBackground('card:select', change)
       .then(apply)
       .catch(() => undefined);
+  const closePreview = () => {
+    // The keyboard goes back to the button that asked: the resumes, dropped open or not, are as they were left.
+    peeked.current?.focus({ preventScroll: true });
+    setPreviewing(null);
+  };
   const drafting = state.phase === 'drafting';
   const linkedin = state.ats === 'linkedin';
   const canLog =
@@ -855,6 +905,16 @@ export function Card({ startOpen }: { startOpen: boolean }) {
                   }))}
                   onChoose={(resumeId) => select({ resumeId })}
                   fold
+                  // Which version is this one? A look at its pages, without choosing it.
+                  peek={{
+                    tip: t('preview'),
+                    name: (choice) => t('previewOf', { name: choice.text }),
+                    run: (choice, at) => {
+                      peeked.current = at;
+                      setPreviewing({ id: choice.id, label: choice.text });
+                    },
+                  }}
+                  held={previewing !== null}
                 />
               ) : (
                 <div className="choices none">{t('noResume')}</div>
@@ -882,6 +942,18 @@ export function Card({ startOpen }: { startOpen: boolean }) {
       {tab}
       {editing && <ProfileSheet t={t} dark={dark} onClose={() => setEditing(false)} onSaved={apply} />}
       {settingsOpen && <SettingsFrame t={t} dark={dark} onClose={closeSettings} />}
+      {previewing && (
+        <Framed
+          name="preview"
+          page="/preview.html"
+          title={t('previewOf', { name: previewing.label })}
+          dark={dark}
+          tall
+          ask={() => toBackground('preview:open', { resumeId: previewing.id })}
+          onClose={closePreview}
+          onStuck={() => setFlash(t('previewStuck'))}
+        />
+      )}
     </>
   );
 }

@@ -25,10 +25,10 @@ export default defineConfig({
     icons,
     action: { default_title: 'Outbox Autofill', default_icon: icons },
     // The card's stylesheet, read by the card when it's injected into a career site that embeds a form; and the
-    // settings page, which the card shows in a frame inside its window (it draws there only for the card: see
-    // src/background/settings.ts).
+    // settings page and a resume's preview, which the card shows in a frame inside its window (they draw there only
+    // for the card: see src/background/tickets.ts).
     web_accessible_resources: [
-      { resources: ['content-scripts/inject.css', 'options.html'], matches: ['<all_urls>'] },
+      { resources: ['content-scripts/inject.css', 'options.html', 'preview.html'], matches: ['<all_urls>'] },
     ],
     commands: {
       'fill-application': {

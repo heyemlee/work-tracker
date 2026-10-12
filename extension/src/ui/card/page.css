@@ -1,0 +1,58 @@
+/* One of the extension's own pages, drawn in the card's window over a page: the settings, a resume's preview. It
+   wears the card's own look: its tokens, its window, its fields. */
+@import './card.css';
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* In the card's window the glass is the card's, behind this page: nothing is painted over it. */
+html.framed,
+html.framed body {
+  background: none;
+}
+
+.refused {
+  margin: 0;
+  padding: 24px;
+  font:
+    13px -apple-system,
+    system-ui,
+    sans-serif;
+  color: #8f8f8f;
+}
+
+/* In the card's window the page comes in by itself, a moment after the window: softly, and without moving. */
+html.framed .pane {
+  animation: pane-in 0.2s ease;
+}
+
+@keyframes pane-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.framed .pane {
+    animation: none;
+  }
+}
+
+.pane {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: inherit;
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+}

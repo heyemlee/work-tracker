@@ -760,6 +760,40 @@ a:focus-visible {
   transform: rotate(180deg);
 }
 
+/* The arrow's place, kept free on a line that has none. */
+span.choice-fold {
+  width: 14px;
+}
+
+/* A look at a resume before it's sent: a button over the end of its line, before the arrow where the lines fold.
+   Line and button share a cell of the track, and the line keeps the button's place clear of its text. */
+.lines.peeks {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.lines.peeks > .choice,
+.peek {
+  grid-column: 1;
+}
+
+.lines.peeks .choice-text {
+  margin-right: 26px;
+}
+
+.peek {
+  justify-self: end;
+  align-self: center;
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+  border-radius: 8px;
+}
+
+.choices.fold .peek {
+  margin-right: 30px;
+}
+
 .hint {
   font-size: 12px;
   color: var(--fg-2);
@@ -1137,12 +1171,19 @@ a:focus-visible {
   }
 }
 
-/* The settings' window holds a frame, clear as the glass it lies on: the extension's own page draws in it. The
-   window appears in place: Chrome drops presses on a frame from another origin while it moves and for half a second
-   after (its guard against a page sliding a frame under the pointer), so one that glided in would ignore the first
-   press. What's in the frame fades in by itself. */
+/* The settings' window, and a resume's, holds a frame, clear as the glass it lies on: the extension's own page
+   draws in it. The window appears in place: Chrome drops presses on a frame from another origin while it moves and
+   for half a second after (its guard against a page sliding a frame under the pointer), so one that glided in would
+   ignore the first press. What's in the frame fades in by itself. The window takes the keys until its page does. */
 .sheet.framed {
   animation: none;
+  outline: none;
+}
+
+/* A document is read from its top down: its window takes what height the browser's has, up to a Letter page at
+   its own size under the window's head. */
+.sheet.tall {
+  height: min(1140px, calc(100vh - 48px));
 }
 
 .sheet-frame {

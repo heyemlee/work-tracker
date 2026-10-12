@@ -20,9 +20,11 @@ import { bridgeStatus, fromOutbox, readResumeForOutbox } from './bridge';
 import { dropFixedSnapshots } from './fixed';
 import { forgetTab, openCard, showForm } from './inject';
 import { flushQueue, syncProfile } from './outbox';
+import { enterPreview, openPreview, previewOf } from './preview';
 import { loadProfile, storeProfile } from './profile';
 import { dropSession } from './session';
-import { deleteEverything, dropTickets, enterSettings, openSettings, settingsStatus } from './settings';
+import { deleteEverything, enterSettings, openSettings, settingsStatus } from './settings';
+import { dropTickets } from './tickets';
 
 export function startBackground(): void {
   listen<BackgroundMessage>(
@@ -79,6 +81,17 @@ export function startBackground(): void {
         }
         case 'settings:close':
           return toFrame(tabId, 0, 'settings:close', {}).catch(() => undefined);
+        case 'preview:open':
+          return openPreview(tabId, message.resumeId);
+        case 'preview:enter': {
+          const resumeId = enterPreview(tabId, message.ticket);
+          if (resumeId === null) return 'refused';
+          // Said before the PDF is read: the card's window holds a page that draws, whatever Outbox takes to answer.
+          void toFrame(tabId, 0, 'preview:shown', {}).catch(() => undefined);
+          return previewOf(resumeId);
+        }
+        case 'preview:close':
+          return toFrame(tabId, 0, 'preview:close', {}).catch(() => undefined);
         case 'submit:attempt':
           return submitAttempt(tabId, url, message.answers, message.emails);
         case 'submit:confirmed':

@@ -13,31 +13,20 @@ import {
   usageItem,
 } from '../storage';
 import { flushQueue, loadSnapshot, OutboxSignedOut, syncProfile } from './outbox';
+import { giveTicket, takeTicket } from './tickets';
 
 /**
  * The settings are the extension's own page, shown in a frame inside the card's window so that the page under it can
- * neither read what's typed there (an API key) nor press anything in it. The page is reachable by address from any
- * site, so framed it draws nothing until it shows a ticket: one the card asked for, for its own tab, good for one
- * showing.
+ * neither read what's typed there (an API key) nor press anything in it. Framed, it draws nothing until it shows
+ * the ticket the card asked for (tickets.ts).
  */
-const tickets = new Map<string, number>();
-
 export function openSettings(tabId: number): { ticket: string } {
-  const ticket = crypto.randomUUID();
-  tickets.set(ticket, tabId);
-  return { ticket };
+  return giveTicket(tabId, { page: 'settings' });
 }
 
-/** Whether the framed page may draw: the ticket was given out for the tab it's in. A ticket works once. */
+/** Whether the framed page may draw: its ticket was given out for the settings, in the tab it's in. */
 export function enterSettings(tabId: number | undefined, ticket: string): boolean {
-  const allowed = tabId !== undefined && tickets.get(ticket) === tabId;
-  tickets.delete(ticket);
-  return allowed;
-}
-
-/** A closed tab's tickets are no use to anyone. */
-export function dropTickets(tabId: number): void {
-  for (const [ticket, owner] of tickets) if (owner === tabId) tickets.delete(ticket);
+  return takeTicket(tabId, ticket)?.page === 'settings';
 }
 
 /**

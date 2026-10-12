@@ -62,10 +62,13 @@ export async function resumeChoices(snapshot: Snapshot | null): Promise<{ id: st
 }
 
 /**
- * A resume version's PDF as base64, for handing to a content script (messages carry JSON, not Blobs). Downloaded
- * when the copy here is missing or older than Outbox's; offline, the last copy.
+ * A resume version's PDF as base64, for handing to a content script or to the window that shows it (messages carry
+ * JSON, not Blobs), with what the version is called. Downloaded when the copy here is missing or older than
+ * Outbox's; offline, the last copy.
  */
-export async function readResume(id: string): Promise<{ name: string; type: string; base64: string } | null> {
+export async function readResume(
+  id: string,
+): Promise<{ label: string; name: string; type: string; base64: string } | null> {
   const [snapshot, kept] = await Promise.all([
     loadSnapshot().catch(() => null),
     run<Copy | undefined>('readonly', (store) => store.get(id) as IDBRequest<Copy | undefined>),
@@ -89,7 +92,13 @@ export async function readResume(id: string): Promise<{ name: string; type: stri
   }
   if (!copy) return null;
   const bytes = new Uint8Array(await copy.blob.arrayBuffer());
-  return { name: copy.fileName, type: 'application/pdf', base64: bytesToBase64(bytes) };
+  return {
+    // A version renamed on Outbox keeps its PDF, and the copy here its old name.
+    label: version?.name ?? copy.label,
+    name: copy.fileName,
+    type: 'application/pdf',
+    base64: bytesToBase64(bytes),
+  };
 }
 
 /** Drops every copy; Outbox keeps the PDFs. */

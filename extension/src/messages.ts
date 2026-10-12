@@ -108,6 +108,14 @@ export interface SettingsStatus {
   resumes: string[] | null;
 }
 
+/** A resume as its preview shows it, in the card's window. */
+export interface ResumePreview {
+  /** What the version is called on Outbox. */
+  label: string;
+  /** The file an employer is sent: its name and the PDF, base64. */
+  file: { name: string; base64: string };
+}
+
 /** An answer the owner typed, read from the page as they submit. */
 export interface CapturedAnswer {
   fieldId: string;
@@ -147,6 +155,16 @@ export interface ToBackground {
   'settings:status': { request: Record<string, never>; response: SettingsStatus };
   /** Deletes what the extension keeps in this browser. */
   'settings:deleteAll': { request: Record<string, never>; response: void };
+  /** The card is about to show a resume in its window: a ticket for the framed page to draw with. */
+  'preview:open': { request: { resumeId: string }; response: { ticket: string } };
+  /**
+   * From the preview's page in the card's window: the resume its ticket is for. `refused` where the page may not
+   * draw; `unread` where it may and there's no PDF to hand it: Outbox holds none, or can't be reached for one this
+   * browser keeps no copy of.
+   */
+  'preview:enter': { request: { ticket: string }; response: ResumePreview | 'refused' | 'unread' };
+  /** From the preview's page in the card's window: close it. */
+  'preview:close': { request: Record<string, never>; response: void };
   /** The profile to edit: Outbox's copy, or this browser's when Outbox can't be reached. */
   'profile:load': { request: Record<string, never>; response: ProfileDraft };
   /** Saves the profile on Outbox, where it lives, and in this browser's copy. */
@@ -194,6 +212,9 @@ export interface ToFrame {
   /** The settings page drew in the card's window. */
   'settings:shown': { request: Record<string, never>; response: void };
   'settings:close': { request: Record<string, never>; response: void };
+  /** The preview's page drew in the card's window. */
+  'preview:shown': { request: Record<string, never>; response: void };
+  'preview:close': { request: Record<string, never>; response: void };
 }
 
 type Envelope<Map, Type extends keyof Map> = { type: Type } & (Map[Type] extends { request: infer Request }

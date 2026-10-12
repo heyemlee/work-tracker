@@ -19,17 +19,18 @@ typing, fingerprint spoofing, CAPTCHA solving); automating LinkedIn, whose terms
 
 ## 2. How it's used
 
-1. Open an application page. Once the form is on the page, a glass panel slides in down the window's right edge
-   (on a window under 1360 px wide it stays a card in the top-right corner): the posting's title with a dot for the
+1. Open an application page. Once the form is on the page, a glass panel slides in down the window's right edge (on
+   a window under 1360 px wide it stays a card in the top-right corner): the posting's title with a dot for the
    match check (green, yellow, red; yellow and red give their two main reasons under it), then the accounts, as a
-   list with a highlight on the one applying that slides to the next choice — accounts that already applied to
-   this posting are disabled — and the resume in use, which drops open to the other versions when pressed. Under
-   them, whose profile the form is filled from and how many of the blanks most forms ask about it still has;
-   pressing it opens the profile in a window over the page, to edit it right there. A posting whose form isn't
-   showing yet gets a card in the top-right corner instead, for its match check and two buttons: **Mark as
-   applied**, first and the one that stands out, since it's what the owner mostly presses there, and **Save for
-   later**, which adds the posting to Outbox as a saved job. A posting Outbox already saved says so when it's opened
-   again.
+   list with a highlight on the one applying that slides to the next choice — accounts that already applied to this
+   posting are disabled — and the resume in use, which drops open to the other versions when pressed. Each version's
+   line ends in an eye: pressed, it shows that PDF's pages in a window over the page, without choosing the version
+   or attaching anything. Under them, whose profile the form is filled from and how many of the blanks most forms
+   ask about it still has; pressing it opens the profile in a window over the page, to edit it right there. A
+   posting whose form isn't showing yet gets a card in the top-right corner instead, for its match check and two
+   buttons: **Mark as applied**, first and the one that stands out, since it's what the owner mostly presses there,
+   and **Save for later**, which adds the posting to Outbox as a saved job. A posting Outbox already saved says so
+   when it's opened again.
 2. Press **Fill** (or the shortcut). Recognized fields fill in about a second and the resume PDF is attached; the
    button turns into a bar that fills meanwhile. Its count is paced by the stage the fill is at (reading the page,
    then filling), not measured field by field.
@@ -68,12 +69,14 @@ flowchart LR
     card["Card, top frame<br/>closed shadow DOM"]
     bg["Service worker<br/>storage · Outbox client · Claude client"]
     opts["Settings page, framed in the card<br/>connection · AI · reports · answers"]
+    look["Resume preview, framed in the card<br/>a PDF's pages"]
   end
   outbox[("tracker.haoyang.us/api")]
   claude["Claude API"]
   cs <--> bg
   card <--> bg
   opts <--> bg
+  look <--> bg
   bg --> outbox
   bg --> claude
 ```
@@ -129,11 +132,12 @@ pronouns, the US state, the work status (which sets the OPT field with it, so th
 date left empty.
 
 **Settings** (decided 2026-10-06) open from the card's ⋯ menu in a window like the profile's, not in a tab. What's
-in the window is the extension's own page (`entrypoints/options`) in a frame (`SettingsFrame.tsx`): what's typed
-into the card's own markup still passes the page under it, closed as its shadow root is ([Privacy](#9-privacy)):
-no place for an API key. Nothing crosses a frame of the extension's origin. The settings' page is reachable by
-address from any site, so framed it draws only on a ticket the card asked the service worker for, for its tab, good
-once (`background/settings.ts`); in a tab of its own (the browser's "Options") it draws as it is. Five sections —
+in the window is the extension's own page (`entrypoints/options`) in a frame (`SettingsFrame.tsx`, on the window
+`Framed.tsx` that a resume's preview shares): what's typed into the card's own markup still passes the page under
+it, closed as its shadow root is ([Privacy](#9-privacy)): no place for an API key. Nothing crosses a frame of the
+extension's origin. The settings' page is reachable by address from any site, so framed it draws only on a ticket
+the card asked the service worker for, for its tab, good once (`background/tickets.ts`); in a tab of its own (the
+browser's "Options") it draws as it is. Five sections —
 Connection (Outbox, the profile's and resumes' copies, Outbox's address), AI, Fill reports, Remembered answers,
 General (language, the same-company warning, export and delete) — each saving as it's changed, with no Save button
 to tell it by. So a field says it at the end of its label (decided 2026-10-09, when the owner couldn't tell whether
@@ -157,6 +161,28 @@ serves the PDF itself, so the panel opens it with a plain link. The card lists t
 the extension downloads the one picked and keeps a copy in its IndexedDB, replaced when Outbox's is newer, so filling
 works offline. Uploading is the start of everything else: the extension attaches the PDF, logs record its version,
 and the profile is read from it.
+
+**A resume's preview** (decided 2026-10-12, when the owner asked that pressing a resume on the card show it): with
+several versions on Outbox, which one is this? Each version's line on the card ends in an eye; pressed, that
+version's pages show in a window over the page, under the version's name, the name of the file an employer is sent
+and how many pages it has. A look is only that: it neither chooses the version nor attaches anything, the list stays
+as it was left, open or folded, and the keyboard goes back to the eye that was pressed. Closed at its ✕, with
+Escape, or by a press beside it. What's in the window is the extension's own page (`entrypoints/preview`) in a
+frame, on the same window as the settings (`Framed.tsx`). The reason here is what drawing a PDF takes: pdf.js and
+its worker, 1.7 MB of code that no content script should carry into every page, and that a page's own content
+security policy could turn away; in the extension's page they run by the extension's rules whatever the site, and
+load only when a resume is looked at. The PDF goes from the service worker to that page and never through the page
+under the card. Framed, the page draws only on a ticket, as the settings do, and the ticket names the resume
+(`background/tickets.ts`, `background/preview.ts`): the page is handed that one, read as for a fill (this browser's
+copy, downloaded first where Outbox's is newer or there's none yet), or told there's none to read. Each page is
+drawn for a Letter page's own width, 816 CSS pixels, at the display's density, and shown scaled down where the
+window is narrower; a page is drawn as it nears the window, so a long document doesn't hold all of its pages in
+memory. pdf.js is told not to use WebAssembly, which the extension's pages don't run, and no font data is shipped
+with it: fonts a PDF carries, as LaTeX's and Word's do, draw as they are, and the fourteen every reader is meant
+to have fall to the system's (tried with Helvetica, Times and Courier left out of a file). Chrome's own PDF viewer
+in the frame was passed over without a try, for what it's known to do there: it takes the keys typed in it, so
+Escape would stop closing the window once the pages were pressed; it hands the file to the downloads instead where
+Chrome is set to download PDFs; and a spec can't look at what it drew.
 
 **From a resume.** A new profile starts from the resume, as Simplify and similar tools do. "Fill from resume" picks
 one of the stored resumes (or uploads a new PDF, which becomes a version too), and "Fill profile" on a resume in the
@@ -594,7 +620,9 @@ that presses anything or changes the profile: the most a page can do there is dr
 owner's own press. And all of it takes a script written against this extension. What such a script would learn is
 what the card shows while it shows it, most of which the owner is about to hand that page's form: so the profile's
 window stays in the card, with its glass and its glide. The API keys don't: the settings are a frame of the
-extension's own origin, which none of this crosses. Should the profile ever have to be kept from a page that goes
+extension's own origin, which none of this crosses. So is a resume's preview, for pdf.js's sake first: the pages it
+draws are out of that page's reach as well, and a page that frames the preview itself, or shows a ticket again
+that the card's look has spent, is drawn nothing. Should the profile ever have to be kept from a page that goes
 looking, its window goes into that frame as well, and appears in place as the settings do.
 
 ## 10. Testing
@@ -617,7 +645,10 @@ looking, its window goes into that frame as well, and appears in place as the se
   for in its own words, and a Workday one sent in Chinese and told on the page it's taken to;
   Workday's groups of boxes and the date of its disability form on a stand-in drawn after its page code, where the
   form holds a date only once its field is left and shuts a group's other boxes while one is ticked;
-  on Gem also the resume taken out at its ✕ and attached again, and a file dropped in by hand kept.
+  on Gem also the resume taken out at its ✕ and attached again, and a file dropped in by hand kept;
+  a resume's preview drawing a PDF's pages in its frame (ink read off the canvas where the PDF has it), a look at a
+  version from the open list that leaves list and choice alone, what the window says where there's nothing to
+  draw, and nothing drawn for a page that frames the preview itself or shows a spent ticket.
   Playwright can't look into a closed shadow root any more than a page can, so the specs drive a build of their
   own: the one Chrome loads with the card's root left open and nothing else changed (`wxt.e2e.config.ts`), made as
   a run starts, in `.output/chrome-mv3-e2e`. One spec (`e2e/reach.spec.ts`) takes the build Chrome loads and tries

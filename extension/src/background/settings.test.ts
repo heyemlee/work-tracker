@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { dropTickets, enterSettings, openSettings } from './settings';
+import { enterSettings, openSettings } from './settings';
+import { dropTickets } from './tickets';
 
 describe('showing the settings in the card’s window', () => {
   it('lets the framed page draw in the tab the card asked from, once', () => {

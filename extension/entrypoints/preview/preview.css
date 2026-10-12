@@ -1,0 +1,74 @@
+/* A resume's preview is one of the extension's own pages, in the card's window (page.css). What's below is its
+   own. */
+@import '../../src/ui/card/page.css';
+
+/* Whose pages these are: the version's name, then, quieter, the file an employer is sent and how long it is. */
+.preview-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.preview-title h1 {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-file {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--fg-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The pages, one under the other: paper on the glass, at its own size where the window has the room (816px is a
+   Letter page's width; Preview.tsx draws for it). */
+.pages {
+  flex: 1;
+  min-height: 0;
+  padding: 4px 24px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  outline: none;
+  /* At its last page the scrolling stops here: the page under the window stays where it is. */
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--fill-2) transparent;
+}
+
+.page {
+  flex: none;
+  display: block;
+  width: 100%;
+  max-width: 816px;
+  height: auto;
+  border-radius: 3px;
+  background: #fff;
+  box-shadow:
+    0 0 0 0.5px rgb(0 0 0 / 0.14),
+    0 10px 28px -14px rgb(0 0 0 / 0.35);
+}
+
+/* Nothing to show yet, or at all. */
+.preview-wait,
+.preview-note {
+  flex: 1;
+  margin: 0;
+  padding: 24px 48px 72px;
+  display: grid;
+  place-items: center;
+  color: var(--fg-2);
+  text-align: center;
+  text-wrap: balance;
+}

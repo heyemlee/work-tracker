@@ -1,28 +1,6 @@
-/* The settings wear the card's own look: its tokens, its window, its fields. What's below is theirs alone. */
-@import '../../src/ui/card/card.css';
-
-html,
-body,
-#root {
-  height: 100%;
-  margin: 0;
-}
-
-/* In the card's window the glass is the card's, behind this page: nothing is painted over it. */
-html.framed,
-html.framed body {
-  background: none;
-}
-
-.refused {
-  margin: 0;
-  padding: 24px;
-  font:
-    13px -apple-system,
-    system-ui,
-    sans-serif;
-  color: #8f8f8f;
-}
+/* The settings are one of the extension's own pages, in the card's window or in a tab (page.css). What's below is
+   theirs alone. */
+@import '../../src/ui/card/page.css';
 
 /* A tab of its own: the same window, on a plain ground. */
 .tab-page {
@@ -34,38 +12,6 @@ html.framed body {
 
 .tab-page.dark {
   background: #0d0d0d;
-}
-
-/* In the card's window the page comes in by itself, a moment after the window: softly, and without moving. */
-html.framed .pane {
-  animation: pane-in 0.2s ease;
-}
-
-@keyframes pane-in {
-  from {
-    opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html.framed .pane {
-    animation: none;
-  }
-}
-
-.pane {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  border-radius: inherit;
-  font-family: var(--font);
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--fg);
-  -webkit-font-smoothing: antialiased;
 }
 
 /* What's set, a line each: a name, what it is, and what can be done about it. */
