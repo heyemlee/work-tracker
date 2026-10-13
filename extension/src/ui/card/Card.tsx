@@ -441,12 +441,14 @@ export function Card({ startOpen }: { startOpen: boolean }) {
         setState(next);
         // A page may have drawn its theme, or moved to another one, since the card last looked.
         setDark(pageIsDark());
-        // Open where there's something to do: an application form, a posting on an applicant-tracking site or
-        // LinkedIn (its match check, before applying), the confirmation page with its Undo. Elsewhere the detect
-        // script opens the card for a form with a resume upload. Put aside, it stays there: its tab is in sight.
-        // A page that is no job's gets the card only when the owner asks for it.
+        // Open where there's something to do: an application, whether or not this page of it has a form; a posting
+        // on an applicant-tracking site or LinkedIn (its match check, before applying); the confirmation page with
+        // its Undo. Elsewhere the detect script opens the card for a form with a resume upload. Put aside, it stays
+        // there: its tab is in sight. A page that is no job's gets the card only when the owner asks for it.
         const show =
-          (next.jobPage && next.ats !== 'generic' && (next.hasForm || Boolean(next.posting?.title))) ||
+          (next.jobPage &&
+            next.ats !== 'generic' &&
+            (next.hasForm || next.applying || Boolean(next.posting?.title))) ||
           (next.logged && !next.logged.undone);
         if (show) setView((now) => (now === 'closed' ? 'open' : now));
       })
@@ -555,6 +557,10 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   // Closed, the card is gone until the page changes or the toolbar button is pressed; no pill waits in the corner.
   if (!state || view === 'closed') return null;
 
+  // An application under way, on whichever of its pages: one with a form to fill, or one with nothing to fill just
+  // now (a step still on its way, the review before it's sent). The card is the application's on all of them.
+  const applying = state.hasForm || state.applying;
+
   const log = () =>
     void toBackground('card:log', {})
       .then((next) => {
@@ -625,7 +631,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   );
 
   // Submitted and logged: the one thing left is Undo, and why it failed if it did.
-  if (state.logged && (loggedHere || !state.hasForm)) {
+  if (state.logged && (loggedHere || !applying)) {
     const { undone } = state.logged;
     return (
       <>
@@ -658,8 +664,9 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     );
   }
 
-  // Saved for later from a posting: Undo, as after a log.
-  if (state.saved && !state.hasForm) {
+  // Saved for later from a posting: Undo, as after a log. Once the owner applies to it, the card is the
+  // application's.
+  if (state.saved && !applying) {
     const { undone } = state.saved;
     return (
       <>
@@ -724,10 +731,10 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     total: counted.length,
   });
 
-  // On a posting without a form, saving and logging are buttons of their own (below). LinkedIn keeps its log
-  // button for every posting, applied to or not: its Easy Apply happens right there.
+  // On a posting no one is applying to yet, saving and logging are buttons of their own (below). LinkedIn keeps
+  // its log button for every posting, applied to or not: its Easy Apply happens right there.
   const postingPage =
-    !home && !state.hasForm && Boolean(state.posting?.company) && (linkedin || state.tracked !== 'applied');
+    !home && !applying && Boolean(state.posting?.company) && (linkedin || state.tracked !== 'applied');
   const menu = [
     ...(canLog && !linkedin && !postingPage ? [{ label: t('log'), run: log }] : []),
     ...(home && state.otherForm
@@ -825,13 +832,25 @@ export function Card({ startOpen }: { startOpen: boolean }) {
         </div>
       </>
     );
+  } else if (state.applying && !state.sends) {
+    // A page of the application with nothing to fill: a step on its way, more often than not. The button waits
+    // where it will be pressed.
+    main = (
+      <button className="primary" disabled>
+        {t('fill')}
+      </button>
+    );
+  } else if (state.applying && canLog) {
+    // Its last page, with nothing left to fill: sending it is the owner's, and the log follows by itself.
+    main = <div className="hint">{t('lastStep')}</div>;
   }
 
-  // A form is worked through beside the page, in a panel the window's height; a posting or a log needs only a card.
-  // The profile's window, when open, is the card's sibling: over the page, not inside the panel.
+  // An application is worked through beside the page, in a panel the window's height, which stays as its steps
+  // come and go; a posting or a log needs only a card. The profile's window, when open, is the card's sibling:
+  // over the page, not inside the panel.
   return (
     <>
-      <div className={`${frame}${state.hasForm ? ' panel' : ''}`} role="dialog" aria-label="Outbox Autofill">
+      <div className={`${frame}${applying ? ' panel' : ''}`} role="dialog" aria-label="Outbox Autofill">
         <header className="head">
           <BrandMark size={24} className="brand-mark" />
           {/* The page already says whose posting this is: the company waits in the hover, with the match check. */}
@@ -895,7 +914,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
 
           {/* Who applies and with which resume, each choice on its own line: an address or a file name cut short
             tells nothing. */}
-          {(state.hasForm || (linkedin && !home)) && state.accounts.length > 0 && (
+          {(applying || (linkedin && !home)) && state.accounts.length > 0 && (
             <section className="section">
               <h2 className="label">{t('account')}</h2>
               <Choices
@@ -912,7 +931,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
               />
             </section>
           )}
-          {(state.hasForm || home) && (
+          {(applying || home) && (
             <section className="section">
               <h2 className="label">{t('resume')}</h2>
               {state.resumes.length > 0 ? (
@@ -943,7 +962,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
             </section>
           )}
           {/* What the form is filled from, a press away from being edited right here. */}
-          {(state.hasForm || home) && state.profile && (
+          {(applying || home) && state.profile && (
             <section className="section">
               <h2 className="label">{t('profile')}</h2>
               <button className="choices link" onClick={() => setEditing(true)} title={t('profileEdit')}>

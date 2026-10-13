@@ -108,6 +108,8 @@ export function startContent(): () => void {
       frameId,
       ats: adapter.ats,
       isApplication: extraction.fields.length > 0,
+      applying: adapter.applying?.(document, location.href) ?? false,
+      sends: [adapter.submitButton(document)].flat().some((button) => button !== null),
       jobLike: adapter.jobLike?.(document, location.href) ?? true,
       otherForm: adapter.otherForm?.(document) ?? false,
       ...reading,

@@ -14,6 +14,9 @@ import type { Adapter, CustomField } from './types';
 
 const auto = (element: Element | null) => element?.getAttribute('data-automation-id') ?? '';
 
+/** An application's pages, under the posting's own address: …/job/Santa-Clara/Engineer_JR123/apply/applyManually. */
+const APPLY = /\/job\/.+\/apply(\/[^/]+)?\/?$/;
+
 const HINTS: Record<string, Hint> = {
   legalNameSection_firstName: 'name.first',
   legalNameSection_lastName: 'name.last',
@@ -258,6 +261,12 @@ export const workday: Adapter = {
   },
 
   step: (doc) => textOf(doc.querySelector('[data-automation-id="progressBarActiveStep"]')) || null,
+
+  // An application is several pages at one address, and not each has something to fill at every moment: a step's
+  // fields come a while after its bar and its foot do, and the last step only shows the whole for a look before
+  // it's sent. The address tells before anything is drawn, the page itself where the address is another's.
+  applying: (doc, url) =>
+    APPLY.test(new URL(url).pathname) || doc.querySelector('[data-automation-id="applyFlowPage"]') !== null,
 
   // What a fill report would keep of the answers, beyond the inputs' own values. A date is shown in a readout over
   // each of its parts and said whole to a screen reader. A ticked box, or a chosen radio, is drawn by an element

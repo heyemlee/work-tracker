@@ -59,6 +59,13 @@ export interface CardState {
   /** The page holds an application form (not just a posting). */
   hasForm: boolean;
   /**
+   * The page is an application under way, though it may have nothing to fill: a step still on its way, the review
+   * before it's sent. The card there is the application's, as on its forms, and not a posting's.
+   */
+  applying: boolean;
+  /** The page shows the button that sends the application: the last of its steps. */
+  sends: boolean;
+  /**
    * The page is a job's: an application, a posting, a page Outbox tracks. Where it isn't, the card asked for there
    * is the extension's own: the resumes, the profile, the way to Outbox.
    */

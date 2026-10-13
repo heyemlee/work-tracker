@@ -49,8 +49,12 @@ The card shows only what applies. At most one notice sits above its controls, wi
 Outbox, fill in the profile, add an API key. What's needed now and then — logging by hand, "This page didn't fill
 right", the settings — is in its ⋯ menu.
 
-Workday runs over several pages: Fill once per page. It draws each page's fields a while after the page loads, so
-the card opens when they appear. On its sign-up page the extension fills the email and Chrome generates and saves
+Workday runs over several pages: Fill once per page. From the press of its Apply the card is the application's
+panel, and stays so to the end whatever a page of it shows. Workday draws each page's fields a while after the page
+itself, and until they are there the Fill button waits, grayed; its last page shows the whole to read over, with
+nothing to fill, and there the card says that the log follows the sending by itself. What the card offers on a
+posting, to mark it applied or to save it, it offers on the posting only: logging by hand is in the ⋯ menu on
+every page of an application. On its sign-up page the extension fills the email and Chrome generates and saves
 the password. On LinkedIn the first of a posting's two buttons reads **Log to Outbox**, since Easy Apply happens
 right there, and stays for a posting already applied to. On other sites the card opens by itself on a form
 with a resume upload and a name or email field — not on a job board's own apply flow, such as LinkedIn's or Indeed's
@@ -613,6 +617,15 @@ a posting there shows a note. It is a note, not a block.
   inside the element kept out of the browser's translation. All of this is read from Workday's code and tried on
   stand-ins drawn after it, not on an application: its forms sit behind a sign-in, and what the page after it
   says wasn't seen.
+- **Pages of an application with nothing to fill** (2026-10-12). The card told an application from a posting by
+  one thing, a form with fields on the page. A Workday application has pages without: each step for a while
+  after it's shown, its bar, name and foot drawn and a spinner where the fields will be, and the last step, which
+  only shows the whole to read over. On those the card fell back to the posting's, **Mark as applied** up front,
+  in the middle of applying, and the same for a posting saved or logged from its card before, whose note came
+  back between the steps. An adapter now says that a page is an application's whatever it shows (`applying`: on
+  Workday the address under the posting's, `…/apply/…`, which tells before anything is drawn, or the
+  application's own frame on the page) and the content script whether the page shows the button that sends it
+  (`sends`). The card is the application's panel on all of them.
 - **Which account.** The one whose email the form held as it was sent, whichever the card had chosen: the owner may
   have typed another's, or the site or another tool put one there. The emails are read from the form at the press
   of Submit (`emailsIn`), not from an earlier reading of it, which a page that has drawn its fields anew since would

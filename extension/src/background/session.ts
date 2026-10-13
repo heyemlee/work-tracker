@@ -12,6 +12,10 @@ export interface TabSession {
   ats: Ats | null;
   posting: Posting | null;
   hasForm: boolean;
+  /** The page is an application under way, though it may show nothing to fill. */
+  applying: boolean;
+  /** The page shows the button that sends the application. */
+  sends: boolean;
   /** Off the hiring systems' hosts: the page gives itself out as a job, by its address or its markup. */
   jobLike: boolean;
   /** No application form was found, and the page has a form the owner can say is one. */
@@ -51,6 +55,8 @@ export function emptySession(tabId: number, url: string): TabSession {
     ats: null,
     posting: null,
     hasForm: false,
+    applying: false,
+    sends: false,
     jobLike: false,
     otherForm: false,
     step: null,

@@ -115,6 +115,13 @@ export interface FrameScan {
   /** The frame holds an application form, not just a posting. */
   isApplication: boolean;
   /**
+   * The frame is on an application under way, though it may show nothing to fill: a step of Workday's still on its
+   * way, or its review of the whole before it's sent.
+   */
+  applying: boolean;
+  /** The frame shows the button that sends the application: on Workday, the last step's. */
+  sends: boolean;
+  /**
    * On a site the extension doesn't know: the page gives itself out as a job, by its address or its own markup. A
    * hiring system's own pages tell a posting by its title, and say true here.
    */

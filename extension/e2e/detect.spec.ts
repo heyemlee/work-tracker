@@ -57,7 +57,7 @@ test('opens the card when a career site shows its form in place', async ({ conte
   });
 });
 
-test('opens the card once Workday draws its fields, well after the page loads', async ({
+test('has the card’s Fill ready once Workday draws its fields, well after the page loads', async ({
   context,
   worker,
   outbox,
@@ -82,10 +82,11 @@ test('opens the card once Workday draws its fields, well after the page loads', 
     'https://acme.wd5.myworkdayjobs.com/en-US/External/job/San-Jose-CA/Software-Engineer_R123/apply',
   );
 
-  // No clicking the pill: the card opens with Fill ready.
-  await expect(page.locator('outbox-autofill').getByRole('button', { name: /^Fill/ })).toBeVisible({
-    timeout: 15_000,
-  });
+  // No clicking the pill. The page is an application's by its address, so the card is up before the fields are,
+  // its button waiting; and Fill is ready once they're there.
+  const fill = page.locator('outbox-autofill').getByRole('button', { name: /^Fill/ });
+  await expect(fill).toBeDisabled({ timeout: 15_000 });
+  await expect(fill).toBeEnabled({ timeout: 15_000 });
   await expect(page.locator('outbox-autofill')).toHaveCount(1);
 });
 

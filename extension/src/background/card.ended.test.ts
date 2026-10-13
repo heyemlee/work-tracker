@@ -38,16 +38,19 @@ const posting: Posting = {
   description: '',
 };
 /** What the content script reads of a page that holds no form. */
-const page = (read: Posting): FrameScan[] => [
+const page = (read: Posting, more: Partial<FrameScan> = {}): FrameScan[] => [
   {
     frameId: 0,
     ats: 'workday',
     isApplication: false,
+    applying: false,
+    sends: false,
     jobLike: true,
     otherForm: false,
     fields: [],
     posting: read,
     step: null,
+    ...more,
   },
 ];
 const tasks = page({ ...posting, title: null, url: ENDED });
@@ -131,5 +134,25 @@ describe('the page an application ends on, at another address and naming no post
     // And that page, opened again later, is no application's any more.
     scanFrames.mockResolvedValue(tasks);
     expect((await readTab(TAB, ENDED)).posting).toMatchObject({ title: null, url: ENDED });
+  });
+});
+
+describe('a page of an application with nothing on it to fill', () => {
+  it('is the application’s for the card all the same, and the one that sends it is told apart', async () => {
+    // A step whose fields are still on their way.
+    scanFrames.mockResolvedValue(page(posting, { applying: true }));
+    expect(await readTab(TAB, APPLY)).toMatchObject({ hasForm: false, applying: true, sends: false });
+    // Loaded afresh, the page hasn't drawn the job's title yet: an application's all the same, and so a job's.
+    scanFrames.mockResolvedValue(page({ ...posting, title: null }, { applying: true }));
+    await dropSession(TAB + 1);
+    expect(await readTab(TAB + 1, APPLY)).toMatchObject({ applying: true, jobPage: true });
+    scanFrames.mockResolvedValue(page({ ...posting, title: null }));
+    expect(await readTab(TAB + 1, JOB)).toMatchObject({ applying: false, jobPage: false });
+    // The review of the whole, with the button that sends it.
+    scanFrames.mockResolvedValue(page(posting, { applying: true, sends: true }));
+    expect(await readTab(TAB, APPLY)).toMatchObject({ hasForm: false, applying: true, sends: true });
+    // Back on the posting, the tab is on no application.
+    scanFrames.mockResolvedValue(page(posting));
+    expect(await readTab(TAB, JOB)).toMatchObject({ hasForm: false, applying: false, sends: false });
   });
 });

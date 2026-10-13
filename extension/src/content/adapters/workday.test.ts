@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import type { Want } from '../../model';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
+import type { FrameScan, Want } from '../../model';
 import { planForm } from '../../plan';
 import { pickOption } from '../../rules/options';
 import { makeProfile } from '../../test/profiles';
 import { applyAnswer, readAnswer } from '../apply';
 import { extractFields } from '../extract';
+import { startContent } from '../main';
 import { formSnapshot } from '../snapshot';
 import { workday } from './workday';
 
@@ -541,9 +543,13 @@ describe('workday pages from snapshots', () => {
   });
 });
 
+const EMAIL =
+  '<div data-automation-id="formField-email"><label for="email">Email Address*</label><input id="email" data-automation-id="email"></div>';
+
 // The last things of a step as Workday's own page code draws them (read 2026-10-08): the progress bar with a step
 // for each page of the application, and at the foot one button that moves it on, worded in the page's language.
-const step = (bar: ('Completed' | 'Active' | 'Inactive')[], next: string) => `
+// Between them, what the step holds: fields, as a rule.
+const step = (bar: ('Completed' | 'Active' | 'Inactive')[], next: string, holds = EMAIL) => `
 <div data-automation-id="applyFlowPage">
   ${
     bar.length
@@ -552,7 +558,7 @@ const step = (bar: ('Completed' | 'Active' | 'Inactive')[], next: string) => `
           .join('')}</div>`
       : ''
   }
-  <div data-automation-id="formField-email"><label for="email">Email Address*</label><input id="email" data-automation-id="email"></div>
+  ${holds}
   <div data-automation-id="pageFooter">
     <button data-automation-id="pageFooterBackButton">Back</button>
     <button data-automation-id="pageFooterNextButton">${next}</button>
@@ -615,5 +621,93 @@ describe('a Workday application that went through', () => {
     expect(workday.confirmed(document, `${site}?Job_Application_ID=abc123`)).toBe(true);
     document.body.innerHTML = step(['Completed', 'Active'], 'Submit');
     expect(workday.confirmed(document, `${site}/job/Santa-Clara/Software-Engineer_JR123/apply`)).toBe(false);
+  });
+});
+
+describe('the pages of a Workday board', () => {
+  const board = 'https://acme.wd5.myworkdayjobs.com/en-US/External';
+  const job = `${board}/job/San-Jose-CA/Software-Engineer_R123`;
+  const apply = `${job}/apply/applyManually`;
+  const page = (html: string) => {
+    const doc = document.implementation.createHTMLDocument('');
+    doc.body.innerHTML = html;
+    return doc;
+  };
+
+  it('are an application’s by their address, before anything of it is drawn, or by what is drawn', () => {
+    const bare = page('<div id="root"></div>');
+    for (const path of ['/apply', '/apply/applyManually', '/apply/autofillWithResume', '/apply/'])
+      expect(workday.applying?.(bare, `${job}${path}`), path).toBe(true);
+    for (const url of [job, board, `${board}/userHome`, `${board}/jobTasks/completed/application`])
+      expect(workday.applying?.(bare, url), url).toBe(false);
+    // An agency's update of an application is its pages at an address of the candidate's tasks.
+    const drawn = page(step(['Active', 'Inactive'], 'Next'));
+    expect(workday.applying?.(drawn, `${board}/jobTasks/updateAgencyApplication/1/2/3`)).toBe(true);
+  });
+
+  describe('as the content script reads them', () => {
+    const { happyDOM } = window as unknown as { happyDOM: { setURL(url: string): void } };
+    const first = location.href;
+    type Listener = (message: object, sender: object, respond: (value: unknown) => void) => boolean;
+    let stop = () => {};
+
+    afterEach(() => {
+      stop();
+      vi.restoreAllMocks();
+      happyDOM.setURL(first);
+    });
+
+    /** What the script answers the service worker's reading of the page at this address. */
+    function read(url: string, html: string): Promise<FrameScan> {
+      stop();
+      happyDOM.setURL(url);
+      document.body.innerHTML = html;
+      let listener: Listener | undefined;
+      vi.spyOn(fakeBrowser.runtime.onMessage, 'addListener').mockImplementation(((fn: Listener) => {
+        listener = fn;
+      }) as never);
+      vi.spyOn(fakeBrowser.runtime, 'sendMessage').mockImplementation((async () => undefined) as never);
+      stop = startContent();
+      return new Promise<FrameScan>((resolve) =>
+        listener!({ type: 'frame:scan', frameId: 0, prepare: null }, {}, (scan) =>
+          resolve(scan as FrameScan),
+        ),
+      );
+    }
+
+    // What a step shows in place of its fields while they are on their way, and what the last one shows: the whole
+    // application to read over (candidate-experience-apply-flow, read 2026-10-12).
+    const LOADING = '<div data-automation-id="applyFlowLoadingPage"><div></div></div>';
+    const REVIEW =
+      '<div data-automation-id="applyFlowReviewPage"><h4>My Information</h4><div>First Name</div><div>Alex</div></div>';
+
+    it('an application’s step has nothing to fill while its fields are on their way', async () => {
+      // Nothing drawn yet: the address is the posting's with the application's own end, and that is all there is.
+      expect(await read(apply, '<div id="root"></div>')).toMatchObject({
+        isApplication: false,
+        applying: true,
+        sends: false,
+        posting: { url: job },
+      });
+      const loading = step(['Completed', 'Active', 'Inactive'], 'Save and Continue', LOADING);
+      expect(await read(apply, loading)).toMatchObject({
+        isApplication: false,
+        applying: true,
+        sends: false,
+      });
+      // Once they are there it's a form as any.
+      const loaded = step(['Completed', 'Active', 'Inactive'], 'Save and Continue');
+      expect(await read(apply, loaded)).toMatchObject({ isApplication: true, applying: true, sends: false });
+    });
+
+    it('its last step has nothing to fill at all, and the button that sends it', async () => {
+      const review = step(['Completed', 'Completed', 'Active'], 'Submit', REVIEW);
+      expect(await read(apply, review)).toMatchObject({
+        isApplication: false,
+        applying: true,
+        sends: true,
+        fields: [],
+      });
+    });
   });
 });

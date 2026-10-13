@@ -76,6 +76,12 @@ export interface Adapter {
   /** Workday's step name ("My Information"). */
   step?(doc: Document): string | null;
   /**
+   * The page is an application under way, whatever it shows of it just now: a step of Workday's whose fields are
+   * still on their way, its review of the whole before it's sent. Without this, a page is an application's only
+   * where a form with fields is found on it.
+   */
+  applying?(doc: Document, url: string): boolean;
+  /**
    * Resolves true if the posting came to be told more fully after the form was drawn: Gem writes the company's own
    * name into the page a moment later. The card then reads the page again.
    */
