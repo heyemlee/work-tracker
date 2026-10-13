@@ -18,6 +18,7 @@ import {
   undo,
 } from './card';
 import { bridgeStatus, fromOutbox, readResumeForOutbox } from './bridge';
+import { showBubble } from './bubble';
 import { dropFixedSnapshots } from './fixed';
 import { forgetTab, openCard, showForm } from './inject';
 import { flushQueue, syncProfile } from './outbox';
@@ -104,8 +105,13 @@ export function startBackground(): void {
     (message) => typeof message.type === 'string',
   );
 
+  // The card, on any page that takes one; where the browser lets none be drawn, the button says so itself.
+  const ask = async (tabId: number) => {
+    if (!(await openCard(tabId))) await showBubble(tabId);
+  };
+
   browser.action.onClicked.addListener((tab) => {
-    if (tab.id !== undefined) void openCard(tab.id);
+    if (tab.id !== undefined) void ask(tab.id);
   });
 
   browser.commands.onCommand.addListener((command, tab) => {
@@ -115,7 +121,7 @@ export function startBackground(): void {
     void toFrame(tabId, 0, 'card:fill', {})
       .catch(() => false)
       .then((filling) => {
-        if (!filling) return openCard(tabId);
+        if (!filling) return ask(tabId);
       });
   });
 

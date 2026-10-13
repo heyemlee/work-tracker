@@ -1,0 +1,51 @@
+/* The toolbar button's own small window, where a page takes no card. It wears the card's look (page.css) on a plain
+   ground: the browser draws the window, and there is no page behind it to blur. */
+@import '../../src/ui/card/page.css';
+
+html,
+body,
+#root {
+  height: auto;
+}
+
+body {
+  width: 300px;
+}
+
+.bubble {
+  height: auto;
+  padding: 14px;
+  background: var(--solid);
+}
+
+.bubble-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.bubble-text {
+  margin: 8px 0 12px;
+  color: var(--fg-2);
+  line-height: 1.45;
+}
+
+.bubble-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.bubble-actions .primary {
+  flex: 1;
+  height: 36px;
+  font-size: 13px;
+}
+
+.bubble-actions .secondary {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 13px;
+}

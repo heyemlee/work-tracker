@@ -38,21 +38,32 @@ async function bringInAndOpen(tabId: number, asked: boolean, frameIds?: number[]
 
 const turns = new Map<number, Promise<void>>();
 
-/** One flow per tab at a time: two frames showing forms at once must not both bring in the card. */
-function inTurn(tabId: number, task: () => Promise<void>): Promise<void> {
-  // A page extensions can't touch (the Chrome Web Store, chrome:// pages) just gets no card.
-  const turn = (turns.get(tabId) ?? Promise.resolve()).then(task).catch(() => undefined);
-  turns.set(tabId, turn);
-  return turn;
+/**
+ * One flow per tab at a time: two frames showing forms at once must not both bring in the card. False where the
+ * page took none: one extensions can't touch (the browser's own pages, its store) just gets no card.
+ */
+function inTurn(tabId: number, task: () => Promise<void>): Promise<boolean> {
+  const taken = (turns.get(tabId) ?? Promise.resolve()).then(task).then(
+    () => true,
+    () => false,
+  );
+  turns.set(
+    tabId,
+    taken.then(() => undefined),
+  );
+  return taken;
 }
 
 /** A frame shows an application form: the content script in it, the card in the top frame, and the card open. */
-export function showForm(tabId: number, frameId: number): Promise<void> {
-  return inTurn(tabId, () => bringInAndOpen(tabId, false, frameId === 0 ? [0] : [frameId, 0]));
+export async function showForm(tabId: number, frameId: number): Promise<void> {
+  await inTurn(tabId, () => bringInAndOpen(tabId, false, frameId === 0 ? [0] : [frameId, 0]));
 }
 
-/** The toolbar button, on any page: the content script in every frame, and the card open. */
-export function openCard(tabId: number): Promise<void> {
+/**
+ * The toolbar button, on any page: the content script in every frame, and the card open. False where the page takes
+ * no card, which the button then says itself (bubble.ts).
+ */
+export function openCard(tabId: number): Promise<boolean> {
   return inTurn(tabId, () => bringInAndOpen(tabId, true));
 }
 

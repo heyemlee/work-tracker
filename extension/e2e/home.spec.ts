@@ -2,7 +2,7 @@ import { expect, type Worker } from '@playwright/test';
 import { seed, serve, test } from './harness';
 
 // The toolbar button on pages that are no application: the card it brings up there is the extension's own, not a
-// job's made up from whatever the page is called.
+// job's made up from whatever the page is called; and where the browser lets no card be drawn, the button says so.
 
 const shell = (title: string, head: string, body: string) =>
   `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>${head}</head><body>${body}</body></html>`;
@@ -46,7 +46,11 @@ const BOARD = shell(
 
 interface Chrome {
   tabs: { query(asked: object): Promise<{ id: number }[]> };
-  action: { onClicked: { dispatch(tab: object): void } };
+  action: {
+    onClicked: { dispatch(tab: object): void };
+    getPopup(details: { tabId: number }): Promise<string>;
+  };
+  runtime: { getContexts(filter: { contextTypes: string[] }): Promise<{ documentUrl: string }[]> };
 }
 /** The toolbar button, pressed on the tab in front. */
 const press = (worker: Worker) =>
@@ -162,4 +166,51 @@ test('on a hiring system’s page that is no posting, waits to be asked and is t
   await press(worker);
   await expect(pane.getByText('No application form on this page.')).toBeVisible({ timeout: 15_000 });
   await expect(pane.getByRole('button', { name: 'Mark as applied' })).toHaveCount(0);
+});
+
+test('says so under the button where the browser lets no card be drawn', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  const page = await context.newPage();
+  await page.goto('chrome://newtab/').catch(() => undefined);
+  await page.bringToFront();
+  await press(worker);
+
+  // The button's own small window, for this press only: the next one is the card's again.
+  const bubble = new URL('/bubble.html', worker.url()).href;
+  await expect
+    .poll(() =>
+      worker.evaluate(async () => {
+        const { chrome } = globalThis as unknown as { chrome: Chrome };
+        const popups = await chrome.runtime.getContexts({ contextTypes: ['POPUP'] });
+        return popups.map((popup) => popup.documentUrl);
+      }),
+    )
+    .toEqual([bubble]);
+  await expect
+    .poll(() =>
+      worker.evaluate(async () => {
+        const { chrome } = globalThis as unknown as { chrome: Chrome };
+        const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+        return chrome.action.getPopup({ tabId: tab!.id });
+      }),
+    )
+    .toBe('');
+
+  // What it says, read where a spec can read it: the same page in a tab. It offers what needs no page, and each
+  // of the two opens in a tab of its own.
+  for (const [button, address] of [
+    ['Open Outbox', outbox.url],
+    ['Settings', new URL('/options.html', worker.url()).href],
+  ] as const) {
+    const shown = await context.newPage();
+    await shown.goto(bubble);
+    await expect(shown.getByText('The browser lets no extension show anything on this page')).toBeVisible();
+    const opened = context.waitForEvent('page');
+    await shown.getByRole('button', { name: button }).click();
+    expect((await opened).url()).toContain(address);
+  }
 });

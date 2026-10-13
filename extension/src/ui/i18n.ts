@@ -35,6 +35,9 @@ const en = {
   'home.none': 'No application form on this page.',
   'home.open': 'Open my applications',
   'home.asForm': 'Treat this page as an application',
+  'bubble.text':
+    'The browser lets no extension show anything on this page (a new tab, its settings, its store). Open any web page and press the button there.',
+  'bubble.outbox': 'Open Outbox',
   preview: 'Preview',
   previewOf: 'Preview {name}',
   previewStuck: 'The preview didn’t open.',
@@ -126,6 +129,9 @@ const zh: Record<Key, string> = {
   'home.none': '这个页面没有发现申请表。',
   'home.open': '打开我的投递记录',
   'home.asForm': '把这一页当作申请表',
+  'bubble.text':
+    '浏览器不允许扩展在这个页面上显示内容（新标签页、设置页、应用商店）。打开任意网页后再点图标即可。',
+  'bubble.outbox': '打开 Outbox',
   preview: '预览',
   previewOf: '预览 {name}',
   previewStuck: '预览没能打开。',

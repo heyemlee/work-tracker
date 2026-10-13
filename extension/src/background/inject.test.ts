@@ -63,7 +63,18 @@ describe('bringing in the card', () => {
 
   it('tells the card that is there that the owner asked for it, when the toolbar button is pressed', async () => {
     tab([0], [0]);
-    await openCard(5);
+    expect(await openCard(5)).toBe(true);
     expect(toFrame).toHaveBeenCalledWith(5, 0, 'card:open', { asked: true });
+  });
+
+  it('says so where the page takes no card, and brings one in again once the tab shows a page that does', async () => {
+    vi.spyOn(fakeBrowser.scripting, 'executeScript').mockRejectedValue(
+      new Error('Cannot access a chrome:// URL'),
+    );
+    expect(await openCard(6)).toBe(false);
+    // The tab has gone on to a web page: the press before it doesn't stand in this one's way.
+    const injected = tab([0], []);
+    expect(await openCard(6)).toBe(true);
+    expect(injected).toEqual([[0]]);
   });
 });
