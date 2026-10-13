@@ -149,7 +149,8 @@ export interface ToBackground {
   'frame:form': { request: Record<string, never>; response: void };
   /** What the frame's fields hold now, told each time that has changed: the card's list follows the page. */
   'frame:held': { request: FrameHeld; response: void };
-  'card:state': { request: { refresh: boolean }; response: CardState };
+  /** `moved`: the page gave way to another without loading one, which is why the card asks again. */
+  'card:state': { request: { refresh: boolean; moved?: boolean }; response: CardState };
   'card:select': { request: { accountId?: string | null; resumeId?: string | null }; response: CardState };
   'card:fill': { request: Record<string, never>; response: CardState };
   /** The owner says the page is an application, where none was found: its form is read as one. */

@@ -434,8 +434,9 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     if (next) setState(next);
   }, []);
 
-  const refresh = useCallback(() => {
-    toBackground('card:state', { refresh: true })
+  // `moved`: the page gave way to another without loading one, which is why the card reads it again.
+  const refresh = useCallback((moved = false) => {
+    toBackground('card:state', { refresh: true, moved })
       .then((next) => {
         if (!next) return;
         setState(next);
@@ -451,6 +452,9 @@ export function Card({ startOpen }: { startOpen: boolean }) {
             (next.hasForm || next.applying || Boolean(next.posting?.title))) ||
           (next.logged && !next.logged.undone);
         if (show) setView((now) => (now === 'closed' ? 'open' : now));
+        // And gone where the page it came up for gave way, in place, to one with nothing of that: a board's list
+        // of jobs after a posting, a candidate's own pages.
+        else if (moved && next.ats !== 'generic') setView('closed');
       })
       .catch(() => undefined);
   }, []);
@@ -514,7 +518,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
       if (now !== seen) {
         seen = now;
         setLoggedHere(false);
-        refresh();
+        refresh(true);
       }
     }, 1000);
     return () => {

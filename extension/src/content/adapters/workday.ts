@@ -14,6 +14,13 @@ import type { Adapter, CustomField } from './types';
 
 const auto = (element: Element | null) => element?.getAttribute('data-automation-id') ?? '';
 
+/**
+ * A job's own address on the board, its application included: …/job/Santa-Clara/Engineer_JR123, or …/details/… for
+ * the one open beside the list. The board's other pages are no job's: the list itself, the sign-in, the candidate's
+ * own home, where an application ends.
+ */
+const atJob = (url: string) => /\/(job|details)\/[^/]/.test(new URL(url).pathname);
+
 /** An application's pages, under the posting's own address: …/job/Santa-Clara/Engineer_JR123/apply/applyManually. */
 const APPLY = /\/job\/.+\/apply(\/[^/]+)?\/?$/;
 
@@ -146,7 +153,10 @@ export const workday: Adapter = {
     );
   },
 
-  posting(doc, url): Posting {
+  // Only at a job's address: the board's other pages have headings of their own, and the one an application ends
+  // on greets the candidate by name ("Welcome, Alex Chen"), which is no posting's title.
+  posting(doc, url): Posting | null {
+    if (!atJob(url)) return null;
     const parsed = parsePosting(url);
     const link = new URL(url);
     // The apply flow lives under the posting's own path: …/job/Santa-Clara/Engineer_JR123/apply/…

@@ -173,8 +173,9 @@ One release with everything below, no MVP. Design: [autofill.md](autofill.md).
 - [ ] Run the free-text eval once (about $1) and choose Opus 5.5 or Sonnet 5.5 from its report.
 - [ ] On each Workday page, pick "This page didn't fill right" in the card's ⋯ menu once: Workday's forms are behind sign-in, so these
       snapshots are its only fixtures.
-- [ ] After the next Workday application, look for it in Outbox: what tells a Workday submission (2026-10-08) is
-      read from Workday's page code and tried on stand-ins, never on a real application.
+- [x] After the next Workday application, look for it in Outbox: what tells a Workday submission (2026-10-08) is
+      read from Workday's page code and tried on stand-ins, never on a real application. One sent on NVIDIA's
+      board on 2026-10-12 was logged by the extension itself.
 - [x] Before using the extension with production: `npm run db:migrate:remote` (migration 0003, the profile table),
       then deploy the Worker with job links, the profile API and the `bearer` plugin.
 - [x] Migration 0004 (resume PDFs) applied remotely and the Worker deployed, 2026-09-28.

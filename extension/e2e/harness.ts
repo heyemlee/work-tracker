@@ -46,6 +46,8 @@ export interface OutboxMock {
   /** The PDF Outbox holds for each resume version, by the version's id: `res-1`'s, until a spec says otherwise. */
   pdfs: Record<string, string>;
   quickAdds: Record<string, unknown>[];
+  /** How long Outbox takes to answer a log, in milliseconds: no time, until a spec says otherwise. */
+  logTakes: number;
   /** Profiles saved from the card's own window, oldest first. */
   profiles: Record<string, unknown>[];
 }
@@ -69,6 +71,7 @@ export const test = base.extend<{
       snapshot: SNAPSHOT,
       pdfs: { 'res-1': RESUME_PDF },
       quickAdds,
+      logTakes: 0,
       profiles,
     };
     const server = createServer((request, response) => {
@@ -107,12 +110,16 @@ export const test = base.extend<{
         request.on('data', (chunk) => (data += chunk));
         request.on('end', () => {
           quickAdds.push(JSON.parse(data) as Record<string, unknown>);
-          send(200, {
-            jobId: 'job-1',
-            createdJobId: 'job-1',
-            createdCompanyId: 'company-1',
-            applicationIds: ['app-1'],
-          });
+          setTimeout(
+            () =>
+              send(200, {
+                jobId: 'job-1',
+                createdJobId: 'job-1',
+                createdCompanyId: 'company-1',
+                applicationIds: ['app-1'],
+              }),
+            mock.logTakes,
+          );
         });
         return;
       }

@@ -628,11 +628,37 @@ describe('the pages of a Workday board', () => {
   const board = 'https://acme.wd5.myworkdayjobs.com/en-US/External';
   const job = `${board}/job/San-Jose-CA/Software-Engineer_R123`;
   const apply = `${job}/apply/applyManually`;
+  // Where someone signed in is taken once an application is in: their own home on the board, which greets them by
+  // name in a heading (an owner's screen, 2026-10-12).
+  const HOME =
+    '<div id="root"><h2 data-automation-id="pageHeader">Welcome, Alex Chen</h2><h3>My Tasks</h3></div>';
   const page = (html: string) => {
     const doc = document.implementation.createHTMLDocument('');
     doc.body.innerHTML = html;
     return doc;
   };
+
+  it('are a posting’s at a job’s address only, whatever heading the others carry', () => {
+    expect(workday.posting(page(HOME), `${board}/jobTasks/completed/application`)).toBeNull();
+    expect(workday.posting(page(HOME), `${board}/userHome`)).toBeNull();
+    expect(
+      workday.posting(page('<h2 data-automation-id="pageHeader">Search for Jobs</h2>'), board),
+    ).toBeNull();
+
+    const posting = page('<h2 data-automation-id="jobPostingHeader">Software Engineer</h2>');
+    expect(workday.posting(posting, job)).toMatchObject({
+      company: 'Acme',
+      title: 'Software Engineer',
+      url: job,
+    });
+    // The one open beside the list of jobs.
+    expect(workday.posting(posting, `${board}/details/Software-Engineer_R123`)).toMatchObject({
+      title: 'Software Engineer',
+    });
+    // Its application's pages are the posting's still, at its address.
+    const applying = page('<h2 data-automation-id="jobTitleHeading">Software Engineer</h2>');
+    expect(workday.posting(applying, apply)).toMatchObject({ title: 'Software Engineer', url: job });
+  });
 
   it('are an application’s by their address, before anything of it is drawn, or by what is drawn', () => {
     const bare = page('<div id="root"></div>');
@@ -707,6 +733,14 @@ describe('the pages of a Workday board', () => {
         applying: true,
         sends: true,
         fields: [],
+      });
+    });
+
+    it('the home it ends on is neither an application’s nor a posting’s', async () => {
+      expect(await read(`${board}/jobTasks/completed/application`, HOME)).toMatchObject({
+        isApplication: false,
+        applying: false,
+        posting: null,
       });
     });
   });

@@ -617,6 +617,18 @@ a posting there shows a note. It is a note, not a block.
   inside the element kept out of the browser's translation. All of this is read from Workday's code and tried on
   stand-ins drawn after it, not on an application: its forms sit behind a sign-in, and what the page after it
   says wasn't seen.
+  It was on 2026-10-12, when the owner sent an application on NVIDIA's board. The extension logged it by itself:
+  the press and the address tell a submission on a real application as on the stand-ins. The page it ended on is
+  the candidate's own home on the board, under a heading that greets them by name. The adapter read a posting's
+  title from the first heading with a `data-automation-id`, which that one has: with the application logged, the
+  card took the home for a posting called "Welcome, …" and offered to mark it applied. A posting is read at a
+  job's address only now (`…/job/…`, `…/details/…`), and the board's other pages are none; a card left open where
+  its page gives way to one of them without a page loaded, the list of jobs after a posting, goes as it came.
+  The card's reading of the page an application ends on also waits for the log that page set off (`confirming`
+  in `background/card.ts`): read sooner, the tab showed the posting with nothing logged yet, and for the length
+  of a round trip to Outbox the card offered to log what was being logged. And the page stays the application's
+  where it goes on to another address without loading one, as by the board's own link to the candidate's home,
+  which the card tells the service worker as it asks (`moved`).
 - **Pages of an application with nothing to fill** (2026-10-12). The card told an application from a posting by
   one thing, a form with fields on the page. A Workday application has pages without: each step for a while
   after it's shown, its bar, name and foot drawn and a spinner where the fields will be, and the last step, which
@@ -690,6 +702,9 @@ looking, its window goes into that frame as well, and appears in place as the se
   an application logged though its thank-you is reworded a moment after it's drawn (a stand-in for the browser's
   translation, which a spec can't switch on: it sends the page to a translator), an Ashby one the company thanks
   for in its own words, and a Workday one sent in Chinese and told on the page it's taken to;
+  a Workday application from its posting to the candidate's home it ends on, on a stand-in board drawn after its
+  page code, where the spec holds back what a page waits for from its server: the card is looked at every 20 ms
+  for a posting's two buttons, which it shows on the posting and nowhere after;
   Workday's groups of boxes and the date of its disability form on a stand-in drawn after its page code, where the
   form holds a date only once its field is left and shuts a group's other boxes while one is ticked;
   on Gem also the resume taken out at its ✕ and attached again, and a file dropped in by hand kept;

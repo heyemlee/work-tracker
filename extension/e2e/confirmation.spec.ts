@@ -145,7 +145,7 @@ test('logs an Ashby application the company thanks for in words of its own', asy
  * Workday's forms sit behind a sign-in, so no page of its own is saved here. These two are drawn as its page code
  * (read 2026-10-08) has them: the last step of an application, with its progress bar and the button at its foot,
  * and the page someone signed in is taken to once the application is in, which draws what it says a moment after
- * it loads. Both in Chinese, as Workday shows them to a browser set to it.
+ * it loads, under a heading of its own. Both in Chinese, as Workday shows them to a browser set to it.
  */
 const WORKDAY = 'acme.wd5.myworkdayjobs.com';
 const BOARD = '/zh-CN/External';
@@ -171,7 +171,8 @@ const LAST_STEP = `<!doctype html><html lang="zh-CN"><head><title>审核</title>
 const TASKS = `<!doctype html><html lang="zh-CN"><head><title></title></head><body><div id="root"></div>
 <script>
   setTimeout(() => {
-    document.querySelector('#root').innerHTML = '<h2>候选人主页</h2><p id="done">我们已收到您的申请。</p>';
+    document.querySelector('#root').innerHTML =
+      '<h2 data-automation-id="pageHeader">欢迎，陈先生</h2><p id="done">我们已收到您的申请。</p>';
   }, 1000);
 </script></body></html>`;
 
@@ -203,8 +204,8 @@ test('logs a Workday application sent in the page’s own Chinese, on the page i
     url: posting,
     accountIds: ['acc-1'],
   });
-  // The card says so on that page, which names no posting itself, and goes on saying so once the page has drawn
-  // what it has to say in its own time and language: that tells of nothing more.
+  // The card says so on that page, which is no posting itself, and goes on saying so once the page has drawn
+  // what it has to say in its own time and language, heading and all: that tells of nothing more.
   await expect(card.getByText('Logged to Outbox')).toBeVisible();
   await expect(page.locator('#done')).toBeVisible();
   await page.waitForTimeout(1500);

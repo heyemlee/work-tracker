@@ -231,8 +231,19 @@ export async function pushState(session: TabSession, outbox?: OutboxState): Prom
   }
 }
 
-/** Reads the tab: the posting, its form, the match check, which accounts applied. */
-export async function readTab(tabId: number, url: string): Promise<CardState> {
+/**
+ * Confirmations being taken in, by tab (`submitConfirmed`). Logging one is a round trip to Outbox, and the card on
+ * the page that confirmed reads the tab meanwhile: that reading waits for the log, so that the card comes up saying
+ * what became of the application, and not offering to log it.
+ */
+const confirming = new Map<number, Promise<void>>();
+
+/**
+ * Reads the tab: the posting, its form, the match check, which accounts applied. `moved` when the page gave way
+ * to another without loading one.
+ */
+export async function readTab(tabId: number, url: string, moved = false): Promise<CardState> {
+  await confirming.get(tabId)?.catch(() => undefined);
   const previous = await getSession(tabId);
   // The profile is edited on Outbox: refresh the local copy alongside the page scan. Offline, the copy stands.
   const synced = syncProfile().catch(() => null);
@@ -282,10 +293,13 @@ export async function readTab(tabId: number, url: string): Promise<CardState> {
   const session = await updateSession(tabId, url, (current) => {
     // Workday keeps one address across its steps: the step's name tells them apart.
     const samePage = current.url === url && current.step === found.step;
-    // The page an application was seen to end on may be at another address and name no posting: Workday takes
-    // the applicant to a page of their own tasks. It is still that application's page, and the posting stands.
-    const ended =
-      current.confirmedOn !== null && linkKey(current.confirmedOn) === linkKey(url) && !found.posting?.title;
+    // The page an application was seen to end on may be at another address and no posting: Workday takes the
+    // applicant to their own home on the board. It is still that application's page, and the posting stands. So
+    // it is where that page goes on to another address without loading one, and nothing there is applied to.
+    const there =
+      current.confirmedOn !== null &&
+      (linkKey(current.confirmedOn) === linkKey(url) || (moved && !found.hasForm && !found.applying));
+    const ended = there && !found.posting?.title;
     // Another posting in this tab starts over; its confirmation page (same posting) keeps the log and its Undo.
     const samePosting =
       ended ||
@@ -309,8 +323,9 @@ export async function readTab(tabId: number, url: string): Promise<CardState> {
       submittedAt: samePosting ? current.submittedAt : null,
       captured: samePosting ? current.captured : [],
       emails: samePosting ? current.emails : [],
-      confirmedOn: samePosting ? current.confirmedOn : null,
-      error: null,
+      confirmedOn: ended ? url : samePosting ? current.confirmedOn : null,
+      // What went wrong with an application's log stays said on the page it ended on.
+      error: ended ? current.error : null,
     };
   });
   return cardState(session, outbox);
@@ -643,7 +658,15 @@ export async function submitAttempt(
  * Without that, a confirmation standing at the posting's own address is taken for a form this extension filled,
  * sent in a way the content script didn't see; for no other, since such a page can be opened without applying.
  */
-export async function submitConfirmed(tabId: number, url: string): Promise<void> {
+export function submitConfirmed(tabId: number, url: string): Promise<void> {
+  const taken = logConfirmed(tabId, url).finally(() => {
+    if (confirming.get(tabId) === taken) confirming.delete(tabId);
+  });
+  confirming.set(tabId, taken);
+  return taken;
+}
+
+async function logConfirmed(tabId: number, url: string): Promise<void> {
   const session = await getSession(tabId);
   if (!session || (session.logged && !session.logged.undone)) return;
   const sent = session.submittedAt !== null && Date.now() - Date.parse(session.submittedAt) < 15 * 60_000;

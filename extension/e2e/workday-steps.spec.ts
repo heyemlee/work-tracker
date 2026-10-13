@@ -1,8 +1,9 @@
 import { expect, type BrowserContext, type Page } from '@playwright/test';
 import { seed, test } from './harness';
 
-// An application on Workday, as the owner goes through it. From Apply on, the card is the application's whatever
-// a page of it shows: what it offers on a posting, to mark it applied or to save it, it offers on the posting only.
+// An application on Workday from its posting to the page it ends on, as the owner goes through it. The card is the
+// application's the whole way: what it offers on a posting, to mark it applied or to save it, it offers on the
+// posting only.
 
 const HOST = 'acme.wd5.myworkdayjobs.com';
 const BOARD = '/en-US/External';
@@ -181,6 +182,183 @@ function noteOffers(): void {
 }
 const offered = (page: Page) =>
   page.evaluate(() => JSON.parse(sessionStorage.getItem('offered') ?? '[]') as string[]);
+const forget = (page: Page) => page.evaluate(() => sessionStorage.removeItem('offered'));
+
+test('is the application’s card from Apply to the page it ends on, and a posting’s on the posting only', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  // Outbox takes a moment over the log: long enough for a card that offered to log it meanwhile to be seen.
+  outbox.logTakes = 500;
+  await serveBoard(context);
+  const page = await context.newPage();
+  await page.addInitScript(noteOffers);
+  await page.goto(`https://${HOST}${JOB}`);
+
+  const card = page.locator('outbox-autofill');
+  const pane = card.getByRole('dialog', { name: 'Outbox Autofill' });
+  const fill = card.getByRole('button', { name: 'Fill', exact: true });
+  const next = page.locator(named('pageFooterNextButton'));
+  const onItsWay = page.locator(named('applyFlowLoadingPage'));
+
+  // On the posting, the card is the posting's.
+  await expect(card.locator('.actions button')).toHaveText(['Mark as applied', 'Save for later'], {
+    timeout: 15_000,
+  });
+
+  // The owner applies. Nothing of the application is drawn yet, and the card is its panel already: who applies,
+  // with which resume, a button that waits for something to fill, and no word of marking anything applied.
+  await page.locator(named('adventureButton')).click();
+  await expect(pane).toHaveClass(/\bpanel\b/);
+  await expect(card.locator('.actions')).toBeHidden();
+  await expect(card.getByRole('radiogroup', { name: 'Account' })).toBeVisible();
+  await expect(fill).toBeDisabled();
+  // From here on the card offers nothing of a posting's, for however short a time.
+  await forget(page);
+
+  // The same once the page shows which job it's for, and until its first step is there.
+  await letThrough(page);
+  await expect(page.locator(named('jobTitleHeading'))).toBeVisible();
+  await page.waitForTimeout(1500);
+  await expect(fill).toBeDisabled();
+  await letThrough(page);
+  await expect(fill).toBeEnabled();
+  await fill.click();
+  await expect(card.getByText('Filled 2/2 required')).toBeVisible({ timeout: 45_000 });
+
+  // On to the second step. Its fields are on their way: the panel stays, with nothing to fill for now.
+  await next.click();
+  await expect(onItsWay).toBeVisible();
+  await expect(card.getByText('Filled 2/2 required')).toBeHidden();
+  await expect(pane).toHaveClass(/\bpanel\b/);
+  await expect(fill).toBeDisabled();
+  await letThrough(page);
+  await expect(fill).toBeEnabled();
+
+  // On to the review, which has nothing to fill: the card says what is left to do, and that the log follows.
+  await next.click();
+  await expect(onItsWay).toBeVisible();
+  await letThrough(page);
+  await expect(page.locator(named('applyFlowReviewPage'))).toBeVisible();
+  await expect(card.getByText('Nothing to fill on this step.')).toBeVisible();
+  await expect(pane).toHaveClass(/\bpanel\b/);
+  await expect(fill).toBeHidden();
+  // Logging it by hand is a menu away, as on any step.
+  await card.getByRole('button', { name: 'More' }).click();
+  await expect(card.getByRole('menuitem', { name: 'Log to Outbox' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  expect(outbox.quickAdds).toHaveLength(0);
+
+  // Sent. The page it ends on is the candidate's home: the card says the application was logged, there.
+  await next.click();
+  await page.waitForURL(/\/jobTasks\/completed\/application$/);
+  await expect(card.getByText('Logged to Outbox')).toBeVisible({ timeout: 15_000 });
+  await expect(card.getByText('Acme · Software Engineer')).toBeVisible();
+  expect(outbox.quickAdds).toHaveLength(1);
+  expect(outbox.quickAdds[0]).toMatchObject({
+    companyName: 'Acme',
+    title: 'Software Engineer',
+    url: `https://${HOST}${JOB}`,
+    accountIds: ['acc-1'],
+  });
+  // And goes on saying so: the home's greeting is no posting's title.
+  await expect(page.getByRole('heading', { name: 'Welcome, Alex Chen' })).toBeVisible();
+  await page.waitForTimeout(1500);
+  await expect(card.getByText('Logged to Outbox')).toBeVisible();
+  await expect(card.getByText('Acme · Software Engineer')).toBeVisible();
+
+  // The home at its own address, by the board's link and without a page loaded: the log is still the card's to
+  // show, and to take back.
+  await page.locator('#home').click();
+  await page.waitForURL(/\/userHome$/);
+  await page.waitForTimeout(2000);
+  await expect(card.getByText('Acme · Software Engineer')).toBeVisible();
+  await card.getByRole('button', { name: 'Undo' }).click();
+  await expect(card.getByText('Removed from Outbox')).toBeVisible();
+  expect(outbox.quickAdds).toHaveLength(1);
+  expect(await offered(page)).toEqual([]);
+});
+
+test('keeps to the application for a posting saved for later, and offers nothing where one logged by hand ends', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  await serveBoard(context);
+  const page = await context.newPage();
+  await page.addInitScript(noteOffers);
+  await page.goto(`https://${HOST}${JOB}`);
+
+  const card = page.locator('outbox-autofill');
+  const pane = card.getByRole('dialog', { name: 'Outbox Autofill' });
+  const fill = card.getByRole('button', { name: 'Fill', exact: true });
+  const next = page.locator(named('pageFooterNextButton'));
+
+  await card.getByRole('button', { name: 'Save for later' }).click({ timeout: 15_000 });
+  await expect(card.getByText('Saved for later')).toBeVisible();
+
+  // Applying to it after all: the card is the application's, not the note that it was saved.
+  await page.locator(named('adventureButton')).click();
+  await expect(pane).toHaveClass(/\bpanel\b/);
+  await expect(card.locator('.done')).toBeHidden();
+  await forget(page);
+  await letThrough(page);
+  for (const step of ['My Information', 'My Experience']) {
+    await letThrough(page);
+    await expect(page.getByRole('heading', { name: step })).toBeVisible();
+    await expect(fill).toBeEnabled();
+    await next.click();
+    await expect(page.locator(named('applyFlowLoadingPage'))).toBeVisible();
+  }
+  await letThrough(page);
+  await expect(card.getByText('Nothing to fill on this step.')).toBeVisible();
+  await expect(card.locator('.done')).toBeHidden();
+
+  // The owner logs it by hand before sending it: the card says so.
+  await card.getByRole('button', { name: 'More' }).click();
+  await card.getByRole('menuitem', { name: 'Log to Outbox' }).click();
+  await expect(card.getByText('Logged to Outbox')).toBeVisible();
+  expect(outbox.quickAdds).toHaveLength(2);
+
+  // Sent: it isn't logged twice, and on the home it ends on the card has nothing to offer.
+  await next.click();
+  await page.waitForURL(/\/jobTasks\/completed\/application$/);
+  await expect(page.getByRole('heading', { name: 'Welcome, Alex Chen' })).toBeVisible();
+  await page.waitForTimeout(2000);
+  await expect(pane).toBeHidden();
+  expect(outbox.quickAdds).toHaveLength(2);
+  expect(await offered(page)).toEqual([]);
+});
+
+test('goes when a posting gives way, in place, to a page of the board that is no posting', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  await serveBoard(context);
+  const page = await context.newPage();
+  await page.goto(`https://${HOST}${JOB}`);
+
+  const card = page.locator('outbox-autofill');
+  const pane = card.getByRole('dialog', { name: 'Outbox Autofill' });
+  await expect(card.locator('.actions button')).toHaveText(['Mark as applied', 'Save for later'], {
+    timeout: 15_000,
+  });
+
+  // Back to the list of jobs, whose heading is no job's title: there is nothing there for the card.
+  await page.locator('#jobs').click();
+  await expect(page.getByRole('heading', { name: 'Search for Jobs' })).toBeVisible();
+  await expect(pane).toBeHidden();
+
+  // And it's back for the posting opened from there.
+  await page.locator('#job').click();
+  await expect(card.locator('.actions button')).toHaveText(['Mark as applied', 'Save for later']);
+  await expect(card.locator('.title')).toHaveText('Software Engineer');
+});
 
 test('comes up as the application’s panel on an application loaded afresh, before its first step is there', async ({
   context,

@@ -57,7 +57,7 @@ export function startBackground(): void {
         case 'frame:held':
           return pageHolds(tabId, url, sender.frameId ?? 0, { at: message.at, fields: message.fields });
         case 'card:state':
-          return readTab(tabId, url);
+          return readTab(tabId, url, message.moved === true);
         case 'card:select':
           return select(tabId, url, { accountId: message.accountId, resumeId: message.resumeId });
         case 'card:fill':
