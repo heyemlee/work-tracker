@@ -58,6 +58,13 @@ export interface CardState {
   posting: Posting | null;
   /** The page holds an application form (not just a posting). */
   hasForm: boolean;
+  /**
+   * The page is a job's: an application, a posting, a page Outbox tracks. Where it isn't, the card asked for there
+   * is the extension's own: the resumes, the profile, the way to Outbox.
+   */
+  jobPage: boolean;
+  /** No application form was found, and the page has a form the owner can say is one. */
+  otherForm: boolean;
   step: string | null;
   outbox: 'connected' | 'signedOut' | 'unreachable';
   /** Whose answers fill the form, and how many of the blanks most forms ask about the profile still has. */
@@ -138,6 +145,8 @@ export interface ToBackground {
   'card:state': { request: { refresh: boolean }; response: CardState };
   'card:select': { request: { accountId?: string | null; resumeId?: string | null }; response: CardState };
   'card:fill': { request: Record<string, never>; response: CardState };
+  /** The owner says the page is an application, where none was found: its form is read as one. */
+  'card:asForm': { request: Record<string, never>; response: CardState };
   'card:focus': { request: { fieldId: string }; response: void };
   'card:snapshot': { request: Record<string, never>; response: { saved: number } };
   'card:log': { request: Record<string, never>; response: CardState };
@@ -200,6 +209,8 @@ export interface ToFrame {
   'frame:read': { request: { fieldIds: string[] }; response: CapturedAnswer[] };
   'frame:focus': { request: { fieldId: string }; response: boolean };
   'frame:snapshot': { request: { plan: PlannedField[] }; response: Omit<FormSnapshot, 'id' | 'at'> | null };
+  /** The owner says the page is an application: the frame reads its form as one from now on. */
+  'frame:asForm': { request: Record<string, never>; response: void };
   'card:update': { request: { state: CardState }; response: void };
   /** The list alone, as the page was seen to change under it; the rest of the card stands. */
   'card:checklist': { request: { checklist: ChecklistItem[] }; response: void };

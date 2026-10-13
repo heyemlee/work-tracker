@@ -738,6 +738,11 @@ a:focus-visible {
   background: var(--fill-2);
 }
 
+/* One that leaves the page, for Outbox. */
+a.choices.link {
+  text-decoration: none;
+}
+
 .choices.link .choice-note {
   color: var(--fg-2);
 }

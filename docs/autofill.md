@@ -60,6 +60,26 @@ the page has that place back, and Outbox's mark stays at the window's right edge
 as it was left. So do the toolbar button and the shortcut, and a log, which the card comes back to say; a form the
 page shows next doesn't.
 
+**The toolbar button on any other page** (decided 2026-10-12: the owner pressed it somewhere and nothing came, and
+asked whether it shouldn't come up on other pages too). It did come up on most, and took whatever page it was on
+for a job: the owner's mail under its title, with **Mark as applied** beneath; **Fill** for a site's sign-up or
+its search; a bare title where the page named no company; and nothing at all on the browser's own pages. Now the
+button brings up one of three things, and the card opens by itself no more often than before:
+
+- On an application, the panel, as above. Off the hiring systems' own hosts an application is a form that asks for
+  a resume and a name or an email, or, at a job's address (one with a word like job, career or apply in it), a
+  form that asks for a name or an email. A sign-up, a search, a newsletter box are none, however many fields they
+  have.
+- On a posting, the posting's card. On a hiring system's host that's a page naming a company and a title, which is
+  also what the card opens for by itself there; on any other site, a page at a job's address or one marked up as a
+  posting for search engines (schema.org's `JobPosting`). A page Outbox already tracks is that job's, whatever its
+  address says.
+- On any other page, the extension's own card: a line saying no application form was found, the resumes with
+  their previews (one chosen there is the one the next application starts with), the profile, and a row that
+  opens Outbox in a tab. Its ⋯ menu keeps the two ways back for a page the rules misjudged: **Log to Outbox**,
+  and, where the page has a form at all, **Treat this page as an application**, after which that form is read and
+  filled as any other for as long as the page keeps its address.
+
 ## 3. Architecture
 
 ```mermaid
@@ -335,6 +355,13 @@ attached once Gem names it (below).
 | Gem        | `jobs.gem.com`                                                 | React, no `<form>`; fields named by the text beside them   |
 | LinkedIn   | `linkedin.com/jobs`                                            | No filling: Log to Outbox                                  |
 | Other      | Any                                                            | Dictionary only; card opens on a form with a resume upload |
+
+On those other sites the generic adapter also says what the page is when the card is asked for there
+(`adapters/generic.ts`): `form` takes a form for an application only by the rule above, `jobLike` tells a job's
+page by its address or its markup, `otherForm` says there is a form the owner could still call an application,
+and `asApplication` is their word for it, kept with the page's address. A frame's scan carries the two flags; the
+service worker takes `jobLike` from the frame the posting was read in, so that an ad from a job board in a frame
+of its own makes no page a job, and settles the card's `jobPage` (`isJobPage` in `background/card.ts`).
 
 **Gem** (added 2026-10-07, after the card stayed away from an 11x posting) draws its form without a `<form>` tag, and
 its controls carry no name, id, label or `aria-label`: a question is a block with its text in one element and the
@@ -648,7 +675,10 @@ looking, its window goes into that frame as well, and appears in place as the se
   on Gem also the resume taken out at its ✕ and attached again, and a file dropped in by hand kept;
   a resume's preview drawing a PDF's pages in its frame (ink read off the canvas where the PDF has it), a look at a
   version from the open list that leaves list and choice alone, what the window says where there's nothing to
-  draw, and nothing drawn for a page that frames the preview itself or shows a spent ticket.
+  draw, and nothing drawn for a page that frames the preview itself or shows a spent ticket;
+  the toolbar button on pages that are no application: the extension's own card on a mail page and on a board's
+  list of openings, the posting's card kept at a job's address and on a page marked up as a posting, and a
+  sign-up read and filled once the owner says it's an application.
   Playwright can't look into a closed shadow root any more than a page can, so the specs drive a build of their
   own: the one Chrome loads with the card's root left open and nothing else changed (`wxt.e2e.config.ts`), made as
   a run starts, in `.output/chrome-mv3-e2e`. One spec (`e2e/reach.spec.ts`) takes the build Chrome loads and tries

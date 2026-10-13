@@ -21,6 +21,15 @@ export async function scanFrames(
   return scans.filter((scan): scan is FrameScan => scan !== null);
 }
 
+/** Tells every frame of a tab that the owner says the page is an application: each reads its form as one. */
+export async function asForm(tabId: number): Promise<void> {
+  const frames = (await browser.webNavigation.getAllFrames({ tabId })) ?? [{ frameId: 0 }];
+  await Promise.all(
+    // No content script in a frame: nothing there to tell.
+    frames.map(({ frameId }) => toFrame(tabId, frameId, 'frame:asForm', {}).catch(() => undefined)),
+  );
+}
+
 /** "3:f12" → 3. */
 export const frameOf = (fieldId: string) => Number(fieldId.split(':')[0]);
 

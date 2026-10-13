@@ -62,8 +62,16 @@ function formlessForm(doc: Document): Element | null {
   return null;
 }
 
-function applicationForm(doc: Document): Element | null {
+/** The page's largest form, whatever it's for: sites are full of forms with a name or an email in them. */
+function largestForm(doc: Document): Element | null {
   return bestForm(doc) ?? formlessForm(doc);
+}
+
+/** A form that asks for a resume to upload and for a name or an email: a contact form has no resume to ask for. */
+function asksForResume(form: Element): boolean {
+  if (!form.querySelector('input[type="file"]')) return false;
+  const fields = fieldText(form);
+  return PERSON.test(fields) && RESUME.test(`${fields} ${textOf(form)}`);
 }
 
 /**
@@ -75,19 +83,52 @@ function applicationForm(doc: Document): Element | null {
 export function resumeForm(doc: Document): Element | null {
   if (!doc.querySelector('input[type="file"]')) return null;
   const form = bestForm(doc) ?? (JOB_ADDRESS.test(doc.URL) ? formlessForm(doc) : null);
-  if (!form?.querySelector('input[type="file"]') || isHidden(form)) return null;
-  const fields = fieldText(form);
-  return PERSON.test(fields) && RESUME.test(`${fields} ${textOf(form)}`) ? form : null;
+  return form && !isHidden(form) && asksForResume(form) ? form : null;
+}
+
+/** Pages the owner said are applications, with the address each had then. */
+const saidSo = new WeakMap<Document, string>();
+
+/**
+ * The form the card reads as an application once it's asked for on a site the extension doesn't know: one that asks
+ * for a resume, or, at a job's address, one that asks for a name or an email. A search page, a sign-up, a
+ * newsletter box are none, however many fields they have; where the owner says such a form is one, it's read.
+ */
+function applicationForm(doc: Document): Element | null {
+  const form = largestForm(doc);
+  if (!form || saidSo.get(doc) === doc.URL) return form;
+  return asksForResume(form) || (JOB_ADDRESS.test(doc.URL) && PERSON.test(fieldText(form))) ? form : null;
+}
+
+/** A posting marked up for search engines as schema.org's JobPosting, in JSON-LD or as microdata. */
+const JOB_MARKUP = /"@type"\s*:\s*(\[[^\]]*)?"JobPosting"/;
+
+function markedAsJob(doc: Document): boolean {
+  return (
+    doc.querySelector('[itemtype$="schema.org/JobPosting"]') !== null ||
+    [...doc.querySelectorAll('script[type="application/ld+json"]')].some((script) =>
+      JOB_MARKUP.test(script.textContent ?? ''),
+    )
+  );
 }
 
 /**
  * Any other site: the card opens by itself on a form with a resume upload (see `resumeForm`), or from the toolbar, and
- * the field dictionary does what it can.
+ * the field dictionary does what it can. Asked for on a page that is no job's, the card is the extension's own and
+ * not that page's: there a page is a job's only where its address or its markup says so.
  */
 export const generic: Adapter = {
   ats: 'generic',
 
   form: (doc) => applicationForm(doc),
+
+  jobLike: (doc, url) => JOB_ADDRESS.test(url) || markedAsJob(doc),
+
+  otherForm: (doc) => applicationForm(doc) === null && largestForm(doc) !== null,
+
+  asApplication(doc) {
+    saidSo.set(doc, doc.URL);
+  },
 
   posting(doc, url): Posting {
     const parsed = parsePosting(url);

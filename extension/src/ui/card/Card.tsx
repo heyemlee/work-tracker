@@ -1,4 +1,5 @@
 import {
+  ArrowUpRight,
   Bookmark,
   Check,
   ChevronDown,
@@ -209,7 +210,7 @@ function noticeFor(
   openSettings: () => void,
 ): Notice | null {
   const outbox = (label: string) => ({ label, href: outboxUrl });
-  if (state.error === 'profile' || (!state.profile && state.hasForm))
+  if (state.error === 'profile' || (!state.profile && (state.hasForm || !state.jobPage)))
     return {
       tone: 'error',
       text: t('notice.profile'),
@@ -443,8 +444,9 @@ export function Card({ startOpen }: { startOpen: boolean }) {
         // Open where there's something to do: an application form, a posting on an applicant-tracking site or
         // LinkedIn (its match check, before applying), the confirmation page with its Undo. Elsewhere the detect
         // script opens the card for a form with a resume upload. Put aside, it stays there: its tab is in sight.
+        // A page that is no job's gets the card only when the owner asks for it.
         const show =
-          (next.ats !== 'generic' && (next.hasForm || Boolean(next.posting?.title))) ||
+          (next.jobPage && next.ats !== 'generic' && (next.hasForm || Boolean(next.posting?.title))) ||
           (next.logged && !next.logged.undone);
         if (show) setView((now) => (now === 'closed' ? 'open' : now));
       })
@@ -705,7 +707,11 @@ export function Card({ startOpen }: { startOpen: boolean }) {
       from: years[0] ?? '',
       to: years[years.length - 1] ?? '',
     });
-  const match = state.match;
+  // Asked for on a page that is no job's (the owner's mail, a search, Outbox itself), the card is the extension's
+  // own, not that page's: the resumes, the profile, the way to Outbox. It has no job to check a match for, and
+  // what it could still do with the page, if the page is a job after all, waits in the menu.
+  const home = !state.jobPage;
+  const match = home ? null : state.match;
   const reasons = match?.signals.filter((signal) => signal.level !== 'green').slice(0, 2) ?? [];
 
   // How far the form is: by the fields it requires, where it marks any.
@@ -721,9 +727,20 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   // On a posting without a form, saving and logging are buttons of their own (below). LinkedIn keeps its log
   // button for every posting, applied to or not: its Easy Apply happens right there.
   const postingPage =
-    !state.hasForm && Boolean(state.posting?.company) && (linkedin || state.tracked !== 'applied');
+    !home && !state.hasForm && Boolean(state.posting?.company) && (linkedin || state.tracked !== 'applied');
   const menu = [
     ...(canLog && !linkedin && !postingPage ? [{ label: t('log'), run: log }] : []),
+    ...(home && state.otherForm
+      ? [
+          {
+            label: t('home.asForm'),
+            run: () =>
+              void toBackground('card:asForm', {})
+                .then(apply)
+                .catch(() => undefined),
+          },
+        ]
+      : []),
     ...(state.hasForm
       ? [
           {
@@ -821,14 +838,17 @@ export function Card({ startOpen }: { startOpen: boolean }) {
           <div
             className="head-text"
             title={
-              [posting, ...(match ? [t(`match.${match.level}`), ...match.signals.map(signalText)] : [])]
+              [
+                ...(home ? [] : [posting]),
+                ...(match ? [t(`match.${match.level}`), ...match.signals.map(signalText)] : []),
+              ]
                 .filter(Boolean)
                 .join('\n') || undefined
             }
           >
             <div className="title">
               {match && <span className={`dot ${match.level}`} />}
-              <span>{state.posting?.title ?? t('outbox')}</span>
+              <span>{home ? 'Outbox Autofill' : (state.posting?.title ?? t('outbox'))}</span>
             </div>
             {reasons.length > 0 && (
               <div className={`reasons ${match!.level}`}>{reasons.map(signalText).join(' · ')}</div>
@@ -849,6 +869,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
 
         <div className="body">
           {noticeLine}
+          {home && <div className="hint">{t('home.none')}</div>}
 
           {/* Applied to before: said first and in color, with who did and when. A form is as quick to fill a second
             time as the first. */}
@@ -874,7 +895,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
 
           {/* Who applies and with which resume, each choice on its own line: an address or a file name cut short
             tells nothing. */}
-          {(state.hasForm || linkedin) && state.accounts.length > 0 && (
+          {(state.hasForm || (linkedin && !home)) && state.accounts.length > 0 && (
             <section className="section">
               <h2 className="label">{t('account')}</h2>
               <Choices
@@ -891,7 +912,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
               />
             </section>
           )}
-          {state.hasForm && (
+          {(state.hasForm || home) && (
             <section className="section">
               <h2 className="label">{t('resume')}</h2>
               {state.resumes.length > 0 ? (
@@ -922,7 +943,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
             </section>
           )}
           {/* What the form is filled from, a press away from being edited right here. */}
-          {state.hasForm && state.profile && (
+          {(state.hasForm || home) && state.profile && (
             <section className="section">
               <h2 className="label">{t('profile')}</h2>
               <button className="choices link" onClick={() => setEditing(true)} title={t('profileEdit')}>
@@ -932,6 +953,16 @@ export function Card({ startOpen }: { startOpen: boolean }) {
                 )}
                 <ChevronRight size={14} className="link-arrow" />
               </button>
+            </section>
+          )}
+          {/* Outbox itself is a site of its own: this one row leaves the page, in a tab beside it. */}
+          {home && (
+            <section className="section">
+              <h2 className="label">{t('outbox')}</h2>
+              <a className="choices link" href={outboxUrl} target="_blank" rel="noreferrer">
+                <span className="choice-text">{t('home.open')}</span>
+                <ArrowUpRight size={14} className="link-arrow" />
+              </a>
             </section>
           )}
           {main}

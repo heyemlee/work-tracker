@@ -9,7 +9,7 @@ import { generic, resumeForm } from './generic';
 function page(body: string, url = 'https://careers.acme.com/jobs/123/apply'): Document {
   const doc = document.implementation.createHTMLDocument('Acme');
   doc.body.innerHTML = body;
-  Object.defineProperty(doc, 'URL', { value: url });
+  Object.defineProperty(doc, 'URL', { value: url, configurable: true });
   return doc;
 }
 
@@ -97,6 +97,69 @@ describe('opening the card by itself on a site the extension does not know', () 
   it('waits while the form is hidden', () => {
     expect(resumeForm(page(`<div hidden>${APPLICATION}</div>`))).toBeNull();
     expect(resumeForm(page(`<div aria-hidden="true">${APPLICATION}</div>`))).toBeNull();
+  });
+});
+
+/** A form with a name and an email in it and no resume to ask for: a sign-up, as sites are full of. */
+const SIGN_UP = `
+  <form>
+    <label for="first">First name</label><input id="first">
+    <label for="last">Last name</label><input id="last">
+    <label for="email">Email</label><input id="email" type="email">
+    <label for="company">Company</label><input id="company">
+    <label for="size">Team size</label><input id="size">
+    <button type="submit">Sign up</button>
+  </form>`;
+
+describe('reading a page the card was asked for on', () => {
+  it('takes a form that asks for a resume for an application, whatever the address', () => {
+    expect(generic.form(page(APPLICATION, 'https://www.acme.com/about'))?.tagName).toBe('FORM');
+    expect(generic.form(page(FORMLESS, 'https://www.acme.com/'))?.className).toBe('application');
+  });
+
+  it('takes a form with a name or an email for one at a job’s address, and for none elsewhere', () => {
+    expect(generic.form(page(SIGN_UP, 'https://careers.acme.com/jobs/123/apply'))?.tagName).toBe('FORM');
+    const elsewhere = page(SIGN_UP, 'https://www.acme.com/signup');
+    expect(generic.form(elsewhere)).toBeNull();
+    // Nothing of it is read, so nothing of it is filled or watched for being sent.
+    expect(extractFields(generic, elsewhere, 0).fields).toEqual([]);
+    expect(generic.submitButton(elsewhere)).toBeNull();
+    // It is there for the owner to say it's an application after all.
+    expect(generic.otherForm!(elsewhere)).toBe(true);
+  });
+
+  it('reads the form once the owner says the page is an application, while the page keeps its address', () => {
+    const doc = page(SIGN_UP, 'https://www.acme.com/signup');
+    generic.asApplication!(doc);
+    expect(generic.form(doc)?.tagName).toBe('FORM');
+    expect(generic.otherForm!(doc)).toBe(false);
+    expect(extractFields(generic, doc, 0).fields.map((field) => field.label)).toContain('First name');
+    // A page that moves on without loading anew is another page: the word was for the one before.
+    Object.defineProperty(doc, 'URL', { value: 'https://www.acme.com/welcome', configurable: true });
+    expect(generic.form(doc)).toBeNull();
+  });
+
+  it('offers no other form where the page has none worth the name', () => {
+    expect(
+      generic.otherForm!(page('<form><input type="search" name="q"></form>', 'https://www.acme.com/')),
+    ).toBe(false);
+    expect(generic.otherForm!(page(APPLICATION, 'https://www.acme.com/about'))).toBe(false);
+  });
+
+  it('calls a page a job by its address, or by what the page says of itself', () => {
+    const plain = '<h1>Backend Engineer</h1>';
+    expect(generic.jobLike!(page(plain), 'https://careers.acme.com/jobs/123')).toBe(true);
+    expect(generic.jobLike!(page(plain), 'https://mail.example.com/u/0/')).toBe(false);
+    // Marked up for search engines as a posting, at an address that says nothing.
+    const elsewhere = 'https://www.acme.com/company/work-with-us/9912';
+    const marked = (type: string) =>
+      page(`<script type="application/ld+json">{"@context":"https://schema.org","@type":${type}}</script>`);
+    expect(generic.jobLike!(marked('"JobPosting"'), elsewhere)).toBe(true);
+    expect(generic.jobLike!(marked('["JobPosting","Thing"]'), elsewhere)).toBe(true);
+    expect(generic.jobLike!(marked('"Article"'), elsewhere)).toBe(false);
+    expect(
+      generic.jobLike!(page('<div itemscope itemtype="https://schema.org/JobPosting"></div>'), elsewhere),
+    ).toBe(true);
   });
 });
 

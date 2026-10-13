@@ -39,7 +39,16 @@ const posting: Posting = {
 };
 /** What the content script reads of a page that holds no form. */
 const page = (read: Posting): FrameScan[] => [
-  { frameId: 0, ats: 'workday', isApplication: false, fields: [], posting: read, step: null },
+  {
+    frameId: 0,
+    ats: 'workday',
+    isApplication: false,
+    jobLike: true,
+    otherForm: false,
+    fields: [],
+    posting: read,
+    step: null,
+  },
 ];
 const tasks = page({ ...posting, title: null, url: ENDED });
 const added: QuickAddResult = {

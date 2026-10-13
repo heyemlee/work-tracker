@@ -21,10 +21,12 @@ vi.mock('./outbox', () => ({
 // The page and the model, for the tests that fill: what a frame holds, what it takes, what comes back drafted.
 const scanFrames = vi.fn<typeof import('./frames').scanFrames>();
 const fillFrames = vi.fn<typeof import('./frames').fillFrames>();
+const asForm = vi.fn<typeof import('./frames').asForm>(async () => undefined);
 vi.mock('./frames', async (original) => ({
   ...(await original<typeof import('./frames')>()),
   scanFrames,
   fillFrames,
+  asForm,
 }));
 const answerFields = vi.fn<typeof import('./ai').answerFields>();
 const draftAnswer = vi.fn<typeof import('./ai').draftAnswer>();
@@ -34,8 +36,18 @@ vi.mock('./ai', async (original) => ({
   draftAnswer,
 }));
 
-const { cardState, fill, logApplication, pageHolds, saveJob, select, snapshot, undo } =
-  await import('./card');
+const {
+  asApplication,
+  cardState,
+  fill,
+  logApplication,
+  pageHolds,
+  readTab,
+  saveJob,
+  select,
+  snapshot,
+  undo,
+} = await import('./card');
 const { getSession, updateSession } = await import('./session');
 const { DEFAULT_SETTINGS, loggedItem, openaiKeyItem, profileItem, settingsItem, snapshotsItem } =
   await import('../storage');
@@ -146,6 +158,98 @@ describe('saving a posting for later', () => {
     await updateSession(TAB, URL_, () => ({ accountId: 'a1' }));
     await logApplication(TAB, URL_, true);
     expect(await loggedItem.getValue()).toBe(true);
+  });
+});
+
+describe('telling a job’s page from any other', () => {
+  // What the content script reads of a page with no application on it.
+  const read = (more: Partial<FrameScan>): FrameScan => ({
+    frameId: 0,
+    ats: 'generic',
+    isApplication: false,
+    jobLike: false,
+    otherForm: false,
+    posting: null,
+    fields: [],
+    step: null,
+    ...more,
+  });
+  const MAIL = 'https://mail.google.com/mail/u/0/';
+  const inbox: Posting = { ...posting, ats: 'generic', company: 'Google', title: 'Inbox (3)', url: MAIL };
+  // A tab of its own for each test: a tab's session outlives the storage a test starts from.
+  let tab = 300;
+
+  beforeEach(async () => {
+    fakeBrowser.reset();
+    vi.clearAllMocks();
+    tab++;
+    loadSnapshot.mockResolvedValue(empty);
+    syncProfile.mockResolvedValue(null);
+  });
+
+  it('takes a page on any other site for a job only where the page gives itself out as one', async () => {
+    // The owner's mail names a "company" and a "title" as any page does, and is no job.
+    scanFrames.mockResolvedValue([read({ posting: inbox })]);
+    expect(await readTab(tab, MAIL)).toMatchObject({ jobPage: false, hasForm: false });
+    // The same reading at a job's address, or of a page marked up as a posting.
+    scanFrames.mockResolvedValue([read({ posting: inbox, jobLike: true })]);
+    expect(await readTab(tab, MAIL)).toMatchObject({ jobPage: true });
+  });
+
+  it('goes by the page itself, not by a frame inside it', async () => {
+    scanFrames.mockResolvedValue([
+      read({ posting: inbox }),
+      // An ad from a job board, in a frame of its own.
+      read({ frameId: 4, jobLike: true, posting: null }),
+    ]);
+    expect(await readTab(tab, MAIL)).toMatchObject({ jobPage: false });
+  });
+
+  it('takes a hiring system’s page for a posting where it names a company and a title, as the card opens there', async () => {
+    scanFrames.mockResolvedValue([read({ ats: 'greenhouse', jobLike: true, posting })]);
+    expect(await readTab(tab, URL_)).toMatchObject({ jobPage: true });
+    // The board's list of openings names the company and no title.
+    const board = 'https://job-boards.greenhouse.io/arcadia';
+    scanFrames.mockResolvedValue([
+      read({ ats: 'greenhouse', jobLike: true, posting: { ...posting, title: null, url: board } }),
+    ]);
+    expect(await readTab(tab + 1000, board)).toMatchObject({ jobPage: false });
+  });
+
+  it('takes a page Outbox tracks for the job it is, whatever its address says', async () => {
+    loadSnapshot.mockResolvedValue(tracked(false));
+    scanFrames.mockResolvedValue([read({ posting: { ...posting, ats: 'generic' } })]);
+    expect(await readTab(tab, URL_)).toMatchObject({ jobPage: true, tracked: 'saved' });
+  });
+
+  it('takes a page for a job once the owner has logged it from the card’s menu, and through its Undo', async () => {
+    scanFrames.mockResolvedValue([read({ posting: inbox })]);
+    await readTab(tab, MAIL);
+    quickAddOrQueue.mockResolvedValue({ ...saved, applicationIds: ['p1'] });
+    expect(await logApplication(tab, MAIL, true)).toMatchObject({ jobPage: true });
+    expect(await undo(tab, MAIL)).toMatchObject({ jobPage: true, logged: { undone: true } });
+  });
+
+  it('says there is a form the owner can call an application, where none was found', async () => {
+    scanFrames.mockResolvedValue([read({ posting: inbox, otherForm: true })]);
+    expect(await readTab(tab, MAIL)).toMatchObject({ jobPage: false, otherForm: true });
+    // An application found in one frame is the page's form: no other is offered beside it.
+    scanFrames.mockResolvedValue([
+      read({ posting: inbox, otherForm: true }),
+      read({ frameId: 2, isApplication: true, posting: inbox }),
+    ]);
+    expect(await readTab(tab, MAIL)).toMatchObject({ jobPage: true, hasForm: true, otherForm: false });
+  });
+
+  it('has every frame read its form as an application at the owner’s word, then reads the page again', async () => {
+    scanFrames.mockResolvedValue([read({ posting: inbox, otherForm: true })]);
+    await readTab(tab, MAIL);
+    asForm.mockImplementation(async () => {
+      // Told so, the frame finds the form it had passed over.
+      scanFrames.mockResolvedValue([read({ posting: inbox, isApplication: true })]);
+    });
+    expect(await asApplication(tab, MAIL)).toMatchObject({ hasForm: true, jobPage: true, otherForm: false });
+    expect(asForm).toHaveBeenCalledWith(tab);
   });
 });
 
@@ -425,7 +529,16 @@ describe('filling', () => {
   });
   /** What reading the tab finds: one frame, holding a form with these questions. */
   const form = (fields: ScannedField[]): FrameScan[] => [
-    { frameId: 0, ats: 'greenhouse', isApplication: true, posting, fields, step: null },
+    {
+      frameId: 0,
+      ats: 'greenhouse',
+      isApplication: true,
+      jobLike: true,
+      otherForm: false,
+      posting,
+      fields,
+      step: null,
+    },
   ];
   /** An answer that comes when the test says so. */
   function later<T>() {

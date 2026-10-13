@@ -90,4 +90,13 @@ export interface Adapter {
    * emptying the inputs doesn't reach: on Gem a dropdown is a bare button that reads its pick.
    */
   blank?(form: Element): void;
+  /**
+   * Off the hiring systems' own hosts, where any page may be about anything: whether this one gives itself out as
+   * a job, by its address or its own markup.
+   */
+  jobLike?(doc: Document, url: string): boolean;
+  /** A form on the page that wasn't taken for an application, and that the owner can say is one (`asApplication`). */
+  otherForm?(doc: Document): boolean;
+  /** The owner says the page is an application: its form is read as one for as long as the page keeps its address. */
+  asApplication?(doc: Document): void;
 }

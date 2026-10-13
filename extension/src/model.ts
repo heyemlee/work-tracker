@@ -114,6 +114,13 @@ export interface FrameScan {
   ats: Ats;
   /** The frame holds an application form, not just a posting. */
   isApplication: boolean;
+  /**
+   * On a site the extension doesn't know: the page gives itself out as a job, by its address or its own markup. A
+   * hiring system's own pages tell a posting by its title, and say true here.
+   */
+  jobLike: boolean;
+  /** No application form was found in the frame, and it has a form the owner can say is one. */
+  otherForm: boolean;
   posting: Posting | null;
   fields: ScannedField[];
   /** Workday's current step ("My Information"); null elsewhere. */

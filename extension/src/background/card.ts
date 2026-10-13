@@ -26,7 +26,7 @@ import {
   type FormSnapshot,
 } from '../storage';
 import { answerFields, draftAnswer, NoApiKey, similarFinals } from './ai';
-import { fillFrames, frameOf, readOptions, scanFrames } from './frames';
+import { asForm, fillFrames, frameOf, readOptions, scanFrames } from './frames';
 import { loadSnapshot, OutboxSignedOut, quickAddOrQueue, syncProfile, undoQuickAdd } from './outbox';
 import { getSession, updateSession, type TabSession } from './session';
 
@@ -70,9 +70,24 @@ function merge(scans: FrameScan[], previous: TabSession | null) {
     ats: forms[0]?.ats ?? withPosting?.ats ?? null,
     posting,
     hasForm: forms.length > 0,
+    // The frame the posting is read from is the page itself: a frame inside it at a job's address makes it no job.
+    jobLike: withPosting?.jobLike ?? false,
+    otherForm: forms.length === 0 && scans.some((scan) => scan.otherForm),
     step: forms.find((scan) => scan.step)?.step ?? null,
     fields: forms.flatMap((scan) => scan.fields),
   };
+}
+
+/**
+ * Whether a tab's page is a job's, and the card on it that job's: an application, a posting, a page Outbox tracks or
+ * was just told of. On a hiring system's own pages a posting is what names its company and has a title, which is
+ * what the card opens for by itself there; on any other site, what names a company and gives itself out as a job.
+ * The owner's mail, a news story, Outbox itself name a "company" too, and are none.
+ */
+function isJobPage(session: TabSession, tracked: boolean): boolean {
+  if (session.hasForm || tracked || session.logged || session.saved) return true;
+  if (!session.posting?.company) return false;
+  return session.ats === 'generic' ? session.jobLike : Boolean(session.posting.title);
 }
 
 function matchedJob(snapshot: Snapshot | null, session: Pick<TabSession, 'posting'>) {
@@ -172,6 +187,8 @@ export async function cardState(session: TabSession, outbox?: OutboxState): Prom
     ats: session.ats,
     posting: session.posting,
     hasForm: session.hasForm,
+    jobPage: isJobPage(session, job !== null),
+    otherForm: session.otherForm,
     step: session.step,
     outbox: status,
     profile: profile ? { name: fullName(profile).trim(), blanks: missingItems(profile).length } : null,
@@ -292,6 +309,15 @@ export async function readTab(tabId: number, url: string): Promise<CardState> {
     };
   });
   return cardState(session, outbox);
+}
+
+/**
+ * The owner says the page is an application, where the card found none on a site it doesn't know: the page is read
+ * again with its form taken for one, and fills as any other from there.
+ */
+export async function asApplication(tabId: number, url: string): Promise<CardState> {
+  await asForm(tabId);
+  return readTab(tabId, url);
 }
 
 export async function select(

@@ -104,7 +104,14 @@ export function startContent(): () => void {
     if (extraction.fields.length > 0) held ??= watchHeld(document, look, tell);
     // A page read afresh may not be as the card last heard: loaded again, or changed by the page itself.
     held?.soon();
-    return { frameId, ats: adapter.ats, isApplication: extraction.fields.length > 0, ...reading };
+    return {
+      frameId,
+      ats: adapter.ats,
+      isApplication: extraction.fields.length > 0,
+      jobLike: adapter.jobLike?.(document, location.href) ?? true,
+      otherForm: adapter.otherForm?.(document) ?? false,
+      ...reading,
+    };
   }
 
   const loadResume = async (resumeId: string) => {
@@ -220,6 +227,10 @@ export function startContent(): () => void {
         }
         case 'frame:snapshot':
           return extraction ? formSnapshot(adapter, document, extraction, message.plan) : null;
+        case 'frame:asForm':
+          // The owner's word for it, from the card: the next read takes the page's form for an application.
+          adapter.asApplication?.(document);
+          return undefined;
         default:
           return undefined;
       }

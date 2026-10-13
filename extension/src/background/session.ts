@@ -12,6 +12,10 @@ export interface TabSession {
   ats: Ats | null;
   posting: Posting | null;
   hasForm: boolean;
+  /** Off the hiring systems' hosts: the page gives itself out as a job, by its address or its markup. */
+  jobLike: boolean;
+  /** No application form was found, and the page has a form the owner can say is one. */
+  otherForm: boolean;
   step: string | null;
   fields: ScannedField[];
   plan: PlannedField[];
@@ -47,6 +51,8 @@ export function emptySession(tabId: number, url: string): TabSession {
     ats: null,
     posting: null,
     hasForm: false,
+    jobLike: false,
+    otherForm: false,
     step: null,
     fields: [],
     plan: [],

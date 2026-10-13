@@ -4,6 +4,7 @@ import { listen, toFrame, type BackgroundMessage } from '../messages';
 import { readResume } from '../resumes';
 import { outboxTokenItem } from '../storage';
 import {
+  asApplication,
   fill,
   focus,
   logApplication,
@@ -60,6 +61,8 @@ export function startBackground(): void {
           return select(tabId, url, { accountId: message.accountId, resumeId: message.resumeId });
         case 'card:fill':
           return fill(tabId, url);
+        case 'card:asForm':
+          return asApplication(tabId, url);
         case 'card:focus':
           return focus(tabId, message.fieldId);
         case 'card:snapshot':
