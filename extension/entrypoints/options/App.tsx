@@ -755,11 +755,25 @@ export function App({ framed, dark }: { framed: boolean; dark: boolean }) {
   const close = useCallback(() => void toBackground('settings:close', {}).catch(() => undefined), []);
   useEffect(() => {
     if (!framed) return undefined;
+    // What's typed into a field is kept as the field is left (or at Enter): a window closed with the keyboard still
+    // in a field leaves it first, so it's kept, as a press of ✕ does.
+    const leave = () => (document.activeElement as HTMLElement | null)?.blur?.();
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') close();
+      if (event.key !== 'Escape') return;
+      leave();
+      close();
+    };
+    // Closed from outside the frame (a press beside the window), the card says so first.
+    const onMessage = (event: MessageEvent) => {
+      if (event.source === window.parent && (event.data as { type?: string })?.type === 'settings:closing')
+        leave();
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    window.addEventListener('message', onMessage);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('message', onMessage);
+    };
   }, [framed, close]);
 
   // Until the settings are read there's nothing true to show: not their language, not what's switched on.

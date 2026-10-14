@@ -7,6 +7,13 @@ import { browser } from 'wxt/browser';
  */
 const WAIT = 6000;
 
+/** The framed page's address: its ticket, and the side of light or dark it opens on. */
+const addressFor = (page: string, ticket: string, dark: boolean) =>
+  `${browser.runtime.getURL(page as '/options.html')}#${new URLSearchParams({ ticket, dark: dark ? '1' : '0' })}`;
+
+/** How long a framed page has to keep what was typed in it once told the window is closing, before it goes. */
+const LEAVING = 120;
+
 /**
  * One of the extension's own pages in a window over the page, like the profile's: the settings, a resume's preview.
  * What's in the window is that page in a frame. The page underneath reaches nothing in a frame of the extension's
@@ -72,9 +79,7 @@ export function Framed({
       .then((reply) => {
         if (gone) return;
         if (!reply) return stuck();
-        setAddress(
-          `${browser.runtime.getURL(page)}#${new URLSearchParams({ ticket: reply.ticket, dark: side ? '1' : '0' })}`,
-        );
+        setAddress(addressFor(page, reply.ticket, side));
       })
       .catch(stuck);
     const timer = setTimeout(stuck, WAIT);
@@ -85,6 +90,30 @@ export function Framed({
     };
   }, [name, page, side]);
 
+  // Closed from out here, the page in the frame is told first, and has a moment to keep what was typed into it but
+  // not yet kept (the settings keep a field as it's left, which a frame taken away never is).
+  const leave = () => {
+    frame.current?.contentWindow?.postMessage(
+      { type: `${name}:closing` },
+      new URL(browser.runtime.getURL('/')).origin,
+    );
+    setTimeout(() => hands.current.onClose(), frame.current ? LEAVING : 0);
+  };
+
+  // A frame put back into the page (a page that builds its document anew takes the card out and the card goes back
+  // in) loads its address again, on a ticket spent the first time: the page asks for another, and draws on that.
+  const loaded = useRef<string | null>(null);
+  const onLoad = () => {
+    if (loaded.current !== address) {
+      loaded.current = address;
+      return;
+    }
+    void hands.current
+      .ask()
+      .then((reply) => reply && setAddress(addressFor(page, reply.ticket, side)))
+      .catch(() => undefined);
+  };
+
   return (
     <div
       className="scrim"
@@ -92,10 +121,10 @@ export function Framed({
         if (event.target !== event.currentTarget) return;
         // The press closes the window and nothing more: the keyboard stays where closing puts it.
         event.preventDefault();
-        onClose();
+        leave();
       }}
       onKeyDown={(event) => {
-        if (event.key === 'Escape') onClose();
+        if (event.key === 'Escape') leave();
       }}
     >
       <div
@@ -106,7 +135,9 @@ export function Framed({
         aria-label={title}
         tabIndex={-1}
       >
-        {address && <iframe ref={frame} className="sheet-frame" title={title} src={address} />}
+        {address && (
+          <iframe ref={frame} className="sheet-frame" title={title} src={address} onLoad={onLoad} />
+        )}
       </div>
     </div>
   );

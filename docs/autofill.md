@@ -172,9 +172,11 @@ General (language, the same-company warning, export and delete) — each saving 
 to tell it by. So a field says it at the end of its label (decided 2026-10-09, when the owner couldn't tell whether
 what they'd typed was saved): "Press Enter to save" while an address or a key is typed and not yet kept, then
 "✓ Saved" for a moment once the browser has kept it, after a choice from a list too; "Couldn't save" if it didn't. Text
-is kept when Enter is pressed or the field is left, and an address emptied goes back to the one kept. An
-OpenAI-compatible address typed without its scheme gets `https://`, as Claude's does; until then it was kept as
-typed, and every request failed on it. A key can't be
+is kept when Enter is pressed or the field is left, and an address emptied goes back to the one kept. Closing the
+window leaves the field too (since 2026-10-14): Escape takes the keyboard off it first, and a press beside the window
+tells the framed page it's closing (a `settings:closing` message) and gives it a moment to keep what was typed, where
+both used to take the frame away with the text in it unkept. An OpenAI-compatible address typed without its scheme
+gets `https://`, as Claude's does; until then it was kept as typed, and every request failed on it. A key can't be
 read back once typed, so its label says "Saved" for as long as one is kept, and the field shows its last four
 characters as a field that's filled. Left without a press it's kept like any other field, and tried only at Enter or
 the button: a key goes to the provider when the owner asks. The check's line says the two things apart — "The saved
