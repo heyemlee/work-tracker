@@ -688,7 +688,10 @@ function General({ s, settings }: Props) {
           note={<Saved s={s} name="sameCompanyLimit" />}
           max={20}
           value={settings.sameCompanyLimit}
-          onChange={(limit) => save({ sameCompanyLimit: limit && limit > 0 ? limit : 3 })}
+          // Emptied, it keeps the number it had until another is typed.
+          onChange={(limit) => {
+            if (limit !== null && limit > 0) save({ sameCompanyLimit: limit });
+          }}
         />
       </Grid>
       <Note>{s('limitHelp')}</Note>

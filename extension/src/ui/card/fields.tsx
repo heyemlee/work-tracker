@@ -349,6 +349,15 @@ export function Count({
   placeholder?: string;
   note?: ReactNode;
 }) {
+  // What's typed stands while the field is edited: emptied on the way to another number, it isn't filled back in
+  // with the one kept, which the next digit would be typed after ("3", emptied, then "5", read "35").
+  const kept = value === null ? '' : String(value);
+  const [text, setText] = useState(kept);
+  const [seen, setSeen] = useState(kept);
+  if (kept !== seen) {
+    setSeen(kept);
+    if (text === '' ? value !== null : Number(text) !== value) setText(kept);
+  }
   return (
     <Field label={label} note={note}>
       <input
@@ -356,9 +365,16 @@ export function Count({
         type="number"
         min={0}
         max={max}
-        value={value ?? ''}
+        value={text}
         placeholder={placeholder}
-        onChange={(event) => onChange(event.target.value === '' ? null : Number(event.target.value))}
+        onChange={(event) => {
+          const typed = event.target.value;
+          setText(typed);
+          const number = Number(typed);
+          if (typed === '') onChange(null);
+          else if (Number.isFinite(number)) onChange(Math.min(Math.max(number, 0), max));
+        }}
+        onBlur={() => setText(kept)}
       />
     </Field>
   );
