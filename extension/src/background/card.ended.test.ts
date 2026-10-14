@@ -20,7 +20,7 @@ vi.mock('./frames', async (original) => ({
   scanFrames,
 }));
 
-const { readTab, submitAttempt, submitConfirmed } = await import('./card');
+const { logApplication, readTab, saveJob, submitAttempt, submitConfirmed, undo } = await import('./card');
 const { dropSession, getSession, updateSession } = await import('./session');
 
 // Workday takes someone signed in from the last step of an application to their own home on the board, at another
@@ -94,7 +94,7 @@ describe('the page an application ends on, at another address and no posting its
       expect.objectContaining({ title: 'Software Engineer', url: JOB }),
     );
     expect(state.posting).toMatchObject({ title: 'Software Engineer', url: JOB });
-    expect(state.logged).toEqual({ result: added, undone: false, manual: false });
+    expect(state.logged).toEqual({ result: added, undone: false, manual: false, accountId: 'a1' });
     expect(state.hasForm).toBe(false);
   });
 
@@ -115,9 +115,9 @@ describe('the page an application ends on, at another address and no posting its
     await logging;
     await reading;
     expect(read?.posting).toMatchObject({ title: 'Software Engineer', url: JOB });
-    expect(read?.logged).toEqual({ result: added, undone: false, manual: false });
+    expect(read?.logged).toEqual({ result: added, undone: false, manual: false, accountId: 'a1' });
     const session = await getSession(TAB);
-    expect(session?.logged).toEqual({ result: added, undone: false, manual: false });
+    expect(session?.logged).toEqual({ result: added, undone: false, manual: false, accountId: 'a1' });
   });
 
   it('goes on saying what went wrong with the log', async () => {
@@ -136,10 +136,10 @@ describe('the page an application ends on, at another address and no posting its
     // The board's own link to the candidate's home, from the page it shows that home on already.
     const moved = await readTab(TAB, `${BOARD}/userHome`, true);
     expect(moved.posting).toMatchObject({ title: 'Software Engineer', url: JOB });
-    expect(moved.logged).toEqual({ result: added, undone: false, manual: false });
+    expect(moved.logged).toEqual({ result: added, undone: false, manual: false, accountId: 'a1' });
     // And read there again, as when the owner asks for the card.
     const again = await readTab(TAB, `${BOARD}/userHome`);
-    expect(again.logged).toEqual({ result: added, undone: false, manual: false });
+    expect(again.logged).toEqual({ result: added, undone: false, manual: false, accountId: 'a1' });
     // A posting reached the same way is that posting's.
     const next = { ...posting, title: 'Data Engineer', url: `${BOARD}/job/San-Jose-CA/Data-Engineer_R456` };
     scanFrames.mockResolvedValue(page(next));
@@ -198,5 +198,108 @@ describe('a page of an application with nothing on it to fill', () => {
     // Back on the posting, the tab is on no application.
     scanFrames.mockResolvedValue(page(posting));
     expect(await readTab(TAB, JOB)).toMatchObject({ hasForm: false, applying: false, sends: false });
+  });
+});
+
+describe('one log for each time a form is sent', () => {
+  it('logs nothing more when the page that confirmed it is loaded again', async () => {
+    await submitConfirmed(TAB, ENDED);
+    await readTab(TAB, ENDED);
+    await submitConfirmed(TAB, ENDED);
+    expect(quickAddOrQueue).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves an Undo standing when that page is loaded again', async () => {
+    await submitConfirmed(TAB, ENDED);
+    await readTab(TAB, ENDED);
+    await undo(TAB, ENDED);
+    await submitConfirmed(TAB, ENDED);
+    const state = await readTab(TAB, ENDED);
+    expect(quickAddOrQueue).toHaveBeenCalledTimes(1);
+    expect(state.logged).toEqual({ result: added, undone: true, manual: false, accountId: 'a1' });
+  });
+
+  it('queues it once, however often its page is loaded while Outbox is out of reach', async () => {
+    quickAddOrQueue.mockResolvedValue(null);
+    await submitConfirmed(TAB, ENDED);
+    await readTab(TAB, ENDED);
+    await submitConfirmed(TAB, ENDED);
+    expect(quickAddOrQueue).toHaveBeenCalledTimes(1);
+  });
+
+  it('logs it once when two confirmations come in together', async () => {
+    let done: (value: QuickAddResult) => void = () => undefined;
+    quickAddOrQueue.mockReturnValueOnce(new Promise((resolve) => (done = resolve)));
+    const first = submitConfirmed(TAB, ENDED);
+    const second = submitConfirmed(TAB, ENDED);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    done(added);
+    await Promise.all([first, second]);
+    expect(quickAddOrQueue).toHaveBeenCalledTimes(1);
+  });
+
+  it('logs another account sending the same posting from the same tab', async () => {
+    loadSnapshot.mockResolvedValue({
+      ...outbox,
+      accounts: [
+        ...outbox.accounts,
+        { id: 'a2', label: '', email: 'two@example.com', color: 'green', createdAt: T0 },
+      ],
+    });
+    await submitAttempt(TAB, APPLY, [], ['one@example.com']);
+    await submitConfirmed(TAB, ENDED);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    await submitAttempt(TAB, APPLY, [], ['two@example.com']);
+    await submitConfirmed(TAB, ENDED);
+    expect(quickAddOrQueue).toHaveBeenCalledTimes(2);
+    expect(quickAddOrQueue.mock.calls[1]?.[0]).toMatchObject({ accountIds: ['a2'] });
+  });
+
+  it('sends one log for a double press on the card', async () => {
+    let done: (value: QuickAddResult) => void = () => undefined;
+    quickAddOrQueue.mockReturnValueOnce(new Promise((resolve) => (done = resolve)));
+    loadSnapshot.mockImplementation(async () =>
+      quickAddOrQueue.mock.calls.length === 0
+        ? outbox
+        : {
+            ...outbox,
+            companies: [{ id: 'c1', name: 'Acme', createdAt: T0 }],
+            jobs: [
+              {
+                id: 'j1',
+                companyId: 'c1',
+                title: 'Software Engineer',
+                url: JOB,
+                notes: '',
+                createdAt: T0,
+                updatedAt: T0,
+              },
+            ],
+            applications: [
+              {
+                id: 'p1',
+                jobId: 'j1',
+                accountId: 'a1',
+                channelId: null,
+                resumeId: null,
+                stage: 'applied',
+                rejected: false,
+                appliedAt: '2026-09-28',
+                source: 'user',
+                createdAt: T0,
+                updatedAt: T0,
+              },
+            ],
+          },
+    );
+    scanFrames.mockResolvedValue(page(posting));
+    await readTab(TAB, JOB);
+    const first = logApplication(TAB, JOB, true);
+    const second = logApplication(TAB, JOB, true);
+    const saving = saveJob(TAB, JOB);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    done(added);
+    await Promise.all([first, second, saving]);
+    expect(quickAddOrQueue).toHaveBeenCalledTimes(1);
   });
 });

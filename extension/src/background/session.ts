@@ -41,7 +41,10 @@ export interface TabSession {
   emails: string[];
   /** The address of the page that said the application went through: that page is the application's. */
   confirmedOn: string | null;
-  logged: { result: QuickAddResult; undone: boolean; manual: boolean } | null;
+  /** The sending whose confirmation was taken in (its `submittedAt`): loaded again, that page logs nothing more. */
+  takenIn: string | null;
+  /** `accountId`: the account it was logged for (none on logs made before 2026-10-14). */
+  logged: { result: QuickAddResult; undone: boolean; manual: boolean; accountId?: string | null } | null;
   saved: { result: QuickAddResult; undone: boolean } | null;
 }
 
@@ -75,6 +78,7 @@ export function emptySession(tabId: number, url: string): TabSession {
     captured: [],
     emails: [],
     confirmedOn: null,
+    takenIn: null,
     logged: null,
     saved: null,
   };

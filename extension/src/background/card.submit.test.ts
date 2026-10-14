@@ -88,7 +88,12 @@ describe('a submission the page confirms', () => {
         resumeId: 'r1',
       }),
     );
-    expect((await getSession(TAB))?.logged).toEqual({ result: added, undone: false, manual: false });
+    expect((await getSession(TAB))?.logged).toEqual({
+      result: added,
+      undone: false,
+      manual: false,
+      accountId: 'a1',
+    });
   });
 
   it('is logged wherever the page confirms it: its address needn’t be the posting’s', async () => {

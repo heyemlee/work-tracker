@@ -84,7 +84,8 @@ export interface CardState {
   /** Ashby and Workday merge candidates, so a second account on one posting shows up as a duplicate. */
   duplicateHint: boolean;
   checklist: ChecklistItem[];
-  logged: { result: QuickAddResult; undone: boolean; manual: boolean } | null;
+  /** `accountId`: the account it was logged for (none on logs made before 2026-10-14). */
+  logged: { result: QuickAddResult; undone: boolean; manual: boolean; accountId?: string | null } | null;
   /** Saved for later from this card: a job with no applications yet. */
   saved: { result: QuickAddResult; undone: boolean } | null;
   /** Whether Outbox already tracks this posting, and how far it got. */

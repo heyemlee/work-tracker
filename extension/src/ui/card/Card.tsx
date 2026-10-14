@@ -552,6 +552,8 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   const tabButton = useRef<HTMLButtonElement>(null);
   const asideButton = useRef<HTMLButtonElement>(null);
   const byHand = useRef(false);
+  // A log, a save or an undo on its way: a second press (a double click) waits for it instead of sending another.
+  const pressing = useRef(false);
   useEffect(() => {
     if (!byHand.current) return;
     byHand.current = false;
@@ -565,21 +567,22 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   // now (a step still on its way, the review before it's sent). The card is the application's on all of them.
   const applying = state.hasForm || state.applying;
 
-  const log = () =>
-    void toBackground('card:log', {})
+  const press = (type: 'card:log' | 'card:save' | 'card:undo') => {
+    if (pressing.current) return;
+    pressing.current = true;
+    void toBackground(type, {})
       .then((next) => {
         apply(next);
-        if (next?.logged) setLoggedHere(true);
+        if (type === 'card:log' && next?.logged) setLoggedHere(true);
       })
-      .catch(() => undefined);
-  const save = () =>
-    void toBackground('card:save', {})
-      .then(apply)
-      .catch(() => undefined);
-  const undo = () =>
-    void toBackground('card:undo', {})
-      .then(apply)
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => {
+        pressing.current = false;
+      });
+  };
+  const log = () => press('card:log');
+  const save = () => press('card:save');
+  const undo = () => press('card:undo');
   const close = (
     <button
       className="icon-button"
@@ -708,8 +711,13 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   };
   const drafting = state.phase === 'drafting';
   const linkedin = state.ats === 'linkedin';
+  // Once logged, the card offers it again for another account that hasn't applied yet: another account applying to
+  // the same posting from this tab.
+  const chosen = state.accounts.find((account) => account.id === state.accountId);
+  const another = chosen !== undefined && chosen.id !== state.logged?.accountId && chosen.appliedAt === null;
   const canLog =
-    (state.hasForm || linkedin || state.posting !== null) && (!state.logged || state.logged.undone);
+    (state.hasForm || linkedin || state.posting !== null) &&
+    (!state.logged || state.logged.undone || another);
 
   const years = state.match?.h1b?.years ?? [];
   const signalText = (signal: Signal) =>

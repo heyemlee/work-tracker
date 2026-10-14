@@ -324,6 +324,7 @@ export async function readTab(tabId: number, url: string, moved = false): Promis
       captured: samePosting ? current.captured : [],
       emails: samePosting ? current.emails : [],
       confirmedOn: ended ? url : samePosting ? current.confirmedOn : null,
+      takenIn: samePosting ? current.takenIn : null,
       // What went wrong with an application's log stays said on the page it ended on.
       error: ended ? current.error : null,
     };
@@ -659,7 +660,7 @@ export async function submitAttempt(
  * sent in a way the content script didn't see; for no other, since such a page can be opened without applying.
  */
 export function submitConfirmed(tabId: number, url: string): Promise<void> {
-  const taken = logConfirmed(tabId, url).finally(() => {
+  const taken = inTurn(tabId, () => logConfirmed(tabId, url)).finally(() => {
     if (confirming.get(tabId) === taken) confirming.delete(tabId);
   });
   confirming.set(tabId, taken);
@@ -668,14 +669,42 @@ export function submitConfirmed(tabId: number, url: string): Promise<void> {
 
 async function logConfirmed(tabId: number, url: string): Promise<void> {
   const session = await getSession(tabId);
-  if (!session || (session.logged && !session.logged.undone)) return;
+  if (!session) return;
   const sent = session.submittedAt !== null && Date.now() - Date.parse(session.submittedAt) < 15 * 60_000;
   const filledHere =
     session.plan.length > 0 && session.posting !== null && url.startsWith(session.posting.url);
   if (!sent && !filledHere) return;
+  // One log for each time a form is sent: a confirmation page loaded again says nothing new, whether its log went
+  // through, waits in the queue, or was taken back by the owner. Another sending (another account applying to the
+  // same posting) is logged in its turn.
+  const sending = sent ? session.submittedAt : `at ${linkKey(url)}`;
+  if (session.takenIn === sending) return;
+  // Logged by hand from the card before the form was sent: that's this application's log.
+  if (session.logged?.manual && !session.logged.undone) return;
   // From here on the page that said so is this application's, whenever the card reads it (`readTab`).
   await updateSession(tabId, url, () => ({ confirmedOn: url }));
-  await logApplication(tabId, url, false);
+  await logNow(tabId, url, false);
+  // Signed out, it's logged once the owner signs in and the page is loaded again; anything else is final.
+  if ((await getSession(tabId))?.error !== 'signedOut')
+    await updateSession(tabId, url, () => ({ takenIn: sending }));
+}
+
+/**
+ * What changes the tab's log, one at a time per tab: a double press on the card, a confirmation page loaded again
+ * while its log is on its way. Run at once, each would see nothing logged yet and log the same application.
+ */
+const turns = new Map<number, Promise<unknown>>();
+
+function inTurn<T>(tabId: number, task: () => Promise<T>): Promise<T> {
+  const before = turns.get(tabId) ?? Promise.resolve();
+  const run = before.catch(() => undefined).then(task);
+  turns.set(tabId, run);
+  void run
+    .catch(() => undefined)
+    .finally(() => {
+      if (turns.get(tabId) === run) turns.delete(tabId);
+    });
+  return run;
 }
 
 /**
@@ -694,7 +723,11 @@ function accountSent(session: TabSession, snapshot: Snapshot | null): string | n
 /** Why a log or a save didn't reach Outbox, where it wasn't queued: signed out, or turned down there. */
 const failure = (error: unknown) => (error instanceof OutboxSignedOut ? 'signedOut' : 'rejected');
 
-export async function logApplication(tabId: number, url: string, manual: boolean): Promise<CardState> {
+export function logApplication(tabId: number, url: string, manual: boolean): Promise<CardState> {
+  return inTurn(tabId, () => logNow(tabId, url, manual));
+}
+
+async function logNow(tabId: number, url: string, manual: boolean): Promise<CardState> {
   let session = (await getSession(tabId)) ?? (await updateSession(tabId, url, () => ({})));
   const posting = session.posting;
   if (!posting?.company) {
@@ -732,7 +765,7 @@ export async function logApplication(tabId: number, url: string, manual: boolean
   try {
     const result = await quickAddOrQueue(input);
     session = await updateSession(tabId, url, () => ({
-      logged: result ? { result, undone: false, manual } : null,
+      logged: result ? { result, undone: false, manual, accountId: session.accountId } : null,
       error: result ? null : 'queued',
       jobId: result?.jobId ?? session.jobId,
     }));
@@ -748,7 +781,11 @@ export async function logApplication(tabId: number, url: string, manual: boolean
  * Saves a posting for later: a job on Outbox with no applications, which shows as Saved there. A posting Outbox
  * already tracks isn't saved twice.
  */
-export async function saveJob(tabId: number, url: string): Promise<CardState> {
+export function saveJob(tabId: number, url: string): Promise<CardState> {
+  return inTurn(tabId, () => saveNow(tabId, url));
+}
+
+async function saveNow(tabId: number, url: string): Promise<CardState> {
   let session = (await getSession(tabId)) ?? (await updateSession(tabId, url, () => ({})));
   const posting = session.posting;
   if (!posting?.company) {
@@ -782,7 +819,11 @@ export async function saveJob(tabId: number, url: string): Promise<CardState> {
 }
 
 /** Takes back the card's last log, or else its save. */
-export async function undo(tabId: number, url: string): Promise<CardState> {
+export function undo(tabId: number, url: string): Promise<CardState> {
+  return inTurn(tabId, () => undoNow(tabId, url));
+}
+
+async function undoNow(tabId: number, url: string): Promise<CardState> {
   let session = await getSession(tabId);
   if (session?.logged && !session.logged.undone) {
     await undoQuickAdd(session.logged.result);

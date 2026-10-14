@@ -638,6 +638,14 @@ a posting there shows a note. It is a note, not a block.
   Workday the address under the posting's, `…/apply/…`, which tells before anything is drawn, or the
   application's own frame on the page) and the content script whether the page shows the button that sends it
   (`sends`). The card is the application's panel on all of them.
+- **Once each** (2026-10-14, after a review of the week's changes). A log is taken in once for each time a form is
+  sent (`takenIn` in the tab's session, the sending's `submittedAt`): the confirmation page loaded again logs nothing
+  more, whether its log went through, waits in the queue, or was taken back with Undo, which a reload used to
+  reverse; another sending from the same tab, another account applying to the same posting, is logged in its turn,
+  where it used to be left out because the tab had a log already, and the card offers its button again for an
+  account that hasn't applied. What changes a tab's log runs one at a time (`inTurn`): a double press on Mark as
+  applied, Save or Undo, two confirmations at once. Each of these had logged an application twice, and Outbox makes
+  a second job of a quick add with no job named.
 - **The queue** (`background/outbox.ts`). Only a log that can't reach Outbox waits in it; one Outbox turns down (a
   4xx other than 401, `OutboxRejected`) says so on the card ("rejected") instead. A queued log Outbox turns down, most
   likely for a resume version or an account deleted there since, goes again without the resume, then without the
