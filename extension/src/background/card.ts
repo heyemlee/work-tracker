@@ -295,11 +295,17 @@ export async function readTab(tabId: number, url: string, moved = false): Promis
     const samePage = current.url === url && current.step === found.step;
     // The page an application was seen to end on may be at another address and no posting: Workday takes the
     // applicant to their own home on the board. It is still that application's page, and the posting stands. So
-    // it is where that page goes on to another address without loading one, and nothing there is applied to.
-    const there =
+    // it is where the confirmation page goes on to another address without loading one, and nothing there is
+    // applied to: one step, not on along the board (the list of jobs, its filters) from there.
+    const at = (page: string | null) => page !== null && linkKey(page) === linkKey(url);
+    const leaving =
+      moved &&
       current.confirmedOn !== null &&
-      (linkKey(current.confirmedOn) === linkKey(url) || (moved && !found.hasForm && !found.applying));
-    const ended = there && !found.posting?.title;
+      current.leftTo === null &&
+      !at(current.confirmedOn) &&
+      !found.hasForm &&
+      !found.applying;
+    const ended = (at(current.confirmedOn) || at(current.leftTo) || leaving) && !found.posting?.title;
     // Another posting in this tab starts over; its confirmation page (same posting) keeps the log and its Undo.
     const samePosting =
       ended ||
@@ -323,7 +329,8 @@ export async function readTab(tabId: number, url: string, moved = false): Promis
       submittedAt: samePosting ? current.submittedAt : null,
       captured: samePosting ? current.captured : [],
       emails: samePosting ? current.emails : [],
-      confirmedOn: ended ? url : samePosting ? current.confirmedOn : null,
+      confirmedOn: samePosting ? current.confirmedOn : null,
+      leftTo: leaving && ended ? url : samePosting ? current.leftTo : null,
       takenIn: samePosting ? current.takenIn : null,
       // What went wrong with an application's log stays said on the page it ended on.
       error: ended ? current.error : null,

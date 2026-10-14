@@ -645,7 +645,9 @@ a posting there shows a note. It is a note, not a block.
   where it used to be left out because the tab had a log already, and the card offers its button again for an
   account that hasn't applied. What changes a tab's log runs one at a time (`inTurn`): a double press on Mark as
   applied, Save or Undo, two confirmations at once. Each of these had logged an application twice, and Outbox makes
-  a second job of a quick add with no job named.
+  a second job of a quick add with no job named. The page an application ended on gives its log to one page reached
+  from it without loading (Workday's candidate home, `leftTo`) and no further: from the home on to the list of jobs
+  and its filters the log and its Undo had followed the owner, and a closed card came back at each filter.
 - **The queue** (`background/outbox.ts`). Only a log that can't reach Outbox waits in it; one Outbox turns down (a
   4xx other than 401, `OutboxRejected`) says so on the card ("rejected") instead. A queued log Outbox turns down, most
   likely for a resume version or an account deleted there since, goes again without the resume, then without the

@@ -149,6 +149,26 @@ describe('the page an application ends on, at another address and no posting its
     });
   });
 
+  it('is the application’s one step on, and no further along the board', async () => {
+    await submitConfirmed(TAB, ENDED);
+    await readTab(TAB, ENDED);
+    await readTab(TAB, `${BOARD}/userHome`, true);
+    // "Search for Jobs" from the home, then a filter: the list is no application's, and the card has no log there.
+    const list = await readTab(TAB, BOARD, true);
+    expect(list.posting).toBeNull();
+    expect(list.logged).toBeNull();
+    expect((await readTab(TAB, `${BOARD}?locations=abc`, true)).logged).toBeNull();
+    // Nor when the list is loaded again.
+    expect((await readTab(TAB, `${BOARD}?locations=abc`)).logged).toBeNull();
+  });
+
+  it('is the application’s when the card reads it only after it gave way to the home', async () => {
+    // The card's first reading of the page it ended on is still on its way as the board moves to the home.
+    await submitConfirmed(TAB, ENDED);
+    const moved = await readTab(TAB, `${BOARD}/userHome`, true);
+    expect(moved.logged).toEqual({ result: added, undone: false, manual: false, accountId: 'a1' });
+  });
+
   it('is not at another address the tab loads', async () => {
     await submitConfirmed(TAB, ENDED);
     await readTab(TAB, ENDED);

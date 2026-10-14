@@ -41,6 +41,11 @@ export interface TabSession {
   emails: string[];
   /** The address of the page that said the application went through: that page is the application's. */
   confirmedOn: string | null;
+  /**
+   * The page the confirmation page gave way to without one loading (Workday's candidate home): the application's
+   * too, and the last one that is. Going on from there, the owner has left the application.
+   */
+  leftTo: string | null;
   /** The sending whose confirmation was taken in (its `submittedAt`): loaded again, that page logs nothing more. */
   takenIn: string | null;
   /** `accountId`: the account it was logged for (none on logs made before 2026-10-14). */
@@ -78,6 +83,7 @@ export function emptySession(tabId: number, url: string): TabSession {
     captured: [],
     emails: [],
     confirmedOn: null,
+    leftTo: null,
     takenIn: null,
     logged: null,
     saved: null,
