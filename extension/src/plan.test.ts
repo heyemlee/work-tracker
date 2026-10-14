@@ -90,6 +90,29 @@ describe('a field the form names itself, with nothing for it in the profile', ()
   });
 });
 
+describe('an answer AI wrote last time, sent as it was', () => {
+  const often: ScannedField = { ...whyUs(false), label: 'How often do you use our product?', kind: 'text' };
+  const entry = {
+    key: memoryKey(often),
+    label: often.label,
+    answer: { type: 'text' as const, text: 'Weekly' },
+    uses: 1,
+    updatedAt: '2026-10-06T00:00:00.000Z',
+  };
+
+  it('is AI’s still: a draft to check, said to be AI’s', () => {
+    expect(planForm([often], ctx, [{ ...entry, byAi: true }])[0]).toMatchObject({
+      status: 'draft',
+      answer: { type: 'text', text: 'Weekly' },
+      source: 'ai',
+    });
+  });
+
+  it('is the owner’s once they wrote it', () => {
+    expect(planForm([often], ctx, [entry])[0]).toMatchObject({ status: 'filled', source: 'memory' });
+  });
+});
+
 describe('what was typed in a field last time, beside a rule for it', () => {
   // A site that doesn't name its fields: the email is known by its label alone.
   const email: ScannedField = { ...whyUs(false), label: 'Email', kind: 'email', required: true };

@@ -73,7 +73,7 @@ export function startContent(): () => void {
     const fields: Record<string, Held> = {};
     for (const [id, handle] of extraction.handles) {
       const now = heldBy(handle);
-      if (now) fields[id] = now;
+      if (now) fields[id] = now.filled && ours(handle) ? { ...now, ours: true } : now;
     }
     return fields;
   };

@@ -138,6 +138,8 @@ export interface FrameScan {
 export interface Held {
   filled: boolean;
   value?: string;
+  /** It holds what this extension wrote there, not something the owner put in its place; left out when not. */
+  ours?: true;
 }
 
 /** A frame's fields as its content script last saw them, and when by the page's clock. */

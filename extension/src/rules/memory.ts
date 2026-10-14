@@ -9,6 +9,8 @@ export interface MemoryEntry {
   answer: Answer;
   uses: number;
   updatedAt: string;
+  /** AI wrote it, and the owner sent it as it was: it's AI's answer still, to check, not the owner's. */
+  byAi?: boolean;
 }
 
 /**
@@ -33,7 +35,7 @@ export function remember(
   field: ScannedField,
   answer: Answer,
   now: string,
-  limit = 500,
+  { byAi = false, limit = 500 }: { byAi?: boolean; limit?: number } = {},
 ): MemoryEntry[] {
   const key = memoryKey(field);
   const previous = memory.find((entry) => entry.key === key);
@@ -43,6 +45,7 @@ export function remember(
     answer,
     uses: (previous?.uses ?? 0) + 1,
     updatedAt: now,
+    ...(byAi ? { byAi } : {}),
   };
   const rest = memory.filter((item) => item.key !== key);
   const next = [entry, ...rest];

@@ -350,7 +350,7 @@ describe('the checklist', () => {
     const seen = async (
       tab: number,
       at: number,
-      fields: Record<string, { filled: boolean; value?: string }>,
+      fields: Record<string, { filled: boolean; value?: string; ours?: true }>,
     ) => {
       await pageHolds(tab, URL_, 0, { at, fields });
       const { checklist } = await cardState((await getSession(tab))!);
@@ -390,6 +390,24 @@ describe('the checklist', () => {
       expect(await seen(tab, FILLED_AT + 2, { '0:office': { filled: false } })).toMatchObject({
         'Preferred office': ['missing', null],
         'First Name': ['filled', 'Alex'],
+      });
+    });
+
+    it('says AI wrote an answer while it stands, and no more once the owner writes over it', async () => {
+      await filled(tab);
+      await updateSession(tab, URL_, (current) => ({
+        plan: current.plan.map((entry) =>
+          entry.fieldId === '0:used'
+            ? { ...entry, status: 'draft', answer: { type: 'text', text: 'Weekly' }, source: 'ai' }
+            : entry,
+        ),
+        results: { ...current.results, '0:used': left('Weekly') },
+      }));
+      expect(
+        await seen(tab, FILLED_AT + 1, { '0:used': { filled: true, value: 'Weekly', ours: true } }),
+      ).toMatchObject({ 'Have you used Arcadia?': ['draft', 'Weekly'] });
+      expect(await seen(tab, FILLED_AT + 2, { '0:used': { filled: true, value: 'Never' } })).toMatchObject({
+        'Have you used Arcadia?': ['filled', 'Never'],
       });
     });
 

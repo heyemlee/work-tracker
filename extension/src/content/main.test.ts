@@ -424,7 +424,7 @@ describe('what the form holds, told as it changes', () => {
     });
 
     await vi.waitFor(() =>
-      expect(told().at(-1)?.fields[email]).toEqual({ filled: true, value: 'alex@example.com' }),
+      expect(told().at(-1)?.fields[email]).toEqual({ filled: true, value: 'alex@example.com', ours: true }),
     );
     // Nothing was told of the form half filled.
     expect(told()).toHaveLength(1);

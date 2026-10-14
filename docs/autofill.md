@@ -251,7 +251,12 @@ Each field goes through four layers and stops at the first that places it:
    that only proposes an answer to confirm, or has none (until 2026-10-14 memory came before every rule, so on a
    site that doesn't name its fields an email typed once filled the email field whichever account the card had
    chosen). A rule's answer the owner left as it was isn't remembered: the page and the plan are compared by the
-   option picked, not by how the plan wanted it (a "no" read back as "No").
+   option picked, not by how the plan wanted it (a "no" read back as "No"). AI's answer the owner sent as AI left
+   it is remembered as AI's (`byAi`): filled again, it's a draft marked AI on the card, to check, never "your
+   answer" (until 2026-10-14 it came back as the owner's own, unmarked; the owner's call that day was that the card
+   say so every time). Once the owner writes over it, by hand after a fill or before sending, it's theirs: the
+   after-fill list drops the AI mark as the field changes (the content script says which fields still hold what it
+   wrote, `ours`).
 4. **AI fallback** — the remaining fields, as text (label, kind, options), go to Claude in one request per form.
    Below a confidence threshold the field stays blank.
 

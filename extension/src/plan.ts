@@ -81,13 +81,27 @@ export function planField(
   };
 }
 
-/** What the owner typed for this question last time, as an answer to fill; null when nothing was kept. */
+/**
+ * What the owner typed for this question last time, as an answer to fill; null when nothing was kept. AI's answer
+ * the owner sent as it was is AI's still: a draft, marked as AI's, to be checked.
+ */
 function recalled(
   memory: readonly MemoryEntry[],
   field: ScannedField,
 ): { resolution: Resolution; source: Source } | null {
   const remembered = recall(memory, field);
   if (!remembered) return null;
+  if (remembered.byAi)
+    return {
+      resolution: {
+        status: 'draft',
+        answer: remembered.answer,
+        key: 'ai',
+        note: 'AI’s answer last time',
+        critical: false,
+      },
+      source: 'ai',
+    };
   return {
     resolution: {
       status: 'filled',

@@ -334,7 +334,9 @@ describe('gem: filling again once the resume was taken out or put in by hand', (
     const first = await fill(ask);
     expect(first.result).toMatchObject({ ok: true, value: 'Alex_Chen_Resume.pdf' });
     expect(resume.shown()).toBe('Alex_Chen_Resume.pdf');
-    await vi.waitFor(() => expect(told(first.id)).toEqual({ filled: true, value: 'Alex_Chen_Resume.pdf' }));
+    await vi.waitFor(() =>
+      expect(told(first.id)).toEqual({ filled: true, value: 'Alex_Chen_Resume.pdf', ours: true }),
+    );
     // The same resume asked for again while Gem holds it: it's there, and isn't put in a second time.
     await fill(ask);
     expect(resume.attached()).toBe(1);
@@ -347,7 +349,9 @@ describe('gem: filling again once the resume was taken out or put in by hand', (
     expect(again.result).toMatchObject({ ok: true, value: 'Alex_Chen_Resume.pdf' });
     expect(resume.attached()).toBe(2);
     expect(resume.shown()).toBe('Alex_Chen_Resume.pdf');
-    await vi.waitFor(() => expect(told(first.id)).toEqual({ filled: true, value: 'Alex_Chen_Resume.pdf' }));
+    await vi.waitFor(() =>
+      expect(told(first.id)).toEqual({ filled: true, value: 'Alex_Chen_Resume.pdf', ours: true }),
+    );
 
     // Another resume chosen on the card takes its place, once: what Gem shows by then is this script's own.
     expect((await fill(ask, 'res-2')).result?.value).toBe('Alex_Chen_Resume_AI.pdf');

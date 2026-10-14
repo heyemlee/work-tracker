@@ -260,3 +260,46 @@ describe('what a sent form teaches for next time', () => {
     expect((await memoryItem.getValue()).map((entry) => entry.answer)).toMatchObject([{ option: 'Yes' }]);
   });
 });
+
+describe('an answer AI wrote, as the form is sent', () => {
+  const often: ScannedField = {
+    id: '0:often',
+    label: 'How often do you use our product?',
+    description: '',
+    kind: 'text',
+    options: [],
+    required: true,
+    hint: null,
+    section: '',
+    entry: null,
+    filled: true,
+    maxLength: null,
+  };
+  const drafted: PlannedField = {
+    fieldId: often.id,
+    status: 'draft',
+    answer: { type: 'text', text: 'Weekly' },
+    source: 'ai',
+    key: 'ai',
+    note: null,
+    critical: false,
+  };
+  const sent = (text: string) => [{ fieldId: often.id, answer: { type: 'text' as const, text } }];
+
+  beforeEach(async () => {
+    await memoryItem.setValue([]);
+    await updateSession(TAB, URL_, () => ({ fields: [often], plan: [drafted] }));
+  });
+
+  it('is remembered as AI’s when it went as AI wrote it', async () => {
+    await submitAttempt(TAB, URL_, sent('Weekly'), []);
+    expect(await memoryItem.getValue()).toMatchObject([{ answer: { text: 'Weekly' }, byAi: true }]);
+  });
+
+  it('is the owner’s when they wrote over it', async () => {
+    await submitAttempt(TAB, URL_, sent('Daily'), []);
+    const [kept] = await memoryItem.getValue();
+    expect(kept).toMatchObject({ answer: { text: 'Daily' } });
+    expect(kept?.byAi).toBeUndefined();
+  });
+});

@@ -120,6 +120,9 @@ const STATUS_ORDER: Record<PlannedField['status'], number> = {
  * did fill keeps its standing (an answer to check stays one) and shows what it holds now.
  */
 function follow(item: ChecklistItem, now: Held): ChecklistItem {
+  // AI's answer the owner wrote over by hand is theirs: it no longer says AI.
+  if (now.filled && item.source === 'ai' && !now.ours)
+    return { ...item, status: 'filled', source: null, value: now.value ?? null };
   if (now.filled)
     return isDone(item)
       ? { ...item, value: now.value ?? item.value }
@@ -628,8 +631,8 @@ function sameAnswer(planned: Answer | null, held: Answer): boolean {
 }
 
 /**
- * What the owner typed where the rules had nothing, remembered for the same question next time; AI drafts they
- * rewrote, kept as examples of their voice. Work-authorization and EEO answers are never remembered.
+ * What the owner typed where the rules had nothing, remembered for the same question next time, and AI's answers
+ * sent as they were, remembered as AI's; AI drafts they rewrote, kept as examples of their voice. Work-authorization and EEO answers are never remembered.
  */
 async function learn(session: TabSession, captured: CapturedAnswer[]): Promise<void> {
   const fields = new Map(session.fields.map((field) => [field.id, field]));
@@ -655,7 +658,11 @@ async function learn(session: TabSession, captured: CapturedAnswer[]): Promise<v
     }
     if (entry.source === 'rule' && sameAnswer(entry.answer, answer)) continue;
     if (entry.source === 'rule' && entry.status === 'filled' && entry.answer) continue;
-    memory = remember(memory, field, answer, now);
+    // AI's answer sent as AI left it is remembered as AI's: next time it says so and waits to be checked. Changed by
+    // the owner, it's theirs.
+    memory = remember(memory, field, answer, now, {
+      byAi: entry.source === 'ai' && sameAnswer(entry.answer, answer),
+    });
   }
   await memoryItem.setValue(memory);
   await finalsItem.setValue(finals.slice(0, 200));
