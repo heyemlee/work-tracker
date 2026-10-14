@@ -134,6 +134,19 @@ export function holdsPicks(handle: Handle): boolean {
   return (handle.type === 'combobox' || handle.type === 'typeahead') && chipsOf(handle.element).length > 0;
 }
 
+/**
+ * The button of a group that stands pressed: it says so (Ashby's Yes/No), or its class does, as a rating's number
+ * does on Gem, "selected" and nothing else.
+ */
+export function pressed(button: Element): boolean {
+  return (
+    button.getAttribute('aria-pressed') === 'true' ||
+    button.getAttribute('aria-checked') === 'true' ||
+    // Not "unselected", nor Gem's "interactiveButton", which every button of a rating carries.
+    /(?<![a-z])(selected|active)/.test(button.className)
+  );
+}
+
 /** The field holds something: the page filled it in, or the owner did. */
 export function isFilled(handle: Handle): boolean {
   switch (handle.type) {
@@ -178,13 +191,7 @@ export function isFilled(handle: Handle): boolean {
           ?.querySelector('[data-automation-id="selectedItem"]'),
       );
     case 'buttons':
-      return handle.buttons.some(
-        (button) =>
-          button.getAttribute('aria-pressed') === 'true' ||
-          button.getAttribute('aria-checked') === 'true' ||
-          // Not "unselected", nor Gem's "interactiveButton", which every button of a rating carries.
-          /(?<![a-z])(selected|active)/.test(button.className),
-      );
+      return handle.buttons.some(pressed);
   }
 }
 

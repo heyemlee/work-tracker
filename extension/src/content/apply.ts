@@ -5,7 +5,7 @@ import { clean, findOption, norm } from '../text';
 import type { Handle } from './adapters/types';
 import { holdsChoice } from './adapters/workday';
 import { sleep, textOf, waitFor } from './dom';
-import { chipsOf, pickBox } from './extract';
+import { chipsOf, pickBox, pressed } from './extract';
 import {
   clickLikeAPerson,
   closeCombobox,
@@ -157,7 +157,7 @@ export async function applyAnswer(
         const at = want ? choiceAt(labels, want, answer.type === 'choice' ? answer.option : null, read) : -1;
         const button = handle.buttons[at];
         if (!button) return { ok: false, error: 'no matching option' };
-        if (button.getAttribute('aria-pressed') !== 'true') clickLikeAPerson(button);
+        if (!pressed(button)) clickLikeAPerson(button);
         return { ok: true, value: labels[at] ?? '' };
       }
 
@@ -323,7 +323,7 @@ export function readAnswer(handle: Handle, read?: readonly string[]): Answer | n
       return { type: 'choice', want: { kind: 'like', texts: [label] }, option: label };
     }
     case 'buttons': {
-      const at = handle.buttons.findIndex((item) => item.getAttribute('aria-pressed') === 'true');
+      const at = handle.buttons.findIndex(pressed);
       if (at < 0) return null;
       const label = asRead(
         handle.buttons.map((button) => textOf(button)),

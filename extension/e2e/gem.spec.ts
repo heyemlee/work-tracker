@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { fixture, seed, serve, test } from './harness';
 
 const POSTING = 'https://jobs.gem.com/acme-robotics/am9icG9zdDr2DjIQ3bPcrRLp0z2TjYKi';
@@ -6,8 +6,9 @@ const POSTING = 'https://jobs.gem.com/acme-robotics/am9icG9zdDr2DjIQ3bPcrRLp0z2T
 /**
  * Stands in for Gem's own script where the saved page needs it. Round an upload, as its page was seen to behave: a
  * file the input takes is named over the box a moment later, beside a ✕ that forgets it while the input keeps its
- * own, and a file dropped onto the box is named without the input ever holding it. At the end: either button
- * sends the application, and the form gives way to the confirmation, on the same address.
+ * own, and a file dropped onto the box is named without the input ever holding it. A rating's number shows it's
+ * pressed by its classes alone, as Gem's own code draws it. At the end: either button sends the application, and
+ * the form gives way to the confirmation, on the same address.
  */
 const GEM = `<script>
   for (const box of document.querySelectorAll('[class*="formContainer"] [role="presentation"]')) {
@@ -33,6 +34,19 @@ const GEM = `<script>
       setTimeout(() => holds(name), 3);
     });
     box.addEventListener('drop', (event) => holds(event.dataTransfer.files[0]?.name));
+  }
+  // A rating's number, pressed, turns "primary" and "selected", and the one pressed before goes back to "secondary".
+  for (const group of document.querySelectorAll('[class*="inputGroup-"]')) {
+    const buttons = [...group.querySelectorAll('button')];
+    for (const button of buttons)
+      button.addEventListener('click', () => {
+        for (const other of buttons) {
+          other.classList.replace('primary-132', 'secondary-133');
+          other.classList.remove('selected');
+        }
+        button.classList.replace('secondary-133', 'primary-132');
+        button.classList.add('selected');
+      });
   }
   for (const button of document.querySelectorAll('button[type="submit"]'))
     button.addEventListener('click', () => {
@@ -186,4 +200,80 @@ test('goes by what Gem shows of the resume: taken out at its ✕, it’s asked f
   await expect(named).toHaveText('Dropped_By_Hand.pdf');
   await expect(done).toContainText('Dropped_By_Hand.pdf');
   expect(await inInput()).toBe('Alex_Chen_Resume.pdf');
+});
+
+test('remembers a rating pressed by hand once the form is sent, and presses it the next time', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  await serve(context, 'jobs.gem.com', formPage(), '');
+  const QUESTION = 'How would you rate your Python?';
+  // The rating's numbers, and the ones Gem draws as pressed.
+  const numbers = (page: Page) =>
+    page.locator(
+      `xpath=//span[starts-with(normalize-space(.), "${QUESTION}")]/parent::div/following-sibling::div//button`,
+    );
+  const pressed = (page: Page) =>
+    numbers(page).evaluateAll((buttons) =>
+      buttons.filter((button) => button.classList.contains('selected')).map((button) => button.textContent),
+    );
+  // A press of the owner's: the card lies over part of the form, and the press is meant for the page.
+  const press = (page: Page, number: string) =>
+    numbers(page).getByText(number, { exact: true }).dispatchEvent('click');
+  const fillAgain = async (page: Page) => {
+    const card = page.locator('outbox-autofill');
+    const bar = card.getByRole('progressbar', { name: /^(Reading the page|Filling)$/ });
+    await card.getByRole('button', { name: 'Fill again' }).click();
+    await expect(bar).toBeVisible();
+    await expect(bar).toBeHidden({ timeout: 45_000 });
+  };
+  const remembered = () =>
+    worker.evaluate(async () => {
+      const { chrome } = globalThis as unknown as {
+        chrome: { storage: { local: { get(key: string): Promise<{ memory?: unknown[] }> } } };
+      };
+      return (await chrome.storage.local.get('memory')).memory ?? [];
+    });
+
+  const page = await context.newPage();
+  await page.goto(POSTING);
+  const card = page.locator('outbox-autofill');
+  await card.getByRole('button', { name: /^Fill/ }).click();
+  await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });
+  // Nothing knows the answer: the owner gives it.
+  await expect(card.getByTitle(`Fill: ${QUESTION}`)).toBeVisible();
+  expect(await pressed(page)).toEqual([]);
+  await press(page, '4');
+  // The card's list follows, with the number.
+  await expect(card.getByTitle(QUESTION, { exact: true })).toContainText('4');
+  await fillAgain(page);
+  expect(await pressed(page)).toEqual(['4']);
+  await expect(card.getByTitle(QUESTION, { exact: true })).toContainText('4');
+
+  await page.getByRole('button', { name: 'Apply without saving' }).click();
+  await expect.poll(remembered, { timeout: 15_000 }).toContainEqual(
+    expect.objectContaining({
+      label: QUESTION,
+      answer: expect.objectContaining({ type: 'choice', option: '4' }),
+    }),
+  );
+
+  // The same question on the next visit: the owner's number goes in, and stays through "Fill again".
+  const next = await context.newPage();
+  await next.goto(POSTING);
+  const nextCard = next.locator('outbox-autofill');
+  await nextCard.getByRole('button', { name: /^Fill/ }).click();
+  await expect(nextCard.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });
+  expect(await pressed(next)).toEqual(['4']);
+  await expect(nextCard.getByTitle(QUESTION, { exact: true })).toContainText('4');
+  await fillAgain(next);
+  expect(await pressed(next)).toEqual(['4']);
+  // Another number pressed by hand in its place is theirs: "Fill again" leaves it.
+  await press(next, '2');
+  await expect(nextCard.getByTitle(QUESTION, { exact: true })).toContainText('2');
+  await fillAgain(next);
+  expect(await pressed(next)).toEqual(['2']);
+  await expect(nextCard.getByTitle(QUESTION, { exact: true })).toContainText('2');
 });

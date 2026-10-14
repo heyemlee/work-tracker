@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
 import type { FrameHeld, FrameScan, PlannedField } from '../../model';
 import { loadFixture } from '../../test/fixtures';
+import { readAnswer } from '../apply';
 import { textOf } from '../dom';
 import { extractFields } from '../extract';
 import { heldBy } from '../held';
@@ -131,6 +132,23 @@ describe('gem', () => {
       'How would you rate your Python?',
       'Gender',
     ]);
+  });
+
+  it('reads a pressed rating as its number, for remembering it and for the card’s list', () => {
+    const doc = page();
+    const { handles, fields } = extractFields(gem, doc, 0);
+    const rating = handles.get(
+      fields.find((field) => field.label === 'How would you rate your Python?')!.id,
+    )!;
+    if (rating.type !== 'buttons') throw new Error('not the widget expected');
+    expect(readAnswer(rating)).toBeNull();
+
+    // As Gem's own code draws a press: no aria-pressed, the number "primary" and "selected" alone.
+    const four = rating.buttons[3]!;
+    four.classList.replace('secondary-133', 'primary-132');
+    four.classList.add('selected');
+    expect(readAnswer(rating)).toEqual({ type: 'choice', want: { kind: 'like', texts: ['4'] }, option: '4' });
+    expect(heldBy(rating)).toEqual({ filled: true, value: '4' });
   });
 
   it('takes either of its two buttons for the one that sends the application', () => {
