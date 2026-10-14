@@ -139,7 +139,9 @@ function companySlug(host: string, segments: string[], url: URL): string | null 
     return segments[0] ?? null;
   }
   if (isUnder(host, 'myworkdaysite.com')) {
-    return segments[0] === 'recruiting' ? (segments[1] ?? null) : null;
+    // /recruiting/<company>/…, behind the page's language where it names one: /en-US/recruiting/<company>/…
+    const at = /^[a-z]{2}(-[a-z]{2})?$/i.test(segments[0] ?? '') ? 1 : 0;
+    return segments[at] === 'recruiting' ? (segments[at + 1] ?? null) : null;
   }
   const board = SUBDOMAIN_BOARDS.find((domain) => host.endsWith(`.${domain}`));
   if (board) {

@@ -21,6 +21,7 @@ describe('parsePosting', () => {
     ['https://jobs.smartrecruiters.com/Visa/744000081234567-software-engineer', 'Visa'],
     ['https://nvidia.wd5.myworkdayjobs.com/en-US/NVIDIAExternalCareerSite/job/Santa-Clara/X_JR1', 'nvidia'],
     ['https://wd1.myworkdaysite.com/recruiting/snapchat/snap/job/Palo-Alto/X_R1', 'snapchat'],
+    ['https://wd1.myworkdaysite.com/en-US/recruiting/snapchat/snap/job/Palo-Alto/X_R1', 'snapchat'],
     ['https://careers-acme.icims.com/jobs/1234/software-engineer/job', 'acme'],
     ['https://acme.notion.site/Founding-Engineer-1a2b3c4d5e6f', 'acme'],
     ['https://www.metacareers.com/jobs/1234567890/', 'meta'],
