@@ -40,7 +40,7 @@ export function pickOption(options: readonly string[], want: Want): string | nul
     case 'range':
       return pickRange(options, want.value);
     case 'eeo':
-      return pickEeoOption(options, want.field, want.value);
+      return pickEeoOption(options, want.field, want.value, want.hispanic);
     case 'auth':
       return pickAuthOption(options, want.question);
   }

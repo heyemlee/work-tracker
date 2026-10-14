@@ -27,7 +27,10 @@ export function eeoWant(field: EeoField, profile: Profile): Want {
     orientation: eeo.orientation,
     transgender: 'decline',
   };
-  return { kind: 'eeo', field, value: value[field] };
+  // Some lists ask race and Hispanic origin at once (Workday's "Ethnicity": "Hispanic or Latino" beside
+  // "White (Not Hispanic or Latino)"): there a yes to Hispanic is the answer.
+  const hispanic = field === 'race' && eeo.hispanic === 'yes';
+  return { kind: 'eeo', field, value: value[field], ...(hispanic ? { hispanic: true as const } : {}) };
 }
 
 const RACE: Record<string, RegExp> = {
@@ -47,7 +50,12 @@ const ORIENTATION: Record<string, RegExp> = {
 };
 
 /** The option for an EEO answer; "decline" picks whichever wording the form uses for it. */
-export function pickEeoOption(options: readonly string[], field: EeoField, value: string): string | null {
+export function pickEeoOption(
+  options: readonly string[],
+  field: EeoField,
+  value: string,
+  hispanic = false,
+): string | null {
   const find = (test: (text: string) => boolean) => options.find((option) => test(norm(option))) ?? null;
   if (value === 'decline') return find((text) => DECLINE.test(text) || /^i do not want to answer/.test(text));
   switch (field) {
@@ -63,6 +71,13 @@ export function pickEeoOption(options: readonly string[], field: EeoField, value
       if (value === 'yes') return find((text) => leads(text, 'yes') || /^hispanic or latin/.test(text));
       return find((text) => leads(text, 'no') || /^not hispanic/.test(text));
     case 'race': {
+      const latino = hispanic
+        ? find(
+            (text) =>
+              /\b(hispanic|latin[oax])\b/.test(text) && !/\bnot hispanic\b/.test(text) && !DECLINE.test(text),
+          )
+        : null;
+      if (latino) return latino;
       const pattern = RACE[value];
       return pattern ? find((text) => pattern.test(text) && !DECLINE.test(text)) : null;
     }

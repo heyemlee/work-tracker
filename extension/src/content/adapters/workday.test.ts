@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import type { FrameScan, Want } from '../../model';
+import type { Answer, FrameScan, Want } from '../../model';
 import { planForm } from '../../plan';
 import { pickOption } from '../../rules/options';
 import { makeProfile } from '../../test/profiles';
@@ -399,6 +399,21 @@ describe('workday’s voluntary questions, from the owner’s reports', () => {
     // "Yes" stands before "No", and can't be pressed while "No" is ticked.
     expect(await applyAnswer(handle, want('yes'), noFile)).toMatchObject({ ok: true });
     expect(ticked()).toEqual(['Yes, I have a disability, or have had one in the past']);
+  });
+
+  it('says it ticked one box where a group takes one answer and two were asked for', async () => {
+    const { handles, byHint } = read(SELF_IDENTIFY);
+    oneAnswerOnly();
+    const handle = handles.get(byHint('eeo.disability').id)!;
+    const both: Answer = {
+      type: 'choices',
+      texts: ['No, I do not have a disability and have not had one in the past', 'I do not want to answer'],
+    };
+    expect(await applyAnswer(handle, both, noFile)).toEqual({
+      ok: true,
+      value: 'No, I do not have a disability and have not had one in the past',
+    });
+    expect(ticked()).toEqual(['No, I do not have a disability and have not had one in the past']);
   });
 
   it('says so when the box it wants can’t be ticked', async () => {

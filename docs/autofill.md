@@ -436,7 +436,9 @@ profile spells it, and taken from a list under whichever of its names the list h
 dropdown does (2026-10-08): one box, found while planning, and with no box that carries it the question is the
 owner's to fill, or AI's. Until then the plan held the profile's spelling and counted the question as filled, so on
 Stripe's form, whose boxes say "US", none was ticked. Tried on Greenhouse's own page code served locally, with a
-second fill and boxes changed by hand.
+second fill and boxes changed by hand. A name the list has as an option, whole, goes first; with none, only a full
+name is looked for among an option's words (2026-10-14): "America" is in "Latin America" and "U.S." in "U.S. Virgin
+Islands", and a short name found that way ticked a region or an island.
 
 **Workday's groups of boxes and its dates** (2026-10-09, from two reports on Palo Alto Networks' form, where the race
 boxes, the disability form's boxes and the date it's signed on had stayed empty). A group of boxes there is a fieldset
@@ -445,7 +447,11 @@ with no label in it: both were read without their question, so no rule knew them
 The adapter now reads each `…-CheckboxGroup` as one field, named by the legend of its own `formField-…` wrapper, with
 every box a choice — the disabled ones too: where a group takes one answer (the disability form's "check one"),
 Workday disables the other boxes while one is ticked. Workday's own names tell the voluntary ones whatever language
-the page is in: `ethnicityMulti`, `disabilityStatus`, and `dateSignedOn`, which it takes only as today's date. Ticks
+the page is in: `ethnicityMulti`, `disabilityStatus`, and `dateSignedOn`, which it takes only as today's date.
+`ethnicityMulti` asks race and Hispanic origin in one list ("Hispanic or Latino" beside "White (Not Hispanic or
+Latino)"): an applicant who is Hispanic or Latino is answered so there, where the race alone answered until
+2026-10-14 and said "Not Hispanic". A group that takes one answer, given two (by AI or a remembered answer), says it
+ticked the one it could, not both. Ticks
 that go are taken off before ticks that come are put on, since a box that's shut can't be pressed. A date is written
 into its three parts and the field is then left: Workday's form gets a date only as its field loses the focus, and
 until then shows it in the field alone, where the list would have called it filled. All of this is read from Workday's

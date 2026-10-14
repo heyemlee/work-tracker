@@ -181,3 +181,49 @@ describe('phone fields', () => {
     expect(plan('Ext.', false)?.answer).toBeNull();
   });
 });
+
+describe('the applicant’s country, from a list', () => {
+  const plan = (label: string, kind: FieldKind, options: string[]) =>
+    planForm(
+      [
+        {
+          id: '0:1',
+          label,
+          description: '',
+          kind,
+          options,
+          required: true,
+          hint: null,
+          section: '',
+          entry: null,
+          filled: false,
+          maxLength: null,
+        },
+      ],
+      {
+        profile: makeProfile(),
+        email: 'alex@example.com',
+        resumeId: null,
+        posting: null,
+        today: '2026-10-14',
+        appliedBefore: false,
+      },
+      [],
+    )[0];
+  const picked = (label: string, kind: FieldKind, options: string[]) => {
+    const answer = plan(label, kind, options)?.answer;
+    return answer?.type === 'choice' ? answer.option : null;
+  };
+  const WORK = 'Which countries will you work in?';
+
+  it('ticks no region that merely has "America" in it, nor an island with "U.S." in it', () => {
+    expect(picked(WORK, 'multi', ['APAC', 'EMEA', 'Latin America', 'North America'])).toBeNull();
+    expect(picked(WORK, 'multi', ['Canada', 'U.S. Virgin Islands'])).toBeNull();
+  });
+
+  it('takes any of the country’s names the list has as a whole, before one inside another', () => {
+    expect(picked(WORK, 'multi', ['UK', 'US', 'Canada'])).toBe('US');
+    expect(picked('Country', 'select', ['United States Minor Outlying Islands', 'USA'])).toBe('USA');
+    expect(picked('Country', 'select', ['Canada', 'United States (US)'])).toBe('United States (US)');
+  });
+});

@@ -205,7 +205,10 @@ export async function applyAnswer(
         const open = unique.filter((at) => handle.inputs[at]?.disabled === false);
         if (open.length === 0) return { ok: false, error: 'the box can’t be ticked' };
         for (const at of open) setChecked(handle.inputs[at] as HTMLInputElement, true);
-        return { ok: true, value: open.map((at) => labels[at]).join(', ') };
+        // What the boxes hold now: a group that takes one answer shuts the rest as the first is ticked.
+        const ticked = open.filter((at) => handle.inputs[at]?.checked);
+        if (ticked.length === 0) return { ok: false, error: 'the box can’t be ticked' };
+        return { ok: true, value: ticked.map((at) => labels[at]).join(', ') };
       }
 
       case 'combobox': {

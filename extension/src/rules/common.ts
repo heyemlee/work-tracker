@@ -218,12 +218,18 @@ function countryNames(country: string): string[] {
 
 /**
  * The applicant's country: typed, the profile's own spelling; from a list, the first of its names the list has,
- * a dropdown's options and a group of boxes alike.
+ * a dropdown's options and a group of boxes alike. A list that has none of them as an option is looked through
+ * for a full name as words of an option, never a short one: "America" is in "Latin America", "U.S." in "U.S. Virgin
+ * Islands", and neither is the country.
  */
 function ownCountry(key: string, field: ScannedField, ctx: RuleContext): Resolution {
   const country = ctx.profile.address.country;
   if (isTextKind(field.kind)) return text(key, field, country);
-  const [name = country, ...others] = countryNames(country);
+  const names = countryNames(country);
+  const named = field.options.find((option) => names.some((name) => norm(name) === norm(option)));
+  if (named) return text(key, field, named);
+  const full = field.options.length ? names.filter((name) => /\s/.test(name.trim())) : names;
+  const [name = country, ...others] = full.length ? full : [country];
   return text(key, field, name, others);
 }
 

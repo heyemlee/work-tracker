@@ -160,7 +160,8 @@ export type Want =
   | { kind: 'affirm' }
   /** Ranges like "3-5 years". */
   | { kind: 'range'; value: number }
-  | { kind: 'eeo'; field: EeoField; value: string }
+  /** `hispanic`: the applicant answered yes to Hispanic or Latino, which a list of races may offer among its own. */
+  | { kind: 'eeo'; field: EeoField; value: string; hispanic?: true }
   | { kind: 'auth'; question: AuthQuestion };
 
 export type EeoField =

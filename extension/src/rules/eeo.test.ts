@@ -58,3 +58,28 @@ describe('sexual orientation', () => {
     expect(eeoWant('orientation', profile)).toMatchObject({ value: 'heterosexual' });
   });
 });
+
+describe('a list that asks race and Hispanic origin at once', () => {
+  // Workday's "Ethnicity", as one list.
+  const ethnicity = [
+    'Hispanic or Latino (United States of America)',
+    'White (Not Hispanic or Latino) (United States of America)',
+    'Asian (Not Hispanic or Latino) (United States of America)',
+    'I do not wish to answer. (United States of America)',
+  ];
+
+  it('is answered Hispanic or Latino for an applicant who is', () => {
+    const profile = makeProfile();
+    const want = eeoWant('race', { ...profile, eeo: { ...profile.eeo, hispanic: 'yes', race: 'white' } });
+    expect(want.kind === 'eeo' && pickEeoOption(ethnicity, 'race', want.value, want.hispanic)).toBe(
+      'Hispanic or Latino (United States of America)',
+    );
+  });
+
+  it('is answered by race for an applicant who isn’t, and where the list has no Hispanic choice', () => {
+    expect(pickEeoOption(ethnicity, 'race', 'white')).toBe(
+      'White (Not Hispanic or Latino) (United States of America)',
+    );
+    expect(pickEeoOption(['White', 'Asian'], 'race', 'white', true)).toBe('White');
+  });
+});
