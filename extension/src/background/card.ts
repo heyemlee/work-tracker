@@ -691,6 +691,9 @@ function accountSent(session: TabSession, snapshot: Snapshot | null): string | n
   return only && named.length === 1 ? only.id : session.accountId;
 }
 
+/** Why a log or a save didn't reach Outbox, where it wasn't queued: signed out, or turned down there. */
+const failure = (error: unknown) => (error instanceof OutboxSignedOut ? 'signedOut' : 'rejected');
+
 export async function logApplication(tabId: number, url: string, manual: boolean): Promise<CardState> {
   let session = (await getSession(tabId)) ?? (await updateSession(tabId, url, () => ({})));
   const posting = session.posting;
@@ -734,8 +737,8 @@ export async function logApplication(tabId: number, url: string, manual: boolean
       jobId: result?.jobId ?? session.jobId,
     }));
     if (result && input.accountIds.length > 0) await loggedItem.setValue(true);
-  } catch {
-    session = await updateSession(tabId, url, () => ({ error: 'signedOut' }));
+  } catch (error) {
+    session = await updateSession(tabId, url, () => ({ error: failure(error) }));
   }
   await pushState(session);
   return cardState(session);
@@ -771,8 +774,8 @@ export async function saveJob(tabId: number, url: string): Promise<CardState> {
       error: result ? null : 'queued',
       jobId: result?.jobId ?? session.jobId,
     }));
-  } catch {
-    session = await updateSession(tabId, url, () => ({ error: 'signedOut' }));
+  } catch (error) {
+    session = await updateSession(tabId, url, () => ({ error: failure(error) }));
   }
   await pushState(session);
   return cardState(session);

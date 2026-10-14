@@ -18,6 +18,19 @@ export class OutboxUnreachable extends Error {
 }
 
 /**
+ * Outbox was reached and turned the request down (a 4xx other than 401): sent again as it is, it fails again, so
+ * it's no reason to wait and retry. Still "unreachable" to callers that only need to know nothing came back.
+ */
+export class OutboxRejected extends OutboxUnreachable {
+  readonly status: number;
+  constructor(status: number, detail: string) {
+    super(`${status} ${detail}`);
+    this.name = 'OutboxRejected';
+    this.status = status;
+  }
+}
+
+/**
  * Calls Outbox's API as the owner. The session cookie goes along first (the extension has host permission for
  * Outbox, so Chrome sends it); if Outbox still answers 401, the session token captured from an open Outbox tab is
  * sent as a bearer token instead.
@@ -45,6 +58,8 @@ async function send(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown
     throw new OutboxUnreachable(error);
   }
   if (response.status === 401) throw new OutboxSignedOut();
+  if (response.status >= 400 && response.status < 500)
+    throw new OutboxRejected(response.status, await response.text());
   if (!response.ok) throw new OutboxUnreachable(`${response.status} ${await response.text()}`);
   return response;
 }
@@ -81,14 +96,17 @@ export async function undoQuickAdd(result: QuickAddResult): Promise<void> {
   cached = null;
 }
 
-/** Logs, or queues the log when Outbox can't be reached, to send with the next successful call. */
+/**
+ * Logs, or queues the log when Outbox can't be reached, to send with the next successful call. A log Outbox turns
+ * down isn't queued: it would be turned down again.
+ */
 export async function quickAddOrQueue(input: QuickAddInput): Promise<QuickAddResult | null> {
   try {
     const result = await quickAdd(input);
     void flushQueue();
     return result;
   } catch (error) {
-    if (error instanceof OutboxSignedOut) throw error;
+    if (error instanceof OutboxSignedOut || error instanceof OutboxRejected) throw error;
     const queue = await pendingLogsItem.getValue();
     await pendingLogsItem.setValue([
       ...queue,
@@ -98,20 +116,66 @@ export async function quickAddOrQueue(input: QuickAddInput): Promise<QuickAddRes
   }
 }
 
-/** Sends queued logs, oldest first, stopping at the first failure. */
-export async function flushQueue(): Promise<number> {
-  const queue = await pendingLogsItem.getValue();
-  let sent = 0;
-  for (const entry of queue) {
+/**
+ * A queued log Outbox turns down most likely names what was deleted there since it was queued: a resume version, an
+ * account. It goes again without the resume, then without the accounts (the job is still saved); turned down even
+ * so, it's dropped, and no longer holds up the logs queued after it.
+ */
+async function sendQueued(input: QuickAddInput): Promise<void> {
+  const tries = [
+    input,
+    ...(input.resumeId ? [{ ...input, resumeId: null }] : []),
+    ...(input.accountIds.length ? [{ ...input, resumeId: null, accountIds: [] }] : []),
+  ];
+  for (const attempt of tries) {
     try {
-      await quickAdd(entry.input);
-      sent++;
-    } catch {
-      break;
+      await quickAdd(attempt);
+      return;
+    } catch (error) {
+      if (!(error instanceof OutboxRejected)) throw error;
     }
   }
-  if (sent > 0) await pendingLogsItem.setValue((await pendingLogsItem.getValue()).slice(sent));
-  return sent;
+}
+
+let flushing: Promise<number> | null = null;
+let flushAgain = false;
+
+/**
+ * Sends queued logs, oldest first, stopping at the first that can't reach Outbox. One flush runs at a time: asked
+ * for while one runs, it runs once more after it, for what was queued meanwhile. Two at once would send each log
+ * twice, and Outbox would take the second for another job.
+ */
+export function flushQueue(): Promise<number> {
+  if (flushing) {
+    flushAgain = true;
+    return flushing;
+  }
+  flushing = (async () => {
+    let total = 0;
+    do {
+      flushAgain = false;
+      const queue = await pendingLogsItem.getValue();
+      const done = new Set<string>();
+      for (const entry of queue) {
+        try {
+          await sendQueued(entry.input);
+          done.add(entry.id);
+        } catch {
+          break;
+        }
+      }
+      if (done.size > 0)
+        await pendingLogsItem.setValue(
+          (await pendingLogsItem.getValue()).filter((entry) => !done.has(entry.id)),
+        );
+      total += done.size;
+      if (done.size < queue.length) break;
+    } while (flushAgain);
+    return total;
+  })().finally(() => {
+    flushing = null;
+  });
+  return flushing;
 }
 
 /**

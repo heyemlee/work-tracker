@@ -638,6 +638,12 @@ a posting there shows a note. It is a note, not a block.
   Workday the address under the posting's, `…/apply/…`, which tells before anything is drawn, or the
   application's own frame on the page) and the content script whether the page shows the button that sends it
   (`sends`). The card is the application's panel on all of them.
+- **The queue** (`background/outbox.ts`). Only a log that can't reach Outbox waits in it; one Outbox turns down (a
+  4xx other than 401, `OutboxRejected`) says so on the card ("rejected") instead. A queued log Outbox turns down, most
+  likely for a resume version or an account deleted there since, goes again without the resume, then without the
+  account, then is dropped: it used to stop every flush, so nothing queued after it was ever sent. One flush runs
+  at a time, and one asked for meanwhile runs after it: two at once (the settings' Connection section starts one as
+  it opens) sent each log twice.
 - **Which account.** The one whose email the form held as it was sent, whichever the card had chosen: the owner may
   have typed another's, or the site or another tool put one there. The emails are read from the form at the press
   of Submit (`emailsIn`), not from an earlier reading of it, which a page that has drawn its fields anew since would
