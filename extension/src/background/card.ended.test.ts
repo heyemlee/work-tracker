@@ -169,6 +169,20 @@ describe('the page an application ends on, at another address and no posting its
     expect(moved.logged).toEqual({ result: added, undone: false, manual: false, accountId: 'a1' });
   });
 
+  it('logs an application sent without an account, read before its page says so', async () => {
+    // Workday moves in place to the board with the application's id, and draws its note a moment later: the card
+    // reads the page in between.
+    const GUEST = `${BOARD}?Job_Application_ID=abc`;
+    const between = await readTab(TAB, GUEST, true);
+    expect(between.posting).toMatchObject({ title: 'Software Engineer' });
+    expect(between).toMatchObject({ applying: true, logged: null });
+    await submitConfirmed(TAB, GUEST);
+    expect(quickAddOrQueue).toHaveBeenCalledOnce();
+    expect(quickAddOrQueue).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Software Engineer', url: JOB }),
+    );
+  });
+
   it('is not at another address the tab loads', async () => {
     await submitConfirmed(TAB, ENDED);
     await readTab(TAB, ENDED);

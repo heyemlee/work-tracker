@@ -242,6 +242,9 @@ export async function pushState(session: TabSession, outbox?: OutboxState): Prom
  */
 const confirming = new Map<number, Promise<void>>();
 
+/** How long after a form is sent a page of no posting is taken for the page its confirmation will come on. */
+const AWAITING_MS = 2 * 60_000;
+
 /**
  * Reads the tab: the posting, its form, the match check, which accounts applied. `moved` when the page gave way
  * to another without loading one.
@@ -310,20 +313,38 @@ export async function readTab(tabId: number, url: string, moved = false): Promis
       !found.hasForm &&
       !found.applying;
     const ended = (at(current.confirmedOn) || at(current.leftTo) || leaving) && !found.posting?.title;
+    // A form just sent may give way to a page of no posting before that page says the application went through:
+    // Workday, for someone applying without an account, moves in place to the board with the application's id, and
+    // draws its "Congratulations!" a moment later. The card reading that page first is the application's still, so
+    // the confirmation that follows has the sending and the posting to log.
+    // Not where nothing will be logged by it: a log made by hand on the last step, a sending already taken in.
+    const awaiting =
+      !ended &&
+      current.confirmedOn === null &&
+      !(current.logged?.manual && !current.logged.undone) &&
+      current.takenIn !== current.submittedAt &&
+      current.posting !== null &&
+      current.submittedAt !== null &&
+      Date.now() - Date.parse(current.submittedAt) < AWAITING_MS &&
+      !found.posting?.title &&
+      !found.hasForm;
+    const kept = ended || awaiting;
     // Another posting in this tab starts over; its confirmation page (same posting) keeps the log and its Undo.
     const samePosting =
-      ended ||
+      kept ||
       Boolean(
         current.posting && found.posting && linkKey(found.posting.url) === linkKey(current.posting.url),
       );
     return {
       url,
       ...found,
-      ...(ended ? { ats: current.ats, posting: current.posting } : {}),
-      jobId: ended ? current.jobId : (job?.job.id ?? null),
+      ...(kept ? { ats: current.ats, posting: current.posting } : {}),
+      // Waiting for its confirmation, the page is the application's, not a posting's to log.
+      ...(awaiting ? { applying: true } : {}),
+      jobId: kept ? current.jobId : (job?.job.id ?? null),
       accountId,
       resumeId,
-      match: ended ? current.match : match,
+      match: kept ? current.match : match,
       // A new page (another Workday step) starts a fresh checklist.
       plan: samePage ? current.plan : [],
       results: samePage ? current.results : {},

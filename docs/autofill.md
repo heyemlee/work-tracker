@@ -668,6 +668,11 @@ a posting there shows a note. It is a note, not a block.
   Workday the address under the posting's, `…/apply/…`, which tells before anything is drawn, or the
   application's own frame on the page) and the content script whether the page shows the button that sends it
   (`sends`). The card is the application's panel on all of them.
+- **A page between the form and its thank-you** (2026-10-14). Workday, for someone applying without an account, moves
+  in place to the board with the application's id and draws its note a moment later. The card reading that page
+  first took it for no application's and dropped the sending, so the note that came next logged nothing. For two
+  minutes after a form is sent, a page that names no posting and has no form is the application's still (`awaiting`
+  in `readTab`), its posting kept, the card the application's panel.
 - **Once each** (2026-10-14, after a review of the week's changes). A log is taken in once for each time a form is
   sent (`takenIn` in the tab's session, the sending's `submittedAt`): the confirmation page loaded again logs nothing
   more, whether its log went through, waits in the queue, or was taken back with Undo, which a reload used to
