@@ -130,6 +130,30 @@ export function holdsChoice(button: Element): boolean {
   return !/select one|^$/i.test(textOf(button));
 }
 
+/** The name of a file an upload holds, over its size and its state. */
+const FILE_NAME = '[data-automation-id="file-upload-item-name"]';
+
+/**
+ * Everything an upload draws for one of its files, from the file's name: the item of its own where the upload lists
+ * its files inside its box, else (the resume's field on My Experience, which draws them beside its box) the part of
+ * the field round the name that holds no other file, nothing of the box and nothing that names the question.
+ */
+function fileItem(name: Element): Element {
+  const item = name.closest('[data-automation-id="file-upload-item"]');
+  if (item) return item;
+  let part = name;
+  for (
+    let up = name.parentElement;
+    up &&
+    !up.matches('[data-automation-id^="formField-"], fieldset, [role="group"]') &&
+    !up.querySelector('input, label, legend') &&
+    up.querySelectorAll(FILE_NAME).length === 1;
+    up = up.parentElement
+  )
+    part = up;
+  return part;
+}
+
 function addButton(section: Element | null): HTMLElement | null {
   if (!section) return null;
   return (
@@ -281,8 +305,11 @@ export const workday: Adapter = {
   // What a fill report would keep of the answers, beyond the inputs' own values. A date is shown in a readout over
   // each of its parts and said whole to a screen reader. A ticked box, or a chosen radio, is drawn by an element
   // beside it and by the styles of what's round it, and where a group takes one answer the boxes left over are
-  // disabled. All of it goes from every date and every box, answered or not, so that the two read alike.
+  // disabled. All of it goes from every date and every box, answered or not, so that the two read alike. A file an
+  // upload holds is named, sized, said to a screen reader ("… successfully uploaded"), marked done and given a
+  // button to delete it by name: all of that goes with the file, as an upload holding none draws none of it.
   blank(form) {
+    for (const name of form.querySelectorAll(FILE_NAME)) fileItem(name).remove();
     for (const date of form.querySelectorAll('[data-automation-id="dateInputWrapper"]')) {
       for (const readout of date.querySelectorAll('[data-automation-id$="-display"]'))
         readout.textContent = '';

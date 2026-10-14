@@ -138,3 +138,58 @@ test('moves its own tick in a Workday group when the profile’s answer changes'
   await expect(page.locator('#d1-disabilityStatus')).toBeChecked();
   await expect(page.locator('#d2-disabilityStatus')).not.toBeChecked();
 });
+
+test('attaches the resume on Workday’s My Experience once, and a fill report keeps nothing of the file', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  await serveWorkday(context);
+  const page = await context.newPage();
+  await page.goto(`${APPLY}?step=experience`);
+  const card = page.locator('outbox-autofill');
+  // What the form holds, as it would send it.
+  const sent = async () => JSON.parse((await page.locator('#sent').textContent()) ?? '{}') as unknown;
+  const reports = () =>
+    worker.evaluate(async () => {
+      const { chrome } = globalThis as unknown as {
+        chrome: {
+          storage: { local: { get(key: string): Promise<{ snapshots?: { id: string; html: string }[] }> } };
+        };
+      };
+      return (await chrome.storage.local.get('snapshots')).snapshots ?? [];
+    });
+  // "This page didn't fill right", from the card's menu: pressed again on the same form, it replaces the last.
+  const report = async () => {
+    const last = (await reports())[0]?.id;
+    await card.getByRole('button', { name: 'More' }).click();
+    await card.getByRole('menuitem', { name: /fill right/ }).click();
+    await expect.poll(async () => (await reports())[0]?.id, { timeout: 15_000 }).not.toBe(last);
+    return (await reports())[0]!.html;
+  };
+
+  await expect(card.getByRole('button', { name: /^Fill/ })).toBeVisible({ timeout: 15_000 });
+  const unanswered = await report();
+
+  await card.getByRole('button', { name: /^Fill/ }).click();
+  await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });
+  const one = { resumeAttachments: [{ id: 'Alex_Chen_Resume.pdf' }] };
+  await expect.poll(sent).toEqual(one);
+  // The page empties its input once it has the file, and names the file beside its box: that's what's read.
+  await expect(card.getByTitle('Resume/CV', { exact: true })).toContainText('Alex_Chen_Resume.pdf');
+
+  // Filled again, the resume isn't sent a second time.
+  await card.getByRole('button', { name: 'Fill again' }).click();
+  const bar = card.getByRole('progressbar', { name: /^(Reading the page|Filling)$/ });
+  await expect(bar).toBeVisible();
+  await expect(bar).toBeHidden({ timeout: 45_000 });
+  await page.waitForTimeout(300);
+  expect(await sent()).toEqual(one);
+  await expect(card.getByTitle('Resume/CV', { exact: true })).toContainText('Alex_Chen_Resume.pdf');
+
+  // The page as reported reads as it did before the file came: no name, size, state or button to delete it.
+  const answered = await report();
+  expect(answered).not.toContain('Alex_Chen_Resume');
+  expect(answered).toBe(unanswered);
+});

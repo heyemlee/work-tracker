@@ -9,6 +9,9 @@
 //   the part that's whole hands the highlight on, and the highlighted part takes the focus;
 // - the form gets a date only as the field is left, and takes the disability form's only if it's today's.
 //
+// At `?step=experience`, My Experience's Resume/CV instead (read 2026-10-14, same version): its input empties as soon
+// as it hands a file on, and each file is drawn beside the box with its name, size, state and a button to delete it.
+//
 // Bundled for the page by workday.spec.ts.
 /* eslint-disable react-refresh/only-export-components -- a page of its own: nothing imports it, or refreshes it */
 import {
@@ -400,6 +403,202 @@ const DISABILITY: Option[] = [
   { id: 'd3', label: 'I do not want to answer' },
 ];
 
+/** A file the resume's field holds: sent to Workday's server as it's taken, and done once the server has it. */
+interface Held {
+  key: number;
+  name: string;
+  size: number;
+  done: boolean;
+}
+
+/** A file's size, as Workday words it under the file's name. [SZ] */
+const sizeOf = (bytes: number) => (bytes < 1024 ? `${bytes} B` : `${Math.round(bytes / 1024)} KB`);
+
+/**
+ * What a screen reader is told as a file comes in: shown for 5 s, then hidden, and kept in the page all the while.
+ * [JJ, QJ]
+ */
+function Said({ message }: { message: string }) {
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = box.current;
+    if (!element) return;
+    element.style.display = 'block';
+    element.hidden = false;
+    const timer = setTimeout(() => {
+      element.style.display = 'none';
+      element.hidden = true;
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [message]);
+  return (
+    <div ref={box}>
+      <div
+        aria-atomic="true"
+        aria-live="polite"
+        aria-relevant="all"
+        role="alert"
+        style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}
+      >
+        {message}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * My Experience's Resume/CV: a box to drop files on, there for as long as more may be taken (five), and each file
+ * drawn beside it once taken, with its name, its size, a line for a screen reader, its state and a button to delete
+ * it by name. The input is emptied as soon as it has handed its files on. [_Se, jZ, GJ, ISe, wSe, bSe]
+ */
+function Attachments({ form }: { form: Form }) {
+  const [files, setFiles] = useState<Held[]>([]);
+  const input = useRef<HTMLInputElement>(null);
+  const next = useRef(0);
+  const add = (list: FileList) => {
+    const added = [...list]
+      .slice(0, 5 - files.length)
+      .map((file) => ({ key: next.current++, name: file.name, size: file.size, done: false }));
+    setFiles((now) => [...now, ...added]);
+    for (const file of added)
+      setTimeout(
+        () => setFiles((now) => now.map((one) => (one.key === file.key ? { ...one, done: true } : one))),
+        50,
+      );
+  };
+  useEffect(() => {
+    void form.setValue({
+      id: 'resumeAttachments',
+      value: files.filter((file) => file.done).map((file) => ({ id: file.name })),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [files]);
+  return (
+    <div role="group" aria-labelledby="Resume/CV-section" data-fkit-id="resumeAttachments">
+      <h3 id="Resume/CV-section">Resume/CV</h3>
+      <div data-automation-id="formField-" data-fkit-id="resumeAttachments--attachments">
+        <div>
+          <div data-automation-id="attachments-file-upload">
+            {files.length < 5 && (
+              <div>
+                <div
+                  data-automation-id="file-upload-drop-zone"
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    add(event.dataTransfer.files);
+                  }}
+                  onClick={() => input.current?.click()}
+                >
+                  <div>Drop files here</div>
+                  <div>
+                    <div>or</div>
+                    <button
+                      type="button"
+                      data-automation-id="select-files"
+                      id="resumeAttachments--attachments"
+                      onClick={(event) => {
+                        input.current?.click();
+                        event.stopPropagation();
+                      }}
+                    >
+                      Select files
+                    </button>
+                  </div>
+                </div>
+                <input
+                  data-automation-id="file-upload-input-ref"
+                  type="file"
+                  multiple
+                  style={{ display: 'none' }}
+                  ref={input}
+                  onChange={(event) => {
+                    if (!event.target.files) return;
+                    add(event.target.files);
+                    event.target.value = '';
+                  }}
+                />
+              </div>
+            )}
+            <div />
+          </div>
+          {files.map((file) => (
+            <div key={file.key}>
+              <div>
+                <div aria-hidden="true" className="file-type" />
+                <div>
+                  <Said message={`${file.name}${file.done ? ' successfully uploaded' : ' loading'}`} />
+                  <div data-automation-id="file-upload-item-name">{file.name}</div>
+                  <div>{sizeOf(file.size)}</div>
+                  {file.done ? (
+                    <div data-automation-id="file-upload-successful">Successfully Uploaded!</div>
+                  ) : (
+                    <div data-automation-id="file-loading-dots" />
+                  )}
+                </div>
+              </div>
+              {file.done && (
+                <div>
+                  <button
+                    type="button"
+                    data-automation-id="delete-file"
+                    aria-label={`Delete ${file.name}`}
+                    title="Delete"
+                    onClick={() => setFiles((now) => now.filter((one) => one.key !== file.key))}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** The step before: My Experience, with the resume's field. What the form holds is shown outside the form. */
+function ExperiencePage() {
+  const [value, setValues] = useState<Form['value']>({});
+  const form: Form = {
+    value,
+    setValue: (change) => {
+      setValues((now) => ({ ...now, [change.id]: change.value }));
+      return Promise.resolve();
+    },
+    setErrors: () => {},
+  };
+  return (
+    <>
+      <div data-automation-id="applyFlowPage">
+        <h2 data-automation-id="jobTitleHeading">Software Engineer</h2>
+        <ol data-automation-id="progressBar">
+          <li data-automation-id="progressBarCompletedStep">
+            <label>step 1 of 7</label>
+            <label>My Information</label>
+          </li>
+          <li data-automation-id="progressBarActiveStep">
+            <label>current step 2 of 7</label>
+            <label>My Experience</label>
+          </li>
+          <li data-automation-id="progressBarInactiveStep">
+            <label>step 3 of 7</label>
+            <label>Application Questions</label>
+          </li>
+        </ol>
+        <h3 tabIndex={-1}>My Experience</h3>
+        <div data-automation-id="applyFlowMyExpPage">
+          <Attachments form={form} />
+        </div>
+        <div data-automation-id="pageFooter">
+          <button data-automation-id="pageFooterBackButton">Back</button>
+          <button data-automation-id="pageFooterNextButton">Save and Continue</button>
+        </div>
+      </div>
+      <pre id="sent">{JSON.stringify(value)}</pre>
+    </>
+  );
+}
+
 function Page() {
   const [value, setValues] = useState<Form['value']>({});
   const [errors, setAllErrors] = useState<Record<string, string[]>>({});
@@ -456,4 +655,6 @@ function Page() {
   );
 }
 
-createRoot(document.getElementById('root') as HTMLElement).render(<Page />);
+createRoot(document.getElementById('root') as HTMLElement).render(
+  new URLSearchParams(location.search).get('step') === 'experience' ? <ExperiencePage /> : <Page />,
+);

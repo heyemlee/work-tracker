@@ -483,6 +483,36 @@ describe('a report of a Workday page', () => {
       ['Name', 'text'],
     ]);
   });
+
+  it('keeps no file an upload holds, where the upload lists its files in its own box', () => {
+    // "Autofill with Resume" and a question's upload, as Workday's code draws them [iQ, jZ, kZ]: the box to drop a file
+    // on goes once it holds as many as it takes (one here), and the file is listed in the box instead.
+    const upload = (file: string | null) => `
+      <div data-automation-id="applyFlowPage">
+        <div data-automation-id="formField-resumeUpload"><label for="resume">Upload a file</label>
+          <div data-automation-id="resumeUpload">
+            ${file ? '' : '<div data-automation-id="file-upload-drop-zone"><button data-automation-id="select-files" id="resume">Select file</button></div><input data-automation-id="file-upload-input-ref" type="file">'}
+            <div>${
+              file
+                ? `<div data-automation-id="file-upload-item"><div><div><div role="alert" aria-live="polite">${file} successfully uploaded</div>` +
+                  `<div data-automation-id="file-upload-item-name">${file}</div><div>120 KB</div>` +
+                  '<div data-automation-id="file-upload-successful">Successfully Uploaded!</div></div></div>' +
+                  `<div><button data-automation-id="delete-file" aria-label="Delete ${file}" title="Delete"></button></div></div>`
+                : ''
+            }</div>
+          </div>
+        </div>
+      </div>`;
+    document.body.innerHTML = upload('Alex_Chen_Resume.pdf');
+    const answered = report();
+    expect(answered).not.toMatch(/Alex_Chen|120 KB|Successfully Uploaded|file-upload-item|delete-file/);
+    // The field and its question stay: only the file is gone, and what's left is the unanswered page's but its box.
+    expect(answered).toContain('Upload a file');
+    document.body.innerHTML = upload(null);
+    expect(report().replace(/<div data-automation-id="file-upload-drop-zone">.*?<input[^>]*>/s, '')).toBe(
+      answered,
+    );
+  });
 });
 
 describe('workday pages from snapshots', () => {
