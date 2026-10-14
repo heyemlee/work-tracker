@@ -30,6 +30,14 @@ export function anthropicAddress(typed: string): string {
   return whole.replace(/\/+$/, '').replace(/\/v1$/i, '').replace(/\/+$/, '');
 }
 
+/** An OpenAI-compatible address as typed, made one to send to: `api.kabi.pro/` is `https://api.kabi.pro`. */
+export function openaiAddress(typed: string): string {
+  const trimmed = typed.trim();
+  if (!trimmed) return '';
+  const whole = /^[a-z][a-z\d+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  return whole.replace(/\/+$/, '');
+}
+
 /** Who answers the AI requests: Anthropic, or any endpoint speaking OpenAI's chat completions API. */
 export type Provider = 'anthropic' | 'openai';
 export type Language = 'auto' | 'en' | 'zh';

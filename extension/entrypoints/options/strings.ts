@@ -42,6 +42,8 @@ const en = {
   keyOkNoEffort:
     'The key works, but this endpoint doesn’t take a reasoning effort: the setting has no effect.',
   keyBad: 'The saved key didn’t pass the check: {detail}',
+  keyUnchecked: 'Couldn’t check the key: {detail}. Check the address and the network, then save again.',
+  keyOkEmpty: 'The key works, but the check got no answer back ({detail}).',
   keyRefused:
     'The saved key didn’t pass the check: the provider doesn’t recognize it (401). Make sure it’s this provider’s API key, and that it hasn’t been deleted or disabled.',
   model: 'Model',
@@ -125,6 +127,8 @@ const zh: Record<Key, string> = {
   keyOk: 'Key 可以用。',
   keyOkNoEffort: 'Key 可以用，但这个接口不接受推理强度，这项设置不会生效。',
   keyBad: '保存的 key 没通过检查：{detail}',
+  keyUnchecked: '没能检查这个 key：{detail}。请检查地址和网络，再保存一次。',
+  keyOkEmpty: 'Key 可以用，但检查请求没拿到回答（{detail}）。',
   keyRefused:
     '保存的 key 没通过检查：服务商不认这个 key（401）。请确认它是这家服务商的 API key，并且没有被删除或停用。',
   model: '模型',

@@ -18,6 +18,7 @@ import { missingItems } from '../../src/profile/profile';
 import {
   ANTHROPIC_API,
   anthropicAddress,
+  openaiAddress,
   apiKeyItem,
   finalsItem,
   memoryItem,
@@ -38,6 +39,7 @@ import {
 import { Choice, Count, Field, Grid, Heading, Note, Toggle, Toggles } from '../../src/ui/card/fields';
 import { Track } from '../../src/ui/card/Track';
 import { resolveLanguage } from '../../src/ui/i18n';
+import { keyVerdict, type Verdict } from './keyVerdict';
 import { strings, type Strings } from './strings';
 
 const SECTIONS = ['connection', 'ai', 'reports', 'memory', 'general'] as const;
@@ -339,12 +341,6 @@ function Connection({ s, settings }: Props) {
   );
 }
 
-/** What a check of the key came to, or that one is under way. */
-interface Verdict {
-  tone: 'wait' | 'good' | 'warn' | 'bad';
-  text: string;
-}
-
 /**
  * The provider's key. Once typed it's never shown again, so its label says the whole time that one is saved. A key
  * typed in is saved when the field is left, as any setting is; Enter and the button save it and have it tried.
@@ -449,15 +445,7 @@ function Ai({ s, settings }: Props) {
     await written;
     const found = await checkKey();
     if (mine !== asked.current) return;
-    const detail = found.error ?? '';
-    setVerdict(
-      !found.ok
-        ? // Both providers' errors begin with the status. A 401 is the key itself turned away: said in plain words.
-          { tone: 'bad', text: s(/^401\b/.test(detail) ? 'keyRefused' : 'keyBad', { detail }) }
-        : found.effortRefused && openai && settings.openaiEffort !== 'auto'
-          ? { tone: 'warn', text: s('keyOkNoEffort') }
-          : { tone: 'good', text: s('keyOk') },
-    );
+    setVerdict(keyVerdict(found, openai && settings.openaiEffort !== 'auto', s));
   };
   // The models the owner settled on, and whatever else the setting already holds.
   const models = OPENAI_MODELS.includes(settings.openaiModel)
@@ -496,6 +484,7 @@ function Ai({ s, settings }: Props) {
                 name="openaiBaseUrl"
                 value={settings.openaiBaseUrl}
                 placeholder="https://api.openai.com/v1"
+                clean={openaiAddress}
                 onSave={(openaiBaseUrl) => change({ openaiBaseUrl })}
               />
             ) : (

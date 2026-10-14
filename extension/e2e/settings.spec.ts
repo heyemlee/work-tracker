@@ -195,7 +195,8 @@ test('says how to save what’s typed, then that it’s saved, and of a key the 
     expect(await stored(worker, 'settings')).not.toMatchObject({ openaiBaseUrl: `${api.url}/` });
     await address.press('Enter');
     await expect(said('Address')).toHaveText('Saved');
-    expect(await stored(worker, 'settings')).toMatchObject({ openaiBaseUrl: `${api.url}/` });
+    // Kept as an address to send to: the slash typed at its end comes off.
+    expect(await stored(worker, 'settings')).toMatchObject({ openaiBaseUrl: api.url });
     // Said for a moment, not for good: the address is there to read.
     await expect(said('Address')).toHaveCount(0);
 

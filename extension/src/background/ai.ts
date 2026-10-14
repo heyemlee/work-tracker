@@ -19,6 +19,7 @@ import {
   anthropicAddress,
   apiKeyItem,
   getSettings,
+  openaiAddress,
   openaiKeyItem,
   usageItem,
   type FinalAnswer,
@@ -212,7 +213,8 @@ async function request(params: AskParams): Promise<Reply> {
 
 /** `https://api.kabi.pro` → `https://api.kabi.pro/v1`; an address with a path is used as given. */
 export function openaiEndpoint(base: string): string {
-  const trimmed = base.trim().replace(/\/+$/, '');
+  // Saved before the settings made it whole, an address may have no scheme.
+  const trimmed = openaiAddress(base);
   return new URL(trimmed).pathname === '/' ? `${trimmed}/v1` : trimmed;
 }
 
@@ -485,7 +487,13 @@ export async function parseResume(pdf: string, pdfText = ''): Promise<ResumeFact
  * whether the endpoint takes the reasoning effort it's sent. These models think before they answer, and thinking
  * counts against the limit: there's room for it beside the one word.
  */
-export async function checkKey(): Promise<{ ok: boolean; error?: string; effortRefused?: boolean }> {
+export async function checkKey(): Promise<{
+  ok: boolean;
+  error?: string;
+  effortRefused?: boolean;
+  /** The provider took the key, and no answer came of the request: why. */
+  empty?: string;
+}> {
   try {
     const reply = await request({
       system: 'Reply with the word OK.',
@@ -495,8 +503,9 @@ export async function checkKey(): Promise<{ ok: boolean; error?: string; effortR
       maxTokens: 1024,
     });
     const effortRefused = reply.effortRefused ?? false;
+    // An answer came back, whatever it held: the provider took the key.
     return reply.text === null
-      ? { ok: false, error: reply.why ?? undefined, effortRefused }
+      ? { ok: true, effortRefused, empty: reply.why ?? 'the answer was empty' }
       : { ok: true, effortRefused };
   } catch (error) {
     return { ok: false, error: error instanceof Error ? error.message : String(error) };

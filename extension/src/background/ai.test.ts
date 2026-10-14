@@ -364,9 +364,9 @@ describe('checkKey', () => {
     });
   });
 
-  it('says why when the request went through and no answer came of it', async () => {
+  it('takes the key for a good one when the request went through and no answer came of it, and says why', async () => {
     create.mockResolvedValue(reply('', 'max_tokens'));
-    expect(await checkKey()).toMatchObject({ ok: false, error: 'the answer was cut off at the token limit' });
+    expect(await checkKey()).toMatchObject({ ok: true, empty: 'the answer was cut off at the token limit' });
   });
 });
 
@@ -405,6 +405,9 @@ describe('an OpenAI-compatible provider', () => {
     expect(openaiEndpoint('https://api.kabi.pro')).toBe('https://api.kabi.pro/v1');
     expect(openaiEndpoint('https://api.kabi.pro/')).toBe('https://api.kabi.pro/v1');
     expect(openaiEndpoint('https://api.openai.com/v1')).toBe('https://api.openai.com/v1');
+    // Typed without its scheme, as the settings kept it before they made it whole.
+    expect(openaiEndpoint('api.kabi.pro')).toBe('https://api.kabi.pro/v1');
+    expect(openaiEndpoint(' api.kabi.pro/v1/ ')).toBe('https://api.kabi.pro/v1');
   });
 
   it('asks chat completions with the model, the key and a strict schema', async () => {

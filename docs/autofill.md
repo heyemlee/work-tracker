@@ -172,11 +172,16 @@ General (language, the same-company warning, export and delete) — each saving 
 to tell it by. So a field says it at the end of its label (decided 2026-10-09, when the owner couldn't tell whether
 what they'd typed was saved): "Press Enter to save" while an address or a key is typed and not yet kept, then
 "✓ Saved" for a moment once the browser has kept it, after a choice from a list too; "Couldn't save" if it didn't. Text
-is kept when Enter is pressed or the field is left, and an address emptied goes back to the one kept. A key can't be
+is kept when Enter is pressed or the field is left, and an address emptied goes back to the one kept. An
+OpenAI-compatible address typed without its scheme gets `https://`, as Claude's does; until then it was kept as
+typed, and every request failed on it. A key can't be
 read back once typed, so its label says "Saved" for as long as one is kept, and the field shows its last four
 characters as a field that's filled. Left without a press it's kept like any other field, and tried only at Enter or
 the button: a key goes to the provider when the owner asks. The check's line says the two things apart — "The saved
-key didn't pass the check" — and words a 401 plainly instead of showing the provider's JSON. The window appears in
+key didn't pass the check" — and words a 401 plainly instead of showing the provider's JSON. Only the provider
+turning the key away (401, 403) says the key is bad (`keyVerdict`, 2026-10-14): an address that isn't there, a
+provider down or no network say the key couldn't be checked, and a request answered with nothing usable (cut off at
+the token limit, declined) says the key works. The window appears in
 place rather than gliding in: Chrome drops presses on a frame from another origin while it moves and for half a
 second after. Where a page won't show the frame, the settings open in a tab after 6 s. Outbox's own page asks for
 the settings too ("Open extension settings", in its toolbar and its setup guide), and since 2026-10-07 gets the same
