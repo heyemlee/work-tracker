@@ -469,7 +469,8 @@ page code (`candidate-experience-apply-flow` 2026.40.17) and tried on a stand-in
 options, what each layer did — without any values. Those snapshots become test fixtures. Workday's adapter is built
 from its `data-automation-id` conventions, not from a saved form, so its first real pages are the ones to snapshot.
 The snapshots, listed in the settings under "Fill reports" with the posting each came from, are the list of open
-problems: pressed again on the same form, the newer snapshot
+problems: pressed again on the same form (the same posting's, since 2026-10-14: Greenhouse's embedded forms share one
+address, and two postings asking the same questions were one report), the newer snapshot
 takes the older one's place, and a snapshot leaves the list when a build that fixes it is loaded — its id goes into
 `src/background/fixed.ts` with the fix.
 

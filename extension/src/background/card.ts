@@ -889,9 +889,15 @@ async function undoNow(tabId: number, url: string): Promise<CardState> {
   return cardState(session ?? (await updateSession(tabId, url, () => ({}))));
 }
 
-/** The same form captured again: its page, its step and its questions. */
+/**
+ * The same form captured again: its posting, its page, its step and its questions. Greenhouse's embedded forms all
+ * sit at one address, the posting named in parameters the report leaves out: two postings asking the same questions
+ * are two reports.
+ */
 function sameForm(a: FormSnapshot, b: FormSnapshot): boolean {
   return (
+    a.company === b.company &&
+    a.title === b.title &&
     a.url === b.url &&
     a.step === b.step &&
     a.fields.length === b.fields.length &&

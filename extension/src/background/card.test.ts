@@ -525,6 +525,18 @@ describe('"This page didn’t fill right"', () => {
     ]);
   });
 
+  it('keeps apart two postings whose forms sit at one address and ask the same', async () => {
+    frame.mockResolvedValue(form(['First Name', 'Email']));
+    await updateSession(TAB, URL_, () => ({ posting: { ...posting, title: 'Data Engineer' } }));
+    await snapshot(TAB);
+    await updateSession(TAB, URL_, () => ({ posting: { ...posting, title: 'Software Engineer' } }));
+    await snapshot(TAB);
+    expect((await snapshotsItem.getValue()).map((shot) => shot.title)).toEqual([
+      'Software Engineer',
+      'Data Engineer',
+    ]);
+  });
+
   it('saves nothing when the frame is gone', async () => {
     frame.mockRejectedValue(new Error('Could not establish connection.'));
     expect(await snapshot(TAB)).toBe(0);
