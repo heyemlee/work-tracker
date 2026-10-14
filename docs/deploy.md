@@ -93,8 +93,7 @@ The extension is loaded unpacked in Chrome; it isn't published to the Chrome Web
    **Anthropic**, and paste a key from the [Anthropic Console](https://console.anthropic.com) with a monthly spend
    limit. Without a key the rules still fill every field they can; the rest are listed for you.
 
-The card opens on application pages; `Alt+Shift+F` fills (change it at `chrome://extensions/shortcuts`). On
-other sites, click the toolbar icon.
+The card opens on application pages, where its **Fill** button fills. On other sites, click the toolbar icon.
 
 The free-text eval drafts 20 essay questions with each model and writes a side-by-side report to
 `extension/evals/`. A run costs about $1:

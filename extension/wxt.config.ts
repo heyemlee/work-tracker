@@ -30,12 +30,6 @@ export default defineConfig({
     web_accessible_resources: [
       { resources: ['content-scripts/inject.css', 'options.html', 'preview.html'], matches: ['<all_urls>'] },
     ],
-    commands: {
-      'fill-application': {
-        suggested_key: { default: 'Alt+Shift+F' },
-        description: 'Fill the application on this page',
-      },
-    },
   },
   vite: () => ({ plugins: [tailwindcss()] }),
 });

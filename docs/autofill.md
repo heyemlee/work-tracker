@@ -31,7 +31,7 @@ typing, fingerprint spoofing, CAPTCHA solving); automating LinkedIn, whose terms
    buttons: **Mark as applied**, first and the one that stands out, since it's what the owner mostly presses there,
    and **Save for later**, which adds the posting to Outbox as a saved job. A posting Outbox already saved says so
    when it's opened again.
-2. Press **Fill** (or the shortcut). Recognized fields fill in about a second and the resume PDF is attached; the
+2. Press **Fill**. Recognized fields fill in about a second and the resume PDF is attached; the
    button turns into a bar that fills meanwhile. Its count is paced by the stage the fill is at (reading the page,
    then filling), not measured field by field.
 3. Work through what the panel lists. It says how many of the form's required fields are filled, over a bar, and
@@ -61,8 +61,9 @@ with a resume upload and a name or email field — not on a job board's own appl
 — or from the toolbar, and fills what the field dictionary recognizes. Closed, the card stays closed on that page;
 the toolbar button brings it back. Where it lies over something the owner wants to see, its – button puts it aside:
 the page has that place back, and Outbox's mark stays at the window's right edge as a tab that brings the card back
-as it was left. So do the toolbar button and the shortcut, and a log, which the card comes back to say; a form the
-page shows next doesn't.
+as it was left. So do the toolbar button and a log, which the card comes back to say; a form the page shows next
+doesn't. There is no keyboard shortcut (⌥⇧F filled until 2026-10-14; the owner had it taken out: pressed while a fill
+ran or AI was writing, it started a second fill beside the first).
 
 **The toolbar button on any other page** (decided 2026-10-12: the owner pressed it somewhere and nothing came, and
 asked whether it shouldn't come up on other pages too). It did come up on most, and took whatever page it was on

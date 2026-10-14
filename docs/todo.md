@@ -112,7 +112,7 @@ One release with everything below, no MVP. Design: [autofill.md](autofill.md).
 
 - [x] Shadow-DOM card in the top frame: Outbox's Liquid Glass, English and Chinese.
 - [x] Match status; account picker with already-applied accounts disabled and the duplicate hint on Ashby and
-      Workday; resume picker; Fill button and shortcut.
+      Workday; resume picker; Fill button (the ⌥⇧F shortcut was taken out on 2026-10-14).
 - [x] Checklist (filled, confirm, AI draft, missing); click to jump to a field.
 - [x] "This page didn't fill right": save the form's structure without values.
 - [x] LinkedIn and other job pages: Log to Outbox only.

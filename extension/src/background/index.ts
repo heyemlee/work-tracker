@@ -114,17 +114,6 @@ export function startBackground(): void {
     if (tab.id !== undefined) void ask(tab.id);
   });
 
-  browser.commands.onCommand.addListener((command, tab) => {
-    if (command !== 'fill-application' || tab?.id === undefined) return;
-    const tabId = tab.id;
-    // The card answers when it's there and fills; otherwise the shortcut opens it, as the toolbar button does.
-    void toFrame(tabId, 0, 'card:fill', {})
-      .catch(() => false)
-      .then((filling) => {
-        if (!filling) return ask(tabId);
-      });
-  });
-
   browser.tabs.onRemoved.addListener((tabId) => {
     forgetTab(tabId);
     dropTickets(tabId);

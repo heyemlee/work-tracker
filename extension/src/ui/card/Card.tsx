@@ -502,10 +502,6 @@ export function Card({ startOpen }: { startOpen: boolean }) {
         refresh();
         sendResponse(true);
       }
-      if (message.type === 'card:fill') {
-        fill();
-        sendResponse(true);
-      }
       return undefined;
     };
     browser.runtime.onMessage.addListener(listener);
@@ -785,7 +781,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
           label={state.phase === 'reading' ? t('reading') : t('filling')}
         />
       ) : state.checklist.length === 0 ? (
-        <button className="primary" disabled={!state.profile} onClick={fill} title={t('shortcut')}>
+        <button className="primary" disabled={!state.profile} onClick={fill}>
           {t('fill')}
         </button>
       ) : (
@@ -803,7 +799,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
                 {t('drafting')}
               </span>
             ) : (
-              <button className="ghost" onClick={fill} title={t('shortcut')}>
+              <button className="ghost" onClick={fill}>
                 {t('refill')}
               </button>
             )}

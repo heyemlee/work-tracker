@@ -83,20 +83,18 @@ const BOARD = `<!doctype html><html><head><title>Jobs at Acme</title></head><bod
   show(123, false);
 </script></body></html>`;
 
-/** The toolbar button, or the shortcut that fills, pressed on the tab in front. */
-const press = (worker: Worker, what: 'toolbar button' | 'shortcut') =>
-  worker.evaluate(async (what) => {
+/** The toolbar button, pressed on the tab in front. */
+const press = (worker: Worker) =>
+  worker.evaluate(async () => {
     const { chrome } = globalThis as unknown as {
       chrome: {
         tabs: { query(asked: object): Promise<object[]> };
         action: { onClicked: { dispatch(tab: object): void } };
-        commands: { onCommand: { dispatch(command: string, tab: object): void } };
       };
     };
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-    if (what === 'shortcut') chrome.commands.onCommand.dispatch('fill-application', tab!);
-    else chrome.action.onClicked.dispatch(tab!);
-  }, what);
+    chrome.action.onClicked.dispatch(tab!);
+  });
 
 test('stays aside while the page moves on, and comes back when asked for and to say an application is logged', async ({
   context,
@@ -123,14 +121,11 @@ test('stays aside while the page moves on, and comes back when asked for and to 
   await expect(pane).toBeHidden();
   await expect(tab).toBeVisible();
 
-  // The owner asks for it: at the toolbar button, or with the shortcut, which fills.
-  await press(worker, 'toolbar button');
+  // The owner asks for it at the toolbar button, and fills.
+  await press(worker);
   await expect(pane).toBeVisible();
   await expect(tab).toBeHidden();
-  await minimize.click();
-  await expect(pane).toBeHidden();
-  await press(worker, 'shortcut');
-  await expect(pane).toBeVisible();
+  await card.getByRole('button', { name: 'Fill', exact: true }).click();
   await expect(page.locator('#first_name')).toHaveValue('Alex');
   await expect(page.locator('#email')).toHaveValue('alex@example.com');
   await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });

@@ -228,7 +228,6 @@ export interface ToFrame {
    * toolbar button), which brings back a card put aside; a form showing on the page opens a closed one only.
    */
   'card:open': { request: { asked: boolean }; response: boolean };
-  'card:fill': { request: Record<string, never>; response: boolean };
   /** The settings page drew in the card's window. */
   'settings:shown': { request: Record<string, never>; response: void };
   'settings:close': { request: Record<string, never>; response: void };
