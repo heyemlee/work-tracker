@@ -78,6 +78,16 @@ describe('saving the profile', () => {
     });
   });
 
+  it('takes back the card’s word that there’s no profile', async () => {
+    const profile = makeProfile();
+    saveProfile.mockResolvedValue({ profile, updatedAt: AT });
+    await profileItem.setValue(profile);
+    // A fill was asked for before there was a profile.
+    await updateSession(TAB, URL_, () => ({ hasForm: true, error: 'profile' }));
+    const reply = await storeProfile(TAB, profile);
+    expect(reply).toMatchObject({ ok: true, state: { error: null } });
+  });
+
   it('says so when Outbox didn’t take it', async () => {
     saveProfile.mockRejectedValue(new OutboxSignedOut());
     expect(await storeProfile(TAB, makeProfile())).toEqual({ ok: false, error: 'signedOut', issues: [] });

@@ -210,6 +210,7 @@ export function End({
   const [dating, setDating] = useState(false);
   const current = value === null && !dating;
   const input = useRef<HTMLInputElement>(null);
+  const box = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (dating) input.current?.focus();
   }, [dating]);
@@ -218,6 +219,7 @@ export function End({
       <span className="field-head">
         {label}
         <button
+          ref={box}
           type="button"
           role="checkbox"
           aria-checked={current}
@@ -246,6 +248,11 @@ export function End({
           value={value ?? ''}
           // Typed a part at a time, a month is empty until it's whole: it mustn't flip to "Present" meanwhile.
           onFocus={() => setDating(true)}
+          // Left empty, the job is current again; and nothing of this field's stays behind for another job to
+          // show, where a job is added above or taken out. To "Present" itself, the box says which.
+          onBlur={(event) => {
+            if (event.relatedTarget !== box.current) setDating(false);
+          }}
           onChange={(event) => onChange(event.target.value || null)}
         />
       )}

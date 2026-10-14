@@ -93,27 +93,37 @@ const empty = (...values: (string | null)[]) => values.every((value) => !value?.
 export function tidy(profile: Profile): Profile {
   return {
     ...profile,
-    education: profile.education.filter(
-      (school) =>
-        !empty(
-          school.school,
-          school.degree,
-          school.field,
-          school.gpa,
-          school.location,
-          school.start,
-          school.end,
-        ),
-    ),
-    experience: profile.experience.filter(
-      (job) => !empty(job.company, job.title, job.location, job.start, job.end, job.description),
-    ),
+    education: profile.education.filter(heldSchool),
+    experience: profile.experience.filter(heldJob),
     writing: {
       ...profile.writing,
-      stories: profile.writing.stories.filter((story) => !empty(story.title, story.text)),
+      stories: profile.writing.stories.filter(heldStory),
       snippets: profile.writing.snippets.filter((snippet) => !empty(snippet)),
     },
   };
+}
+
+const heldSchool = (school: Profile['education'][number]) =>
+  !empty(school.school, school.degree, school.field, school.gpa, school.location, school.start, school.end);
+const heldJob = (job: Profile['experience'][number]) =>
+  !empty(job.company, job.title, job.location, job.start, job.end, job.description);
+const heldStory = (story: Profile['writing']['stories'][number]) => !empty(story.title, story.text);
+
+/**
+ * A path into the tidied profile (what was checked) as a path into the draft (what the window shows): an entry's
+ * number counts the blank ones the window still shows above it. "Work experience 2" is the second the owner sees.
+ */
+export function inDraft(draft: Profile, path: readonly string[]): string[] {
+  const [part, second, third, ...rest] = path;
+  // The draft's places of the entries the tidied list kept, in order.
+  const places = <T>(list: readonly T[], held: (item: T) => boolean) =>
+    list.flatMap((item, at) => (held(item) ? [at] : []));
+  const at = (kept: number[], index: string | undefined) => String(kept[Number(index)] ?? index);
+  if (part === 'education') return [part, at(places(draft.education, heldSchool), second), ...path.slice(2)];
+  if (part === 'experience') return [part, at(places(draft.experience, heldJob), second), ...path.slice(2)];
+  if (part === 'writing' && second === 'stories')
+    return [part, second, at(places(draft.writing.stories, heldStory), third), ...rest];
+  return [...path];
 }
 
 const SECTION_OF: Record<string, Section> = {

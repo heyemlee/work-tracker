@@ -1,7 +1,7 @@
 import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, it } from 'vitest';
-import { Count } from './fields';
+import { Count, End } from './fields';
 
 let root: Root | undefined;
 afterEach(() => {
@@ -55,5 +55,24 @@ describe('a number field', () => {
       input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
     });
     expect(input.value).toBe('20');
+  });
+});
+
+describe('when a job ended', () => {
+  it('says "Present" again once the month field is left empty, and holds nothing of it for another job', async () => {
+    const host = document.body.appendChild(document.createElement('div'));
+    const outside = document.body.appendChild(document.createElement('button'));
+    await act(async () => {
+      root = createRoot(host);
+      root.render(<End label="End" present="Present" value={null} onChange={() => undefined} />);
+    });
+    // Asked for a date: the month field shows, and takes the keyboard.
+    await act(async () => host.querySelector<HTMLButtonElement>('button.input')!.click());
+    const month = host.querySelector<HTMLInputElement>('input[type="month"]')!;
+    expect(month).not.toBeNull();
+    // Left with no month in it (the owner pressed Add job above): the job is current, as its value says.
+    await act(async () => outside.focus());
+    expect(host.querySelector('input[type="month"]')).toBeNull();
+    expect(host.querySelector('[role="checkbox"]')!.getAttribute('aria-checked')).toBe('true');
   });
 });

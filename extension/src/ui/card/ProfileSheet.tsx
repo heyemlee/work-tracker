@@ -35,6 +35,7 @@ import {
 import {
   ANSWER_SWITCHES,
   describeIssue,
+  inDraft,
   LANGUAGES,
   picks,
   PRONOUNS,
@@ -115,7 +116,10 @@ export function ProfileSheet({
     const parsed = profileSchema.safeParse(tidy(draft));
     if (!parsed.success) {
       const [first] = parsed.error.issues;
-      const where = describeIssue({ path: first?.path.map(String) ?? [], code: first?.code ?? '' }, t);
+      const where = describeIssue(
+        { path: inDraft(draft, first?.path.map(String) ?? []), code: first?.code ?? '' },
+        t,
+      );
       setSection(where.section);
       setProblem(where.text);
       return;
@@ -128,7 +132,7 @@ export function ProfileSheet({
     else if (!reply.ok) {
       const [first] = reply.issues;
       if (first) {
-        const where = describeIssue(first, t);
+        const where = describeIssue({ ...first, path: inDraft(draft, first.path.map(String)) }, t);
         setSection(where.section);
         setProblem(where.text);
       } else setProblem(t(reply.error === 'signedOut' ? 'profile.signedOut' : 'profile.unreachable'));

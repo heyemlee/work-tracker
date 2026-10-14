@@ -3,7 +3,7 @@ import { emptyProfile, profileSchema } from '../profile/schema';
 import { profileItem } from '../storage';
 import { cardState } from './card';
 import { OutboxSignedOut, saveProfile, syncProfile } from './outbox';
-import { getSession } from './session';
+import { getSession, updateSession } from './session';
 
 /**
  * The profile for the card's own window to edit: fresh from Outbox, or this browser's copy when Outbox can't be
@@ -40,7 +40,13 @@ export async function storeProfile(tabId: number | undefined, input: unknown): P
     };
   try {
     const { profile } = await saveProfile(parsed.data);
-    const session = tabId === undefined ? null : await getSession(tabId);
+    // A fill turned down for want of a profile said so on the card: there is one now.
+    const session =
+      tabId === undefined || !(await getSession(tabId))
+        ? null
+        : await updateSession(tabId, '', (current) => ({
+            error: current.error === 'profile' ? null : current.error,
+          }));
     return { ok: true, profile, state: session ? await cardState(session) : null };
   } catch (error) {
     return { ok: false, error: error instanceof OutboxSignedOut ? 'signedOut' : 'unreachable', issues: [] };

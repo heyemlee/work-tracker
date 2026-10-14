@@ -4,7 +4,8 @@ import { translator } from '../i18n';
 import { findOption } from '../../text';
 import { LANGUAGE_NAMES } from '../../rules/common';
 import { norm } from '../../text';
-import { describeIssue, LANGUAGES, picks, PRONOUNS, STATES, STATUSES, tidy } from './profileForm';
+import { describeIssue, inDraft, LANGUAGES, picks, PRONOUNS, STATES, STATUSES, tidy } from './profileForm';
+import { profileSchema } from '../../profile/schema';
 
 const t = translator('en');
 
@@ -111,5 +112,27 @@ describe('the lists to pick from', () => {
       'F-1 OPT',
       'F-1 STEM OPT',
     ]);
+  });
+});
+
+describe('a save that doesn’t hold, as the window shows the draft', () => {
+  it('names the entry by its place in the window, blank ones above it counted', () => {
+    const profile = makeProfile();
+    const blank = {
+      company: '',
+      title: '',
+      location: '',
+      start: '',
+      end: null,
+      type: 'full-time' as const,
+      description: '',
+    };
+    // "Add job" twice: a blank one on top, and one with only its company typed.
+    const draft = { ...profile, experience: [blank, { ...blank, company: 'Acme' }, ...profile.experience] };
+    const parsed = profileSchema.safeParse(tidy(draft));
+    expect(parsed.success).toBe(false);
+    const [issue] = parsed.error!.issues;
+    const where = describeIssue({ path: inDraft(draft, issue!.path.map(String)), code: issue!.code }, t);
+    expect(where.text).toContain('Work experience 2');
   });
 });
