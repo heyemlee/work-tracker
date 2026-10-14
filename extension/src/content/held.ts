@@ -10,6 +10,11 @@ import { chipsOf, controlsOf, heldFile, isFilled } from './extract';
  */
 export function shownValue(handle: Handle): string | undefined {
   if (handle.type === 'file') return heldFile(handle) ?? undefined;
+  // A date in parts (Workday's month, day and year boxes), as the fill reports one: 06/2023.
+  if (handle.type === 'dateParts') {
+    const parts = [handle.month, handle.day, handle.year].map((part) => part?.value.trim() ?? '');
+    return parts.some(Boolean) ? parts.filter(Boolean).join('/') : undefined;
+  }
   if (handle.type === 'combobox' || handle.type === 'typeahead') {
     const select = handle.element.closest('[class*="select__control"]');
     if (select) {

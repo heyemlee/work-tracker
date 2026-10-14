@@ -766,6 +766,47 @@ describe('the pages of a Workday board', () => {
       });
     });
 
+    it('leaves a date the owner changed by hand on "Fill again", and puts one in again where it was emptied', async () => {
+      await read(apply, PAGE);
+      const ask = <T>(message: object) =>
+        new Promise<T>((resolve) => {
+          const [[listener]] = vi.mocked(fakeBrowser.runtime.onMessage.addListener).mock.calls as unknown as [
+            [Listener],
+          ];
+          listener(message, {}, (value) => resolve(value as T));
+        });
+      const fillFrom = async () => {
+        const scan = await ask<FrameScan>({ type: 'frame:scan', frameId: 0, prepare: null });
+        const from = scan.fields.find((field) => field.label === 'From')!;
+        await ask({
+          type: 'frame:fill',
+          fields: [
+            {
+              fieldId: from.id,
+              status: 'filled',
+              answer: { type: 'date', iso: '2023-06-01' },
+              source: 'rule',
+              key: 'experience.start',
+              note: null,
+              critical: false,
+            },
+          ],
+        });
+      };
+      const month = () =>
+        document.querySelector<HTMLInputElement>('[data-automation-id="dateSectionMonth-input"]')!;
+      await fillFrom();
+      expect(month().value).toBe('06');
+      month().value = '09';
+      await fillFrom();
+      expect(month().value).toBe('09');
+      // Emptied by the owner, the date is the fill's to put in again.
+      month().value = '';
+      document.querySelector<HTMLInputElement>('[data-automation-id="dateSectionYear-input"]')!.value = '';
+      await fillFrom();
+      expect(month().value).toBe('06');
+    });
+
     it('the home it ends on is neither an application’s nor a posting’s', async () => {
       expect(await read(`${board}/jobTasks/completed/application`, HOME)).toMatchObject({
         isApplication: false,

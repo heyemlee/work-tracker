@@ -287,7 +287,10 @@ again unless another is chosen on the card: put in again, the site takes the fil
 resumes reads it again (on Lever's own page code that took a second fill from 1.0 s to 2.1 s). A dropdown's pick is
 looked for in the dropdown's own box (`pickBox` in `content/extract.ts`). Until 2026-10-07 it was looked for in the
 wrapper round the search input, which react-select calls a container too, so on Greenhouse's own pages a dropdown the
-owner had answered read as empty: a fill wrote over it, and the answer wasn't remembered at submit.
+owner had answered read as empty: a fill wrote over it, and the answer wasn't remembered at submit. A date in parts
+(Workday's month, day and year boxes) is read as it shows, 06/2023 (`shownValue` in `content/held.ts`): until
+2026-10-14 it read as nothing both when filled and when changed, so the extension took any date there for its own
+and "Fill again" put back a date the owner had corrected.
 
 For ordinary answers too, a repeated fill now skips a field when both the requested answer and the value the
 page shows are unchanged. This avoids reopening dropdown searches and triggering the site's saves again. A
