@@ -106,4 +106,13 @@ describe('extractFields', () => {
     ]);
     expect(after.find((field) => field.label === 'Race')?.id).not.toBeOneOf(before);
   });
+
+  it('gives the next page in the tab ids of its own', () => {
+    // AI's answer for a field of the posting left behind arrives as the next one's form is up: it names no field there.
+    document.body.innerHTML =
+      '<form id="application-form"><label for="a">Why us?</label><textarea id="a"></textarea><label for="b">Website</label><input id="b"></form>';
+    const left = extractFields(greenhouse, document, 0, fieldIds()).fields.map((field) => field.id);
+    const next = extractFields(greenhouse, document, 0, fieldIds()).fields.map((field) => field.id);
+    expect(next.filter((id) => left.includes(id))).toEqual([]);
+  });
 });

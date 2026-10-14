@@ -197,15 +197,17 @@ export function isFilled(handle: Handle): boolean {
 
 /**
  * Names fields by their control, so a field keeps its id when the page is read again and a question that appeared
- * in between gets a new one.
+ * in between gets a new one. Each document's ids are its own: an answer meant for a page the tab has since left
+ * (AI's, coming in late) names no field of the next page.
  */
 export function fieldIds(): (control: Element) => string {
   const known = new WeakMap<Element, string>();
+  const page = Math.random().toString(36).slice(2, 7);
   let next = 0;
   return (control) => {
     let id = known.get(control);
     if (id === undefined) {
-      id = `f${++next}`;
+      id = `${page}f${++next}`;
       known.set(control, id);
     }
     return id;

@@ -469,7 +469,10 @@ export async function fill(tabId: number, url: string): Promise<CardState> {
   return cardState(session, outbox);
 }
 
-async function applyAi(tabId: number, url: string, entries: PlannedField[]): Promise<TabSession> {
+async function applyAi(tabId: number, url: string, asked: PlannedField[]): Promise<TabSession> {
+  // The tab may have gone on to another page while AI wrote: its answers are for the fields still there.
+  const fields = new Set((await getSession(tabId))?.fields.map((field) => field.id) ?? []);
+  const entries = asked.filter((entry) => fields.has(entry.fieldId));
   const results = await fillFrames(tabId, entries);
   const session = await updateSession(tabId, url, (current) => ({
     plan: current.plan.map((entry) => entries.find((next) => next.fieldId === entry.fieldId) ?? entry),

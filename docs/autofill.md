@@ -290,7 +290,9 @@ wrapper round the search input, which react-select calls a container too, so on 
 owner had answered read as empty: a fill wrote over it, and the answer wasn't remembered at submit. A date in parts
 (Workday's month, day and year boxes) is read as it shows, 06/2023 (`shownValue` in `content/held.ts`): until
 2026-10-14 it read as nothing both when filled and when changed, so the extension took any date there for its own
-and "Fill again" put back a date the owner had corrected.
+and "Fill again" put back a date the owner had corrected. Field ids are a document's own (`fieldIds` in
+`content/extract.ts`), and AI's answers go only to fields the tab still has: an answer drafted for a posting the tab
+has left since used to land in the next posting's field of the same number, and to stay there as AI's.
 
 For ordinary answers too, a repeated fill now skips a field when both the requested answer and the value the
 page shows are unchanged. This avoids reopening dropdown searches and triggering the site's saves again. A
