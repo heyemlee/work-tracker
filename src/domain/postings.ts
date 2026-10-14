@@ -179,6 +179,21 @@ export function companyFromSlug(slug: string, companies: readonly Company[]): st
   return words.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
+/**
+ * A Workday job under any of its addresses: …/job/Santa-Clara/Engineer_JR123 on its own, …/details/Engineer_JR123?q=…
+ * open beside the list of jobs, an application's pages under it, with or without the page's language (/en-US/). The
+ * last segment names the job.
+ */
+function workdayJobPath(host: string, path: string): string | null {
+  if (!isUnder(host, 'myworkdayjobs.com') && !isUnder(host, 'myworkdaysite.com')) return null;
+  // An application's pages are under its job's: …/job/Santa-Clara/Engineer_JR123/apply/applyManually.
+  const own = path.replace(/\/+$/, '').replace(/\/apply(\/.*)?$/, '');
+  const job = /^(.*?)\/(?:job|details)\/(?:[^/]+\/)*([^/]+)$/.exec(own);
+  if (!job) return null;
+  const [, board = '', slug = ''] = job;
+  return `${board.replace(/^\/[a-z]{2}(-[a-z]{2})?(?=\/|$)/i, '')}/job/${slug}`;
+}
+
 /** Two links to the same posting compare equal: no scheme, www, trailing slash, or parameter order. */
 export function linkKey(url: string): string {
   const cleaned = cleanLink(url);
@@ -186,6 +201,8 @@ export function linkKey(url: string): string {
   const parsed = new URL(cleaned);
   parsed.searchParams.sort();
   const host = parsed.hostname.replace(/^www\./, '');
+  const workday = workdayJobPath(host, parsed.pathname);
+  if (workday) return `${host}${workday}`;
   return `${host}${parsed.pathname.replace(/\/+$/, '')}${parsed.search}`;
 }
 

@@ -106,6 +106,31 @@ describe('findJobByLink', () => {
   it('treats parameter order as irrelevant', () => {
     expect(linkKey('https://a.com/j?b=2&a=1')).toBe(linkKey('https://a.com/j?a=1&b=2'));
   });
+
+  it('takes a Workday job under any of its addresses for the same', () => {
+    const job = 'https://acme.wd5.myworkdayjobs.com/en-US/External/job/Santa-Clara/Engineer_JR1';
+    for (const same of [
+      // Open beside the list of jobs, with the search it came from.
+      'https://acme.wd5.myworkdayjobs.com/en-US/External/details/Engineer_JR1?q=software',
+      // Pasted without the page's language, or without the place.
+      'https://acme.wd5.myworkdayjobs.com/External/job/Santa-Clara/Engineer_JR1',
+      'https://acme.wd5.myworkdayjobs.com/en-US/External/job/Engineer_JR1/',
+      // An application's page under it.
+      `${job}/apply/applyManually`,
+    ])
+      expect(linkKey(same)).toBe(linkKey(job));
+    expect(
+      linkKey('https://acme.wd5.myworkdayjobs.com/en-US/External/job/Santa-Clara/Engineer_JR2'),
+    ).not.toBe(linkKey(job));
+    // Another board of the same company is another posting.
+    expect(
+      linkKey('https://acme.wd5.myworkdayjobs.com/en-US/Internal/job/Santa-Clara/Engineer_JR1'),
+    ).not.toBe(linkKey(job));
+    // The board's other pages keep their own addresses.
+    expect(linkKey('https://acme.wd5.myworkdayjobs.com/en-US/External/userHome')).not.toBe(
+      linkKey('https://acme.wd5.myworkdayjobs.com/en-US/External/jobTasks/completed/application'),
+    );
+  });
 });
 
 describe('findSamePosting', () => {

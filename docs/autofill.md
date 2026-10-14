@@ -627,7 +627,9 @@ a posting there shows a note. It is a note, not a block.
   the candidate's own home on the board, under a heading that greets them by name. The adapter read a posting's
   title from the first heading with a `data-automation-id`, which that one has: with the application logged, the
   card took the home for a posting called "Welcome, …" and offered to mark it applied. A posting is read at a
-  job's address only now (`…/job/…`, `…/details/…`), and the board's other pages are none; a card left open where
+  job's address only now (`…/job/…`, `…/details/…`; both the same job's to `linkKey`, as are its `…/apply/…` pages
+  and its address without the page's language, so a posting saved from beside the list is found again on its
+  application), and the board's other pages are none; a card left open where
   its page gives way to one of them without a page loaded, the list of jobs after a posting, goes as it came.
   The card's reading of the page an application ends on also waits for the log that page set off (`confirming`
   in `background/card.ts`): read sooner, the tab showed the posting with nothing logged yet, and for the length
