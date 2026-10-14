@@ -1,9 +1,8 @@
 # Vite names every file under /assets after its contents, so one never changes: the browser keeps it for the day
 # and doesn't ask again. The page itself is still checked on every visit, and names the files it needs.
 #
-# A day, not the customary year: an address under /assets that names no file is answered with the page (the app's
-# routes all are, see wrangler.jsonc), and that answer gets this header too. A tab left open across a deploy can ask
-# for a file the deploy replaced; kept for a year, the page it got would stand in for that file if the same build
-# ever came back.
+# A day, not the customary year, as first set (2026-10-07), when an address under /assets that named no file was
+# answered with the app's page and this header with it. Since 2026-10-14 the Worker answers such an address with a 404
+# that nothing keeps (worker/assets.ts), so this header goes only on files the build has.
 /assets/*
   Cache-Control: public, max-age=86400, immutable

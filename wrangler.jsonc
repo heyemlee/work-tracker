@@ -6,9 +6,11 @@
   // Better Auth relies on AsyncLocalStorage.
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
-    // The SPA's routes all resolve to index.html; only /api reaches the Worker.
+    // The SPA's routes all resolve to index.html. /api reaches the Worker, and so does /assets, where a name no
+    // built file has is answered 404 rather than with that page (worker/assets.ts).
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"],
+    "run_worker_first": ["/api/*", "/assets/*"],
   },
   "routes": [{ "pattern": "tracker.haoyang.us", "custom_domain": true }],
   "workers_dev": false,

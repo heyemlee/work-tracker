@@ -36,6 +36,8 @@ beforeAll(async () => {
     GOOGLE_CLIENT_ID: '',
     GOOGLE_CLIENT_SECRET: '',
     OWNER_EMAILS: 'owner@example.com',
+    // The API never asks for the built files.
+    ASSETS: {} as Fetcher,
   };
   await started.db
     .insert(user)

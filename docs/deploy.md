@@ -3,6 +3,13 @@
 Outbox runs as one Cloudflare Worker: the React app is served as static assets, `/api/*` runs Hono, and data
 lives in D1. Steps 1–4 are one-time setup; after that, deploying is step 3 alone.
 
+Vite's built files under `/assets` are kept by the browser for a day (`public/_headers`). The Worker answers that
+path first (`run_worker_first` in `wrangler.jsonc`, `worker/assets.ts`): a file the build has comes from the assets as
+before, with that header, and a name it doesn't have is a 404 kept by no one. Before 2026-10-14 such a name got the
+app's page, as any route does, with the day's header: a deploy reaching one Cloudflare machine before another could
+hand a browser that page for a script the new build asks for, a blank screen kept through reloads for the day. Each
+asset request now counts as a Worker request (a page load asks for three or four).
+
 ## 1. Cloudflare account and database
 
 ```bash
