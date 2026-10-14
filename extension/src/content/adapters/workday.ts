@@ -1,7 +1,7 @@
 import { cleanLink, companyFromSlug, parsePosting } from '@domain/postings';
 import type { Entry, Hint, Posting } from '../../model';
 import { clean } from '../../text';
-import { attributeValue, isHidden, sleep, textOf } from '../dom';
+import { attributeValue, isHidden, sleep, textOf, wordsAt } from '../dom';
 import { clickLikeAPerson } from '../widgets';
 import type { Adapter, CustomField } from './types';
 
@@ -376,9 +376,11 @@ export const workday: Adapter = {
   // account gets a note on the job board instead, which is told by its words.
   confirmed(doc, url) {
     if (/\/jobTasks\/completed\/application\/?$/.test(new URL(url).pathname)) return true;
-    const text = textOf(
-      doc.querySelector('[data-automation-id="applicationSubmittedDialog"], [role="dialog"], main, body'),
-    ).slice(0, 4000);
+    const text = wordsAt(
+      doc,
+      ['[data-automation-id="applicationSubmittedDialog"]', '[role="dialog"]', 'main', 'body'],
+      4000,
+    );
     return /application (was |has been )?(successfully )?submitted|thank you for applying|congratulations/i.test(
       text,
     );

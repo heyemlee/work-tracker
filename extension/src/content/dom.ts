@@ -23,6 +23,25 @@ export async function waitFor<T>(
   }
 }
 
+/**
+ * What the page says at the first of `places` it has, in the order they're given: a selector list would give the
+ * first in the document's order, and `body` comes before anything in it. Its words only, not its scripts' or styles'
+ * text, up to `limit` characters: for telling a confirmation by its words.
+ */
+export function wordsAt(doc: Document, places: readonly string[], limit: number): string {
+  const place = places.map((selector) => doc.querySelector(selector)).find((found) => found !== null);
+  if (!place) return '';
+  const words: string[] = [];
+  const walker = doc.createTreeWalker(place, NodeFilter.SHOW_TEXT);
+  let length = 0;
+  for (let node = walker.nextNode(); node && length < limit; node = walker.nextNode()) {
+    if (node.parentElement?.closest('script, style, noscript, template')) continue;
+    words.push(node.textContent ?? '');
+    length += node.textContent?.length ?? 0;
+  }
+  return clean(words.join(' ')).slice(0, limit);
+}
+
 /** Visible text, whitespace collapsed; hidden descendants (screen-reader-only duplicates aside) included. */
 export function textOf(element: Element | null | undefined): string {
   if (!element) return '';

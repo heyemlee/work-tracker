@@ -46,6 +46,29 @@ describe('watching for a submission', () => {
     expect(attempt).toHaveBeenCalledWith(['alex.chen@example.org']);
   });
 
+  it('tells of one press of a Submit button that sends the form as one attempt', () => {
+    // A form the browser lets go: its email holds an address as it stands (the fixture's has spaces round it).
+    document.body.innerHTML = FORM.replace('type="button"', 'type="submit"').replace(
+      'value="  alex@example.com "',
+      'value="alex@example.com"',
+    );
+    let sent = 0;
+    document.querySelector('form')!.addEventListener('submit', (event) => {
+      sent++;
+      event.preventDefault();
+    });
+    const attempt = vi.fn();
+    stop = watchSubmission(adapter, document, attempt, vi.fn());
+    document.querySelector<HTMLElement>('#send')!.click();
+    // The press sent the form (its submit event fired): one attempt all the same.
+    expect(sent).toBe(1);
+    expect(attempt).toHaveBeenCalledTimes(1);
+    // The next press, after the page refused the first, is the next attempt.
+    vi.advanceTimersByTime(10);
+    document.querySelector<HTMLElement>('#send')!.click();
+    expect(attempt).toHaveBeenCalledTimes(2);
+  });
+
   it('takes a form sent with the Enter key for an attempt too', () => {
     const attempt = vi.fn();
     stop = watchSubmission(adapter, document, attempt, vi.fn());

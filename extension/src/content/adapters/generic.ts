@@ -1,7 +1,7 @@
 import { cleanLink, companyFromSlug, parsePosting } from '@domain/postings';
 import type { Posting } from '../../model';
 import { clean } from '../../text';
-import { isHidden, textOf } from '../dom';
+import { isHidden, textOf, wordsAt } from '../dom';
 import type { Adapter } from './types';
 
 const meta = (doc: Document, property: string) =>
@@ -150,7 +150,7 @@ export const generic: Adapter = {
 
   confirmed(doc) {
     return /thank you for (applying|your application)|application (was |has been )?(submitted|received)|we('ve| have) received your application/i.test(
-      textOf(doc.querySelector('main, body')).slice(0, 3000),
+      wordsAt(doc, ['main', '[role="main"]', 'body'], 3000),
     );
   },
 };

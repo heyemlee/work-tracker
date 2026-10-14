@@ -1,6 +1,6 @@
 import { cleanLink } from '@domain/postings';
 import type { FieldKind, Hint, Posting } from '../../model';
-import { htmlText, jsonAfter, sleep, textOf, waitFor } from '../dom';
+import { htmlText, jsonAfter, sleep, textOf, waitFor, wordsAt } from '../dom';
 import type { Adapter, CustomField } from './types';
 
 const PATH_HINTS: Record<string, Hint> = {
@@ -219,7 +219,7 @@ export const ashby: Adapter = {
   confirmed(doc) {
     if (doc.querySelector('.ashby-application-form-submit-button')) return false;
     if (doc.querySelector('.ashby-application-form-success-container')) return true;
-    const text = textOf(doc.querySelector('[class*="success"]') ?? doc.body).slice(0, 3000);
+    const text = wordsAt(doc, ['[class*="success"]', 'body'], 3000);
     return /thank you for applying|thanks for applying|application (was |has been )?(submitted|received)|successfully submitted/i.test(
       text,
     );

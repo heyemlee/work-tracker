@@ -1,6 +1,6 @@
 import { cleanLink } from '@domain/postings';
 import type { FieldKind, Hint, Posting } from '../../model';
-import { isHidden, sleep, textOf, waitFor } from '../dom';
+import { isHidden, sleep, textOf, waitFor, wordsAt } from '../dom';
 import type { Adapter } from './types';
 
 const NAME_HINTS: Record<string, Hint> = {
@@ -77,7 +77,7 @@ export const lever: Adapter = {
   confirmed(doc, url) {
     if (/\/thanks\/?$/.test(new URL(url).pathname)) return true;
     return /thank you for applying|thanks for applying|application (was |has been )?(submitted|received)/i.test(
-      textOf(doc.querySelector('.content, main, body')).slice(0, 3000),
+      wordsAt(doc, ['.content', 'main', 'body'], 3000),
     );
   },
 };

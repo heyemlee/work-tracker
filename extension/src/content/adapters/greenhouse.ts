@@ -1,6 +1,6 @@
 import { cleanLink, companyFromSlug, parsePosting } from '@domain/postings';
 import type { FieldKind, Hint, Posting } from '../../model';
-import { htmlText, jsonAfter, textOf } from '../dom';
+import { htmlText, jsonAfter, textOf, wordsAt } from '../dom';
 import type { Adapter } from './types';
 
 const HINTS: Record<string, Hint> = {
@@ -132,9 +132,8 @@ export const greenhouse: Adapter = {
 
   confirmed(doc, url) {
     if (/\/confirmation\/?(\?|$)/.test(new URL(url).pathname + new URL(url).search)) return true;
-    const main = doc.querySelector('main, #application, .application--container, body');
     return /thank you for applying|thanks for applying|application (has been |was )?(received|submitted)|we('ve| have) received your application/i.test(
-      textOf(main).slice(0, 3000),
+      wordsAt(doc, ['main', '#application', '.application--container', 'body'], 3000),
     );
   },
 };

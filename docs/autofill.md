@@ -610,7 +610,13 @@ a posting there shows a note. It is a note, not a block.
   signed in is taken once the application is in. By what takes the form's place: on Ashby the box its code draws
   there (`ashby-application-form-success-container`), whose words are the company's to choose. By its words
   otherwise: Gem's "Your application for … has been received" in the form's box, the note Workday draws for someone
-  applying without an account, a thank-you on a site without an adapter. Words are the weakest of the three
+  applying without an account, a thank-you on a site without an adapter. The words are read where the page puts
+  what it says, in the order the adapter names the places (`wordsAt` in `content/dom.ts`), and without the page's
+  scripts and styles: until 2026-10-14 a list of places read as one selector gave `<body>` every time (it comes first
+  in the document), so a thank-you after a long menu, or after an inline script of a few thousand characters, was
+  past the 3,000 characters looked at, and words in a script counted as the page saying them. A press of a Submit
+  button that sends the form is one attempt, not also the form's own submit event (two until then, so what the owner
+  typed was remembered twice). Words are the weakest of the three
   (2026-10-08). They hold for one language and one wording, and a page the browser translates has them reworded
   between 70 and 170 ms after it draws them, while the page was looked at every 600 ms: on a careers page whose
   thank-you takes the form's place, with Chrome's own translation on, 2 applications of 12 were logged, the two

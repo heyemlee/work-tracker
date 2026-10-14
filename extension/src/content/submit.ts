@@ -75,9 +75,13 @@ export function watchSubmission(
 
   // Another form sent from the page, a search box or a sign-up, isn't the application. The page is watched for what
   // it says next all the same, as it is after any form.
+  // A press of the form's Submit button is the attempt; the form's own submit event that same press sets off isn't
+  // another (it fires before the press is through, so a flag cleared on the next turn tells them apart).
+  let pressed = false;
   const onSubmit = (event: Event) => {
     const form = adapter.form(doc);
     const { target } = event;
+    if (pressed) return;
     if (form && target instanceof Node && (form.contains(target) || target.contains(form))) attempt();
     else startWatching();
   };
@@ -85,7 +89,12 @@ export function watchSubmission(
     const { target } = event;
     if (!(target instanceof Node)) return;
     const buttons = [adapter.submitButton(doc)].flat();
-    if (buttons.some((button) => button?.contains(target))) attempt();
+    if (!buttons.some((button) => button?.contains(target))) return;
+    attempt();
+    pressed = true;
+    setTimeout(() => {
+      pressed = false;
+    }, 0);
   };
 
   doc.addEventListener('submit', onSubmit, true);
