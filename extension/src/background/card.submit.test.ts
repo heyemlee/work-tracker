@@ -2,7 +2,8 @@ import type { QuickAddResult } from '@domain/repository';
 import type { Snapshot } from '@domain/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import type { PlannedField, Posting } from '../model';
+import type { PlannedField, Posting, ScannedField } from '../model';
+import { memoryItem } from '../storage';
 
 const loadSnapshot = vi.fn<() => Promise<Snapshot>>();
 const quickAddOrQueue = vi.fn();
@@ -210,5 +211,52 @@ describe('the account a submission is logged under', () => {
     await submitConfirmed(TAB, CONFIRMATION);
     expect(quickAddOrQueue).not.toHaveBeenCalled();
     expect((await getSession(TAB))?.error).toBe('alreadyLogged');
+  });
+});
+
+describe('what a sent form teaches for next time', () => {
+  const contact: ScannedField = {
+    id: '0:contact',
+    label: 'May we contact your current employer?',
+    description: '',
+    kind: 'radio',
+    options: ['Yes', 'No'],
+    required: true,
+    hint: null,
+    section: '',
+    entry: null,
+    filled: true,
+    maxLength: null,
+  };
+  // The rule proposes "No" for the owner to confirm; the page reads back the option it shows.
+  const proposed: PlannedField = {
+    fieldId: contact.id,
+    status: 'confirm',
+    answer: { type: 'choice', want: { kind: 'no' }, option: 'No' },
+    source: 'rule',
+    key: 'contactEmployer',
+    note: null,
+    critical: false,
+  };
+  const sent = (option: string) => [
+    {
+      fieldId: contact.id,
+      answer: { type: 'choice' as const, want: { kind: 'like' as const, texts: [option] }, option },
+    },
+  ];
+
+  beforeEach(async () => {
+    await memoryItem.setValue([]);
+    await updateSession(TAB, URL_, () => ({ fields: [contact], plan: [proposed] }));
+  });
+
+  it('isn’t a rule’s answer the owner left as it was', async () => {
+    await submitAttempt(TAB, URL_, sent('No'), []);
+    expect(await memoryItem.getValue()).toEqual([]);
+  });
+
+  it('is the answer the owner put in its place', async () => {
+    await submitAttempt(TAB, URL_, sent('Yes'), []);
+    expect((await memoryItem.getValue()).map((entry) => entry.answer)).toMatchObject([{ option: 'Yes' }]);
   });
 });

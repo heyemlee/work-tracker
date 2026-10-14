@@ -90,6 +90,32 @@ describe('a field the form names itself, with nothing for it in the profile', ()
   });
 });
 
+describe('what was typed in a field last time, beside a rule for it', () => {
+  // A site that doesn't name its fields: the email is known by its label alone.
+  const email: ScannedField = { ...whyUs(false), label: 'Email', kind: 'email', required: true };
+  const typedBefore = {
+    key: memoryKey(email),
+    label: email.label,
+    answer: { type: 'text' as const, text: 'alice@old.example.com' },
+    uses: 1,
+    updatedAt: '2026-10-06T00:00:00.000Z',
+  };
+
+  it('gives way to the email of the account chosen on the card', () => {
+    expect(planForm([email], ctx, [typedBefore])[0]).toMatchObject({
+      answer: { type: 'text', text: 'alex@example.com' },
+      source: 'rule',
+    });
+  });
+
+  it('fills the field where the account has no email', () => {
+    expect(planForm([email], { ...ctx, email: '' }, [typedBefore])[0]).toMatchObject({
+      answer: { type: 'text', text: 'alice@old.example.com' },
+      source: 'memory',
+    });
+  });
+});
+
 const question = (label: string, kind: ScannedField['kind'], options: string[] = []): ScannedField => ({
   ...whyUs(false),
   label,

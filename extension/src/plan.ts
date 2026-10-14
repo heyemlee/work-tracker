@@ -129,13 +129,20 @@ function resolve(
   const eeo = classifyEeo(field.label);
   if (eeo && field.kind !== 'textarea') return rule(choose(`eeo.${eeo}`, field, eeoWant(eeo, ctx.profile)));
 
+  // A rule that answers from the profile or the account fills its field before what was typed there last time: the
+  // account's email, not another account's; the profile's answer as it stands now. What the owner typed comes first
+  // where a rule only proposes an answer for them to confirm, or has none.
+  const consent = isConsent(field);
+  const found = consent ? undefined : findRule(field);
+  const ruled = found?.answer(field, ctx);
+  if (ruled?.status === 'filled' && ruled.answer) return rule(ruled);
+
   const remembered = recalled(memory, field);
   if (remembered) return remembered;
 
-  if (isConsent(field)) return rule(answerConsent(field, ctx.profile));
+  if (consent) return rule(answerConsent(field, ctx.profile));
 
-  const found = findRule(field);
-  if (found) return rule(found.answer(field, ctx));
+  if (ruled) return rule(ruled);
 
   const freeText = classifyFreeText(field);
   if (freeText) {

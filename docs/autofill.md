@@ -246,6 +246,11 @@ Each field goes through four layers and stops at the first that places it:
 3. **Answer memory** — what the owner typed into a field the layers above missed, keyed by the normalized question
    and reused next time. Captured at submit; listed in the settings, where an answer can be taken off. It also
    fills one of the form's own fields (Greenhouse's "Preferred First Name") when the profile has nothing for it.
+   A dictionary rule that fills its field from the profile or the account goes first; memory comes before a rule
+   that only proposes an answer to confirm, or has none (until 2026-10-14 memory came before every rule, so on a
+   site that doesn't name its fields an email typed once filled the email field whichever account the card had
+   chosen). A rule's answer the owner left as it was isn't remembered: the page and the plan are compared by the
+   option picked, not by how the plan wanted it (a "no" read back as "No").
 4. **AI fallback** — the remaining fields, as text (label, kind, options), go to Claude in one request per form.
    Below a confidence threshold the field stays blank.
 

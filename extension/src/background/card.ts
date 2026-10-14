@@ -14,6 +14,7 @@ import type { Profile } from '../profile/schema';
 import type { RuleContext } from '../rules/context';
 import { remember } from '../rules/memory';
 import { resumeChoices } from '../resumes';
+import { norm } from '../text';
 import {
   aiKey,
   finalsItem,
@@ -613,7 +614,18 @@ export async function pageHolds(tabId: number, url: string, frameId: number, hel
   }
 }
 
-const sameAnswer = (a: Answer | null, b: Answer) => JSON.stringify(a) === JSON.stringify(b);
+/**
+ * The page holds the answer the plan put there. A choice is the option picked, whatever the plan wanted it by: the
+ * page is read as the option it shows (`want` "like" that text), the plan may have wanted "no" or "yes".
+ */
+function sameAnswer(planned: Answer | null, held: Answer): boolean {
+  if (planned?.type === 'choice' && held.type === 'choice')
+    return planned.option !== null && held.option !== null && norm(planned.option) === norm(held.option);
+  if (planned?.type === 'choices' && held.type === 'choices')
+    return planned.texts.map(norm).sort().join('\n') === held.texts.map(norm).sort().join('\n');
+  if (planned?.type === 'text' && held.type === 'text') return planned.text.trim() === held.text.trim();
+  return JSON.stringify(planned) === JSON.stringify(held);
+}
 
 /**
  * What the owner typed where the rules had nothing, remembered for the same question next time; AI drafts they
