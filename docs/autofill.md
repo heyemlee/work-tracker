@@ -653,7 +653,9 @@ a posting there shows a note. It is a note, not a block.
   job's address only now (`…/job/…`, `…/details/…`; both the same job's to `linkKey`, as are its `…/apply/…` pages
   and its address without the page's language, so a posting saved from beside the list is found again on its
   application), and the board's other pages are none; a card left open where
-  its page gives way to one of them without a page loaded, the list of jobs after a posting, goes as it came.
+  its page gives way to one of them without a page loaded, the list of jobs after a posting, goes as it came, once
+  a second look 1.5 s later finds nothing either (2026-10-14): on LinkedIn the address moves to the next posting
+  before the posting is drawn, and the card read in between had gone for good.
   The card's reading of the page an application ends on also waits for the log that page set off (`confirming`
   in `background/card.ts`): read sooner, the tab showed the posting with nothing logged yet, and for the length
   of a round trip to Outbox the card offered to log what was being logged. And the page stays the application's

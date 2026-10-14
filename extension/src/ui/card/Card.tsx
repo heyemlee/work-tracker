@@ -37,6 +37,9 @@ import { pageIsDark } from './scheme';
 import { SettingsFrame } from './SettingsFrame';
 import { Track } from './Track';
 
+/** How long after a page with nothing for the card it is looked at again, before the card goes. */
+const SETTLE_MS = 1500;
+
 /** What the owner does about a field the fill left open, in a word. */
 const KINDS: Partial<Record<ChecklistItem['status'], MessageKey>> = {
   confirm: 'tag.confirm',
@@ -434,8 +437,12 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     if (next) setState(next);
   }, []);
 
-  // `moved`: the page gave way to another without loading one, which is why the card reads it again.
-  const refresh = useCallback((moved = false) => {
+  // A second look at a page that came up with nothing for the card, before the card goes.
+  const settling = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // `moved`: the page gave way to another without loading one, which is why the card reads it again. `again`: the
+  // second look.
+  const refresh = useCallback(function read(moved = false, again = false) {
+    clearTimeout(settling.current);
     toBackground('card:state', { refresh: true, moved })
       .then((next) => {
         if (!next) return;
@@ -453,8 +460,12 @@ export function Card({ startOpen }: { startOpen: boolean }) {
           (next.logged && !next.logged.undone);
         if (show) setView((now) => (now === 'closed' ? 'open' : now));
         // And gone where the page it came up for gave way, in place, to one with nothing of that: a board's list
-        // of jobs after a posting, a candidate's own pages.
-        else if (moved && next.ats !== 'generic') setView('closed');
+        // of jobs after a posting, a candidate's own pages. Once a second look says so too: the next posting can
+        // be on its way still where the address has moved already (LinkedIn's list of jobs, with one beside it).
+        else if (moved && next.ats !== 'generic') {
+          if (again) setView('closed');
+          else settling.current = setTimeout(() => read(true, true), SETTLE_MS);
+        }
       })
       .catch(() => undefined);
   }, []);
@@ -478,6 +489,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   useEffect(() => {
     readSettings();
     refresh();
+    const settled = settling;
     const listener = (
       message: { type?: string; state?: CardState; checklist?: ChecklistItem[]; asked?: boolean },
       _sender: unknown,
@@ -520,6 +532,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     return () => {
       browser.runtime.onMessage.removeListener(listener);
       clearInterval(timer);
+      clearTimeout(settled.current);
     };
   }, [refresh, fill, readSettings]);
 
