@@ -10,6 +10,20 @@ app's page, as any route does, with the day's header: a deploy reaching one Clou
 hand a browser that page for a script the new build asks for, a blank screen kept through reloads for the day. Each
 asset request now counts as a Worker request (a page load asks for three or four).
 
+## Self-hosting
+
+The files name one deployment's addresses. For your own copy, change them before the steps below:
+
+- `wrangler.jsonc`: the hostname in `routes` (step 3) and the `DB` entry's `database_id` (step 1).
+- `extension/src/hosts.ts`: `OUTBOX_MATCHES`, the pages where the extension takes Outbox's session and
+  answers its messages.
+- `extension/src/storage.ts`: `outboxUrl` in `DEFAULT_SETTINGS`, where the extension sends its API calls until
+  another address is saved under **More** on its options page.
+
+Two tests use the same address: `extension/src/content/bridge.test.ts` and `extension/e2e/outbox-bridge.spec.ts`.
+Everything else that is yours (the auth secret, the Google client, the allowed emails) is a Worker secret
+(step 4), not a file.
+
 ## 1. Cloudflare account and database
 
 ```bash
@@ -98,7 +112,7 @@ The extension is loaded unpacked in Chrome; it isn't published to the Chrome Web
    profile before each fill, and whenever its options page (**Details → Extension options**) opens; **Status**
    there shows whose profile it holds.
 5. Sign in to Outbox in the same Chrome profile; **Status** on the options page says whether the extension reaches
-   it. The address (`https://tracker.haoyang.us`, or `http://localhost:5180` while developing) is under **More**.
+   it. The address (your app URL, or `http://localhost:5180` while developing) is under **More**.
    Logging uses Outbox's session cookie. If Chrome withholds it, the extension borrows the session of an open Outbox
    tab as a bearer token, which needs a Worker deployed with the `bearer` plugin (step 3 above, from this version
    on).
