@@ -19,9 +19,10 @@ follows Apple's Liquid Glass.
   `Enter`. Typing a company you've applied to before offers its postings, and accounts that already applied
   can't be picked twice. Or paste the posting's link: the company fills itself in, and a link you've already
   tracked opens its posting, ready for the next account. Adds and deletes can be undone.
-- **A list you can scan.** Grouped by day, with today's count against a daily goal, the last 7 days and active
-  OAs, status filters with counts, search (`/`), and a switch to hide rejections. An application still at Applied
-  after 30 days reads _No reply_ and fades. Every change lands on the posting's timeline.
+- **A list you can scan.** Grouped by day, 25 postings to a page, with today's count against a daily goal, the
+  last 7 days and active OAs, status filters with counts, search (`/`), and a switch to hide rejections. An
+  application still at Applied after 30 days reads _No reply_ and fades. Every change lands on the posting's
+  timeline.
 - **Numbers that say what works.** An Insights page shows the funnel from applied to OA to offer, applications per
   day against the goal, and the OA rate of each resume version, account and channel, for 7 days, 30 days or
   everything.
@@ -29,8 +30,8 @@ follows Apple's Liquid Glass.
   extension and its key, reading a resume into your profile, and the answers no resume holds. A checklist on the
   home page keeps what's left, until the extension logs your first application.
 - **Liquid Glass.** Blur, saturation, and a specular rim in every browser, with real refraction (an SVG
-  displacement map) in Chromium. Light and dark follow the system; reduced motion and reduced transparency are
-  honored.
+  displacement map) in Chromium. Four looks: White (the default), Light with soft glows, pure-black Dark, or the
+  system's. Reduced motion and reduced transparency are honored.
 - English and Simplified Chinese, CSV export, and a layout that works on a phone. Passwords are never stored.
 
 ## Autofill extension
@@ -44,10 +45,11 @@ started from their resume PDF, then logs each submission to Outbox. It never pre
 
 <p align="center"><sub>A made-up posting on a stand-in Greenhouse page, filled from a made-up profile.</sub></p>
 
-- **Rules first.** Adapters for Greenhouse, Lever, Ashby, Workday and Gem read the form and drive its widgets, and
-  a field dictionary answers the questions most forms repeat. Work authorization (sponsorship now or later,
-  OPT, export control, clearance) is answered by fixed rules for the job's country, never by a model, and is
-  always marked for the owner to confirm.
+- **Rules first.** Adapters for Greenhouse, Lever, Ashby, Workday, Gem, iCIMS, SmartRecruiters, Workable and
+  Jobvite read the form and drive its widgets, any other form with a resume upload and a name or email gets a
+  generic one, and a field dictionary answers the questions most forms repeat. The email filled in is the account
+  picked on the card. Work authorization (sponsorship now or later, OPT, export control, clearance) is answered
+  by fixed rules for the job's country, never by a model, and is always marked for the owner to check.
 - **Claude for the rest.** Fields the rules can't place go to Claude in one request per form; anything under
   0.7 confidence stays blank. Essay questions get a short draft grounded in the resume and the posting, for the
   owner to edit.
@@ -55,8 +57,8 @@ started from their resume PDF, then logs each submission to Outbox. It never pre
   approvals (USCIS, FY2021–2023), and how many of its postings the owner applied to in the last 30 days. It
   warns and never blocks.
 - **It logs itself.** When the confirmation page loads, the application lands in Outbox with its account,
-  channel, resume version and link, and can be undone. On a posting you'll apply to later, **Save for later** adds
-  it to Outbox as a saved job.
+  channel, resume version and link, and can be undone. On a posting, **Mark as applied** logs it without a form
+  and **Save for later** keeps it as a saved job.
 
 Fill accuracy on 22 saved application pages, using rules only (no AI). Every expected answer was checked by
 hand:
@@ -69,8 +71,9 @@ hand:
 
 The required fields left blank are essays and questions only the applicant can answer, such as "Are you
 currently a Wealthfront client?". Workday's forms sit behind a sign-in, so its adapter is built from Workday's
-`data-automation-id` conventions and tested on a page modeled on them rather than a saved one. The design is in
-[docs/autofill.md](docs/autofill.md).
+`data-automation-id` conventions and tested on a page modeled on them rather than a saved one. The iCIMS,
+SmartRecruiters, Workable and Jobvite adapters are tested on small fixtures that keep each form's structure as seen
+on public pages, and aren't in the table yet. The design is in [docs/autofill.md](docs/autofill.md).
 
 ## Architecture
 
@@ -92,12 +95,19 @@ reach the Worker.
 - **Built for D1.** Multi-row writes go out as one atomic batch, split to fit D1's 100 bound parameters per
   statement; every foreign key is indexed; deletes are soft, so they can be undone.
 
-## Stack
+## Tech stack
 
-- **App:** React 19, TypeScript, Vite, Tailwind CSS v4, Motion, Radix primitives, TanStack Query
-- **Backend:** Cloudflare Workers, Hono, D1 (SQLite) with Drizzle, Better Auth, zod
-- **Extension:** Chrome Manifest V3 with WXT, React 19, the Anthropic TypeScript SDK
-- **Quality:** Vitest, Playwright, ESLint with the React Compiler rules, Prettier, GitHub Actions
+| Layer     | Technology                                                                       | Role                                                                            |
+| --------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Web app   | React 19 · TypeScript · Vite · Tailwind CSS v4 · Motion · Radix · TanStack Query | The list, Insights, profile, resumes and first-run guide                        |
+| API       | Cloudflare Workers · Hono · zod · Better Auth                                    | One Worker serves the app and `/api`; Google sign-in for allowlisted addresses  |
+| Data      | D1 (SQLite) · Drizzle                                                            | Postings, applications, timelines, the profile and resume PDFs                  |
+| Extension | Chrome Manifest V3 · WXT · React 19 · pdf.js · Anthropic TypeScript SDK          | Fills applications by rule, asks Claude for the rest, logs each submission      |
+| Quality   | Vitest · Playwright · ESLint with the React Compiler rules · Prettier            | Domain, contract and adapter tests; the extension end to end in Chromium, in CI |
+| Local lab | NestJS · Prisma · PostgreSQL · Redis                                             | [`backend/`](backend): job aggregation, a resume-parsing lab, a database lab    |
+
+The local lab runs on one machine only and is never deployed; the tracker and the extension don't use it. Its
+setup is in [backend/README.md](backend/README.md) (in Chinese).
 
 ## Develop
 
