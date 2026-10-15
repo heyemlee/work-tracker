@@ -1,0 +1,17 @@
+<!DOCTYPE html><html><head><title>Software Engineer</title><script type="application/ld+json">{"@type":"JobPosting","title":"Software Engineer","hiringOrganization":{"name":"Example Labs"},"jobLocation":{"address":{"addressLocality":"Austin","addressRegion":"Texas","addressCountry":"US"}}}</script></head><body><h1 data-ui="job-title" class="iCIMS_Header">Software Engineer</h1><script>window.__OC_CONTEXT__ = {"company":{"name":"Example Labs","companyIdentifier":"ExampleLabs"},"job":{"title":"Software Engineer","location":"Austin, Texas, US"},"publicationExternalId":"12345"};</script>
+<oc-oneclick-form>
+<spl-input id="first-name-input" label="First name" required><template data-shadow><input id="first-name-input" autocomplete="given-name"></template></spl-input>
+<spl-input id="last-name-input" label="Last name" required><template data-shadow><input autocomplete="family-name"></template></spl-input>
+<spl-input id="email-input" label="Email" required><template data-shadow><input type="email" autocomplete="email"></template></spl-input>
+<spl-input id="confirm-email-input" label="Confirm your email" required><template data-shadow><input type="email" autocomplete="email"></template></spl-input>
+<spl-autocomplete label="City" data-test="location-autocomplete" required><template data-shadow>
+<spl-input label="City"><template data-shadow><input role="combobox" aria-controls="city-menu"></template></spl-input>
+<div id="city-menu" role="listbox"></div></template></spl-autocomplete>
+<spl-phone-field label="Phone number" required><template data-shadow>
+<spl-select splarialabel="Country code" value="US"><spl-select-option value="US" label="United States">United States</spl-select-option><spl-select-option value="CA" label="Canada">Canada</spl-select-option><template data-shadow><button type="button" role="combobox">United States</button></template></spl-select>
+<spl-input type="tel"><template data-shadow><input type="tel"></template></spl-input></template></spl-phone-field>
+<spl-dropzone data-test="apply-with-resume-container"><template data-shadow><input type="file"></template></spl-dropzone>
+<spl-dropzone data-test="resume-upload" required><template data-shadow><input type="file"></template></spl-dropzone>
+<spl-textarea label="Message to hiring manager"><template data-shadow><textarea></textarea></template></spl-textarea>
+<spl-button><template data-shadow><button type="button">Next</button></template></spl-button>
+</oc-oneclick-form></body></html>

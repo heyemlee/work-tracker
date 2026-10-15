@@ -69,7 +69,7 @@ export function watchSubmission(
     // A board that moves between postings without loading a page sends its next application from this same
     // document: by then the last one's confirmation has left the page, and this one is told of in its turn.
     if (confirmed && !says()) confirmed = false;
-    onAttempt(emailsIn(adapter.form(doc) ?? doc));
+    onAttempt(adapter.emails ? adapter.emails(doc) : emailsIn(adapter.form(doc) ?? doc));
     startWatching();
   };
 

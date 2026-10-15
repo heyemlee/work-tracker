@@ -1,4 +1,5 @@
 import { isHidden, sleep, textOf, waitFor } from './dom';
+import { optionText, shadowOptions, shadowWidget } from './adapters/shared';
 
 /**
  * Setting values so the page's framework notices. React tracks an input's value through the native setter, so
@@ -62,7 +63,11 @@ function key(element: HTMLElement, name: string, code = name): void {
 
 /** The listbox a combobox controls, or the nearest open menu. */
 function listboxFor(input: HTMLElement): HTMLElement | null {
+  const widget = shadowWidget(input);
+  if (widget) return widget;
   const doc = input.ownerDocument;
+  if (input.id.endsWith('_icimsDropdown'))
+    return doc.getElementById(input.id.replace(/_icimsDropdown$/, '_dropdown-results'));
   const controls = input.getAttribute('aria-controls') ?? input.getAttribute('aria-owns');
   const byId = controls ? doc.getElementById(controls) : null;
   if (byId) return byId;
@@ -87,9 +92,10 @@ function listboxFor(input: HTMLElement): HTMLElement | null {
 }
 
 function optionsIn(listbox: HTMLElement): HTMLElement[] {
+  if (listbox.matches('spl-select, spl-autocomplete')) return shadowOptions(listbox);
   const found = [
     ...listbox.querySelectorAll<HTMLElement>(
-      '[role="option"], [role="menuitem"], [data-automation-id="promptOption"], .select__option',
+      '[role="option"], [role="menuitem"], [data-automation-id="promptOption"], .select__option, [id$="_dropdown-results"] li[title]',
     ),
   ];
   return found.filter((option) => !isHidden(option));
@@ -167,7 +173,7 @@ export async function pickFromCombobox(
   choose: (texts: string[]) => string | null,
 ): Promise<string | null> {
   const options = await openCombobox(input);
-  const texts = options.map((option) => textOf(option));
+  const texts = options.map(shadowWidget(input) ? optionText : textOf);
   const choice = choose(texts);
   const index = choice === null ? -1 : texts.indexOf(choice);
   const target = options[index];
@@ -184,7 +190,7 @@ export async function pickFromCombobox(
 /** Reads a combobox's option texts without choosing any. */
 export async function readComboboxOptions(input: HTMLElement): Promise<string[]> {
   const options = await openCombobox(input);
-  const texts = options.map((option) => textOf(option));
+  const texts = options.map(shadowWidget(input) ? optionText : textOf);
   closeCombobox(input);
   return texts;
 }
@@ -210,10 +216,13 @@ export async function pickFromTypeahead(
         listboxFor(input) ??
         input.closest('li, .application-field, div')?.querySelector<HTMLElement>('.dropdown-results');
       if (!box) return null;
-      const items = [
-        ...box.querySelectorAll<HTMLElement>('[role="option"], .dropdown-location, li, .pac-item'),
-      ].filter((item) => textOf(item) && !isHidden(item));
-      const texts = items.map((item) => textOf(item));
+      const widget = shadowWidget(input);
+      const items = widget
+        ? shadowOptions(widget)
+        : [...box.querySelectorAll<HTMLElement>('[role="option"], .dropdown-location, li, .pac-item')].filter(
+            (item) => textOf(item) && !isHidden(item),
+          );
+      const texts = items.map(widget ? optionText : textOf);
       const choice = choose(texts);
       const target = choice === null ? undefined : items[texts.indexOf(choice)];
       return target ? { target, choice } : null;

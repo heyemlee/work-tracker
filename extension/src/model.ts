@@ -1,5 +1,16 @@
 /** The applicant-tracking system a page belongs to. `generic` is any other site. */
-export type Ats = 'greenhouse' | 'lever' | 'ashby' | 'workday' | 'gem' | 'linkedin' | 'generic';
+export type Ats =
+  | 'greenhouse'
+  | 'lever'
+  | 'ashby'
+  | 'workday'
+  | 'gem'
+  | 'linkedin'
+  | 'icims'
+  | 'smartrecruiters'
+  | 'workable'
+  | 'jobvite'
+  | 'generic';
 
 export type FieldKind =
   | 'text'

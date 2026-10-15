@@ -73,6 +73,7 @@ export function heldBy(handle: Handle): Held | null {
       return held(isFilled(handle), shownValue(handle), true);
     case 'combobox':
     case 'typeahead': {
+      if (handle.type === 'combobox' && handle.shown) return held(isFilled(handle), shownValue(handle), true);
       const select = handle.element.closest('[class*="select__control"]');
       // While something is typed into react-select's search box the pick isn't drawn, though the field holds it.
       if (select) return held(select.querySelector(PICKED) !== null, shownValue(handle), true);

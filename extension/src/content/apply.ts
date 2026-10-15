@@ -343,6 +343,10 @@ export function readAnswer(handle: Handle, read?: readonly string[]): Answer | n
       return texts.length ? { type: 'choices', texts } : null;
     }
     case 'combobox': {
+      if (handle.shown) {
+        const value = handle.shown();
+        return value ? { type: 'choice', want: { kind: 'like', texts: [value] }, option: value } : null;
+      }
       // Workday's dropdown button: its text is the prompt until something is chosen.
       if (handle.element.tagName === 'BUTTON' && !holdsChoice(handle.element)) return null;
       const container =

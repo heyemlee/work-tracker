@@ -5,7 +5,7 @@ export type Handle =
   | { type: 'input'; element: HTMLInputElement | HTMLTextAreaElement }
   | { type: 'select'; element: HTMLSelectElement }
   /** react-select, Workday's dropdown button: opened, then an option clicked. */
-  | { type: 'combobox'; element: HTMLElement }
+  | { type: 'combobox'; element: HTMLElement; shown?: () => string | null }
   | { type: 'typeahead'; element: HTMLInputElement }
   | { type: 'radio'; inputs: HTMLInputElement[] }
   | { type: 'checkbox'; element: HTMLInputElement }
@@ -65,6 +65,8 @@ export interface Adapter {
   submitButton(doc: Document): HTMLElement | HTMLElement[] | null;
   /** The page shows that an application went through. */
   confirmed(doc: Document, url: string): boolean;
+  /** Emails held in an application whose controls live inside component roots. */
+  emails?(doc: Document): string[];
   /** Waits after a field is filled until the page has taken the answer in, before the next field is touched. */
   settle?(): Promise<void>;
   /**

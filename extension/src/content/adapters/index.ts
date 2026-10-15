@@ -4,6 +4,10 @@ import { generic } from './generic';
 import { greenhouse } from './greenhouse';
 import { lever } from './lever';
 import { linkedin } from './linkedin';
+import { icims } from './icims';
+import { smartrecruiters } from './smartrecruiters';
+import { workable } from './workable';
+import { jobvite } from './jobvite';
 import type { Adapter } from './types';
 import { workday } from './workday';
 
@@ -17,6 +21,10 @@ export function adapterFor(url: string): Adapter {
   if (host === 'jobs.gem.com') return gem;
   if (isUnder(host, 'myworkdayjobs.com') || isUnder(host, 'myworkdaysite.com')) return workday;
   if (isUnder(host, 'linkedin.com')) return linkedin;
+  if (isUnder(host, 'icims.com')) return icims;
+  if (host === 'jobs.smartrecruiters.com') return smartrecruiters;
+  if (host === 'apply.workable.com') return workable;
+  if (host === 'jobs.jobvite.com') return jobvite;
   return generic;
 }
 

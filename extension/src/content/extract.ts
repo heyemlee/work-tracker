@@ -177,6 +177,7 @@ export function isFilled(handle: Handle): boolean {
     case 'file':
       return heldFile(handle) !== null;
     case 'combobox': {
+      if (handle.shown) return !!handle.shown();
       // react-select shows the chosen option in a "single value" element beside the input's own box.
       return Boolean(
         pickBox(handle.element)?.querySelector('[class*="single-value"], [class*="multi-value"]'),

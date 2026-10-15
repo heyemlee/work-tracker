@@ -11,6 +11,10 @@ export const ATS_MATCHES = [
   '*://*.myworkdayjobs.com/*',
   '*://*.myworkdaysite.com/*',
   '*://www.linkedin.com/jobs/*',
+  '*://*.icims.com/*',
+  '*://jobs.smartrecruiters.com/*',
+  '*://apply.workable.com/*',
+  '*://jobs.jobvite.com/*',
 ];
 
 /** Where Outbox runs. The content script on these pages hands the session token to the service worker. */
