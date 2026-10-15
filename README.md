@@ -158,9 +158,3 @@ request (`npm run eval -w extension`).
 
 See [docs/deploy.md](docs/deploy.md), which also covers installing the extension. Product and architecture
 decisions are in [docs/design.md](docs/design.md).
-
-## Next
-
-An agent that reads recruiting email and keeps statuses current: paste an email (later, Gmail sync) and it
-classifies it, matches the application, and updates it, with anything ambiguous held for review. The model is
-chosen by an eval set of about 100 synthetic emails: the cheapest that reaches 97% accuracy ships.
