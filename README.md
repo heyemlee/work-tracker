@@ -4,12 +4,11 @@ A job-application tracker for people who apply to the same posting from more tha
 account's application moves through its own stages, logging one takes about five seconds, and the interface
 follows Apple's Liquid Glass.
 
-![Logging a posting applied to from two accounts in a few keystrokes, then moving one application to OA](docs/screenshots/quick-add.webp)
-
 <p align="center">
-  <img src="docs/screenshots/desktop-dark.webp" width="75%" alt="The list in dark mode" />
-  <img src="docs/screenshots/mobile-detail.webp" width="22%" alt="A posting's details on a phone" />
+  <img src="docs/screenshots/tour.webp" width="960" alt="Logging a posting from two accounts with the keyboard, moving one account's application at another company to OA, then the Insights page" />
 </p>
+
+<p align="center"><sub>Fictional companies and accounts, in the White theme.</sub></p>
 
 ## Features
 
@@ -38,6 +37,12 @@ follows Apple's Liquid Glass.
 
 A Chrome extension in [`extension/`](extension) fills job applications from a profile the owner keeps in Outbox,
 started from their resume PDF, then logs each submission to Outbox. It never presses Submit: the owner checks every answer first.
+
+<p align="center">
+  <img src="docs/screenshots/autofill.webp" width="960" alt="The extension's card on a Greenhouse application: the second account picked, the form filled to 9 of 9 required fields, the two work-authorization answers left to check, and the submission logged to Outbox" />
+</p>
+
+<p align="center"><sub>A made-up posting on a stand-in Greenhouse page, filled from a made-up profile.</sub></p>
 
 - **Rules first.** Adapters for Greenhouse, Lever, Ashby, Workday and Gem read the form and drive its widgets, and
   a field dictionary answers the questions most forms repeat. Work authorization (sponsorship now or later,
