@@ -8,7 +8,8 @@
 
 A job-application tracker with a Chrome extension that fills application forms from your profile and logs each
 submission by itself. Logging one by hand takes about five seconds, and Insights show which resume and channel
-get you OAs. Run locally, it also finds roles at the companies you follow and reads resumes into your profile.
+get you OAs. Behind Discover and Resume tools, a NestJS service gathers the open roles of the companies you follow
+from their job boards and parses resumes into your profile with an LLM.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?style=flat-square&logo=typescript&logoColor=white)](tsconfig.json)
 [![React](https://img.shields.io/badge/React-19-149ECA?style=flat-square&logo=react&logoColor=white)](package.json)
@@ -18,8 +19,8 @@ get you OAs. Run locally, it also finds roles at the companies you follow and re
 
 **English** · [简体中文](README.zh-CN.md)
 
-[Autofill extension](#autofill-extension) · [Tracker](#tracker) · [Architecture](#architecture) ·
-[Tech stack](#tech-stack) · [Develop](#develop)
+[Autofill extension](#autofill-extension) · [Tracker](#tracker) · [Discover and Resume tools](#discover-and-resume-tools) ·
+[Architecture](#architecture) · [Tech stack](#tech-stack) · [Develop](#develop)
 
 </div>
 
@@ -67,7 +68,7 @@ on public pages, and aren't in the table yet. The design is in [docs/autofill.md
 ## Tracker
 
 <p align="center">
-  <img src="docs/screenshots/tour.webp" width="960" alt="Logging a posting with the keyboard, saving a role from Discover and marking it applied, then the Insights page" />
+  <img src="docs/screenshots/tour.webp" width="960" alt="Logging a posting with the keyboard, finding another and moving it to OA, then the Insights page" />
 </p>
 
 <p align="center"><sub>Fictional companies and roles, in the White theme.</sub></p>
@@ -84,10 +85,6 @@ on public pages, and aren't in the table yet. The design is in [docs/autofill.md
   timeline.
 - **Numbers that say what works.** An Insights page shows the funnel from applied to OA to offer, applications per
   day against the goal, and the OA rate of each resume version and channel, for 7 days, 30 days or everything.
-- **Discover and Resume tools.** In local development, Discover lists the open roles at the Greenhouse, Lever and
-  Ashby companies you follow and saves one to the tracker without recording an application. Resume tools read a
-  PDF or DOCX, parse it with a model only when asked, and hand the parts you pick to the profile draft. Both run
-  on the service in [`backend/`](backend); see [Local integrated tools](#local-integrated-tools).
 - **Set up in a few minutes.** A first-run guide walks through the email you apply with, your resumes, the
   extension and its key, reading a resume into your profile, and the answers no resume holds. A checklist on the
   home page keeps what's left, until the extension logs your first application.
@@ -96,16 +93,59 @@ on public pages, and aren't in the table yet. The design is in [docs/autofill.md
   system's. Reduced motion and reduced transparency are honored.
 - English and Simplified Chinese, CSV export, and a layout that works on a phone. Passwords are never stored.
 
+## Discover and Resume tools
+
+Two pages of the app sit on a NestJS service in [`backend/`](backend), with its own PostgreSQL database.
+
+### Discover
+
+<p align="center">
+  <img src="docs/screenshots/discover.webp" width="960" alt="Following one more company in Discover, syncing its job board, searching the roles for agent, and saving one to the tracker" />
+</p>
+
+- **Roles from the companies you follow.** Pick companies from a catalog, or add any Greenhouse, Lever or Ashby
+  board by its careers URL; the service checks the source before it saves it.
+- **A sync that keeps what it can't reread.** Each board's public API is read in full, normalized, and written to
+  PostgreSQL in one transaction per company. A posting that disappears is marked closed and reopens if it
+  returns; a timeout, a failed page or a malformed reply keeps the postings already stored. Syncs run on
+  request, or every day at 4 a.m. Pacific when switched on.
+- **Search, then save.** Full-text search by role or keyword, with location, company and remote filters. A saved
+  role becomes a saved posting in the tracker, matched against the postings already there, with no application
+  recorded.
+
+### Resume tools
+
+<p align="center">
+  <img src="docs/screenshots/resume-tools.webp" width="960" alt="Reading a resume PDF, parsing it with a model, reviewing the result into the profile, and saving it" />
+</p>
+
+- **Read here, parse on request.** A PDF or DOCX of up to 5 MB is read on the machine, in a worker thread with
+  limits on pages, text and archive size. Nothing reaches a model until **Parse resume**.
+- **Two ways to ask a model.** OpenAI's Responses API or Anthropic, through function calling or structured
+  output. Every reply is checked against a strict zod schema; a refusal, a truncated reply or an unknown field
+  fails instead of being patched.
+- **You pick what goes in.** The result opens in the profile as a draft: contact details fill only the blanks,
+  education and experience replace their sections when ticked, skills are merged, and nothing is stored until
+  Save.
+- **Measured, within a budget.** An eval CLI scores both methods field by field, with precision and recall
+  against reference labels on openly licensed resumes. Every request, from the page or the CLI, draws on one $5
+  ledger, reserved before the request is sent.
+
+Next to the service, a benchmark suite compares indexes, a materialized view, monthly partitions and a Redis read
+cache on 20,000 synthetic postings, and keeps each run's query plans and timings as a report. The service runs on
+the owner's machine; how to start it is under [Local integrated tools](#local-integrated-tools).
+
 ## Architecture
 
 <p align="center">
-  <img src="docs/architecture.svg" width="960" alt="The web app and the Autofill extension talk to one Cloudflare Worker, which serves the app, runs a Hono API with Better Auth, and stores data in D1; the extension asks Claude only for fields its rules can't place; in development the web app also reaches the local service in backend/ for Discover and Resume tools" />
+  <img src="docs/architecture.svg" width="960" alt="The web app and the Autofill extension talk to one Cloudflare Worker, which serves the app, runs a Hono API with Better Auth, and stores data in D1; the extension asks Claude only for fields its rules can't place; a NestJS service behind Discover and Resume tools reads public job boards into PostgreSQL and parses resumes with OpenAI or Anthropic" />
 </p>
 
 The Worker serves the built app as static assets and runs the API under `/api`. The extension reads the profile
 and resume PDFs from the same API and logs each submission to it; its AI keys stay in the extension and never
-reach the Worker. In development, the Vite server also bridges `/local-tools/*` to the NestJS service in
-`backend/` for Discover and Resume tools; a production build never contacts it.
+reach the Worker. The NestJS service in `backend/` keeps Discover's postings in PostgreSQL and calls a model only
+on Parse; the app reaches it through the Vite server's `/local-tools/*` bridge, so a production build shows those
+pages as unavailable and never contacts it.
 
 - **One contract, three implementations.** The UI talks only to a `Repository` interface. It is implemented in
   the browser (the offline prototype), over D1 in the Worker, and over HTTP in the app. The rules for every
@@ -119,19 +159,18 @@ reach the Worker. In development, the Vite server also bridges `/local-tools/*` 
 
 ## Tech stack
 
-| Layer         | Technology                                                                       | Role                                                                            |
-| ------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Web app       | React 19 · TypeScript · Vite · Tailwind CSS v4 · Motion · Radix · TanStack Query | The list, Discover, Insights, profile, resumes and first-run guide              |
-| API           | Cloudflare Workers · Hono · zod · Better Auth                                    | One Worker serves the app and `/api`; Google sign-in for allowlisted addresses  |
-| Data          | D1 (SQLite) · Drizzle                                                            | Postings, applications, timelines, the profile and resume PDFs                  |
-| Extension     | Chrome Manifest V3 · WXT · React 19 · pdf.js · Anthropic TypeScript SDK          | Fills applications by rule, asks Claude for the rest, logs each submission      |
-| Local service | NestJS · Prisma · PostgreSQL                                                     | [`backend/`](backend): job sync for Discover, resume parsing for Resume tools   |
-| Quality       | Vitest · Playwright · ESLint with the React Compiler rules · Prettier            | Domain, contract and adapter tests; the extension end to end in Chromium, in CI |
+| Layer     | Technology                                                                       | Role                                                                                             |
+| --------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Web app   | React 19 · TypeScript · Vite · Tailwind CSS v4 · Motion · Radix · TanStack Query | The list, Insights, Discover, Resume tools, profile and first-run guide                          |
+| API       | Cloudflare Workers · Hono · zod · Better Auth                                    | One Worker serves the app and `/api`; Google sign-in for allowlisted addresses                   |
+| Data      | D1 (SQLite) · Drizzle                                                            | Postings, applications, timelines, the profile and resume PDFs                                   |
+| Extension | Chrome Manifest V3 · WXT · React 19 · pdf.js · Anthropic TypeScript SDK          | Fills applications by rule, asks Claude for the rest, logs each submission                       |
+| Service   | NestJS · Prisma · PostgreSQL · Redis                                             | [`backend/`](backend): job aggregation and search, resume parsing and evals, database benchmarks |
+| Quality   | Vitest · Playwright · ESLint with the React Compiler rules · Prettier            | Domain, contract and adapter tests; the extension end to end in Chromium, in CI                  |
 
-The NestJS service runs on one machine for one owner. The main app uses it for Discover and Resume tools during
-local development; the tracker, sign-in, profile, attachments and extension keep their Worker/D1 storage and
-user boundaries. Redis remains an optional performance experiment, outside the daily navigation. Service setup is
-in [backend/README.md](backend/README.md) (in Chinese).
+The service runs on the owner's machine, for one owner: the tracker, sign-in, profile, attachments and extension
+keep their Worker/D1 storage and user boundaries, and Redis serves only the benchmarks. Its setup is in
+[backend/README.md](backend/README.md) (in Chinese).
 
 ## Develop
 

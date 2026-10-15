@@ -6,7 +6,7 @@
 
 **用你的个人资料自动填写求职申请，每一份投递都记得清清楚楚。**
 
-求职投递追踪器，配套的 Chrome 扩展用你的个人资料填写申请表，提交后自动记到 Outbox。手动记一条投递大约五秒，数据页告诉你哪份简历、哪个渠道更容易拿到 OA。在本地运行时，还能浏览关注公司的在招岗位，并把简历读进个人资料。
+求职投递追踪器，配套的 Chrome 扩展用你的个人资料填写申请表，提交后自动记到 Outbox。手动记一条投递大约五秒，数据页告诉你哪份简历、哪个渠道更容易拿到 OA。岗位发现和简历工具背后是一个 NestJS 服务：它从招聘网站汇总你关注公司的在招岗位，并用大模型把简历解析进个人资料。
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?style=flat-square&logo=typescript&logoColor=white)](tsconfig.json)
 [![React](https://img.shields.io/badge/React-19-149ECA?style=flat-square&logo=react&logoColor=white)](package.json)
@@ -16,7 +16,7 @@
 
 [English](README.md) · **简体中文**
 
-[自动填表扩展](#自动填表扩展) · [投递追踪](#投递追踪) · [系统架构](#系统架构) · [技术栈](#技术栈) · [本地开发](#本地开发)
+[自动填表扩展](#自动填表扩展) · [投递追踪](#投递追踪) · [岗位发现与简历工具](#岗位发现与简历工具) · [系统架构](#系统架构) · [技术栈](#技术栈) · [本地开发](#本地开发)
 
 </div>
 
@@ -48,7 +48,7 @@
 ## 投递追踪
 
 <p align="center">
-  <img src="docs/screenshots/tour.webp" width="960" alt="用键盘记下一个岗位，在岗位发现里保存一个岗位并标记为已投递，再打开数据页" />
+  <img src="docs/screenshots/tour.webp" width="960" alt="用键盘记下一个岗位，找到另一个岗位改成 OA，再打开数据页" />
 </p>
 
 <p align="center"><sub>公司和岗位均为虚构，界面为「纯白」外观。</sub></p>
@@ -57,18 +57,44 @@
 - **五秒左右记一条投递。** 按 `N`，输入公司，`Tab` 到职位，按 `Enter`。输入投过的公司会列出它的岗位。也可以直接粘贴岗位链接：公司自动填好；已经记录过的链接会直接打开那个岗位。添加和删除都能撤销。
 - **一眼扫完的列表。** 按天分组，每页 25 个岗位；顶部是今日投递对比每日目标、近 7 天和进行中的 OA；状态筛选带计数，`/` 搜索，还能隐藏被拒的岗位。投递 30 天后仍是「已投递」的会显示为「无回音」并变淡。每次改动都记在岗位的时间线上。
 - **用数据说话。** 数据页展示从投递到 OA 再到 Offer 的漏斗、每天的投递量对比目标，以及每个简历版本和渠道的 OA 率，可以看近 7 天、近 30 天或全部。
-- **岗位发现与简历工具。** 本地开发时，岗位发现列出你关注的 Greenhouse、Lever、Ashby 公司的在招岗位，保存到追踪器时只记为待投递、不创建投递；简历工具读取 PDF 或 DOCX，只在你点击时才调用模型解析，再把你选中的部分交给资料草稿。两者都依赖 [`backend/`](backend) 里的本地服务，见[主应用内的岗位发现与简历工具](#主应用内的岗位发现与简历工具)。
 - **几分钟完成设置。** 首次使用的引导依次带你填写投递用的邮箱、上传简历、装好扩展并填入 key、用简历填好资料，再回答简历上没有的问题。首页的清单保留还没完成的步骤，直到扩展记下第一份投递。
 - **Liquid Glass。** 所有浏览器都有模糊、饱和度和高光描边，Chromium 里还有真实的折射（SVG 位移贴图）。四种外观：纯白（默认）、带柔和光晕的浅色、纯黑的深色，或跟随系统。遵循系统的「减弱动态效果」和「降低透明度」设置。
 - 中英双语、CSV 导出，手机上也好用。从不保存密码。
 
+## 岗位发现与简历工具
+
+网页里的这两个页面由 [`backend/`](backend) 里的 NestJS 服务支撑，它有自己的 PostgreSQL 数据库。
+
+### 岗位发现
+
+<p align="center">
+  <img src="docs/screenshots/discover.webp" width="960" alt="在岗位发现里多关注一家公司、同步它的招聘页、搜索 agent 相关岗位，并把其中一个保存到追踪器" />
+</p>
+
+- **你关注的公司的在招岗位。** 从公司目录里勾选，或者填一个 Greenhouse、Lever、Ashby 的招聘页链接添加新公司；服务会先验证招聘源再保存。
+- **同步失败也不丢数据。** 每家公司的公开招聘接口完整读完后统一字段，并在一个事务里写进 PostgreSQL。消失的岗位标为下架，重新出现时恢复；请求超时、分页失败或返回格式不对时，保留已存的岗位。可以手动同步，也可以开启后每天洛杉矶时间凌晨 4 点自动同步。
+- **搜到就能存。** 按职位或关键词全文搜索，可按地点、公司和是否远程筛选。保存的岗位进入追踪器成为「待投递」，并按已有岗位去重，不会记成已投递。
+
+### 简历工具
+
+<p align="center">
+  <img src="docs/screenshots/resume-tools.webp" width="960" alt="读取一份简历 PDF，用模型解析，再到个人资料里审阅结果并保存" />
+</p>
+
+- **本机读取，点了才解析。** 最大 5 MB 的 PDF 或 DOCX 在本机的独立线程里读取，页数、文字量和解压体积都有上限。点击「开始解析」之前，内容不会发给任何模型。
+- **两种调用模型的方式。** OpenAI 的 Responses API 或 Anthropic，用 function calling 或 structured output。每个结果都要通过严格的 zod 校验；拒答、截断或多出未知字段都会直接报错，不会自动补值。
+- **用哪些由你决定。** 结果作为草稿打开在个人资料页：联系方式只填空白项，勾选的教育、经历替换对应部分，技能合并；点保存之前什么都不会写入。
+- **有评测，也有预算。** 评测 CLI 在许可明确的公开简历上，对照参考标签逐字段计算两种方式的 precision 和 recall。网页和 CLI 的每次请求都从同一个 $5 预算账本里先预留、再发送。
+
+服务旁边还有一套数据库性能对比：在 20,000 条合成岗位上比较索引、物化视图、按月分区和 Redis 读缓存，每次运行都把执行计划和耗时存成报告。这个服务运行在本机，启动方式见[主应用内的岗位发现与简历工具](#主应用内的岗位发现与简历工具)。
+
 ## 系统架构
 
 <p align="center">
-  <img src="docs/architecture.svg" width="960" alt="网页应用和自动填表扩展都连到同一个 Cloudflare Worker：它提供网页、运行带 Better Auth 的 Hono API，数据存在 D1；扩展只把规则放不下的字段交给 Claude；本地开发时，网页还会连到 backend/ 里的本地服务，用于岗位发现和简历工具" />
+  <img src="docs/architecture.svg" width="960" alt="网页应用和自动填表扩展都连到同一个 Cloudflare Worker：它提供网页、运行带 Better Auth 的 Hono API，数据存在 D1；扩展只把规则放不下的字段交给 Claude；岗位发现和简历工具背后的 NestJS 服务从公开招聘接口读取岗位存进 PostgreSQL，并用 OpenAI 或 Anthropic 解析简历" />
 </p>
 
-Worker 把构建好的网页当作静态资源提供，并在 `/api` 下运行 API。扩展从同一个 API 读取资料和简历 PDF，提交后也记到这里；它的 AI key 只存在扩展里，不会传到 Worker。本地开发时，Vite 开发服务器还会把 `/local-tools/*` 转到 `backend/` 里的 NestJS 服务，供岗位发现和简历工具使用；生产构建从不访问它。
+Worker 把构建好的网页当作静态资源提供，并在 `/api` 下运行 API。扩展从同一个 API 读取资料和简历 PDF，提交后也记到这里；它的 AI key 只存在扩展里，不会传到 Worker。`backend/` 里的 NestJS 服务把岗位发现的数据存在 PostgreSQL，只在点击解析时调用模型；网页通过 Vite 开发服务器的 `/local-tools/*` 连接它，所以生产构建里这两个页面显示为不可用，也从不访问它。
 
 - **一份契约，三种实现。** 界面只和 `Repository` 接口打交道。它有三种实现：浏览器里（离线原型）、Worker 里基于 D1、网页里基于 HTTP。每一次写入的规则——阶段变化在时间线上记什么、撤销添加会删掉什么——都是两种存储共用的纯函数，同一套契约测试分别跑在浏览器存储和 workerd 里运行的 D1 上。
 - **默认私有。** 只能用 Google 登录，并且只有白名单里的邮箱能创建账号。每个查询都限定在当前登录用户名下，请求体都经过校验，跨站表单提交会被拒绝，配置都放在 Worker secrets 里。
@@ -76,16 +102,16 @@ Worker 把构建好的网页当作静态资源提供，并在 `/api` 下运行 A
 
 ## 技术栈
 
-| 层       | 技术                                                                             | 作用                                                        |
-| -------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| 网页应用 | React 19 · TypeScript · Vite · Tailwind CSS v4 · Motion · Radix · TanStack Query | 投递列表、岗位发现、数据页、资料、简历和首次使用引导        |
-| API      | Cloudflare Workers · Hono · zod · Better Auth                                    | 一个 Worker 同时提供网页和 `/api`；白名单邮箱用 Google 登录 |
-| 数据     | D1（SQLite）· Drizzle                                                            | 岗位、投递、时间线、个人资料和简历 PDF                      |
-| 扩展     | Chrome Manifest V3 · WXT · React 19 · pdf.js · Anthropic TypeScript SDK          | 按规则填写申请表，其余交给 Claude，提交后自动记录           |
-| 本地服务 | NestJS · Prisma · PostgreSQL                                                     | [`backend/`](backend)：岗位发现的同步、简历工具的解析       |
-| 质量     | Vitest · Playwright · ESLint（含 React Compiler 规则）· Prettier                 | 领域、契约和适配器测试；CI 里在 Chromium 中端到端测试扩展   |
+| 层       | 技术                                                                             | 作用                                                                  |
+| -------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 网页应用 | React 19 · TypeScript · Vite · Tailwind CSS v4 · Motion · Radix · TanStack Query | 投递列表、数据页、岗位发现、简历工具、资料和首次使用引导              |
+| API      | Cloudflare Workers · Hono · zod · Better Auth                                    | 一个 Worker 同时提供网页和 `/api`；白名单邮箱用 Google 登录           |
+| 数据     | D1（SQLite）· Drizzle                                                            | 岗位、投递、时间线、个人资料和简历 PDF                                |
+| 扩展     | Chrome Manifest V3 · WXT · React 19 · pdf.js · Anthropic TypeScript SDK          | 按规则填写申请表，其余交给 Claude，提交后自动记录                     |
+| 服务     | NestJS · Prisma · PostgreSQL · Redis                                             | [`backend/`](backend)：岗位聚合与搜索、简历解析与评测、数据库性能对比 |
+| 质量     | Vitest · Playwright · ESLint（含 React Compiler 规则）· Prettier                 | 领域、契约和适配器测试；CI 里在 Chromium 中端到端测试扩展             |
 
-本地服务由 NestJS + Prisma + PostgreSQL 提供，只在本机为一个人运行。主应用在本地开发模式接入了「岗位发现」和「简历工具」；原登录、投递、资料、附件及扩展继续使用 Worker/D1，不迁移数据库。Redis 仍仅用于独立性能实验，不放入日常导航。安装说明见 [backend/README.md](backend/README.md)。
+这个服务运行在本机、只为一个人服务：原登录、投递、资料、附件及扩展继续使用 Worker/D1 及其用户边界，Redis 只用于性能对比。安装说明见 [backend/README.md](backend/README.md)。
 
 ## 本地开发
 
