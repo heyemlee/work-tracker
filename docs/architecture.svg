@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 516" width="960" height="516" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 552" width="960" height="552" role="img" aria-labelledby="title desc">
   <title id="title">Outbox architecture</title>
-  <desc id="desc">The web app and the Autofill extension talk to one Cloudflare Worker, which serves the app, runs a Hono API with Better Auth, and stores data in D1. The extension asks Claude only for fields its rules can't place. In development, the web app also reaches a local NestJS service for Discover and Resume tools.</desc>
+  <desc id="desc">The web app and the Autofill extension talk to one Cloudflare Worker, which serves the app, runs a Hono API with Better Auth, and stores data in D1. The extension asks Claude only for fields its rules can't place. A NestJS service behind Discover and Resume tools reads public job boards into PostgreSQL and parses resumes with OpenAI or Anthropic; the app reaches it through the dev server.</desc>
   <style>
     text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; }
     .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; fill: #8e8e93; }
@@ -17,11 +17,11 @@
       stroke-dasharray: 0.14 1.3;
       stroke-dashoffset: 0.14;
       opacity: 0;
-      animation: travel 7s linear infinite;
+      animation: travel 8s linear infinite;
     }
     .data { stroke: #0a7cff; }
     .ai { stroke: #d97757; }
-    .local { stroke: #8e8e93; }
+    .service { stroke: #0d9488; }
     .live { animation: breathe 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
     @keyframes travel {
       0% { stroke-dashoffset: 0.14; opacity: 1; }
@@ -47,90 +47,105 @@
     </filter>
   </defs>
 
-  <rect x="0.5" y="0.5" width="959" height="515" rx="16" fill="#ffffff" stroke="#ececf0" />
+  <rect x="0.5" y="0.5" width="959" height="551" rx="16" fill="#ffffff" stroke="#ececf0" />
 
-  <!-- The Worker's box goes under the wires, its cards over them -->
-  <rect x="372" y="96" width="296" height="282" rx="18" fill="#fafafb" stroke="#e3e3e8" />
+  <!-- The containers go under the wires, their cards over them -->
+  <rect x="372" y="84" width="296" height="282" rx="18" fill="#fafafb" stroke="#e3e3e8" />
 
   <!-- Wires -->
-  <path class="wire" d="M264,148 C330,148 326,165 392,165" />
-  <path class="wire" d="M264,290 C330,290 326,185 392,185" />
-  <path class="wire" d="M264,312 C330,312 326,247 392,247" />
-  <path class="wire" d="M648,171 C700,171 692,250 744,250" />
-  <path class="wire" d="M648,323 C700,323 692,276 744,276" />
-  <path class="wire" stroke-dasharray="4 5" d="M148,96 C148,74 164,64 196,64 L700,64 C726,64 744,72 744,85" />
-  <path class="wire" stroke-dasharray="4 5" d="M148,348 C148,404 164,446 200,446 L372,446" />
+  <path class="wire" d="M264,152 C330,152 326,159 392,159" />
+  <path class="wire" d="M264,300 C330,300 326,175 392,175" />
+  <path class="wire" d="M264,322 C330,322 326,235 392,235" />
+  <path class="wire" d="M648,159 C700,159 692,238 744,238" />
+  <path class="wire" d="M648,311 C700,311 692,262 744,262" />
+  <path class="wire" stroke-dasharray="4 5" d="M148,100 C148,64 164,44 196,44 L700,44 C726,44 744,58 744,80" />
+  <path class="wire" d="M148,362 C148,420 164,461 200,461 L372,461" />
+  <path class="wire" d="M668,440 C706,440 706,422 744,422" />
+  <path class="wire" d="M668,484 C706,484 706,498 744,498" />
 
-  <text class="edge" x="318" y="120" text-anchor="middle">logs · profile</text>
-  <text class="edge" x="318" y="134" text-anchor="middle">resume PDFs</text>
-  <text class="edge" x="322" y="346" text-anchor="middle">same origin</text>
-  <text class="edge" x="698" y="196" text-anchor="middle">SQL</text>
-  <text class="edge" x="702" y="342" text-anchor="middle">sessions</text>
-  <text class="edge" x="452" y="54" text-anchor="middle">only fields the rules can't place · the owner's own key</text>
-  <text class="edge" x="278" y="436" text-anchor="middle">/local-tools · dev server</text>
+  <text class="edge" x="318" y="124" text-anchor="middle">logs · profile</text>
+  <text class="edge" x="318" y="138" text-anchor="middle">resume PDFs</text>
+  <text class="edge" x="318" y="352" text-anchor="middle">same origin</text>
+  <text class="edge" x="698" y="186" text-anchor="middle">SQL</text>
+  <text class="edge" x="702" y="334" text-anchor="middle">sessions</text>
+  <text class="edge" x="452" y="34" text-anchor="middle">only fields the rules can't place · the owner's own key</text>
+  <text class="edge" x="276" y="452" text-anchor="middle">/local-tools · dev server</text>
 
   <!-- Pulses: a log from the extension lands in D1 and comes back to the app's list; the extension asks Claude; the
-       app asks the local service -->
-  <path class="pulse data" pathLength="1" filter="url(#glow)" d="M264,148 C330,148 326,165 392,165" style="animation-delay: 0s" />
-  <path class="pulse data" pathLength="1" filter="url(#glow)" d="M648,171 C700,171 692,250 744,250" style="animation-delay: 1.2s" />
-  <path class="pulse data" pathLength="1" filter="url(#glow)" d="M744,250 C692,250 700,171 648,171" style="animation-delay: 2.6s" />
-  <path class="pulse data" pathLength="1" filter="url(#glow)" d="M392,185 C326,185 330,290 264,290" style="animation-delay: 3.6s" />
-  <path class="pulse ai" pathLength="1" filter="url(#glow)" d="M148,96 C148,74 164,64 196,64 L700,64 C726,64 744,72 744,85" style="animation-delay: 4.6s" />
-  <path class="pulse local" pathLength="1" filter="url(#glow)" d="M148,348 C148,404 164,446 200,446 L372,446" style="animation-delay: 5.6s" />
+       app asks the service, which reads the job boards and, on Parse, a model -->
+  <path class="pulse data" pathLength="1" filter="url(#glow)" d="M264,152 C330,152 326,159 392,159" style="animation-delay: 0s" />
+  <path class="pulse data" pathLength="1" filter="url(#glow)" d="M648,159 C700,159 692,238 744,238" style="animation-delay: 1s" />
+  <path class="pulse data" pathLength="1" filter="url(#glow)" d="M744,238 C692,238 700,159 648,159" style="animation-delay: 2.2s" />
+  <path class="pulse data" pathLength="1" filter="url(#glow)" d="M392,175 C326,175 330,300 264,300" style="animation-delay: 3.2s" />
+  <path class="pulse ai" pathLength="1" filter="url(#glow)" d="M148,100 C148,64 164,44 196,44 L700,44 C726,44 744,58 744,80" style="animation-delay: 4.2s" />
+  <path class="pulse service" pathLength="1" filter="url(#glow)" d="M148,362 C148,420 164,461 200,461 L372,461" style="animation-delay: 5.2s" />
+  <path class="pulse service" pathLength="1" filter="url(#glow)" d="M668,440 C706,440 706,422 744,422" style="animation-delay: 6.2s" />
+  <path class="pulse ai" pathLength="1" filter="url(#glow)" d="M668,484 C706,484 706,498 744,498" style="animation-delay: 7s" />
 
   <!-- Clients -->
   <g filter="url(#lift)">
-    <rect class="card" x="32" y="96" width="232" height="104" rx="14" />
-    <rect class="card" x="32" y="256" width="232" height="92" rx="14" />
+    <rect class="card" x="32" y="100" width="232" height="104" rx="14" />
+    <rect class="card" x="32" y="270" width="232" height="92" rx="14" />
   </g>
-  <text class="eyebrow" x="52" y="122">CHROME</text>
-  <text class="title" x="52" y="146">Autofill extension</text>
-  <text class="sub" x="52" y="170">MV3 · WXT · 9 ATS adapters</text>
-  <text class="sub" x="52" y="188">Rules first, Claude for the rest</text>
+  <text class="eyebrow" x="52" y="126">CHROME</text>
+  <text class="title" x="52" y="150">Autofill extension</text>
+  <text class="sub" x="52" y="174">MV3 · WXT · 9 ATS adapters</text>
+  <text class="sub" x="52" y="192">Rules first, Claude for the rest</text>
 
-  <text class="eyebrow" x="52" y="282">BROWSER</text>
-  <text class="title" x="52" y="306">Outbox web app</text>
-  <text class="sub" x="52" y="330">React 19 · TanStack Query</text>
-  <g transform="translate(222 272) scale(0.36)" fill="#1d1d1f">
+  <text class="eyebrow" x="52" y="296">BROWSER</text>
+  <text class="title" x="52" y="320">Outbox web app</text>
+  <text class="sub" x="52" y="344">React 19 · TanStack Query</text>
+  <g transform="translate(222 286) scale(0.36)" fill="#1d1d1f">
     <rect x="8" y="18" width="33.5" height="7" rx="3.5" />
     <rect x="22" y="28.5" width="27" height="7" rx="3.5" />
     <rect x="34.3" y="39" width="21.7" height="7" rx="3.5" />
   </g>
 
   <!-- The Worker -->
-  <circle class="live" cx="394" cy="118" r="4.5" fill="#f38020" />
-  <text class="name" x="406" y="123">Cloudflare Worker</text>
-  <text class="edge" x="648" y="123" text-anchor="end">one deploy</text>
+  <circle class="live" cx="394" cy="106" r="4.5" fill="#f38020" />
+  <text class="name" x="406" y="111">Cloudflare Worker</text>
+  <text class="edge" x="648" y="111" text-anchor="end">one deploy</text>
   <g filter="url(#lift)">
-    <rect class="card" x="392" y="140" width="256" height="62" rx="12" />
-    <rect class="card" x="392" y="216" width="256" height="62" rx="12" />
-    <rect class="card" x="392" y="292" width="256" height="62" rx="12" />
+    <rect class="card" x="392" y="128" width="256" height="62" rx="12" />
+    <rect class="card" x="392" y="204" width="256" height="62" rx="12" />
+    <rect class="card" x="392" y="280" width="256" height="62" rx="12" />
   </g>
-  <text class="name" x="410" y="166">Hono API · /api</text>
-  <text class="sub" x="410" y="186">zod-validated, scoped to the owner</text>
-  <text class="name" x="410" y="242">Static assets</text>
-  <text class="sub" x="410" y="262">the built React app</text>
-  <text class="name" x="410" y="318">Better Auth</text>
-  <text class="sub" x="410" y="338">Google sign-in, allowlisted emails</text>
+  <text class="name" x="410" y="154">Hono API · /api</text>
+  <text class="sub" x="410" y="174">zod-validated, scoped to the owner</text>
+  <text class="name" x="410" y="230">Static assets</text>
+  <text class="sub" x="410" y="250">the built React app</text>
+  <text class="name" x="410" y="306">Better Auth</text>
+  <text class="sub" x="410" y="326">Google sign-in, allowlisted emails</text>
 
   <!-- Storage -->
   <g filter="url(#lift)">
-    <path d="M744,212 V312 A92,13 0 0 0 928,312 V212" fill="#ffffff" stroke="#e3e3e8" />
-    <ellipse cx="836" cy="212" rx="92" ry="13" fill="#fafafb" stroke="#e3e3e8" />
+    <path d="M744,200 V300 A92,13 0 0 0 928,300 V200" fill="#ffffff" stroke="#e3e3e8" />
+    <ellipse cx="836" cy="200" rx="92" ry="13" fill="#fafafb" stroke="#e3e3e8" />
   </g>
-  <text class="name" x="836" y="266" text-anchor="middle">D1 · SQLite</text>
-  <text class="sub" x="836" y="286" text-anchor="middle">Drizzle, batched writes</text>
+  <text class="name" x="836" y="254" text-anchor="middle">D1 · SQLite</text>
+  <text class="sub" x="836" y="274" text-anchor="middle">Drizzle, batched writes</text>
 
-  <!-- AI -->
-  <rect class="card" x="744" y="50" width="184" height="70" rx="14" filter="url(#lift)" />
-  <circle cx="764" cy="75" r="4.5" fill="#d97757" />
-  <text class="name" x="776" y="80">Claude API</text>
-  <text class="sub" x="764" y="103">from the extension only</text>
+  <!-- The extension's model -->
+  <rect class="card" x="744" y="60" width="184" height="70" rx="14" filter="url(#lift)" />
+  <circle cx="764" cy="85" r="4.5" fill="#d97757" />
+  <text class="name" x="776" y="90">Claude API</text>
+  <text class="sub" x="764" y="113">the extension's own key</text>
 
-  <!-- The local service, in development only -->
-  <rect x="372" y="406" width="296" height="84" rx="14" fill="#fafafb" stroke="#cfcfd6" stroke-dasharray="4 4" />
-  <text class="name" x="392" y="433">Local service · backend/</text>
-  <text class="edge" x="648" y="433" text-anchor="end">dev only</text>
-  <text class="sub" x="392" y="455">Discover and Resume tools</text>
-  <text class="sub" x="392" y="474">NestJS · Prisma · PostgreSQL</text>
+  <!-- The service behind Discover and Resume tools -->
+  <rect class="card" x="372" y="410" width="296" height="104" rx="14" filter="url(#lift)" />
+  <circle cx="392" cy="432" r="4.5" fill="#0d9488" />
+  <text class="name" x="404" y="437">NestJS service · backend/</text>
+  <text class="edge" x="648" y="437" text-anchor="end">local</text>
+  <text class="sub" x="392" y="460">Discover: sync, search, save</text>
+  <text class="sub" x="392" y="479">Resume tools: parse, evals, $5 ledger</text>
+  <text class="sub" x="392" y="498">PostgreSQL · Prisma</text>
+
+  <g filter="url(#lift)">
+    <rect class="card" x="744" y="392" width="184" height="60" rx="14" />
+    <rect class="card" x="744" y="468" width="184" height="60" rx="14" />
+  </g>
+  <text class="name" x="762" y="416">Job boards</text>
+  <text class="sub" x="762" y="437" style="font-size: 12px">Greenhouse · Lever · Ashby</text>
+  <text class="name" x="762" y="492">OpenAI · Anthropic</text>
+  <text class="sub" x="762" y="513">only on Parse resume</text>
 </svg>
