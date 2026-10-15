@@ -1,8 +1,27 @@
+<div align="center">
+
+<img src="src/assets/outbox.svg" width="64" height="64" alt="" />
+
 # Outbox
 
-A job-application tracker for people who apply to the same posting from more than one email account. Each
-account's application moves through its own stages, logging one takes about five seconds, and the interface
-follows Apple's Liquid Glass.
+**Track every application from every email account. Let the extension fill the next one.**
+
+A job-application tracker for people who apply to the same posting from more than one email account. Each account's
+application moves through its own stages, logging one takes about five seconds, and a Chrome extension fills
+application forms from your profile and logs each submission by itself.
+
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?style=flat-square&logo=typescript&logoColor=white)](tsconfig.json)
+[![React](https://img.shields.io/badge/React-19-149ECA?style=flat-square&logo=react&logoColor=white)](package.json)
+[![Cloudflare](https://img.shields.io/badge/Cloudflare-Workers_%2B_D1-F38020?style=flat-square&logo=cloudflare&logoColor=white)](wrangler.jsonc)
+[![Chrome](https://img.shields.io/badge/Chrome-MV3_extension-4285F4?style=flat-square&logo=googlechrome&logoColor=white)](extension)
+[![CI](https://img.shields.io/badge/CI-GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)](https://github.com/heyemlee/work-tracker/actions/workflows/ci.yml)
+
+**English** · [简体中文](README.zh-CN.md)
+
+[Features](#features) · [Autofill extension](#autofill-extension) · [Architecture](#architecture) ·
+[Tech stack](#tech-stack) · [Develop](#develop)
+
+</div>
 
 <p align="center">
   <img src="docs/screenshots/tour.webp" width="960" alt="Logging a posting from two accounts with the keyboard, moving one account's application at another company to OA, then the Insights page" />
