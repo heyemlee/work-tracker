@@ -4,11 +4,11 @@
 
 # Outbox
 
-**Track every application from every email account. Let the extension fill the next one.**
+**Fill job applications from your profile, and keep track of every one you send.**
 
-A job-application tracker for people who apply to the same posting from more than one email account. Each account's
-application moves through its own stages, logging one takes about five seconds, and a Chrome extension fills
-application forms from your profile and logs each submission by itself.
+A job-application tracker with a Chrome extension that fills application forms from your profile and logs each
+submission by itself. Logging one by hand takes about five seconds, and Insights show which resume and channel
+get you OAs. Run locally, it also finds roles at the companies you follow and reads resumes into your profile.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?style=flat-square&logo=typescript&logoColor=white)](tsconfig.json)
 [![React](https://img.shields.io/badge/React-19-149ECA?style=flat-square&logo=react&logoColor=white)](package.json)
@@ -18,70 +18,36 @@ application forms from your profile and logs each submission by itself.
 
 **English** · [简体中文](README.zh-CN.md)
 
-[Features](#features) · [Autofill extension](#autofill-extension) · [Architecture](#architecture) ·
+[Autofill extension](#autofill-extension) · [Tracker](#tracker) · [Architecture](#architecture) ·
 [Tech stack](#tech-stack) · [Develop](#develop)
 
 </div>
 
 <p align="center">
-  <img src="docs/screenshots/tour.webp" width="960" alt="Logging a posting from two accounts with the keyboard, moving one account's application at another company to OA, then the Insights page" />
+  <img src="docs/screenshots/autofill.webp" width="960" alt="The Outbox Autofill card on a Greenhouse application: the form filled to 9 of 9 required fields, the two work-authorization answers left to check, then the submission logged to Outbox" />
 </p>
 
-<p align="center"><sub>Fictional companies and accounts, in the White theme.</sub></p>
-
-## Features
-
-- **Several accounts, one posting.** Each application records the email identity, channel, and resume version
-  it used, and moves Applied → OA → Offer on its own. Rejection is a flag, not a stage, so "rejected after the
-  OA" keeps its stage. A posting with no applications yet is simply saved.
-- **Logging in about five seconds.** Press `N`, type the company, `Tab` to the title, pick the accounts, press
-  `Enter`. Typing a company you've applied to before offers its postings, and accounts that already applied
-  can't be picked twice. Or paste the posting's link: the company fills itself in, and a link you've already
-  tracked opens its posting, ready for the next account. Adds and deletes can be undone.
-- **A list you can scan.** Grouped by day, 25 postings to a page, with today's count against a daily goal, the
-  last 7 days and active OAs, status filters with counts, search (`/`), and a switch to hide rejections. An
-  application still at Applied after 30 days reads _No reply_ and fades. Every change lands on the posting's
-  timeline.
-- **Numbers that say what works.** An Insights page shows the funnel from applied to OA to offer, applications per
-  day against the goal, and the OA rate of each resume version, account and channel, for 7 days, 30 days or
-  everything.
-- **Set up in a few minutes.** A first-run guide walks through the emails you apply with, your resumes, the
-  extension and its key, reading a resume into your profile, and the answers no resume holds. A checklist on the
-  home page keeps what's left, until the extension logs your first application.
-- **Liquid Glass.** Blur, saturation, and a specular rim in every browser, with real refraction (an SVG
-  displacement map) in Chromium. Four looks: White (the default), Light with soft glows, pure-black Dark, or the
-  system's. Reduced motion and reduced transparency are honored.
-- English and Simplified Chinese, CSV export, and a layout that works on a phone. Passwords are never stored.
-- **Discover and resume tools in the app.** In local development, `/discover` browses selected Greenhouse,
-  Lever and Ashby companies and saves postings to the tracker without recording an application. `/resume-tools`
-  reads PDF/DOCX text, supports explicit model parsing, and hands selected results to the existing profile draft
-  review. The navigation, languages and themes are shared with the tracker.
+<p align="center"><sub>A made-up posting on a stand-in Greenhouse page, filled from a made-up profile.</sub></p>
 
 ## Autofill extension
 
 A Chrome extension in [`extension/`](extension) fills job applications from a profile the owner keeps in Outbox,
 started from their resume PDF, then logs each submission to Outbox. It never presses Submit: the owner checks every answer first.
 
-<p align="center">
-  <img src="docs/screenshots/autofill.webp" width="960" alt="The extension's card on a Greenhouse application: the second account picked, the form filled to 9 of 9 required fields, the two work-authorization answers left to check, and the submission logged to Outbox" />
-</p>
-
-<p align="center"><sub>A made-up posting on a stand-in Greenhouse page, filled from a made-up profile.</sub></p>
-
 - **Rules first.** Adapters for Greenhouse, Lever, Ashby, Workday, Gem, iCIMS, SmartRecruiters, Workable and
   Jobvite read the form and drive its widgets, any other form with a resume upload and a name or email gets a
-  generic one, and a field dictionary answers the questions most forms repeat. The email filled in is the account
-  picked on the card. Work authorization (sponsorship now or later, OPT, export control, clearance) is answered
-  by fixed rules for the job's country, never by a model, and is always marked for the owner to check.
+  generic one, and a field dictionary answers the questions most forms repeat. Work authorization (sponsorship
+  now or later, OPT, export control, clearance) is answered by fixed rules for the job's country, never by a
+  model, and is always marked for the owner to check.
 - **Claude for the rest.** Fields the rules can't place go to Claude in one request per form; anything under
   0.7 confidence stays blank. Essay questions get a short draft grounded in the resume and the posting, for the
   owner to edit.
 - **A match check before filling:** citizenship or clearance requirements, seniority, the company's H-1B
   approvals (USCIS, FY2021–2023), and how many of its postings the owner applied to in the last 30 days. It
   warns and never blocks.
-- **It logs itself.** When the confirmation page loads, the application lands in Outbox with its account,
-  channel, resume version and link, and can be undone. On a posting, **Mark as applied** logs it without a form
-  and **Save for later** keeps it as a saved job.
+- **It logs itself.** When the confirmation page loads, the application lands in Outbox with its channel, resume
+  version and link, and can be undone. On a posting, **Mark as applied** logs it without a form and **Save for
+  later** keeps it as a saved job.
 
 Fill accuracy on 22 saved application pages, using rules only (no AI). Every expected answer was checked by
 hand:
@@ -98,15 +64,48 @@ currently a Wealthfront client?". Workday's forms sit behind a sign-in, so its a
 SmartRecruiters, Workable and Jobvite adapters are tested on small fixtures that keep each form's structure as seen
 on public pages, and aren't in the table yet. The design is in [docs/autofill.md](docs/autofill.md).
 
+## Tracker
+
+<p align="center">
+  <img src="docs/screenshots/tour.webp" width="960" alt="Logging a posting with the keyboard, saving a role from Discover and marking it applied, then the Insights page" />
+</p>
+
+<p align="center"><sub>Fictional companies and roles, in the White theme.</sub></p>
+
+- **From saved to offer.** Each application records the channel and resume version it used and moves Applied →
+  OA → Offer. Rejection is a flag, not a stage, so "rejected after the OA" keeps its stage. A posting with no
+  application yet is simply saved.
+- **Logging in about five seconds.** Press `N`, type the company, `Tab` to the title, press `Enter`. Typing a
+  company you've applied to before offers its postings. Or paste the posting's link: the company fills itself
+  in, and a link you've already tracked opens its posting. Adds and deletes can be undone.
+- **A list you can scan.** Grouped by day, 25 postings to a page, with today's count against a daily goal, the
+  last 7 days and active OAs, status filters with counts, search (`/`), and a switch to hide rejections. An
+  application still at Applied after 30 days reads _No reply_ and fades. Every change lands on the posting's
+  timeline.
+- **Numbers that say what works.** An Insights page shows the funnel from applied to OA to offer, applications per
+  day against the goal, and the OA rate of each resume version and channel, for 7 days, 30 days or everything.
+- **Discover and Resume tools.** In local development, Discover lists the open roles at the Greenhouse, Lever and
+  Ashby companies you follow and saves one to the tracker without recording an application. Resume tools read a
+  PDF or DOCX, parse it with a model only when asked, and hand the parts you pick to the profile draft. Both run
+  on the service in [`backend/`](backend); see [Local integrated tools](#local-integrated-tools).
+- **Set up in a few minutes.** A first-run guide walks through the email you apply with, your resumes, the
+  extension and its key, reading a resume into your profile, and the answers no resume holds. A checklist on the
+  home page keeps what's left, until the extension logs your first application.
+- **Liquid Glass.** Blur, saturation, and a specular rim in every browser, with real refraction (an SVG
+  displacement map) in Chromium. Four looks: White (the default), Light with soft glows, pure-black Dark, or the
+  system's. Reduced motion and reduced transparency are honored.
+- English and Simplified Chinese, CSV export, and a layout that works on a phone. Passwords are never stored.
+
 ## Architecture
 
 <p align="center">
-  <img src="docs/architecture.svg" width="960" alt="The web app and the Autofill extension talk to one Cloudflare Worker, which serves the app, runs a Hono API with Better Auth, and stores data in D1; the extension asks Claude only for fields its rules can't place" />
+  <img src="docs/architecture.svg" width="960" alt="The web app and the Autofill extension talk to one Cloudflare Worker, which serves the app, runs a Hono API with Better Auth, and stores data in D1; the extension asks Claude only for fields its rules can't place; in development the web app also reaches the local service in backend/ for Discover and Resume tools" />
 </p>
 
 The Worker serves the built app as static assets and runs the API under `/api`. The extension reads the profile
 and resume PDFs from the same API and logs each submission to it; its AI keys stay in the extension and never
-reach the Worker.
+reach the Worker. In development, the Vite server also bridges `/local-tools/*` to the NestJS service in
+`backend/` for Discover and Resume tools; a production build never contacts it.
 
 - **One contract, three implementations.** The UI talks only to a `Repository` interface. It is implemented in
   the browser (the offline prototype), over D1 in the Worker, and over HTTP in the app. The rules for every
@@ -120,19 +119,19 @@ reach the Worker.
 
 ## Tech stack
 
-| Layer     | Technology                                                                       | Role                                                                            |
-| --------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Web app   | React 19 · TypeScript · Vite · Tailwind CSS v4 · Motion · Radix · TanStack Query | The list, Insights, profile, resumes and first-run guide                        |
-| API       | Cloudflare Workers · Hono · zod · Better Auth                                    | One Worker serves the app and `/api`; Google sign-in for allowlisted addresses  |
-| Data      | D1 (SQLite) · Drizzle                                                            | Postings, applications, timelines, the profile and resume PDFs                  |
-| Extension | Chrome Manifest V3 · WXT · React 19 · pdf.js · Anthropic TypeScript SDK          | Fills applications by rule, asks Claude for the rest, logs each submission      |
-| Quality   | Vitest · Playwright · ESLint with the React Compiler rules · Prettier            | Domain, contract and adapter tests; the extension end to end in Chromium, in CI |
-| Local lab | NestJS · Prisma · PostgreSQL · Redis                                             | [`backend/`](backend): job aggregation, a resume-parsing lab, a database lab    |
+| Layer         | Technology                                                                       | Role                                                                            |
+| ------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Web app       | React 19 · TypeScript · Vite · Tailwind CSS v4 · Motion · Radix · TanStack Query | The list, Discover, Insights, profile, resumes and first-run guide              |
+| API           | Cloudflare Workers · Hono · zod · Better Auth                                    | One Worker serves the app and `/api`; Google sign-in for allowlisted addresses  |
+| Data          | D1 (SQLite) · Drizzle                                                            | Postings, applications, timelines, the profile and resume PDFs                  |
+| Extension     | Chrome Manifest V3 · WXT · React 19 · pdf.js · Anthropic TypeScript SDK          | Fills applications by rule, asks Claude for the rest, logs each submission      |
+| Local service | NestJS · Prisma · PostgreSQL                                                     | [`backend/`](backend): job sync for Discover, resume parsing for Resume tools   |
+| Quality       | Vitest · Playwright · ESLint with the React Compiler rules · Prettier            | Domain, contract and adapter tests; the extension end to end in Chromium, in CI |
 
-The NestJS service still runs on one machine for one owner. The main app now uses it for Discover and Resume
-tools during local development; the tracker, sign-in, profile, attachments and extension keep their Worker/D1
-storage and user boundaries. Redis remains an optional performance experiment, outside the daily navigation.
-Service setup is in [backend/README.md](backend/README.md) (in Chinese).
+The NestJS service runs on one machine for one owner. The main app uses it for Discover and Resume tools during
+local development; the tracker, sign-in, profile, attachments and extension keep their Worker/D1 storage and
+user boundaries. Redis remains an optional performance experiment, outside the daily navigation. Service setup is
+in [backend/README.md](backend/README.md) (in Chinese).
 
 ## Develop
 
@@ -159,9 +158,9 @@ Open [Discover](http://127.0.0.1:5180/discover) or [Resume tools](http://127.0.0
 Discover starts with company selection. A searchable company dialog holds source setup; the main page focuses
 on search and compact job rows, with optional filters and a detail side panel.
 Saving uses the existing repository and posting matching rules, checks a fresh snapshot and suppresses repeated
-clicks. It creates a saved job only, with no application or account attached.
+clicks. It creates a saved job only, with no application attached.
 
-The latter reads PDF/DOCX files up to 5 MB locally. Page visits and text extraction never invoke a model.
+Resume tools read PDF/DOCX files up to 5 MB locally. Page visits and text extraction never invoke a model.
 The flow is **Add resume → Check text → Review result**, with a readable summary and collapsed JSON.
 Only **Parse resume** invokes a model, using the existing provider, Base URL, model policy and shared $5 ledger.
 The **Parsing settings** dialog never accepts or returns keys: configure them in `backend/.env` and restart the
@@ -191,17 +190,18 @@ npm test
 npm run test:ui                  # isolated browser sample data and mocked tool/model responses
 ```
 
-The main-app browser suite covers routing/history, company selection and sync, saved-job deduplication,
-explicit parsing, selective profile review/save and leave guards, service failures, and 320–1440 px layouts in
-English/Chinese and light/dark themes. It also makes a read-only bridge health check and rejected cross-origin
-requests; it never sends a paid model request. Synthetic screenshots are in `docs/screenshots/local-tools-*`
-and `docs/screenshots/discover-*`. `npx vitest run` runs only the main-app/Worker/bridge tests.
-
-Covers the domain logic, the repository contract against both stores, and the extension: its rules, its
-adapters on the saved pages, and the fill-accuracy report above. CI also type-checks, lints, builds, and runs
+`npm test` covers the domain logic, the repository contract against both stores, and the extension: its rules,
+its adapters on the saved pages, and the fill-accuracy report above. CI also type-checks, lints, builds, and runs
 the extension end to end in Chromium (`npm run e2e -w extension`) against the saved pages, logging to a mock
 Outbox. The free-text eval, which compares Claude models on 20 essay questions, costs money and runs only on
 request (`npm run eval -w extension`).
+
+The main-app browser suite (`npm run test:ui`) covers routing/history, company selection and sync, saved-job
+deduplication, explicit parsing, selective profile review/save and leave guards, service failures, and
+320–1440 px layouts in English/Chinese and light/dark themes. It also makes a read-only bridge health check and
+rejected cross-origin requests; it never sends a paid model request. Synthetic screenshots are in
+`docs/screenshots/local-tools-*` and `docs/screenshots/discover-*`. `npx vitest run` runs only the
+main-app/Worker/bridge tests.
 
 ## Deploy
 
