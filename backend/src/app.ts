@@ -8,11 +8,12 @@ import { Api, Health } from './api.js';
 import { Jobs } from './jobs.js';
 import { Aggregation } from './aggregation.js';
 import { Page } from './page.js';
+import { ResumeApi } from './resume/api.js';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 
 @Module({
   imports: [ScheduleModule.forRoot()],
-  controllers: [Api, Health, Page],
+  controllers: [Api, Health, Page, ResumeApi],
   providers: [Db, LocalGuard, Jobs, Aggregation],
 })
 export class AppModule {}

@@ -1,0 +1,44 @@
+{
+  "name": {
+    "first": "Sample",
+    "last": "User",
+    "preferred": ""
+  },
+  "phone": "+1 202 555 0100",
+  "location": {
+    "city": "Seattle",
+    "state": "WA",
+    "country": "United States"
+  },
+  "links": {
+    "linkedin": "",
+    "github": "https://github.com/sample-user",
+    "website": ""
+  },
+  "education": [
+    {
+      "school": "Example University",
+      "degree": "B.S.",
+      "level": "bachelor",
+      "field": "Computer Science",
+      "start": "2020-09",
+      "end": "2024-05",
+      "gpa": "",
+      "location": ""
+    }
+  ],
+  "experience": [
+    {
+      "company": "Example Labs",
+      "title": "Software Engineer Intern",
+      "location": "Remote",
+      "start": "2024-06",
+      "end": "2024-08",
+      "type": "internship",
+      "description": "- Built a TypeScript job tracker."
+    }
+  ],
+  "skills": ["TypeScript", "PostgreSQL"],
+  "languages": ["English", "Mandarin"],
+  "summary": ""
+}

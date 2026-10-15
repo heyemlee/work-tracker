@@ -1,0 +1,25 @@
+{
+  "checked": "2026-10-14",
+  "sources": [
+    {
+      "id": "edunham",
+      "repository": "edunham/resume",
+      "commit": "c660d10682888a3ab45562cbf77f47fcd6e2fe79",
+      "file": "resume.pdf",
+      "sha256": "c9d1c34ec082490d4af866e7d7553c1008ae1adad260d3a96c42f03c7dc08385",
+      "licenseFile": "LICENSE.txt",
+      "licenseSha256": "62cc6ae793edd752032dc759ae94b77f4885e264fda2e4b521d4516ee9fc71bf",
+      "license": "MIT"
+    },
+    {
+      "id": "karasinski",
+      "repository": "karasinski/Resume",
+      "commit": "ba15683e4c9910dd910826b0529fa2228855edd2",
+      "file": "karasinski-resume.pdf",
+      "sha256": "3b71d016682cec2da8c36498b38d9f8c113f494cacd6031b476016f0b9496fd6",
+      "licenseFile": "LICENSE",
+      "licenseSha256": "2c2b578bb1a07f6d38713efd81955d365557cd63f77d5a57aadb3932c949ef5b",
+      "license": "MIT"
+    }
+  ]
+}

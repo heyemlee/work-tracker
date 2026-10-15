@@ -17,6 +17,26 @@ export class Page {
   index() {
     return readFile(path('index.html'), 'utf8');
   }
+  @Get('/resume-lab')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  @Header(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+  )
+  @Header('Cache-Control', 'no-store')
+  resume() {
+    return readFile(path('resume.html'), 'utf8');
+  }
+  @Get('/resume.js')
+  @Header('Content-Type', 'application/javascript; charset=utf-8')
+  resumeScript() {
+    return readFile(path('resume.js'), 'utf8');
+  }
+  @Get('/resume.css')
+  @Header('Content-Type', 'text/css; charset=utf-8')
+  resumeStyle() {
+    return readFile(path('resume.css'), 'utf8');
+  }
   @Get('/app.js')
   @Header('Content-Type', 'application/javascript; charset=utf-8')
   script() {

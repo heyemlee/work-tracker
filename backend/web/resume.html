@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>简历解析 · Outbox</title>
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" type="image/svg+xml" href="/outbox.svg" />
+    <script src="/theme.js"></script>
+    <link rel="stylesheet" href="/design.css" />
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/resume.css" />
+    <script src="/resume.js" defer></script>
+    <script src="/glass.js" type="module"></script>
+  </head>
+  <body>
+    <div class="ambient" aria-hidden="true"></div>
+    <header class="toolbar-wrap">
+      <div class="topbar glass">
+        <a class="brand" href="/" aria-label="Outbox 岗位聚合首页"
+          ><img class="mark" src="/outbox.svg" width="28" height="28" alt="" /><span>Outbox</span></a
+        >
+        <nav class="module-nav" aria-label="本地工具">
+          <a href="/">岗位发现</a><a class="nav-current" href="/resume-lab" aria-current="page">简历解析</a>
+        </nav>
+        <label class="theme-control"
+          ><span class="sr-only">外观</span
+          ><select id="theme-select" class="select" aria-label="外观">
+            <option value="white">纯白</option>
+            <option value="light">浅色</option>
+            <option value="dark">深色</option>
+            <option value="system">跟随系统</option>
+          </select></label
+        >
+      </div>
+    </header>
+    <main class="resume-layout">
+      <div class="hero">
+        <div>
+          <h1>简历解析</h1>
+          <p class="intro">先核对原文，再提取你的资料。</p>
+        </div>
+        <span class="lab-label">独立试用</span>
+      </div>
+      <p class="resume-note muted">这里不会修改已保存的个人资料。文件只在本次读取时处理，不保存到服务器。</p>
+      <div class="resume-grid">
+        <section class="card resume-panel" aria-labelledby="read-title">
+          <div class="step-heading">
+            <span class="step">1</span>
+            <h2 id="read-title">读取简历</h2>
+          </div>
+          <form id="extract-form">
+            <label class="file-label" for="resume-file">选择文件</label>
+            <input id="resume-file" name="file" type="file" accept=".pdf,.docx" required />
+            <p class="small muted">PDF 或 DOCX，最大 5 MB。扫描图片需先进行文字识别。</p>
+            <button id="extract-button" class="secondary" type="submit">读取文字</button>
+          </form>
+          <p id="read-status" class="small muted" role="status" aria-live="polite">
+            选择简历后，文字会显示在这里。
+          </p>
+          <ul id="read-warnings" class="small muted" hidden></ul>
+          <label for="resume-text" class="file-label">简历原文</label>
+          <textarea
+            id="resume-text"
+            maxlength="60000"
+            placeholder="读取后，请核对姓名、日期和段落顺序。也可以在这里修正文字。"
+            disabled
+            spellcheck="false"
+          ></textarea>
+          <button id="clear-button" class="secondary" type="button" disabled>清空本次内容</button>
+        </section>
+        <section class="card resume-panel" aria-labelledby="parse-title">
+          <div class="step-heading">
+            <span class="step">2</span>
+            <h2 id="parse-title">提取资料</h2>
+          </div>
+          <p id="model-status" class="muted small" role="status">正在检查解析服务…</p>
+          <details id="model-settings" class="model-settings">
+            <summary>模型设置 <span id="key-state" class="muted">未配置</span></summary>
+            <form id="model-settings-form" autocomplete="off">
+              <div class="model-settings-grid">
+                <div>
+                  <label class="file-label" for="ai-provider">服务提供方</label>
+                  <select id="ai-provider" class="select">
+                    <option value="openai">OpenAI / 兼容服务</option>
+                    <option value="anthropic">Anthropic</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="file-label" for="ai-model">模型</label
+                  ><select id="ai-model" class="select"></select>
+                </div>
+              </div>
+              <div id="base-url-settings">
+                <label class="file-label" for="base-url">Base URL</label>
+                <input
+                  id="base-url"
+                  type="url"
+                  value="https://api.openai.com/v1"
+                  placeholder="https://api.openai.com/v1"
+                  autocomplete="off"
+                  spellcheck="false"
+                  autocapitalize="off"
+                  maxlength="2048"
+                  aria-describedby="base-url-help"
+                />
+                <p id="base-url-help" class="small muted">
+                  可填写兼容服务的 API 根地址。密钥与解析原文会发送到此地址；服务需支持 Responses 接口。
+                </p>
+              </div>
+              <label class="file-label" for="api-key">API Key</label>
+              <input
+                id="api-key"
+                type="password"
+                autocomplete="new-password"
+                spellcheck="false"
+                autocapitalize="off"
+                maxlength="512"
+                placeholder="在这里填写 API Key"
+              />
+              <p id="key-help" class="small muted">
+                密钥只保存到这台电脑的本地配置文件，不会回显，也不写入浏览器存储。
+              </p>
+              <button id="load-models" class="secondary" type="button" disabled>获取模型列表</button>
+              <p id="model-list-status" class="small muted" role="status" aria-live="polite">
+                填写密钥后可获取账号模型，无需先保存；不会发送简历。
+              </p>
+              <input
+                id="model-search"
+                type="search"
+                aria-label="搜索模型"
+                placeholder="搜索模型，例如 gpt-6"
+                hidden
+              />
+              <p id="model-help" class="small muted"></p>
+              <label class="enable-ai"><input id="enable-ai" type="checkbox" checked />启用 AI 解析</label>
+              <div class="settings-actions">
+                <button id="save-settings" class="secondary" type="submit">保存配置</button>
+                <button id="check-connection" class="secondary" type="button" disabled>检查连接</button>
+                <button id="remove-key" class="secondary" type="button" disabled>移除密钥</button>
+              </div>
+              <p id="settings-status" class="small muted" role="status" aria-live="polite"></p>
+            </form>
+          </details>
+          <p class="muted small">
+            点击解析时，核对后的原文将发送给所选的模型提供方并产生 API 费用。结果需自行核对。
+          </p>
+          <p class="muted small">
+            本次试用与简历评测共用 5
+            美元预算预留；第三方服务价格以其账单为准。保存配置和检查连接不会开始解析。
+          </p>
+          <form id="parse-form">
+            <label class="file-label" for="parse-method">解析方式</label>
+            <select id="parse-method" class="select">
+              <option value="function-calling">工具调用（function calling）</option>
+              <option value="structured-output">结构化输出</option>
+            </select>
+            <button id="parse-button" class="primary" type="submit" disabled>解析资料</button>
+          </form>
+          <p id="parse-status" class="small muted" role="status" aria-live="polite"></p>
+          <div id="parsed-empty" class="resume-empty">
+            <span aria-hidden="true">↗</span>
+            <p>核对原文后，开始解析。</p>
+            <p class="small muted">姓名、联系方式、教育、经历和技能会显示在这里。</p>
+          </div>
+          <div id="parsed-facts" hidden></div>
+          <button id="download-button" class="secondary" type="button" hidden>下载资料 JSON</button>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

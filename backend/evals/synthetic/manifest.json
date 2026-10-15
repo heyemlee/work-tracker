@@ -1,0 +1,25 @@
+{
+  "description": "Two file formats of one fictional resume. Smoke checks only, not a representative accuracy dataset.",
+  "cases": [
+    {
+      "id": "synthetic-pdf",
+      "subjectId": "fictional-sample-v1",
+      "referenceReview": "synthetic-fixture",
+      "file": "sample.pdf",
+      "gold": "gold.json",
+      "provenance": "synthetic",
+      "source": "Fictional fixture authored in scripts/resume-fixtures.ts",
+      "permission": "Project-owned synthetic test data; no personal information."
+    },
+    {
+      "id": "synthetic-docx",
+      "subjectId": "fictional-sample-v1",
+      "referenceReview": "synthetic-fixture",
+      "file": "sample.docx",
+      "gold": "gold.json",
+      "provenance": "synthetic",
+      "source": "Fictional fixture authored in scripts/resume-fixtures.ts",
+      "permission": "Project-owned synthetic test data; no personal information."
+    }
+  ]
+}

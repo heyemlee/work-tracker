@@ -35,3 +35,5 @@ backend/.archive
 backend/test-results
 backend/playwright-report
 backend/web/.generated
+backend/evals/private/
+backend/evals/runs/

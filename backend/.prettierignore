@@ -9,3 +9,5 @@ prisma/migrations
 test-results
 playwright-report
 web/.generated
+evals/private
+evals/runs
