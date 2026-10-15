@@ -57,6 +57,6 @@ gateway; deploying the Worker hosts neither the service nor its database.
 `npm run test:ui` covers routing and history, company selection and sync, saved-job deduplication, explicit
 parsing, selective profile review and save with leave guards, service failures, and 320–1440 px layouts in
 English and Chinese and in light and dark themes. It also makes a read-only bridge health check and rejected
-cross-origin requests; it never sends a paid model request. Its synthetic screenshots are in
-`docs/screenshots/local-tools-*` and `docs/screenshots/discover-*`. `npx vitest run` runs only the main-app,
-Worker and bridge tests.
+cross-origin requests; it never sends a paid model request. It saves a screenshot of each layout
+to `test-results/screenshots/`, which git ignores. `npx vitest run` runs only the main-app, Worker and bridge
+tests.

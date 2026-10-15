@@ -1,6 +1,8 @@
 import { test, expect, type Page } from '@playwright/test';
 import { emptyProfile, resumeFactsSchema } from '../src/domain/profile';
 
+/** Screenshots to look at. Playwright empties test-results/ at every run, and git ignores it. */
+const shots = 'test-results/screenshots';
 const boardId = '11111111-1111-4111-8111-111111111111';
 const jobId = '22222222-2222-4222-8222-222222222222';
 const posting = {
@@ -212,7 +214,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('pre')).not.toBeVisible();
     await expect(page.getByRole('heading', { name: 'Sample Candidate', exact: true })).toBeVisible();
     await expect(page.getByText('Engineer · Example Employer', { exact: true })).toBeVisible();
-    await page.screenshot({ path: `docs/screenshots/local-tools-result-${width}.png`, fullPage: true });
+    await page.screenshot({ path: `${shots}/local-tools-result-${width}.png`, fullPage: true });
     const download = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Download JSON' }).click();
     expect((await download).suggestedFilename()).toBe('resume-facts.json');
@@ -296,7 +298,7 @@ for (const [width, locale, theme] of [
     await expect(page.getByRole('button', { name: posting.title, exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({
-      path: `docs/screenshots/discover-${width}-${locale}-${theme}.png`,
+      path: `${shots}/discover-${width}-${locale}-${theme}.png`,
       fullPage: true,
       animations: 'disabled',
     });
@@ -308,7 +310,7 @@ for (const [width, locale, theme] of [
     await expect(page.getByRole('dialog')).toBeVisible();
     expect(await page.getByRole('dialog').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
     await page.screenshot({
-      path: `docs/screenshots/discover-companies-${width}-${locale}-${theme}.png`,
+      path: `${shots}/discover-companies-${width}-${locale}-${theme}.png`,
       fullPage: true,
     });
     await page.keyboard.press('Escape');
@@ -317,7 +319,7 @@ for (const [width, locale, theme] of [
     await expect(page.getByRole('dialog')).toBeVisible();
     expect(await page.getByRole('dialog').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
     await page.screenshot({
-      path: `docs/screenshots/discover-detail-${width}-${locale}-${theme}.png`,
+      path: `${shots}/discover-detail-${width}-${locale}-${theme}.png`,
       fullPage: true,
     });
     await page.getByRole('button', { name: locale === 'zh' ? '关闭' : 'Close', exact: true }).click();
@@ -342,7 +344,7 @@ for (const [width, locale, theme] of [
     ).not.toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({
-      path: `docs/screenshots/local-tools-${width}-${locale}-${theme}.png`,
+      path: `${shots}/local-tools-${width}-${locale}-${theme}.png`,
       fullPage: true,
       animations: 'disabled',
     });
@@ -352,7 +354,7 @@ for (const [width, locale, theme] of [
     await expect(page.getByRole('dialog')).toBeVisible();
     expect(await page.getByRole('dialog').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
     await page.screenshot({
-      path: `docs/screenshots/local-tools-settings-${width}-${locale}-${theme}.png`,
+      path: `${shots}/local-tools-settings-${width}-${locale}-${theme}.png`,
       fullPage: true,
     });
   });
