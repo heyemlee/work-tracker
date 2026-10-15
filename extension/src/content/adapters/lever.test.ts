@@ -73,8 +73,9 @@ describe('once the resume is attached to a Lever form', () => {
 // What "This page didn't fill right" saves of a Lever page. Lever's form is plain controls, whose answers a copy
 // of the markup doesn't hold, but for two things its scripts write into the page: the resume's name, and the pick
 // of a list it draws with select2 (the school). Both are drawn here as on Lever's own page, served from this
-// machine (2026-10-08).
-describe('a fill report of a Lever page', () => {
+// machine (2026-10-08). A report reads the page's long lists (countries, universities): two or three seconds a
+// report here, twice that on CI's machines, past the default five.
+describe('a fill report of a Lever page', { timeout: 30_000 }, () => {
   const url = 'https://jobs.lever.co/wealthfront/93383267-2d57-45d0-bb6a-7d9c5d8b6f3c/apply';
   const report = (doc: Document) => formSnapshot(lever, doc, extractFields(lever, doc, 0), [])!;
 

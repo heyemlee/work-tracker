@@ -49,7 +49,8 @@ describe('opening the card by itself on a site the extension does not know', () 
     expect(resumeForm(page(APPLICATION))?.tagName).toBe('FORM');
   });
 
-  it('opens on every saved application page, read as if its site were unknown', () => {
+  // Reading every saved page takes two seconds or more here and nearly five on CI's machines.
+  it('opens on every saved application page, read as if its site were unknown', { timeout: 30_000 }, () => {
     expect(savedForms.length).toBeGreaterThanOrEqual(22);
     for (const path of savedForms) {
       const doc = loadFixture(path, 'https://careers.acme.com/jobs/123/application');
