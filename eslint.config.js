@@ -13,6 +13,7 @@ export default defineConfig([
     'worker-configuration.d.ts',
     'extension/.output',
     'extension/.wxt',
+    'backend',
   ]),
   {
     files: ['**/*.{ts,tsx}'],

@@ -1,0 +1,732 @@
+[
+  {
+    "provider": "ashby",
+    "slug": "1password",
+    "company": "1Password"
+  },
+  {
+    "provider": "ashby",
+    "slug": "airbyte",
+    "company": "Airbyte"
+  },
+  {
+    "provider": "ashby",
+    "slug": "amplitude",
+    "company": "Amplitude"
+  },
+  {
+    "provider": "ashby",
+    "slug": "astral",
+    "company": "Astral"
+  },
+  {
+    "provider": "ashby",
+    "slug": "attio",
+    "company": "Attio"
+  },
+  {
+    "provider": "ashby",
+    "slug": "avra",
+    "company": "Avra"
+  },
+  {
+    "provider": "ashby",
+    "slug": "baseten",
+    "company": "Baseten"
+  },
+  {
+    "provider": "ashby",
+    "slug": "browserbase",
+    "company": "Browserbase"
+  },
+  {
+    "provider": "ashby",
+    "slug": "buffer",
+    "company": "Buffer"
+  },
+  {
+    "provider": "ashby",
+    "slug": "cartesia",
+    "company": "Cartesia"
+  },
+  {
+    "provider": "ashby",
+    "slug": "clerk",
+    "company": "Clerk"
+  },
+  {
+    "provider": "ashby",
+    "slug": "clickhouse",
+    "company": "Clickhouse"
+  },
+  {
+    "provider": "ashby",
+    "slug": "cognition",
+    "company": "Cognition"
+  },
+  {
+    "provider": "ashby",
+    "slug": "cohere",
+    "company": "Cohere"
+  },
+  {
+    "provider": "ashby",
+    "slug": "column",
+    "company": "Column"
+  },
+  {
+    "provider": "ashby",
+    "slug": "cursor",
+    "company": "Cursor"
+  },
+  {
+    "provider": "ashby",
+    "slug": "decagon",
+    "company": "Decagon"
+  },
+  {
+    "provider": "ashby",
+    "slug": "deel",
+    "company": "Deel"
+  },
+  {
+    "provider": "ashby",
+    "slug": "deepgram",
+    "company": "Deepgram"
+  },
+  {
+    "provider": "ashby",
+    "slug": "elevenlabs",
+    "company": "Elevenlabs"
+  },
+  {
+    "provider": "ashby",
+    "slug": "factory",
+    "company": "Factory"
+  },
+  {
+    "provider": "ashby",
+    "slug": "fin",
+    "company": "Fin"
+  },
+  {
+    "provider": "ashby",
+    "slug": "granola",
+    "company": "Granola"
+  },
+  {
+    "provider": "ashby",
+    "slug": "greptile",
+    "company": "Greptile"
+  },
+  {
+    "provider": "ashby",
+    "slug": "harvey",
+    "company": "Harvey"
+  },
+  {
+    "provider": "ashby",
+    "slug": "hex",
+    "company": "Hex"
+  },
+  {
+    "provider": "ashby",
+    "slug": "hightouch",
+    "company": "Hightouch"
+  },
+  {
+    "provider": "ashby",
+    "slug": "incident",
+    "company": "Incident"
+  },
+  {
+    "provider": "ashby",
+    "slug": "inkeep",
+    "company": "Inkeep"
+  },
+  {
+    "provider": "ashby",
+    "slug": "langchain",
+    "company": "Langchain"
+  },
+  {
+    "provider": "ashby",
+    "slug": "langfuse",
+    "company": "Langfuse"
+  },
+  {
+    "provider": "ashby",
+    "slug": "lightdash",
+    "company": "Lightdash"
+  },
+  {
+    "provider": "ashby",
+    "slug": "linear",
+    "company": "Linear"
+  },
+  {
+    "provider": "ashby",
+    "slug": "livekit",
+    "company": "Livekit"
+  },
+  {
+    "provider": "ashby",
+    "slug": "mercury",
+    "company": "Mercury"
+  },
+  {
+    "provider": "ashby",
+    "slug": "mesh",
+    "company": "Mesh"
+  },
+  {
+    "provider": "ashby",
+    "slug": "mintlify",
+    "company": "Mintlify"
+  },
+  {
+    "provider": "ashby",
+    "slug": "modal",
+    "company": "Modal"
+  },
+  {
+    "provider": "ashby",
+    "slug": "motherduck",
+    "company": "Motherduck"
+  },
+  {
+    "provider": "ashby",
+    "slug": "nango",
+    "company": "Nango"
+  },
+  {
+    "provider": "ashby",
+    "slug": "neon",
+    "company": "Neon"
+  },
+  {
+    "provider": "ashby",
+    "slug": "norm-ai",
+    "company": "Norm Ai"
+  },
+  {
+    "provider": "ashby",
+    "slug": "notion",
+    "company": "Notion"
+  },
+  {
+    "provider": "ashby",
+    "slug": "openai",
+    "company": "OpenAI"
+  },
+  {
+    "provider": "ashby",
+    "slug": "oyster",
+    "company": "Oyster"
+  },
+  {
+    "provider": "ashby",
+    "slug": "perplexity",
+    "company": "Perplexity"
+  },
+  {
+    "provider": "ashby",
+    "slug": "pika",
+    "company": "Pika"
+  },
+  {
+    "provider": "ashby",
+    "slug": "pinecone",
+    "company": "Pinecone"
+  },
+  {
+    "provider": "ashby",
+    "slug": "poolside",
+    "company": "Poolside"
+  },
+  {
+    "provider": "ashby",
+    "slug": "posthog",
+    "company": "Posthog"
+  },
+  {
+    "provider": "ashby",
+    "slug": "railway",
+    "company": "Railway"
+  },
+  {
+    "provider": "ashby",
+    "slug": "ramp",
+    "company": "Ramp"
+  },
+  {
+    "provider": "ashby",
+    "slug": "render",
+    "company": "Render"
+  },
+  {
+    "provider": "ashby",
+    "slug": "resend",
+    "company": "Resend"
+  },
+  {
+    "provider": "ashby",
+    "slug": "rogo",
+    "company": "Rogo"
+  },
+  {
+    "provider": "ashby",
+    "slug": "runway",
+    "company": "Runway"
+  },
+  {
+    "provider": "ashby",
+    "slug": "scribe",
+    "company": "Scribe"
+  },
+  {
+    "provider": "ashby",
+    "slug": "sentra",
+    "company": "Sentra"
+  },
+  {
+    "provider": "ashby",
+    "slug": "sentry",
+    "company": "Sentry"
+  },
+  {
+    "provider": "ashby",
+    "slug": "sierra",
+    "company": "Sierra"
+  },
+  {
+    "provider": "ashby",
+    "slug": "steel",
+    "company": "Steel"
+  },
+  {
+    "provider": "ashby",
+    "slug": "supabase",
+    "company": "Supabase"
+  },
+  {
+    "provider": "ashby",
+    "slug": "temporal",
+    "company": "Temporal"
+  },
+  {
+    "provider": "ashby",
+    "slug": "turbopuffer",
+    "company": "Turbopuffer"
+  },
+  {
+    "provider": "ashby",
+    "slug": "unit",
+    "company": "Unit"
+  },
+  {
+    "provider": "ashby",
+    "slug": "vanta",
+    "company": "Vanta"
+  },
+  {
+    "provider": "ashby",
+    "slug": "vercel",
+    "company": "Vercel"
+  },
+  {
+    "provider": "ashby",
+    "slug": "watershed",
+    "company": "Watershed"
+  },
+  {
+    "provider": "ashby",
+    "slug": "weaviate",
+    "company": "Weaviate"
+  },
+  {
+    "provider": "ashby",
+    "slug": "zapier",
+    "company": "Zapier"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "abnormalsecurity",
+    "company": "Abnormal Security"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "adyen",
+    "company": "Adyen"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "affirm",
+    "company": "Affirm"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "airbnb",
+    "company": "Airbnb"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "airtable",
+    "company": "Airtable"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "anthropic",
+    "company": "Anthropic"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "asana",
+    "company": "Asana"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "astranis",
+    "company": "Astranis"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "braze",
+    "company": "Braze"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "brex",
+    "company": "Brex"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "canonical",
+    "company": "Canonical"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "chime",
+    "company": "Chime"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "cloudflare",
+    "company": "Cloudflare"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "cockroachlabs",
+    "company": "Cockroach Labs"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "coinbase",
+    "company": "Coinbase"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "contentful",
+    "company": "Contentful"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "contentstack",
+    "company": "Contentstack"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "coursera",
+    "company": "Coursera"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "databricks",
+    "company": "Databricks"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "datadog",
+    "company": "Datadog"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "discord",
+    "company": "Discord"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "doubleverify",
+    "company": "Doubleverify"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "dropbox",
+    "company": "Dropbox"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "duolingo",
+    "company": "Duolingo"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "elastic",
+    "company": "Elastic"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "faire",
+    "company": "Faire"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "fastly",
+    "company": "Fastly"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "figma",
+    "company": "Figma"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "fivetran",
+    "company": "Fivetran"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "flexport",
+    "company": "Flexport"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "gitlab",
+    "company": "GitLab"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "gocardless",
+    "company": "Gocardless"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "grafanalabs",
+    "company": "Grafana Labs"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "gusto",
+    "company": "Gusto"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "instacart",
+    "company": "Instacart"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "intercom",
+    "company": "Intercom"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "klaviyo",
+    "company": "Klaviyo"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "launchdarkly",
+    "company": "Launchdarkly"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "lyft",
+    "company": "Lyft"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "mixpanel",
+    "company": "Mixpanel"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "modernhealth",
+    "company": "Modernhealth"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "mongodb",
+    "company": "MongoDB"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "nuro",
+    "company": "Nuro"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "okta",
+    "company": "Okta"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "opentable",
+    "company": "Opentable"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "peloton",
+    "company": "Peloton"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "pinterest",
+    "company": "Pinterest"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "planetscale",
+    "company": "Planetscale"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "poshmark",
+    "company": "Poshmark"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "purestorage",
+    "company": "Purestorage"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "reddit",
+    "company": "Reddit"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "relativity",
+    "company": "Relativity"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "robinhood",
+    "company": "Robinhood"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "rocketlab",
+    "company": "Rocket Lab"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "rubrik",
+    "company": "Rubrik"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "samsara",
+    "company": "Samsara"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "scaleai",
+    "company": "Scaleai"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "sentinellabs",
+    "company": "SentinelOne"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "spacex",
+    "company": "Spacex"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "stripe",
+    "company": "Stripe"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "tenstorrent",
+    "company": "Tenstorrent"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "toast",
+    "company": "Toast"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "twilio",
+    "company": "Twilio"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "udemy",
+    "company": "Udemy"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "verkada",
+    "company": "Verkada"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "waymo",
+    "company": "Waymo"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "webflow",
+    "company": "Webflow"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "zoominfo",
+    "company": "Zoominfo"
+  },
+  {
+    "provider": "greenhouse",
+    "slug": "zscaler",
+    "company": "Zscaler"
+  },
+  {
+    "provider": "lever",
+    "slug": "hive",
+    "company": "Hive"
+  },
+  {
+    "provider": "lever",
+    "slug": "kraken",
+    "company": "Kraken"
+  },
+  {
+    "provider": "lever",
+    "slug": "palantir",
+    "company": "Palantir"
+  },
+  {
+    "provider": "lever",
+    "slug": "shieldai",
+    "company": "Shieldai"
+  },
+  {
+    "provider": "lever",
+    "slug": "spotify",
+    "company": "Spotify"
+  },
+  {
+    "provider": "lever",
+    "slug": "wealthfront",
+    "company": "Wealthfront"
+  },
+  {
+    "provider": "lever",
+    "slug": "zoox",
+    "company": "Zoox"
+  }
+]

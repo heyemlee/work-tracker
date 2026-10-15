@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client"
+  output = "../generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Board {
+  id String @id @default(uuid()) @db.Uuid
+  provider String
+  slug String
+  company String
+  enabled Boolean @default(false)
+  syncedAt DateTime? @db.Timestamptz
+  lastError String?
+  jobs Job[]
+  @@unique([provider, slug])
+}
+
+model Job {
+  id String @id @default(uuid()) @db.Uuid
+  boardId String @db.Uuid
+  externalId String
+  title String
+  company String
+  location String
+  department String
+  description String
+  url String
+  remote Boolean @default(false)
+  active Boolean @default(true)
+  publishedAt DateTime? @db.Timestamptz
+  seenAt DateTime @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  @@unique([boardId, externalId])
+  @@index([active, publishedAt(sort: Desc), id])
+  @@index([company, active])
+}
+

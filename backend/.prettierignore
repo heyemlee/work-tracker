@@ -1,0 +1,11 @@
+node_modules
+generated
+dist
+.archive
+.env
+.env.*.tmp
+package-lock.json
+prisma/migrations
+test-results
+playwright-report
+web/.generated

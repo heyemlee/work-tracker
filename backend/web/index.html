@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>关注公司的岗位 · Outbox</title>
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" type="image/svg+xml" href="/outbox.svg" />
+    <script src="/theme.js"></script>
+    <link rel="stylesheet" href="/design.css" />
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+    <script src="/glass.js" type="module"></script>
+  </head>
+  <body>
+    <div class="ambient" aria-hidden="true"></div>
+    <header class="toolbar-wrap">
+      <div class="topbar glass">
+        <a class="brand" href="/" aria-label="Outbox 岗位聚合首页"
+          ><img class="mark" src="/outbox.svg" width="28" height="28" alt="" /><span>Outbox</span></a
+        >
+        <nav class="module-nav" aria-label="本地工具">
+          <a class="nav-current" href="/" aria-current="page">岗位发现</a>
+        </nav>
+        <label class="theme-control"
+          ><span class="sr-only">外观</span
+          ><select id="theme-select" class="select" aria-label="外观">
+            <option value="white">纯白</option>
+            <option value="light">浅色</option>
+            <option value="dark">深色</option>
+            <option value="system">跟随系统</option>
+          </select></label
+        >
+      </div>
+    </header>
+    <main class="layout">
+      <details id="company-panel" class="companies glass glass-strong" open>
+        <summary class="panel-heading">
+          <h2>关注的公司</h2>
+          <span class="company-summary-end"
+            ><span id="selected-count">0 家</span
+            ><span class="company-chevron" aria-hidden="true">⌄</span></span
+          >
+        </summary>
+        <div class="company-controls">
+          <p class="muted">选你关心的公司，把招聘岗位放在一起看。</p>
+          <label class="sr-only" for="company-search">搜索公司</label>
+          <input id="company-search" type="search" placeholder="搜索公司名称…" autocomplete="off" />
+          <label class="selected-only"><input id="selected-only" type="checkbox" /> 只看已关注</label>
+          <div id="company-list" class="company-list" aria-label="公司目录">
+            <p class="muted">正在读取公司目录…</p>
+          </div>
+          <details class="add-company">
+            <summary>找不到公司？添加招聘页</summary>
+            <form id="add-company-form">
+              <label for="new-company">公司名称</label
+              ><input id="new-company" required maxlength="200" placeholder="例如：Acme" />
+              <label for="new-url">招聘页链接</label
+              ><input id="new-url" type="url" required placeholder="https://jobs.ashbyhq.com/acme" />
+              <p class="muted small">支持 Greenhouse、Lever、Ashby 的公开招聘页。</p>
+              <button id="add-company-button" type="submit" class="secondary">添加公司</button>
+            </form>
+          </details>
+        </div>
+      </details>
+      <section class="results" aria-labelledby="page-title">
+        <div class="hero">
+          <div>
+            <h1 id="page-title">岗位发现</h1>
+            <p class="intro">关注公司，集中查看它们的招聘岗位。</p>
+          </div>
+          <button id="sync-button" class="primary" type="button" disabled>
+            更新岗位 <span aria-hidden="true">↻</span>
+          </button>
+        </div>
+        <p id="sync-status" class="sync-status" role="status" aria-live="polite">
+          选择公司后，点击“更新岗位”。
+        </p>
+        <form id="filters" class="filters card">
+          <div class="keyword">
+            <label for="job-search">职位关键词</label
+            ><input
+              id="job-search"
+              type="search"
+              placeholder="例如 engineer、intern、data…"
+              autocomplete="off"
+            />
+          </div>
+          <div>
+            <label for="location-search">地点</label
+            ><input id="location-search" type="search" placeholder="例如 Seattle" autocomplete="off" />
+          </div>
+          <div>
+            <label for="company-filter">公司</label
+            ><select id="company-filter" class="select">
+              <option value="">全部已关注公司</option>
+            </select>
+          </div>
+          <div>
+            <label for="job-state">招聘状态</label
+            ><select id="job-state" class="select">
+              <option value="true">正在招聘</option>
+              <option value="false">已下架</option>
+            </select>
+          </div>
+          <label class="remote-filter"><input id="remote-only" type="checkbox" /> 仅远程</label>
+        </form>
+        <div class="list-heading">
+          <h2>招聘岗位</h2>
+          <span id="result-note" class="muted"></span>
+        </div>
+        <div id="jobs" class="job-list" aria-live="polite"></div>
+        <nav class="pagination" aria-label="岗位列表分页">
+          <button id="previous" type="button" class="secondary" disabled>上一页</button
+          ><span id="page-number">第 1 页</span
+          ><button id="next" type="button" class="secondary" disabled>下一页</button>
+        </nav>
+      </section>
+    </main>
+    <div id="notice" class="notice" role="alert" hidden></div>
+    <dialog id="job-detail" class="glass glass-strong">
+      <div class="dialog-head">
+        <p id="detail-company" class="eyebrow"></p>
+        <button id="close-detail" class="close" type="button" aria-label="关闭岗位详情">×</button>
+      </div>
+      <h2 id="detail-title"></h2>
+      <p id="detail-location" class="muted"></p>
+      <p id="detail-state" class="muted small"></p>
+      <div id="detail-description" class="description"></div>
+      <a id="detail-link" class="primary" target="_blank" rel="noopener noreferrer">前往公司招聘页 ↗</a>
+    </dialog>
+  </body>
+</html>

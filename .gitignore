@@ -26,3 +26,12 @@ extension/playwright-report
 
 # Free-text eval reports (may contain the owner's profile)
 extension/evals
+
+# Independent job aggregation service
+backend/.env
+backend/.env.*.tmp
+backend/generated
+backend/.archive
+backend/test-results
+backend/playwright-report
+backend/web/.generated

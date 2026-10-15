@@ -1,0 +1,53 @@
+{
+  "name": "outbox-job-aggregation",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "generate": "prisma generate",
+    "postinstall": "prisma generate",
+    "design": "node scripts/design.mjs",
+    "build": "npm run design && prisma generate && tsc -p tsconfig.json",
+    "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
+    "dev": "npm run build && node --env-file-if-exists=.env dist/src/main.js",
+    "infra:up": "docker compose up -d postgres --wait",
+    "infra:down": "docker compose stop postgres",
+    "setup": "npm run db:deploy && npm run seed",
+    "db:deploy": "prisma migrate deploy",
+    "seed": "npm run build && node --env-file-if-exists=.env dist/scripts/seed.js",
+    "sync": "npm run build && node --env-file-if-exists=.env dist/scripts/sync.js",
+    "test": "prisma generate && vitest run",
+    "test:integration": "npm run build && RUN_BACKEND_INTEGRATION=1 vitest run test/integration.test.ts",
+    "test:ui": "playwright test",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.0",
+    "@nestjs/core": "^11.1.0",
+    "@nestjs/platform-express": "^11.1.0",
+    "@nestjs/schedule": "^6.0.0",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "^7.10.0",
+    "dotenv": "^17.0.0",
+    "pg": "^8.23.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
+    "@types/express": "^5.0.0",
+    "@types/node": "^26.6.2",
+    "@types/pg": "^8.23.1",
+    "eslint": "^10.11.0",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.9",
+    "prisma": "7.10.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.70.1",
+    "vitest": "^5.0.1"
+  }
+}
