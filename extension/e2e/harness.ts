@@ -129,7 +129,12 @@ export const test = base.extend<{
     await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
     mock.url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
     await provide(mock);
-    await new Promise<void>((done) => server.close(() => done()));
+    // Torn down while the browser is still open: a tab a spec opened on this address keeps its connection, and
+    // close() alone waits for it (on CI's Linux runner, past the test's minute).
+    await new Promise<void>((done) => {
+      server.close(() => done());
+      server.closeAllConnections();
+    });
   },
 
   context: async ({ build }, provide) => {
