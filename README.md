@@ -19,7 +19,7 @@ from their job boards and parses resumes into your profile with an LLM.
 
 **English** · [简体中文](README.zh-CN.md)
 
-[Autofill extension](#autofill-extension) · [Tracker](#tracker) · [Discover and Resume tools](#discover-and-resume-tools) ·
+[Autofill extension](#autofill-extension) · [Discover, Resume tools and Tracker](#discover-resume-tools-and-tracker) ·
 [Architecture](#architecture) · [Tech stack](#tech-stack) · [Develop](#develop)
 
 </div>
@@ -65,13 +65,47 @@ currently a Wealthfront client?". Workday's forms sit behind a sign-in, so its a
 SmartRecruiters, Workable and Jobvite adapters are tested on small fixtures that keep each form's structure as seen
 on public pages, and aren't in the table yet. The design is in [docs/autofill.md](docs/autofill.md).
 
-## Tracker
+## Discover, Resume tools and Tracker
 
 <p align="center">
-  <img src="docs/screenshots/tour.webp" width="960" alt="Logging a posting with the keyboard, finding another and moving it to OA, then the Insights page" />
+  <img src="docs/screenshots/app.webp" width="960" alt="Following one more company in Discover, syncing it and saving a role; reading a resume in Resume tools, parsing it and saving it into the profile; then marking the saved role applied in the tracker" />
 </p>
 
-<p align="center"><sub>Fictional companies and roles, in the White theme.</sub></p>
+<p align="center"><sub>Fictional companies, roles and resume, in the White theme.</sub></p>
+
+Discover and Resume tools run on a NestJS service in [`backend/`](backend), with its own PostgreSQL database; the
+tracker runs on the Worker.
+
+### Discover
+
+- **Roles from the companies you follow.** Pick companies from a catalog, or add any Greenhouse, Lever or Ashby
+  board by its careers URL; the service checks the source before it saves it.
+- **A sync that keeps what it can't reread.** Each board's public API is read in full, normalized, and written to
+  PostgreSQL in one transaction per company. A posting that disappears is marked closed and reopens if it
+  returns; a timeout, a failed page or a malformed reply keeps the postings already stored. Syncs run on
+  request or on a daily schedule.
+- **Search, then save.** Full-text search by role or keyword, with location, company and remote filters. A saved
+  role becomes a saved posting in the tracker, matched against the postings already there, with no application
+  recorded.
+
+### Resume tools
+
+- **Read here, parse on request.** A PDF or DOCX of up to 5 MB is read on the machine, in a worker thread with
+  limits on pages, text and archive size. Nothing reaches a model until **Parse resume**.
+- **Two ways to ask a model.** OpenAI's Responses API or Anthropic, through function calling or structured
+  output. Every reply is checked against a strict zod schema; a refusal, a truncated reply or an unknown field
+  fails instead of being patched.
+- **You pick what goes in.** The result opens in the profile as a draft: contact details fill only the blanks,
+  education and experience replace their sections when ticked, skills are merged, and nothing is stored until
+  Save.
+- **Measured.** An eval CLI scores both methods field by field, with precision and recall against reference
+  labels on openly licensed resumes.
+
+Next to the service, a benchmark suite compares indexes, a materialized view, monthly partitions and a Redis read
+cache on 20,000 synthetic postings, and keeps each run's query plans and timings as a report. The service runs
+locally; how to start it is under [Local integrated tools](#local-integrated-tools).
+
+### Tracker
 
 - **From saved to offer.** Each application records the channel and resume version it used and moves Applied →
   OA → Offer. Rejection is a flag, not a stage, so "rejected after the OA" keeps its stage. A posting with no
@@ -92,47 +126,6 @@ on public pages, and aren't in the table yet. The design is in [docs/autofill.md
   displacement map) in Chromium. Four looks: White (the default), Light with soft glows, pure-black Dark, or the
   system's. Reduced motion and reduced transparency are honored.
 - English and Simplified Chinese, CSV export, and a layout that works on a phone. Passwords are never stored.
-
-## Discover and Resume tools
-
-Two pages of the app sit on a NestJS service in [`backend/`](backend), with its own PostgreSQL database.
-
-### Discover
-
-<p align="center">
-  <img src="docs/screenshots/discover.webp" width="960" alt="Following one more company in Discover, syncing its job board, searching the roles for agent, and saving one to the tracker" />
-</p>
-
-- **Roles from the companies you follow.** Pick companies from a catalog, or add any Greenhouse, Lever or Ashby
-  board by its careers URL; the service checks the source before it saves it.
-- **A sync that keeps what it can't reread.** Each board's public API is read in full, normalized, and written to
-  PostgreSQL in one transaction per company. A posting that disappears is marked closed and reopens if it
-  returns; a timeout, a failed page or a malformed reply keeps the postings already stored. Syncs run on
-  request or on a daily schedule.
-- **Search, then save.** Full-text search by role or keyword, with location, company and remote filters. A saved
-  role becomes a saved posting in the tracker, matched against the postings already there, with no application
-  recorded.
-
-### Resume tools
-
-<p align="center">
-  <img src="docs/screenshots/resume-tools.webp" width="960" alt="Reading a resume PDF, parsing it with a model, reviewing the result into the profile, and saving it" />
-</p>
-
-- **Read here, parse on request.** A PDF or DOCX of up to 5 MB is read on the machine, in a worker thread with
-  limits on pages, text and archive size. Nothing reaches a model until **Parse resume**.
-- **Two ways to ask a model.** OpenAI's Responses API or Anthropic, through function calling or structured
-  output. Every reply is checked against a strict zod schema; a refusal, a truncated reply or an unknown field
-  fails instead of being patched.
-- **You pick what goes in.** The result opens in the profile as a draft: contact details fill only the blanks,
-  education and experience replace their sections when ticked, skills are merged, and nothing is stored until
-  Save.
-- **Measured.** An eval CLI scores both methods field by field, with precision and recall against reference
-  labels on openly licensed resumes.
-
-Next to the service, a benchmark suite compares indexes, a materialized view, monthly partitions and a Redis read
-cache on 20,000 synthetic postings, and keeps each run's query plans and timings as a report. The service runs
-locally; how to start it is under [Local integrated tools](#local-integrated-tools).
 
 ## Architecture
 
