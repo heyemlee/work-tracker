@@ -11,6 +11,7 @@ export default defineConfig([
     'test-results',
     'playwright-report',
     'web/.generated',
+    'performance/results',
     'evals/private',
     'evals/runs',
   ]),

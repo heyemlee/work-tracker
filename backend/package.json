@@ -18,6 +18,9 @@
     "sync": "npm run build && node --env-file-if-exists=.env dist/scripts/sync.js",
     "resume": "node --env-file-if-exists=.env dist/scripts/resume.js",
     "resume:data": "node dist/scripts/resume-public-data.js",
+    "perf:up": "docker compose --profile performance up -d postgres perf-redis --wait",
+    "perf:stop": "docker compose --profile performance stop perf-redis",
+    "perf": "node --env-file-if-exists=.env dist/scripts/performance.js",
     "test": "prisma generate && vitest run",
     "test:integration": "npm run build && RUN_BACKEND_INTEGRATION=1 vitest run test/integration.test.ts",
     "test:ui": "playwright test",
@@ -37,6 +40,7 @@
     "mammoth": "^1.13.0",
     "pdfjs-dist": "^6.4.299",
     "pg": "^8.23.1",
+    "redis": "^6.3.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.0",
     "zod": "^4.6.5"

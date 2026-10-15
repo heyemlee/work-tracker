@@ -15,5 +15,27 @@ services:
       interval: 2s
       timeout: 3s
       retries: 30
+  perf-redis:
+    image: redis:8-alpine
+    profiles: ['performance']
+    command:
+      [
+        'redis-server',
+        '--save',
+        '',
+        '--appendonly',
+        'no',
+        '--maxmemory',
+        '64mb',
+        '--maxmemory-policy',
+        'allkeys-lru',
+      ]
+    ports:
+      - '127.0.0.1:56380:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 2s
+      timeout: 3s
+      retries: 30
 volumes:
   postgres-data:

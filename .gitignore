@@ -37,3 +37,4 @@ backend/playwright-report
 backend/web/.generated
 backend/evals/private/
 backend/evals/runs/
+backend/performance/results/
