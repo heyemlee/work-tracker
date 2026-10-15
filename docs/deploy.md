@@ -93,20 +93,20 @@ The extension is loaded unpacked in Chrome; it isn't published to the Chrome Web
    `extension/.output/chrome-mv3`. After each rebuild, press the reload arrow on the extension's card.
 3. On Outbox, open the resumes panel (the document icon in the toolbar) and upload each resume PDF you send; each
    becomes a resume version. The extension downloads the one picked on its card.
-4. Press **Fill profile** on a resume (this needs step 6's API key), or import
-   `~/Desktop/job-search/autofill-profile.json` once from the profile panel (the card icon), then fill whatever
-   **Still empty** lists and save. The extension fetches the profile before each fill, and whenever its options
-   page (**Details → Extension options**) opens; **Status** there shows whose profile it holds.
+4. Press **Fill profile** on a resume (this needs step 6's API key), or import a profile saved as JSON once from
+   the profile panel (the card icon), then fill whatever **Still empty** lists and save. The extension fetches the
+   profile before each fill, and whenever its options page (**Details → Extension options**) opens; **Status**
+   there shows whose profile it holds.
 5. Sign in to Outbox in the same Chrome profile; **Status** on the options page says whether the extension reaches
    it. The address (`https://tracker.haoyang.us`, or `http://localhost:5180` while developing) is under **More**.
    Logging uses Outbox's session cookie. If Chrome withholds it, the extension borrows the session of an open Outbox
    tab as a bearer token, which needs a Worker deployed with the `bearer` plugin (step 3 above, from this version
    on).
-6. For AI, under **AI** on the options page: the provider is **OpenAI-compatible** with the address
-   `https://api.kabi.pro` and model `gpt-5.6-terra` already filled in. Paste the key and press **Save**, which also
-   tries it. **Load list** shows what the endpoint offers if the model name differs. To use Claude instead, pick
-   **Anthropic**, and paste a key from the [Anthropic Console](https://console.anthropic.com) with a monthly spend
-   limit. Without a key the rules still fill every field they can; the rest are listed for you.
+6. For AI, under **AI** on the options page, the provider is **OpenAI-compatible**: enter your endpoint's address
+   and model, paste the key and press **Save**, which also tries it. **Load list** shows what the endpoint offers.
+   To use Claude instead, pick **Anthropic**, and paste a key from the
+   [Anthropic Console](https://console.anthropic.com) with a monthly spend limit. Without a key the rules still
+   fill every field they can; the rest are listed for you.
 
 The card opens on application pages, where its **Fill** button fills. On other sites, click the toolbar icon.
 
@@ -114,7 +114,7 @@ The free-text eval drafts 20 essay questions with each model and writes a side-b
 `extension/evals/`. A run costs about $1:
 
 ```bash
-ANTHROPIC_API_KEY=sk-ant-… EVAL_PROFILE=~/Desktop/job-search/autofill-profile.json npm run eval -w extension
+ANTHROPIC_API_KEY=sk-ant-… EVAL_PROFILE=path/to/profile.json npm run eval -w extension
 ```
 
 ## Local development

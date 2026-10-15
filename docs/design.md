@@ -1,19 +1,17 @@
 # Outbox — Design
 
-A job-application tracker for one person applying to dozens of SWE / AI-agent roles a day, often to the
-same posting from several email accounts. Daily-use tool first, portfolio piece second.
+A job-application tracker for one person applying to dozens of SWE / AI-agent roles a day.
 
 Status: design settled 2026-09-23 · Milestones 1–3 (prototype, MVP, README) done · Milestone 4 (agent v1) on
 hold · Milestone 7 (autofill extension) built and waiting on the owner to install it, see [autofill.md](autofill.md)
 · Redesigned 2026-09-28 after Jobright, Simplify, Teal and Huntr: labelled pages, a first-run guide, insights.
-Deferred work is listed in [todo.md](todo.md).
 
 ## 1. Goals
 
 - Log an application in under 5 seconds — the owner applies to dozens of roles a day.
 - Track one posting applied to from several identities (email accounts), each progressing independently.
 - Keep statuses current with little manual work: an email-reading agent (milestones 4–5).
-- Be a credible portfolio project: clean TypeScript, measured evals.
+- Hold the code to a high bar: clean TypeScript, measured evals.
 
 Non-goals: multi-tenant SaaS, storing portal passwords, interview-round tracking, JD / salary / location fields.
 
@@ -202,5 +200,5 @@ repository.
 - ~~Owner account~~ — set through the `OWNER_EMAILS` secret.
 - ~~Google OAuth client~~ — in Testing mode with the owner as the only test user; publishing would need a
   privacy policy and home page.
-- Workers Paid — deferred on 2026-09-24; the risks of staying on the free plan are in [todo.md](todo.md).
+- Workers Paid — deferred on 2026-09-24; **Cost** in section 5 gives the free plan's limits.
 - An Anthropic API key — milestone 4.

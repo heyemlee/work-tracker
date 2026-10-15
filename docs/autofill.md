@@ -1,8 +1,7 @@
 # Outbox Autofill — Design
 
 A Chrome extension that fills job applications from a profile the owner edits on Outbox and logs every submission
-to Outbox. Status: decided and built 2026-09-27, in one release without an MVP. What still waits on the owner is in
-[todo.md](todo.md).
+to Outbox. Status: decided and built 2026-09-27, in one release without an MVP.
 
 ## 1. Goals
 
@@ -548,12 +547,12 @@ else keep an answer isn't known.
   `https://`), and a field emptied goes back to Anthropic's own. Tried on a stand-in; no proxy of the owner's was
   asked, so whether theirs takes `x-api-key` and these requests is for the settings' key check to tell.
 - **Or an OpenAI-compatible endpoint** (added 2026-09-28, and the default since): OpenAI's chat completions API at any
-  address — the owner uses a proxy at `https://api.kabi.pro` (`/v1` is added to a bare address) with GPT-5.6 Terra.
+  address (`/v1` is added to a bare address).
   Its own key, also only in `chrome.storage.local`. Structured output goes as a strict `json_schema`, a resume as a PDF
   `file` part; a proxy that refuses `max_completion_tokens` or structured output gets the request again without it.
   Token counts are recorded, cost isn't: the proxy's prices aren't known. The free-text eval still runs on Claude.
   The settings offer three models to pick from (`OPENAI_MODELS` in `storage.ts`: GPT-5.6 Luna, Sol and Terra, the
-  owner's choice out of all the proxy lists) and a reasoning effort (decided 2026-10-07): "auto" keeps each request's
+  owner's pick from their endpoint's list) and a reasoning effort (decided 2026-10-07): "auto" keeps each request's
   own (low to answer leftover fields and read a resume, medium to draft), or low, medium or high for all of them,
   sent as `reasoning_effort`. Thinking is paid for in output tokens, so a request made with more effort than it was
   sized for gets more room in step (`roomFor` in `background/ai.ts`), up to the largest limit a request already
