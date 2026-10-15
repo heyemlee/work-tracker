@@ -74,24 +74,13 @@ currently a Wealthfront client?". Workday's forms sit behind a sign-in, so its a
 
 ## Architecture
 
-```mermaid
-flowchart LR
-  app["React app"]
-  ext["Autofill extension"]
-  subgraph worker["One Cloudflare Worker"]
-    api["Hono API<br/>zod-validated"]
-    auth["Better Auth<br/>Google sign-in"]
-  end
-  db[("D1: outbox")]
+<p align="center">
+  <img src="docs/architecture.svg" width="960" alt="The web app and the Autofill extension talk to one Cloudflare Worker, which serves the app, runs a Hono API with Better Auth, and stores data in D1; the extension asks Claude only for fields its rules can't place" />
+</p>
 
-  app -- "tracker.haoyang.us" --> api
-  ext -- "quick add" --> api
-  api --> auth
-  api --> db
-  auth --> db
-```
-
-The Worker serves the built app as static assets and runs the API under `/api`.
+The Worker serves the built app as static assets and runs the API under `/api`. The extension reads the profile
+and resume PDFs from the same API and logs each submission to it; its AI keys stay in the extension and never
+reach the Worker.
 
 - **One contract, three implementations.** The UI talks only to a `Repository` interface. It is implemented in
   the browser (the offline prototype), over D1 in the Worker, and over HTTP in the app. The rules for every

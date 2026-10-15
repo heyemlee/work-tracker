@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 400" width="960" height="400" role="img" aria-labelledby="title desc">
+  <title id="title">Outbox architecture</title>
+  <desc id="desc">The web app and the Autofill extension talk to one Cloudflare Worker, which serves the app, runs a Hono API with Better Auth, and stores data in D1. The extension asks Claude only for fields its rules can't place.</desc>
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; }
+    .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; fill: #8e8e93; }
+    .title { font-size: 16px; font-weight: 600; fill: #1d1d1f; }
+    .name { font-size: 14px; font-weight: 600; fill: #1d1d1f; }
+    .sub { font-size: 12.5px; fill: #6e6e73; }
+    .edge { font-size: 11px; fill: #8e8e93; }
+    .card { fill: #ffffff; stroke: #e3e3e8; stroke-width: 1; }
+    .wire { fill: none; stroke: #d6d6dc; stroke-width: 1.5; }
+    .pulse {
+      fill: none;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 0.14 1.3;
+      stroke-dashoffset: 0.14;
+      opacity: 0;
+      animation: travel 6s linear infinite;
+    }
+    .data { stroke: #0a7cff; }
+    .ai { stroke: #d97757; }
+    .live { animation: breathe 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes travel {
+      0% { stroke-dashoffset: 0.14; opacity: 1; }
+      24% { stroke-dashoffset: -1; opacity: 1; }
+      25%, 100% { stroke-dashoffset: -1; opacity: 0; }
+    }
+    @keyframes breathe {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.45; transform: scale(0.8); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .pulse { animation: none; }
+      .live { animation: none; }
+    }
+  </style>
+  <defs>
+    <filter id="lift" x="-10%" y="-10%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000000" flood-opacity="0.06" />
+    </filter>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="blur" />
+      <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+    </filter>
+  </defs>
+
+  <rect x="0.5" y="0.5" width="959" height="399" rx="16" fill="#ffffff" stroke="#ececf0" />
+
+  <!-- The Worker's box goes under the wires, its cards over them -->
+  <rect x="372" y="40" width="296" height="282" rx="18" fill="#fafafb" stroke="#e3e3e8" />
+
+  <!-- Wires -->
+  <path id="web-assets" class="wire" d="M264,104 C330,104 326,115 392,115" />
+  <path id="web-api" class="wire" d="M264,132 C330,132 326,184 392,184" />
+  <path id="ext-api" class="wire" d="M264,256 C330,256 326,198 392,198" />
+  <path id="api-db" class="wire" d="M648,191 C700,191 692,160 744,160" />
+  <path id="auth-db" class="wire" d="M648,267 C704,267 688,184 744,184" />
+  <path id="ext-ai" class="wire" stroke-dasharray="4 5" d="M148,320 C148,352 168,364 204,364 L776,364 C812,364 836,352 836,322" />
+
+  <text class="edge" x="328" y="92" text-anchor="middle">same origin</text>
+  <text class="edge" x="318" y="280" text-anchor="middle">logs · profile</text>
+  <text class="edge" x="318" y="294" text-anchor="middle">resume PDFs</text>
+  <text class="edge" x="696" y="150" text-anchor="middle">SQL</text>
+  <text class="edge" x="696" y="290" text-anchor="middle">sessions</text>
+  <text class="edge" x="520" y="356" text-anchor="middle">only fields the rules can't place · the owner's own key</text>
+
+  <!-- Pulses: a log from the extension lands in D1, then the app's list picks it up -->
+  <path class="pulse data" pathLength="1" filter="url(#glow)" d="M264,256 C330,256 326,198 392,198" style="animation-delay: 0s" />
+  <path class="pulse data" pathLength="1" filter="url(#glow)" d="M648,191 C700,191 692,160 744,160" style="animation-delay: 1.1s" />
+  <path class="pulse data" pathLength="1" filter="url(#glow)" d="M744,160 C692,160 700,191 648,191" style="animation-delay: 2.4s" />
+  <path class="pulse data" pathLength="1" filter="url(#glow)" d="M392,184 C326,184 330,132 264,132" style="animation-delay: 3.3s" />
+  <path class="pulse ai" pathLength="1" filter="url(#glow)" d="M148,320 C148,352 168,364 204,364 L776,364 C812,364 836,352 836,322" style="animation-delay: 4.4s" />
+
+  <!-- Clients -->
+  <g filter="url(#lift)">
+    <rect class="card" x="32" y="72" width="232" height="92" rx="14" />
+    <rect class="card" x="32" y="216" width="232" height="104" rx="14" />
+  </g>
+  <text class="eyebrow" x="52" y="98">BROWSER</text>
+  <text class="title" x="52" y="122">Outbox web app</text>
+  <text class="sub" x="52" y="146">React 19 · TanStack Query</text>
+  <g transform="translate(222 88) scale(0.36)" fill="#1d1d1f">
+    <rect x="8" y="18" width="33.5" height="7" rx="3.5" />
+    <rect x="22" y="28.5" width="27" height="7" rx="3.5" />
+    <rect x="34.3" y="39" width="21.7" height="7" rx="3.5" />
+  </g>
+
+  <text class="eyebrow" x="52" y="242">CHROME</text>
+  <text class="title" x="52" y="266">Autofill extension</text>
+  <text class="sub" x="52" y="290">MV3 · WXT · 9 ATS adapters</text>
+  <text class="sub" x="52" y="308">Rules first, Claude for the rest</text>
+
+  <!-- The Worker -->
+  <circle class="live" cx="394" cy="62" r="4.5" fill="#f38020" />
+  <text class="name" x="406" y="67">Cloudflare Worker</text>
+  <text class="edge" x="648" y="67" text-anchor="end">one deploy</text>
+  <g filter="url(#lift)">
+    <rect class="card" x="392" y="84" width="256" height="62" rx="12" />
+    <rect class="card" x="392" y="160" width="256" height="62" rx="12" />
+    <rect class="card" x="392" y="236" width="256" height="62" rx="12" />
+  </g>
+  <text class="name" x="410" y="110">Static assets</text>
+  <text class="sub" x="410" y="130">the built React app</text>
+  <text class="name" x="410" y="186">Hono API · /api</text>
+  <text class="sub" x="410" y="206">zod-validated, scoped to the owner</text>
+  <text class="name" x="410" y="262">Better Auth</text>
+  <text class="sub" x="410" y="282">Google sign-in, allowlisted emails</text>
+
+  <!-- Storage -->
+  <g filter="url(#lift)">
+    <path d="M744,112 V212 A92,13 0 0 0 928,212 V112" fill="#ffffff" stroke="#e3e3e8" />
+    <ellipse cx="836" cy="112" rx="92" ry="13" fill="#fafafb" stroke="#e3e3e8" />
+  </g>
+  <text class="name" x="836" y="166" text-anchor="middle">D1 · SQLite</text>
+  <text class="sub" x="836" y="186" text-anchor="middle">Drizzle, batched writes</text>
+
+  <!-- AI -->
+  <rect class="card" x="744" y="252" width="184" height="70" rx="14" filter="url(#lift)" />
+  <circle cx="764" cy="277" r="4.5" fill="#d97757" />
+  <text class="name" x="776" y="282">Claude API</text>
+  <text class="sub" x="764" y="305">from the extension only</text>
+</svg>
