@@ -211,7 +211,7 @@ async function request(params: AskParams): Promise<Reply> {
   return text ? { text, why: null } : { text: null, why: 'the answer was empty' };
 }
 
-/** `https://api.kabi.pro` → `https://api.kabi.pro/v1`; an address with a path is used as given. */
+/** `https://api.example.com` → `https://api.example.com/v1`; an address with a path is used as given. */
 export function openaiEndpoint(base: string): string {
   // Saved before the settings made it whole, an address may have no scheme.
   const trimmed = openaiAddress(base);

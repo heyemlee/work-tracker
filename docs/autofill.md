@@ -547,7 +547,7 @@ else keep an answer isn't known.
   `https://`), and a field emptied goes back to Anthropic's own. Tried on a stand-in; no proxy of the owner's was
   asked, so whether theirs takes `x-api-key` and these requests is for the settings' key check to tell.
 - **Or an OpenAI-compatible endpoint** (added 2026-09-28, and the default since): OpenAI's chat completions API at any
-  address (`/v1` is added to a bare address).
+  address, OpenAI's own unless another is typed (`/v1` is added to a bare address).
   Its own key, also only in `chrome.storage.local`. Structured output goes as a strict `json_schema`, a resume as a PDF
   `file` part; a proxy that refuses `max_completion_tokens` or structured output gets the request again without it.
   Token counts are recorded, cost isn't: the proxy's prices aren't known. The free-text eval still runs on Claude.

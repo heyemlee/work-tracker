@@ -397,7 +397,7 @@ test('asks Claude at another address where one is typed, and at Anthropic’s ow
   // Each provider has its own address, and the one field shows the address of the provider chosen.
   await settings.getByLabel('Provider').selectOption('openai');
   await expect(settings.getByLabel('Address')).toHaveCount(1);
-  await expect(settings.getByLabel('Address')).toHaveValue('https://api.kabi.pro');
+  await expect(settings.getByLabel('Address')).toHaveValue('https://api.openai.com/v1');
   await settings.getByLabel('Provider').selectOption('anthropic');
   await expect(settings.getByLabel('Address')).toHaveCount(1);
   await expect(settings.getByLabel('Address')).toHaveValue('https://api.anthropic.com');

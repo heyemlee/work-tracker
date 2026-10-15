@@ -116,9 +116,9 @@ The extension is loaded unpacked in Chrome; it isn't published to the Chrome Web
    Logging uses Outbox's session cookie. If Chrome withholds it, the extension borrows the session of an open Outbox
    tab as a bearer token, which needs a Worker deployed with the `bearer` plugin (step 3 above, from this version
    on).
-6. For AI, under **AI** on the options page, the provider is **OpenAI-compatible**: enter your endpoint's address
-   and model, paste the key and press **Save**, which also tries it. **Load list** shows what the endpoint offers.
-   To use Claude instead, pick **Anthropic**, and paste a key from the
+6. For AI, under **AI** on the options page, the provider is **OpenAI-compatible**, at OpenAI's own address unless
+   you enter another. Pick the model, paste the key and press **Save**, which also tries it; **Load list** shows
+   what the endpoint offers. To use Claude instead, pick **Anthropic**, and paste a key from the
    [Anthropic Console](https://console.anthropic.com) with a monthly spend limit. Without a key the rules still
    fill every field they can; the rest are listed for you.
 

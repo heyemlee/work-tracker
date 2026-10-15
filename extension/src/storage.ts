@@ -30,7 +30,7 @@ export function anthropicAddress(typed: string): string {
   return whole.replace(/\/+$/, '').replace(/\/v1$/i, '').replace(/\/+$/, '');
 }
 
-/** An OpenAI-compatible address as typed, made one to send to: `api.kabi.pro/` is `https://api.kabi.pro`. */
+/** An OpenAI-compatible address as typed, made one to send to: `api.example.com/` is `https://api.example.com`. */
 export function openaiAddress(typed: string): string {
   const trimmed = typed.trim();
   if (!trimmed) return '';
@@ -71,7 +71,7 @@ export const DEFAULT_SETTINGS: Settings = {
   provider: 'openai',
   model: 'claude-opus-5-5',
   anthropicBaseUrl: ANTHROPIC_API,
-  openaiBaseUrl: 'https://api.kabi.pro',
+  openaiBaseUrl: 'https://api.openai.com/v1',
   openaiModel: 'gpt-5.6-terra',
   openaiEffort: 'auto',
   sameCompanyLimit: 3,

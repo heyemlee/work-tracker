@@ -402,12 +402,12 @@ describe('an OpenAI-compatible provider', () => {
   });
 
   it('adds /v1 to a bare address', () => {
-    expect(openaiEndpoint('https://api.kabi.pro')).toBe('https://api.kabi.pro/v1');
-    expect(openaiEndpoint('https://api.kabi.pro/')).toBe('https://api.kabi.pro/v1');
+    expect(openaiEndpoint('https://api.example.com')).toBe('https://api.example.com/v1');
+    expect(openaiEndpoint('https://api.example.com/')).toBe('https://api.example.com/v1');
     expect(openaiEndpoint('https://api.openai.com/v1')).toBe('https://api.openai.com/v1');
     // Typed without its scheme, as the settings kept it before they made it whole.
-    expect(openaiEndpoint('api.kabi.pro')).toBe('https://api.kabi.pro/v1');
-    expect(openaiEndpoint(' api.kabi.pro/v1/ ')).toBe('https://api.kabi.pro/v1');
+    expect(openaiEndpoint('api.example.com')).toBe('https://api.example.com/v1');
+    expect(openaiEndpoint(' api.example.com/v1/ ')).toBe('https://api.example.com/v1');
   });
 
   it('asks chat completions with the model, the key and a strict schema', async () => {
@@ -421,7 +421,7 @@ describe('an OpenAI-compatible provider', () => {
     const answers = await answerFields(questions, makeProfile(), null, '2026-09-27');
     expect(answers.map((entry) => entry.id)).toEqual(['b']);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://api.kabi.pro/v1/chat/completions');
+    expect(url).toBe('https://api.openai.com/v1/chat/completions');
     expect(new Headers(init.headers).get('Authorization')).toBe('Bearer sk-proxy');
     const body = JSON.parse(String(init.body));
     expect(body.model).toBe('gpt-5.6-terra');
