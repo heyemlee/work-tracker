@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "Fills job applications from a profile kept on this machine and logs each submission to Outbox.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "wxt build --mode development",
