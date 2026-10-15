@@ -32,20 +32,20 @@ from their job boards and parses resumes into your profile with an LLM.
 
 ## Autofill extension
 
-A Chrome extension in [`extension/`](extension) fills job applications from a profile the owner keeps in Outbox,
-started from their resume PDF, then logs each submission to Outbox. It never presses Submit: the owner checks every answer first.
+A Chrome extension in [`extension/`](extension) fills job applications from a profile you keep in Outbox, started
+from your resume PDF, then logs each submission to Outbox. It never presses Submit: you check every answer first.
 
 - **Rules first.** Adapters for Greenhouse, Lever, Ashby, Workday, Gem, iCIMS, SmartRecruiters, Workable and
   Jobvite read the form and drive its widgets, any other form with a resume upload and a name or email gets a
   generic one, and a field dictionary answers the questions most forms repeat. Work authorization (sponsorship
   now or later, OPT, export control, clearance) is answered by fixed rules for the job's country, never by a
-  model, and is always marked for the owner to check.
+  model, and is always marked for you to check.
 - **Claude for the rest.** Fields the rules can't place go to Claude in one request per form; anything under
-  0.7 confidence stays blank. Essay questions get a short draft grounded in the resume and the posting, for the
-  owner to edit.
+  0.7 confidence stays blank. Essay questions get a short draft grounded in the resume and the posting, for you
+  to edit.
 - **A match check before filling:** citizenship or clearance requirements, seniority, the company's H-1B
-  approvals (USCIS, FY2021–2023), and how many of its postings the owner applied to in the last 30 days. It
-  warns and never blocks.
+  approvals (USCIS, FY2021–2023), and how many of its postings you applied to in the last 30 days. It warns and
+  never blocks.
 - **It logs itself.** When the confirmation page loads, the application lands in Outbox with its channel, resume
   version and link, and can be undone. On a posting, **Mark as applied** logs it without a form and **Save for
   later** keeps it as a saved job.
@@ -108,7 +108,7 @@ Two pages of the app sit on a NestJS service in [`backend/`](backend), with its 
 - **A sync that keeps what it can't reread.** Each board's public API is read in full, normalized, and written to
   PostgreSQL in one transaction per company. A posting that disappears is marked closed and reopens if it
   returns; a timeout, a failed page or a malformed reply keeps the postings already stored. Syncs run on
-  request, or every day at 4 a.m. Pacific when switched on.
+  request or on a daily schedule.
 - **Search, then save.** Full-text search by role or keyword, with location, company and remote filters. A saved
   role becomes a saved posting in the tracker, matched against the postings already there, with no application
   recorded.
@@ -127,13 +127,12 @@ Two pages of the app sit on a NestJS service in [`backend/`](backend), with its 
 - **You pick what goes in.** The result opens in the profile as a draft: contact details fill only the blanks,
   education and experience replace their sections when ticked, skills are merged, and nothing is stored until
   Save.
-- **Measured, within a budget.** An eval CLI scores both methods field by field, with precision and recall
-  against reference labels on openly licensed resumes. Every request, from the page or the CLI, draws on one $5
-  ledger, reserved before the request is sent.
+- **Measured.** An eval CLI scores both methods field by field, with precision and recall against reference
+  labels on openly licensed resumes.
 
 Next to the service, a benchmark suite compares indexes, a materialized view, monthly partitions and a Redis read
-cache on 20,000 synthetic postings, and keeps each run's query plans and timings as a report. The service runs on
-the owner's machine; how to start it is under [Local integrated tools](#local-integrated-tools).
+cache on 20,000 synthetic postings, and keeps each run's query plans and timings as a report. The service runs
+locally; how to start it is under [Local integrated tools](#local-integrated-tools).
 
 ## Architecture
 
@@ -168,9 +167,9 @@ pages as unavailable and never contacts it.
 | Service   | NestJS · Prisma · PostgreSQL · Redis                                             | [`backend/`](backend): job aggregation and search, resume parsing and evals, database benchmarks |
 | Quality   | Vitest · Playwright · ESLint with the React Compiler rules · Prettier            | Domain, contract and adapter tests; the extension end to end in Chromium, in CI                  |
 
-The service runs on the owner's machine, for one owner: the tracker, sign-in, profile, attachments and extension
-keep their Worker/D1 storage and user boundaries, and Redis serves only the benchmarks. Its setup is in
-[backend/README.md](backend/README.md) (in Chinese).
+The service runs locally: the tracker, sign-in, profile, attachments and extension keep their Worker/D1 storage
+and user boundaries, and Redis serves only the benchmarks. Its setup is in [backend/README.md](backend/README.md)
+(in Chinese).
 
 ## Develop
 
@@ -185,8 +184,8 @@ npm run ext:build                # the extension, into extension/.output/chrome-
 
 ### Local integrated tools
 
-Keep the existing `.env`, model selection and budget ledger. For a first-time backend setup, follow
-[backend/README.md](backend/README.md). Start PostgreSQL and the service in a separate terminal:
+For a first-time setup of the service, follow [backend/README.md](backend/README.md). Then start PostgreSQL and
+the service in a separate terminal:
 
 ```bash
 npm --prefix backend run infra:up
@@ -196,28 +195,26 @@ npm --prefix backend run dev      # 127.0.0.1:3100; leave running alongside npm 
 Open [Discover](http://127.0.0.1:5180/discover) or [Resume tools](http://127.0.0.1:5180/resume-tools).
 Discover starts with company selection. A searchable company dialog holds source setup; the main page focuses
 on search and compact job rows, with optional filters and a detail side panel.
-Saving uses the existing repository and posting matching rules, checks a fresh snapshot and suppresses repeated
+Saving uses the tracker's repository and posting matching rules, checks a fresh snapshot and suppresses repeated
 clicks. It creates a saved job only, with no application attached.
 
 Resume tools read PDF/DOCX files up to 5 MB locally. Page visits and text extraction never invoke a model.
 The flow is **Add resume → Check text → Review result**, with a readable summary and collapsed JSON.
-Only **Parse resume** invokes a model, using the existing provider, Base URL, model policy and shared $5 ledger.
+Only **Parse resume** invokes a model, with the provider, Base URL and model set in the service.
 The **Parsing settings** dialog never accepts or returns keys: configure them in `backend/.env` and restart the
 service. Model lists and connection checks run only on request. Results can be downloaded as JSON or reviewed
 in Profile; contact details fill blanks, selected education/experience replace those sections in the draft,
 skills are merged, and a separate Save is required. Unsaved edits have a leave guard. Results/text are held in
-memory, not persisted across a reload. The resume library and extension still attach PDFs only.
+memory, not persisted across a reload. The resume library and the extension attach PDFs only.
 
 The Vite-only `/local-tools/*` bridge targets the fixed loopback service and allowlists routes. It checks the
-local Host, peer address, same-origin writes and `x-outbox-local`, then adapts the origin for the unchanged
-NestJS `LocalGuard`. It strips main-site cookies and authorization headers. `/api/*` continues to reach the
-Worker, including its resume attachment endpoints. Do not expose the dev server or service as public hosting.
+local Host, peer address, same-origin writes and `x-outbox-local`, then adapts the origin for the NestJS
+`LocalGuard`. It strips main-site cookies and authorization headers. `/api/*` goes to the Worker, resume
+attachments included. Do not expose the dev server or the service publicly.
 
-**Local integration is complete; hosted service integration is not configured.** Production builds show an
-explanatory unavailable state and never contact a visitor's localhost. Going online still requires separate
-service/PostgreSQL hosting, authenticated user-scoped service data and secrets/budgets, and a production
-same-origin gateway. The current single-owner backend is not multi-tenant. The main app can be published with
-the existing Worker deployment; that does not host the local service or migrate its database.
+**Not hosted.** A production build shows these pages as unavailable and never contacts a visitor's localhost.
+Hosting them would take a separately hosted service and database, data and secrets scoped to each signed-in user,
+and a same-origin gateway; deploying the Worker hosts neither the service nor its database.
 
 The app and extension share their mark in `src/assets/outbox.svg`. After changing it, run `npm run icons`
 to regenerate the favicon, home-screen icons, and Chrome extension icons, then rebuild both apps.

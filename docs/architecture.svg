@@ -68,7 +68,7 @@
   <text class="edge" x="318" y="352" text-anchor="middle">same origin</text>
   <text class="edge" x="698" y="186" text-anchor="middle">SQL</text>
   <text class="edge" x="702" y="334" text-anchor="middle">sessions</text>
-  <text class="edge" x="452" y="34" text-anchor="middle">only fields the rules can't place · the owner's own key</text>
+  <text class="edge" x="452" y="34" text-anchor="middle">only fields the rules can't place · your own key</text>
   <text class="edge" x="276" y="452" text-anchor="middle">/local-tools · dev server</text>
 
   <!-- Pulses: a log from the extension lands in D1 and comes back to the app's list; the extension asks Claude; the
@@ -111,7 +111,7 @@
     <rect class="card" x="392" y="280" width="256" height="62" rx="12" />
   </g>
   <text class="name" x="410" y="154">Hono API · /api</text>
-  <text class="sub" x="410" y="174">zod-validated, scoped to the owner</text>
+  <text class="sub" x="410" y="174">zod-validated, scoped per user</text>
   <text class="name" x="410" y="230">Static assets</text>
   <text class="sub" x="410" y="250">the built React app</text>
   <text class="name" x="410" y="306">Better Auth</text>
@@ -137,7 +137,7 @@
   <text class="name" x="404" y="437">NestJS service · backend/</text>
   <text class="edge" x="648" y="437" text-anchor="end">local</text>
   <text class="sub" x="392" y="460">Discover: sync, search, save</text>
-  <text class="sub" x="392" y="479">Resume tools: parse, evals, $5 ledger</text>
+  <text class="sub" x="392" y="479">Resume tools: parse, evals</text>
   <text class="sub" x="392" y="498">PostgreSQL · Prisma</text>
 
   <g filter="url(#lift)">
