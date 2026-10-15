@@ -81,7 +81,7 @@ describe('filling a page that fills fields of its own', () => {
     input('phone').value = '+1 408 555 0100';
     input('resume').addEventListener('change', () => {
       input('name').value = 'Alexander Chen';
-      input('email').value = 'alex.chen@gmail.com';
+      input('email').value = 'alex.chen@example.com';
       input('org').value = 'Acme AI Labs';
     });
 

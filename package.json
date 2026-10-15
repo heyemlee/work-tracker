@@ -2,7 +2,7 @@
   "name": "outbox",
   "private": true,
   "version": "0.1.0",
-  "description": "Job-application tracker for applying to one posting from several accounts, with an email-reading agent.",
+  "description": "Job-application tracker with a Chrome extension that fills application forms and logs each submission by itself.",
   "license": "MIT",
   "type": "module",
   "engines": {

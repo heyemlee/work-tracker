@@ -57,7 +57,7 @@ test('keeps what Lever read from the resume and what the owner typed, and fills 
   // Lever reads an uploaded resume and fills the fields it found; this stands in for its parser.
   const parser = `<script>
     document.querySelector('#resume-upload-input').addEventListener('change', () => setTimeout(() => {
-      for (const [name, value] of [['name', 'Alexander Chen'], ['email', 'alex.chen@gmail.com'], ['org', 'Acme AI Labs']]) {
+      for (const [name, value] of [['name', 'Alexander Chen'], ['email', 'alex.chen@example.com'], ['org', 'Acme AI Labs']]) {
         const input = document.querySelector('input[name="' + name + '"]');
         input.value = value;
         input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -106,7 +106,7 @@ const reader = (ms: number) => `<style>
         setTimeout(() => {
           note('working').style.display = 'none';
           note('success').style.display = 'inline';
-          for (const [name, value] of [['name', 'Alexander Chen'], ['email', 'alex.chen@gmail.com'], ['org', 'Acme AI Labs']]) {
+          for (const [name, value] of [['name', 'Alexander Chen'], ['email', 'alex.chen@example.com'], ['org', 'Acme AI Labs']]) {
             if (!typed.has(name)) field(name).value = value;
           }
         }, ${ms});

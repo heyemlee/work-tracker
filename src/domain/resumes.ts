@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 /** A resume PDF on its way in or out. */
 export interface ResumeUpload {
-  /** The file's own name, e.g. `Haoyang_Resume.pdf`. */
+  /** The file's own name, e.g. `Alex_Chen_Resume.pdf`. */
   name: string;
   /** The PDF, as base64. */
   data: string;
@@ -48,7 +48,7 @@ export function base64ToBytes(data: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
-/** A new version's name, from its file: `Haoyang_Resume.pdf` → `Haoyang_Resume`. */
+/** A new version's name, from its file: `Alex_Chen_Resume.pdf` → `Alex_Chen_Resume`. */
 export function versionName(fileName: string): string {
   return (
     fileName

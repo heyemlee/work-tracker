@@ -15,7 +15,7 @@ import { questions } from './eval-questions';
  * numbers the applicant's material never states. Reading the drafts is the real test; the flags only point.
  *
  *   ANTHROPIC_API_KEY=sk-ant-… npm run eval -w extension
- *   EVAL_PROFILE=~/Desktop/job-search/autofill-profile.json   drafts for that profile instead of the test applicant
+ *   EVAL_PROFILE=path/to/profile.json   drafts for that profile instead of the test applicant
  *
  * A run costs about $1 and writes `evals/drafts-<date>.md`. It needs RUN_EVAL, so it never runs with the tests.
  */
