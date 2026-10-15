@@ -1,5 +1,5 @@
 import { expect, type FrameLocator } from '@playwright/test';
-import { seed, serve, SNAPSHOT, test } from './harness';
+import { pressable, seed, serve, SNAPSHOT, test } from './harness';
 
 const THANKS = '<!doctype html><title>Thanks</title><main><h1>Thank you for applying.</h1></main>';
 const FORM =
@@ -142,6 +142,7 @@ test('says so where a resume’s PDF can’t be shown, or can’t be read', asyn
   const preview = page.frameLocator('outbox-autofill iframe');
   await expect(preview.getByRole('status')).toHaveText('This PDF can’t be shown here.');
   await expect(preview.getByRole('heading', { name: 'SDE-v3' })).toBeVisible();
+  await pressable(preview);
   await preview.getByRole('button', { name: 'Close' }).click();
   await expect(card.getByRole('dialog', { name: /^Preview/ })).toHaveCount(0);
 

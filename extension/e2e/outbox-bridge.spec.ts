@@ -1,5 +1,5 @@
 import { expect, type BrowserContext } from '@playwright/test';
-import { seed, test } from './harness';
+import { pressable, seed, test } from './harness';
 
 // Outbox's profile page can't reach the extension itself: it asks through the content script on Outbox, which
 // hands the request to the service worker, where the API key is.
@@ -98,6 +98,7 @@ test('shows its settings over Outbox’s page when asked there, not in a tab', a
   await expect(page.locator('outbox-autofill')).toHaveCount(1);
 
   // What's changed there reaches the page as the window closes, without its asking.
+  await pressable(settings);
   await settings.getByRole('tab', { name: 'AI' }).click();
   await settings.getByRole('switch', { name: 'Use AI' }).click();
   await settings.getByRole('button', { name: 'Close' }).click();

@@ -1,4 +1,11 @@
-import { test as base, chromium, type BrowserContext, type Worker } from '@playwright/test';
+import {
+  test as base,
+  chromium,
+  expect,
+  type BrowserContext,
+  type FrameLocator,
+  type Worker,
+} from '@playwright/test';
 import { existsSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -196,4 +203,20 @@ export async function serve(
   await context.route(/job-boards\.cdn\.greenhouse\.io|fonts\.googleapis\.com|fonts\.gstatic\.com/, (route) =>
     route.fulfill({ body: '' }),
   );
+}
+
+/**
+ * The extension's own page in a window over the page, once a press there reaches it. Chrome hands a press to what its
+ * last picture of the window shows at that point: for a moment after a frame from another origin first draws, that's
+ * still the page, and the press goes to the page's `<iframe>` and is lost. Playwright finds the frame's buttons ready
+ * before that moment is over (in the Chromium CI runs on Linux, a press 27 ms after the settings drew their tabs went
+ * to the page), so the pointer goes over the frame until the frame has it.
+ */
+export async function pressable(frame: FrameLocator): Promise<FrameLocator> {
+  const root = frame.locator(':root');
+  await expect(async () => {
+    await root.hover();
+    expect(await root.evaluate((html) => html.matches(':hover'))).toBe(true);
+  }).toPass({ intervals: [50, 100, 250], timeout: 5_000 });
+  return frame;
 }

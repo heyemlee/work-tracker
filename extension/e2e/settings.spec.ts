@@ -1,7 +1,7 @@
 import { expect, type BrowserContext, type Worker } from '@playwright/test';
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { seed, serve, test } from './harness';
+import { pressable, seed, serve, test } from './harness';
 
 const THANKS = '<!doctype html><title>Thanks</title><main><h1>Thank you for applying.</h1></main>';
 const FORM =
@@ -73,7 +73,7 @@ test('shows the settings in a window over the page, and what’s changed there h
   await card.getByRole('button', { name: 'More' }).click({ timeout: 15_000 });
   await card.getByRole('menuitem', { name: 'Settings' }).click();
   // No tab opens: the settings are the extension's own page, in a frame inside the card's window.
-  const settings = page.frameLocator('outbox-autofill iframe');
+  const settings = await pressable(page.frameLocator('outbox-autofill iframe'));
   await expect(settings.getByRole('heading', { name: 'Settings' })).toBeVisible();
   await expect(settings.getByText('Connected · 1 account')).toBeVisible();
   expect(context.pages()).toHaveLength(2);
@@ -122,7 +122,7 @@ test('offers the models the owner settled on, and how hard they think', async ({
   const card = page.locator('outbox-autofill');
   await card.getByRole('button', { name: 'More' }).click({ timeout: 15_000 });
   await card.getByRole('menuitem', { name: 'Settings' }).click();
-  const settings = page.frameLocator('outbox-autofill iframe');
+  const settings = await pressable(page.frameLocator('outbox-autofill iframe'));
   await settings.getByRole('tab', { name: 'AI' }).click();
 
   // Three models to pick from, not everything the endpoint lists. With none kept, the list shows the one requests
@@ -184,7 +184,7 @@ test('says how to save what’s typed, then that it’s saved, and of a key the 
     const card = page.locator('outbox-autofill');
     await card.getByRole('button', { name: 'More' }).click({ timeout: 15_000 });
     await card.getByRole('menuitem', { name: 'Settings' }).click();
-    const settings = page.frameLocator('outbox-autofill iframe');
+    const settings = await pressable(page.frameLocator('outbox-autofill iframe'));
     await settings.getByRole('tab', { name: 'AI' }).click();
     const said = (field: string) => settings.locator('label.field', { hasText: field }).locator('.saved');
 
@@ -295,7 +295,7 @@ test('offers Anthropic’s current models, and asks the one chosen as that model
   const card = page.locator('outbox-autofill');
   await card.getByRole('button', { name: 'More' }).click({ timeout: 15_000 });
   await card.getByRole('menuitem', { name: 'Settings' }).click();
-  const settings = page.frameLocator('outbox-autofill iframe');
+  const settings = await pressable(page.frameLocator('outbox-autofill iframe'));
   await settings.getByRole('tab', { name: 'AI' }).click();
 
   // The four on Anthropic's own list, and the older choice moved to the one that took its place.
@@ -350,7 +350,7 @@ test('asks Claude at another address where one is typed, and at Anthropic’s ow
   const card = page.locator('outbox-autofill');
   await card.getByRole('button', { name: 'More' }).click({ timeout: 15_000 });
   await card.getByRole('menuitem', { name: 'Settings' }).click();
-  const settings = page.frameLocator('outbox-autofill iframe');
+  const settings = await pressable(page.frameLocator('outbox-autofill iframe'));
   await settings.getByRole('tab', { name: 'AI' }).click();
   const check = async () => {
     await settings.getByRole('button', { name: 'Check' }).click();
@@ -428,7 +428,7 @@ test('deletes what the extension keeps in this browser, asked twice', async ({ c
   const card = page.locator('outbox-autofill');
   await card.getByRole('button', { name: 'More' }).click({ timeout: 15_000 });
   await card.getByRole('menuitem', { name: 'Settings' }).click();
-  const settings = page.frameLocator('outbox-autofill iframe');
+  const settings = await pressable(page.frameLocator('outbox-autofill iframe'));
 
   await settings.getByRole('tab', { name: 'Remembered answers' }).click();
   await expect(settings.getByText('What type of role are you interested in?')).toBeVisible();
@@ -465,6 +465,7 @@ test('closes the settings from their own ✕, or by a press on the page behind t
     await card.getByRole('button', { name: 'More' }).click({ timeout: 15_000 });
     await card.getByRole('menuitem', { name: 'Settings' }).click();
     await expect(settings.getByRole('heading', { name: 'Settings' })).toBeVisible();
+    await pressable(settings);
   };
 
   await open();
