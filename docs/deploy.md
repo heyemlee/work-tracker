@@ -41,6 +41,14 @@ npm run deploy
 Cloudflare creates the DNS record and certificate. Until step 4 is done, the app loads but can't sign anyone
 in. `workers.dev` stays off, so the app has a single origin.
 
+### Discover and Resume tools
+
+The new routes are included in the app deployment, but their job-sync and parsing service is local only.
+Production shows an unavailable message and never contacts a visitor's localhost. Deploying the Worker does
+not publish `backend/`, its PostgreSQL database, model settings, or keys. These pages work fully in local
+development with the service running; making them available online requires a separately hosted and
+authenticated service with user-scoped data, model settings and budgets. This UI release adds no D1 migrations.
+
 ## 4. Google sign-in and secrets
 
 In the [Google Cloud console](https://console.cloud.google.com/apis/credentials):

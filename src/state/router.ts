@@ -1,10 +1,13 @@
 import { useMemo, useSyncExternalStore } from 'react';
 
 /** Outbox's pages. Each has its own address, so reloading, the back button and links all land on it. */
-export type Page = 'applications' | 'resumes' | 'profile' | 'insights' | 'welcome';
+export type Page =
+  'applications' | 'discovery' | 'resumes' | 'resumeTools' | 'profile' | 'insights' | 'welcome';
 
 export const PAGE_PATHS: Record<Page, string> = {
   applications: '/',
+  discovery: '/discover',
+  resumeTools: '/resume-tools',
   resumes: '/resumes',
   profile: '/profile',
   insights: '/insights',
@@ -35,7 +38,9 @@ export function setLeaveGuard(next: (() => boolean) | null): void {
   guard = next;
 }
 
-const leavingPage = (to: string) => pageOf(new URL(to, window.location.href).pathname) !== pageOf(shown);
+const leavingPage = (to: string) =>
+  pageOf(new URL(to, window.location.href).pathname) !==
+  pageOf(new URL(shown, window.location.href).pathname);
 
 /** Goes to an address within Outbox. Returns false when the page's guard kept the owner where they were. */
 export function navigate(to: string, { replace = false }: { replace?: boolean } = {}): boolean {

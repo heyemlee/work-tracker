@@ -76,13 +76,13 @@ export function Toolbar({ page, query, onQuery, onCompose, onOpenSettings, snaps
       <div
         ref={paneRef}
         style={glass.style}
-        className="glass mx-auto flex h-14 max-w-[1040px] items-center gap-2 rounded-[22px] pr-2.5 pl-3"
+        className="glass mx-auto flex h-14 max-w-[1240px] items-center gap-2 rounded-[22px] pr-2.5 pl-3"
       >
         {glass.filter}
         <Link to={PAGE_PATHS.applications} aria-label="Outbox" className="rounded-full">
           <Brand />
         </Link>
-        <nav aria-label={t('nav.label')} className="hidden flex-1 justify-center md:flex">
+        <nav aria-label={t('nav.label')} className="hidden flex-1 justify-center xl:flex">
           <div className="inline-flex rounded-full bg-fill p-[3px]">
             {PAGES.map((item) => {
               const active = item.page === page;
@@ -92,7 +92,7 @@ export function Toolbar({ page, query, onQuery, onCompose, onOpenSettings, snaps
                   to={PAGE_PATHS[item.page]}
                   aria-current={active ? 'page' : undefined}
                   className={clsx(
-                    'relative flex h-8 min-w-20 items-center justify-center gap-1.5 rounded-full px-4 text-[13px] font-medium whitespace-nowrap transition-colors',
+                    'relative flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-full px-3 text-[13px] font-medium whitespace-nowrap transition-colors',
                     active ? 'text-fg' : 'text-fg-2 hover:text-fg',
                   )}
                 >
@@ -119,8 +119,8 @@ export function Toolbar({ page, query, onQuery, onCompose, onOpenSettings, snaps
             })}
           </div>
         </nav>
-        <div className="ml-auto flex min-w-0 items-center gap-2 md:ml-0">
-          <label className="flex h-9 min-w-0 items-center gap-2 rounded-full bg-fill px-3 text-fg-2 transition-colors focus-within:bg-fill-2 focus-within:text-fg sm:w-[210px]">
+        <div className="ml-auto flex min-w-0 items-center gap-2 xl:ml-0">
+          <label className="flex h-9 min-w-0 items-center gap-2 rounded-full bg-fill px-3 text-fg-2 transition-colors focus-within:bg-fill-2 focus-within:text-fg sm:w-[210px] xl:w-[150px]">
             <Search className="size-4 shrink-0" aria-hidden="true" />
             <input
               ref={searchInput}
@@ -154,7 +154,7 @@ export function Toolbar({ page, query, onQuery, onCompose, onOpenSettings, snaps
             onClick={onCompose}
             aria-label={t('composer.label')}
             title={`${t('composer.label')} (N)`}
-            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 text-[13px] font-semibold text-on-accent transition hover:opacity-90 active:scale-[0.97] max-md:hidden sm:pr-3.5"
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-accent px-2.5 text-[13px] font-semibold text-on-accent transition hover:opacity-90 active:scale-[0.97] max-xl:hidden sm:pr-3.5"
           >
             <Plus className="size-[18px]" aria-hidden="true" />
             <span>{t('toolbar.new')}</span>
@@ -323,7 +323,7 @@ function MenuItem({ icon, onClick, title, aside, note, children }: MenuItemProps
   );
 }
 
-/** Phones: the four pages as a glass tab bar at the bottom, with New beside it. */
+/** Compact screens: three common destinations and a menu, with New beside them. */
 export function TabBar({ page, onCompose }: { page: Page; onCompose: () => void }) {
   const { t } = useI18n();
   const paneRef = useRef<HTMLElement>(null);
@@ -331,7 +331,7 @@ export function TabBar({ page, onCompose }: { page: Page; onCompose: () => void 
   const blanks = useProfileBlanks();
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 flex items-end gap-3 px-4 pb-[max(16px,env(safe-area-inset-bottom))] md:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-30 flex items-end gap-2 px-3 pb-[max(16px,env(safe-area-inset-bottom))] xl:hidden">
       <nav
         ref={paneRef}
         style={glass.style}
@@ -339,21 +339,30 @@ export function TabBar({ page, onCompose }: { page: Page; onCompose: () => void 
         className="glass flex h-[60px] flex-1 rounded-full p-[5px]"
       >
         {glass.filter}
-        {PAGES.map((item) => {
+        {PAGES.filter((item) => COMPACT_PAGES.includes(item.page)).map((item) => {
           const active = item.page === page;
           const Icon = item.icon;
           return (
             <Link
               key={item.page}
               to={PAGE_PATHS[item.page]}
+              aria-label={t(item.label)}
               aria-current={active ? 'page' : undefined}
               className={clsx(
-                'relative flex flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-medium transition-colors',
+                'relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-medium transition-colors',
                 active ? 'bg-fill-2 text-fg' : 'text-fg-2',
               )}
             >
               <Icon className="size-5" aria-hidden="true" />
-              {t(item.label)}
+              <span className="whitespace-nowrap">
+                {t(
+                  item.page === 'applications'
+                    ? 'nav.compactApplications'
+                    : item.page === 'resumeTools'
+                      ? 'nav.compactTools'
+                      : item.label,
+                )}
+              </span>
               {item.page === 'profile' && blanks > 0 && (
                 <span
                   className="absolute top-2 right-[calc(50%-18px)] size-2 rounded-full bg-accent"
@@ -363,6 +372,7 @@ export function TabBar({ page, onCompose }: { page: Page; onCompose: () => void 
             </Link>
           );
         })}
+        <MorePages page={page} />
       </nav>
       <button
         type="button"
@@ -373,5 +383,63 @@ export function TabBar({ page, onCompose }: { page: Page; onCompose: () => void 
         <Plus className="size-6" aria-hidden="true" />
       </button>
     </div>
+  );
+}
+
+const COMPACT_PAGES: Page[] = ['applications', 'discovery', 'resumeTools'];
+
+function MorePages({ page }: { page: Page }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const items = PAGES.filter((item) => !COMPACT_PAGES.includes(item.page));
+  const current = items.find((item) => item.page === page);
+  const Icon = current?.icon ?? Ellipsis;
+  const blanks = useProfileBlanks();
+  return (
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger asChild>
+        <button
+          aria-label={t('nav.morePages')}
+          className={clsx(
+            'relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-medium',
+            current ? 'bg-fill-2 text-fg' : 'text-fg-2',
+          )}
+        >
+          <Icon className="size-5" aria-hidden="true" />
+          {current ? t(current.label) : t('nav.compactMore')}
+          {blanks > 0 && (
+            <span
+              className="absolute top-2 right-[calc(50%-18px)] size-2 rounded-full bg-accent"
+              aria-label={t('nav.missing', { n: blanks })}
+            />
+          )}
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          side="top"
+          align="end"
+          sideOffset={12}
+          collisionPadding={12}
+          className="glass glass-strong z-50 w-60 rounded-[18px] p-2 outline-none"
+        >
+          {items.map((item) => {
+            const ItemIcon = item.icon;
+            return (
+              <Link
+                key={item.page}
+                to={PAGE_PATHS[item.page]}
+                onClick={() => setOpen(false)}
+                aria-current={page === item.page ? 'page' : undefined}
+                className="flex items-center gap-3 rounded-xl px-3 py-3 text-[14px] hover:bg-fill"
+              >
+                <ItemIcon className="size-4" />
+                {t(item.label)}
+              </Link>
+            );
+          })}
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }

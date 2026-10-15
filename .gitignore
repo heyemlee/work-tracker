@@ -38,3 +38,7 @@ backend/web/.generated
 backend/evals/private/
 backend/evals/runs/
 backend/performance/results/
+
+# Main-app browser test output
+/test-results/
+/playwright-report/

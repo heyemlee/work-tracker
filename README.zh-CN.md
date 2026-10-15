@@ -84,7 +84,7 @@ Worker 把构建好的网页当作静态资源提供，并在 `/api` 下运行 A
 | 质量       | Vitest · Playwright · ESLint（含 React Compiler 规则）· Prettier                 | 领域、契约和适配器测试；CI 里在 Chromium 中端到端测试扩展     |
 | 本地实验室 | NestJS · Prisma · PostgreSQL · Redis                                             | [`backend/`](backend)：岗位聚合、简历解析实验、数据库性能实验 |
 
-本地实验室只在本机运行、从不部署，追踪器和扩展都不依赖它。安装和使用见 [backend/README.md](backend/README.md)。
+本地服务继续由 NestJS + Prisma + PostgreSQL 提供。主应用已在本地开发模式接入“岗位发现”和“简历工具”；原登录、投递、资料、附件及扩展继续使用 Worker/D1，不迁移数据库。Redis 仍仅用于独立性能实验，不放入日常导航。安装说明见 [backend/README.md](backend/README.md)。
 
 ## 本地开发
 
@@ -92,10 +92,30 @@ Worker 把构建好的网页当作静态资源提供，并在 `/api` 下运行 A
 npm install
 cp .dev.vars.example .dev.vars   # 把 BETTER_AUTH_SECRET 设为任意一串足够长的随机字符
 npm run db:migrate:local
-npm run dev                      # http://localhost:5180，以本地开发者身份登录
+npm run dev                      # http://127.0.0.1:5180，以本地开发者身份登录
 npm run dev:local                # 最初的原型：样例数据存在浏览器里，不需要后端
 npm run ext:build                # 构建扩展，输出到 extension/.output/chrome-mv3
 ```
+
+### 主应用内的岗位发现与简历工具
+
+保留已有 `backend/.env`、模型配置和预算账本。首次安装按 [后端说明](backend/README.md) 准备数据库；之后另开终端启动：
+
+```bash
+npm --prefix backend run infra:up
+npm --prefix backend run dev      # 127.0.0.1:3100，与根目录 npm run dev 同时运行
+```
+
+- [岗位发现](http://127.0.0.1:5180/discover)：先选择关注公司；公司搜索与添加放在独立弹窗，主页面保留搜索和紧凑岗位列表，筛选按需展开，详情在侧栏打开。支持 Greenhouse、Lever、Ashby。保存时复查追踪器并按已有岗位匹配规则去重，只生成待投递岗位，不创建申请或标记已投递。
+- [简历工具](http://127.0.0.1:5180/resume-tools)：按“添加简历 → 核对原文 → 审阅结果”推进，本地读取 PDF/DOCX（最大 5 MB）或粘贴文字。点击“开始解析”后调用模型，结果先显示可读摘要，JSON 默认折叠；模型配置放在“解析设置”弹窗中。支持函数调用和结构化输出、JSON 下载及资料审阅。访问页面、读文件均不调用付费模型。模型列表和连接检查也只在点击时执行。
+- 模型设置沿用现有服务、型号、Base URL 与共享 $5 账本。本次整合没有新增付费请求。主应用不读取或接收密钥；密钥及目标地址在 `backend/.env` 配好后重启服务。预算预留不是第三方实际账单，也不是第三方账单硬限额。
+- 解析结果进入原资料页后逐项选择：联系方式只填空白；选中的教育、经历替换对应草稿部分；技能合并。仍需检查并点击保存，未保存更改有离开保护。文字和结果仅保留在本次页面内存，刷新会丢失。原简历库及扩展附件仍只接受 PDF，扩展解析入口保留。
+
+两个页面都有独立路由，支持刷新和前进后退，共用原主题、玻璃效果和中英文文案。窄屏导航显示投递、岗位发现、简历工具和“更多”，简历库、资料、数据在更多菜单中。
+
+本地开发通过 `/local-tools/*` 连接固定回环服务，检查本机 Host、来源、连接地址和本地请求头后，才转为后端要求的同源请求。主站 Cookie/Authorization 不会被转发，原 Worker `/api/*`（包括 PDF 附件）保持独立。不能将开发服务直接开放到公网。
+
+**本地整合已完成，线上托管尚未安排。** 生产构建显示明确的未接入状态，不访问访客的 localhost。真正上线还需要单独托管服务与 PostgreSQL、实现按登录用户隔离的数据/密钥/预算以及生产同源网关。现有后端仍是本机单用户工具。前端与主应用沿用现有 Cloudflare 部署；这不会托管本地服务或搬迁数据库。
 
 网页应用和扩展共用 `src/assets/outbox.svg` 这个标志。改了它之后运行 `npm run icons`，重新生成网站图标、主屏幕图标和 Chrome 扩展图标，再重新构建两边。
 
@@ -103,7 +123,10 @@ npm run ext:build                # 构建扩展，输出到 extension/.output/ch
 
 ```bash
 npm test
+npm run test:ui                  # 主应用浏览器测试；虚构本地资料及模拟模型响应
 ```
+
+`npx vitest run` 单独运行主应用、Worker 和本地连接测试。新增浏览器测试覆盖导航/刷新/前进后退、公司选择与同步、岗位保存去重、主动解析与资料选择合并、未保存保护、服务未启动提示，以及 320–1440 像素的中英文和深浅主题。仅额外进行本地服务只读健康检查与被拒绝的跨来源请求，不调用付费模型。截图位于 `docs/screenshots/local-tools-*` 和 `docs/screenshots/discover-*`，均使用虚构资料。
 
 覆盖领域逻辑、两种存储上的 Repository 契约，以及扩展：它的规则、在保存的页面上的各个适配器，和上面的填写准确率报告。CI 还会做类型检查、lint、构建，并在 Chromium 里对保存的页面端到端运行扩展（`npm run e2e -w extension`），记录到一个模拟的 Outbox。比较各个 Claude 模型回答 20 道开放式问题的文本评测会产生费用，只在需要时运行（`npm run eval -w extension`）。
 

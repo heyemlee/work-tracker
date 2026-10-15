@@ -129,6 +129,9 @@ export function ResumesPage({ snapshot }: { snapshot: Snapshot }) {
           <h1 className="text-[28px] font-semibold tracking-[-0.025em]">{t('resumes.title')}</h1>
           <p className="mt-1 text-[14px] text-fg-2">{t('resumes.hint')}</p>
         </div>
+        <Button variant="secondary" onClick={() => navigate(PAGE_PATHS.resumeTools)}>
+          {t('nav.resumeTools')}
+        </Button>
         {snapshot.resumes.length > 0 && (
           <Button variant="primary" onClick={() => pick(null)} disabled={busy === 'new'}>
             {busy === 'new' ? (

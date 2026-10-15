@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { UnauthorizedError } from './data/httpRepository';
 import { localRepository, useCurrentUser, useSnapshot } from './data/store';
 import { buildRows } from './domain/rows';
+import type { ResumeFacts } from './domain/profile';
 import type { Id, Snapshot } from './domain/types';
 import { useHotkey } from './hooks/useHotkey';
 import { useThemeSync } from './hooks/useThemeSync';
@@ -12,6 +13,8 @@ import { navigate, PAGE_PATHS, useLocation } from './state/router';
 import { ApplicationsPage } from './ui/ApplicationsPage';
 import { Composer } from './ui/Composer';
 import { Guide } from './ui/Guide';
+import { DiscoverPage } from './ui/DiscoverPage';
+import { ResumeToolsPage } from './ui/ResumeToolsPage';
 import { InsightsPage } from './ui/InsightsPage';
 import { Button } from './ui/primitives';
 import { ProfilePage } from './ui/ProfilePage';
@@ -65,6 +68,7 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
   const [selectedId, setSelectedId] = useState<Id | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [composing, setComposing] = useState(false);
+  const [resumeReview, setResumeReview] = useState<ResumeFacts | null>(null);
   const rows = useMemo(() => buildRows(snapshot), [snapshot]);
 
   // A new owner, with nothing set up yet, starts in the guide; once finished or put off, it waits in the menu.
@@ -125,7 +129,31 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
         />
       )}
       {page === 'resumes' && <ResumesPage snapshot={snapshot} />}
-      {page === 'profile' && <ProfilePage resumes={snapshot.resumes} readFirst={params.get('read')} />}
+      {page === 'discovery' && (
+        <DiscoverPage
+          snapshot={snapshot}
+          onOpenJob={(id) => {
+            setSelectedId(id);
+            navigate(PAGE_PATHS.applications);
+          }}
+        />
+      )}
+      {page === 'resumeTools' && (
+        <ResumeToolsPage
+          onReview={(facts) => {
+            setResumeReview(facts);
+            navigate(PAGE_PATHS.profile);
+          }}
+        />
+      )}
+      {page === 'profile' && (
+        <ProfilePage
+          resumes={snapshot.resumes}
+          readFirst={params.get('read')}
+          importedFacts={resumeReview}
+          onReviewDone={() => setResumeReview(null)}
+        />
+      )}
       {page === 'insights' && <InsightsPage snapshot={snapshot} />}
       <TabBar page={page} onCompose={() => setComposing(true)} />
       {composer}

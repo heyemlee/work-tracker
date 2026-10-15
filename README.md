@@ -52,6 +52,10 @@ application forms from your profile and logs each submission by itself.
   displacement map) in Chromium. Four looks: White (the default), Light with soft glows, pure-black Dark, or the
   system's. Reduced motion and reduced transparency are honored.
 - English and Simplified Chinese, CSV export, and a layout that works on a phone. Passwords are never stored.
+- **Discover and resume tools in the app.** In local development, `/discover` browses selected Greenhouse,
+  Lever and Ashby companies and saves postings to the tracker without recording an application. `/resume-tools`
+  reads PDF/DOCX text, supports explicit model parsing, and hands selected results to the existing profile draft
+  review. The navigation, languages and themes are shared with the tracker.
 
 ## Autofill extension
 
@@ -125,8 +129,10 @@ reach the Worker.
 | Quality   | Vitest · Playwright · ESLint with the React Compiler rules · Prettier            | Domain, contract and adapter tests; the extension end to end in Chromium, in CI |
 | Local lab | NestJS · Prisma · PostgreSQL · Redis                                             | [`backend/`](backend): job aggregation, a resume-parsing lab, a database lab    |
 
-The local lab runs on one machine only and is never deployed; the tracker and the extension don't use it. Its
-setup is in [backend/README.md](backend/README.md) (in Chinese).
+The NestJS service still runs on one machine for one owner. The main app now uses it for Discover and Resume
+tools during local development; the tracker, sign-in, profile, attachments and extension keep their Worker/D1
+storage and user boundaries. Redis remains an optional performance experiment, outside the daily navigation.
+Service setup is in [backend/README.md](backend/README.md) (in Chinese).
 
 ## Develop
 
@@ -134,10 +140,46 @@ setup is in [backend/README.md](backend/README.md) (in Chinese).
 npm install
 cp .dev.vars.example .dev.vars   # set BETTER_AUTH_SECRET to any long random string
 npm run db:migrate:local
-npm run dev                      # http://localhost:5180, signed in as a local developer
+npm run dev                      # http://127.0.0.1:5180, signed in as a local developer
 npm run dev:local                # the original prototype: sample data in the browser, no backend
 npm run ext:build                # the extension, into extension/.output/chrome-mv3
 ```
+
+### Local integrated tools
+
+Keep the existing `.env`, model selection and budget ledger. For a first-time backend setup, follow
+[backend/README.md](backend/README.md). Start PostgreSQL and the service in a separate terminal:
+
+```bash
+npm --prefix backend run infra:up
+npm --prefix backend run dev      # 127.0.0.1:3100; leave running alongside npm run dev
+```
+
+Open [Discover](http://127.0.0.1:5180/discover) or [Resume tools](http://127.0.0.1:5180/resume-tools).
+Discover starts with company selection. A searchable company dialog holds source setup; the main page focuses
+on search and compact job rows, with optional filters and a detail side panel.
+Saving uses the existing repository and posting matching rules, checks a fresh snapshot and suppresses repeated
+clicks. It creates a saved job only, with no application or account attached.
+
+The latter reads PDF/DOCX files up to 5 MB locally. Page visits and text extraction never invoke a model.
+The flow is **Add resume → Check text → Review result**, with a readable summary and collapsed JSON.
+Only **Parse resume** invokes a model, using the existing provider, Base URL, model policy and shared $5 ledger.
+The **Parsing settings** dialog never accepts or returns keys: configure them in `backend/.env` and restart the
+service. Model lists and connection checks run only on request. Results can be downloaded as JSON or reviewed
+in Profile; contact details fill blanks, selected education/experience replace those sections in the draft,
+skills are merged, and a separate Save is required. Unsaved edits have a leave guard. Results/text are held in
+memory, not persisted across a reload. The resume library and extension still attach PDFs only.
+
+The Vite-only `/local-tools/*` bridge targets the fixed loopback service and allowlists routes. It checks the
+local Host, peer address, same-origin writes and `x-outbox-local`, then adapts the origin for the unchanged
+NestJS `LocalGuard`. It strips main-site cookies and authorization headers. `/api/*` continues to reach the
+Worker, including its resume attachment endpoints. Do not expose the dev server or service as public hosting.
+
+**Local integration is complete; hosted service integration is not configured.** Production builds show an
+explanatory unavailable state and never contact a visitor's localhost. Going online still requires separate
+service/PostgreSQL hosting, authenticated user-scoped service data and secrets/budgets, and a production
+same-origin gateway. The current single-owner backend is not multi-tenant. The main app can be published with
+the existing Worker deployment; that does not host the local service or migrate its database.
 
 The app and extension share their mark in `src/assets/outbox.svg`. After changing it, run `npm run icons`
 to regenerate the favicon, home-screen icons, and Chrome extension icons, then rebuild both apps.
@@ -146,7 +188,14 @@ to regenerate the favicon, home-screen icons, and Chrome extension icons, then r
 
 ```bash
 npm test
+npm run test:ui                  # isolated browser sample data and mocked tool/model responses
 ```
+
+The main-app browser suite covers routing/history, company selection and sync, saved-job deduplication,
+explicit parsing, selective profile review/save and leave guards, service failures, and 320–1440 px layouts in
+English/Chinese and light/dark themes. It also makes a read-only bridge health check and rejected cross-origin
+requests; it never sends a paid model request. Synthetic screenshots are in `docs/screenshots/local-tools-*`
+and `docs/screenshots/discover-*`. `npx vitest run` runs only the main-app/Worker/bridge tests.
 
 Covers the domain logic, the repository contract against both stores, and the extension: its rules, its
 adapters on the saved pages, and the fill-accuracy report above. CI also type-checks, lints, builds, and runs

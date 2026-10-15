@@ -1,13 +1,15 @@
-import { ChartColumn, FileText, IdCard, Send, type LucideIcon } from 'lucide-react';
+import { ChartColumn, Compass, FileScan, FileText, IdCard, Send, type LucideIcon } from 'lucide-react';
 import { useProfile } from '../data/store';
 import { emptyProfile, missingItems } from '../domain/profile';
 import type { MessageKey } from '../i18n/messages';
 import type { Page } from '../state/router';
 
-/** The four pages, in the toolbar on wide screens and the tab bar on phones. */
+/** Main pages; compact navigation groups secondary destinations under More. */
 export const PAGES: readonly { page: Page; icon: LucideIcon; label: MessageKey }[] = [
   { page: 'applications', icon: Send, label: 'nav.applications' },
+  { page: 'discovery', icon: Compass, label: 'nav.discovery' },
   { page: 'resumes', icon: FileText, label: 'nav.resumes' },
+  { page: 'resumeTools', icon: FileScan, label: 'nav.resumeTools' },
   { page: 'profile', icon: IdCard, label: 'nav.profile' },
   { page: 'insights', icon: ChartColumn, label: 'nav.insights' },
 ];

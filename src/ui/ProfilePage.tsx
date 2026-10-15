@@ -37,30 +37,48 @@ interface ProfilePageProps {
   resumes: ResumeVersion[];
   /** A stored resume to read as soon as the page opens, from the resumes page. */
   readFirst: Id | null;
+  importedFacts?: ResumeFacts | null;
+  onReviewDone?: () => void;
 }
 
 /** The profile the extension fills applications from, on its own page. Edited as a draft and saved as a whole. */
-export function ProfilePage({ resumes, readFirst }: ProfilePageProps) {
-  const { data, isPending } = useProfile();
+export function ProfilePage({ resumes, readFirst, importedFacts, onReviewDone }: ProfilePageProps) {
+  const { data, isPending, isError, refetch } = useProfile();
+  const { t } = useI18n();
   return (
     <main className="mx-auto w-full max-w-[1040px] px-4 pt-[100px] pb-32 sm:px-6 md:pb-24">
-      {/* A save replaces the stored profile; the editor restarts from it. */}
-      {!isPending && (
-        <Editor key={data?.updatedAt ?? 'new'} saved={data ?? null} resumes={resumes} readFirst={readFirst} />
+      {/* Keep a loaded editor alive through background refreshes, including transient errors. */}
+      {isError && (
+        <div role="alert" className="card p-4">
+          <p>{t('error.load')}</p>
+          <Button onClick={() => void refetch()}>{t('error.retry')}</Button>
+        </div>
+      )}
+      {!isPending && !(isError && data === undefined) && (
+        <Editor
+          saved={data ?? null}
+          resumes={resumes}
+          readFirst={readFirst}
+          importedFacts={importedFacts}
+          onReviewDone={onReviewDone}
+        />
       )}
     </main>
   );
 }
 
-interface EditorProps {
-  resumes: ResumeVersion[];
-  readFirst: Id | null;
-}
+type EditorProps = ProfilePageProps;
 
 /** Room left above a section when jumping to it, for the floating toolbar. */
 const TOOLBAR_CLEARANCE = 92;
 
-function Editor({ saved, resumes, readFirst }: EditorProps & { saved: SavedProfile | null }) {
+function Editor({
+  saved,
+  resumes,
+  readFirst,
+  importedFacts,
+  onReviewDone,
+}: EditorProps & { saved: SavedProfile | null }) {
   const { t, locale } = useI18n();
   const run = useRepository();
   const queryClient = useQueryClient();
@@ -75,7 +93,7 @@ function Editor({ saved, resumes, readFirst }: EditorProps & { saved: SavedProfi
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [reading, setReading] = useState(false);
-  const [review, setReview] = useState<ResumeFacts | null>(null);
+  const [review, setReview] = useState<ResumeFacts | null>(importedFacts ?? null);
   const [active, setActive] = useState<ProfileSection>('basics');
 
   const markDirty = (value: boolean) => setDirty(value);
@@ -83,7 +101,7 @@ function Editor({ saved, resumes, readFirst }: EditorProps & { saved: SavedProfi
   // Unsaved edits: leaving the page, or the tab, asks first.
   const leaveMessage = t('profile.leave');
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty && !review) return;
     setLeaveGuard(() => window.confirm(leaveMessage));
     const beforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener('beforeunload', beforeUnload);
@@ -91,7 +109,7 @@ function Editor({ saved, resumes, readFirst }: EditorProps & { saved: SavedProfi
       setLeaveGuard(null);
       window.removeEventListener('beforeunload', beforeUnload);
     };
-  }, [dirty, leaveMessage]);
+  }, [dirty, review, leaveMessage]);
   const update = (change: (profile: Profile) => Profile) => {
     setDraft(change);
     markDirty(true);
@@ -108,6 +126,7 @@ function Editor({ saved, resumes, readFirst }: EditorProps & { saved: SavedProfi
     const result = await run((repo) => repo.saveProfile(parsed.data));
     setSaving(false);
     if (!result) return;
+    setDraft(result.profile);
     setErrors([]);
     markDirty(false);
     showToast({ message: t('profile.saved') });
@@ -182,10 +201,10 @@ function Editor({ saved, resumes, readFirst }: EditorProps & { saved: SavedProfi
     if (canRead()) void readStored(id);
   });
   useEffect(() => {
-    if (!readFirst || started.current || extension === 'checking') return;
+    if (!readFirst || importedFacts || started.current || extension === 'checking') return;
     started.current = true;
     readFirstNow(readFirst);
-  }, [readFirst, extension]);
+  }, [readFirst, importedFacts, extension]);
 
   const jump = (section: ProfileSection) => {
     const target = sectionRefs.current[section];
@@ -258,11 +277,14 @@ function Editor({ saved, resumes, readFirst }: EditorProps & { saved: SavedProfi
             if (file) void importJson(file);
           }}
         />
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Button variant="ghost" onClick={() => navigate(PAGE_PATHS.resumeTools)}>
+            {t('profile.fromTools')}
+          </Button>
           <ResumeButton
             variant="secondary"
             resumes={resumes}
-            disabled={reading}
+            disabled={reading || !!review}
             title={t('profile.fromResume')}
             canRead={canRead}
             onRead={(id) => void readStored(id)}
@@ -271,11 +293,21 @@ function Editor({ saved, resumes, readFirst }: EditorProps & { saved: SavedProfi
             {resumeIcon}
             {reading ? t('profile.reading') : t('profile.fromResume')}
           </ResumeButton>
-          <Button variant="ghost" onClick={() => jsonRef.current?.click()} title={t('profile.import')}>
+          <Button
+            variant="ghost"
+            disabled={!!review}
+            onClick={() => jsonRef.current?.click()}
+            title={t('profile.import')}
+          >
             <Upload className="size-3.5" aria-hidden="true" />
             <span className="max-sm:hidden">{t('profile.import')}</span>
           </Button>
-          <Button variant="primary" disabled={!dirty || saving} onClick={() => void save()}>
+          <Button
+            variant="primary"
+            disabled={!dirty || saving || !!review}
+            title={review ? t('profile.reviewPending') : undefined}
+            onClick={() => void save()}
+          >
             {t('profile.save')}
           </Button>
         </div>
@@ -345,8 +377,12 @@ function Editor({ saved, resumes, readFirst }: EditorProps & { saved: SavedProfi
               onApply={(parts) => {
                 update((profile) => applyResume(profile, review, parts));
                 setReview(null);
+                onReviewDone?.();
               }}
-              onCancel={() => setReview(null)}
+              onCancel={() => {
+                setReview(null);
+                onReviewDone?.();
+              }}
             />
           )}
 
