@@ -1,0 +1,17 @@
+<!doctype html><html><head><title>Example Labs questions</title></head><body>
+<oc-oneclick-form><oc-screening-questions-form data-test="screening-questions"><sr-screening-questions-form data-test="screening-questions-form">
+<sr-question-field-radio><spl-radio-group required><span slot="label-content">Will you require visa sponsorship?</span>
+  <spl-radio label="Yes"><template data-shadow><input type="radio" value="opaque-yes"></template></spl-radio>
+  <spl-radio label="No"><template data-shadow><input type="radio" value="opaque-no"></template></spl-radio>
+  <spl-radio label="Unavailable"><template data-shadow><input type="radio" value="opaque-disabled" disabled></template></spl-radio>
+</spl-radio-group></sr-question-field-radio>
+<sr-question-field-checkbox><spl-checkbox><span slot="label-content">I acknowledge this answer needs my review</span><template data-shadow><input type="checkbox"></template></spl-checkbox></sr-question-field-checkbox>
+<sr-question-field-text><spl-input><span slot="label-content">Which working hours do you prefer?</span><template data-shadow><input maxlength="200" aria-required="true"></template></spl-input></sr-question-field-text>
+<sr-question-field-textarea><spl-textarea><span slot="label-content">Why are you interested?</span><template data-shadow><textarea maxlength="1440"></textarea></template></spl-textarea></sr-question-field-textarea>
+<sr-question-field-select><spl-autocomplete><span slot="label-content">Preferred team</span><template data-shadow><spl-input><template data-shadow><input role="combobox"></template></spl-input><div role="listbox"></div></template></spl-autocomplete></sr-question-field-select>
+<sr-question-field-select><spl-multiselect-autocomplete><span slot="label-content">Which areas interest you?</span><template data-shadow><spl-input><template data-shadow><input role="combobox"></template></spl-input><div role="listbox"></div><div data-test="local-selected-tags"></div></template></spl-multiselect-autocomplete></sr-question-field-select>
+<sr-question-field-text hidden><spl-input label="Hidden follow-up"><template data-shadow><input></template></spl-input></sr-question-field-text>
+</sr-screening-questions-form></oc-screening-questions-form>
+<oc-button data-test="footer-next"><button type="button">Next</button></oc-button>
+<oc-button data-test="footer-submit"><button type="button">Submit</button></oc-button>
+</oc-oneclick-form></body></html>

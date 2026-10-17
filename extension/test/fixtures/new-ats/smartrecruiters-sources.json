@@ -1,0 +1,32 @@
+{
+  "checked": "2026-10-14",
+  "posting": "https://jobs.smartrecruiters.com/ServiceNow/744000149338366-software-engineer",
+  "renderedWithoutCandidateData": [
+    "First-step personal fields, resume upload and Next",
+    "Blank Add experience and Add education editors, including month-year fields and current-role checkbox"
+  ],
+  "publishedComponentContractsOnly": [
+    "sr-screening-questions-form and sr-question-field text, textarea, radio, checkbox, single and multi autocomplete",
+    "footer-next versus footer-submit"
+  ],
+  "assets": [
+    {
+      "url": "https://js-www.smartrecruiters.com/oneclick-ui/static/976.c648243871622936.js",
+      "sha256": "66ec3fb79553a2ced6f7ec1dacfc626622f63e272ff45ad522cf6d1d2782890f"
+    },
+    {
+      "url": "https://js-www.smartrecruiters.com/oneclick-ui/static/common.7505b2a925bfb9a2.js",
+      "sha256": "ffc3a7814c23932f83db7a30cf713df3ae7b8152317c1ef7d0f9ac2f158fb0ae"
+    },
+    {
+      "url": "https://js-www.smartrecruiters.com/oneclick-ui/static/vendor.09547f337ca4ae25.js",
+      "sha256": "4e67a2cde26adae43d1e4a9e5bf57f4019db6862e47b1bdac038a6c1b025c337"
+    }
+  ],
+  "limitations": [
+    "Screening fixtures reconstruct published component contracts; no real candidate was advanced to the screening step.",
+    "Local behavior scripts are stand-ins, not vendor code or a full vendor application.",
+    "No application, account, consent or candidate information was submitted on the real site.",
+    "Currency, work-shift, language and extra attachment widgets are not covered by these standard-question fixtures."
+  ]
+}

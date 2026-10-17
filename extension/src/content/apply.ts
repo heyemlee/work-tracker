@@ -100,7 +100,13 @@ export async function applyAnswer(
       case 'input': {
         const element = handle.element;
         if (answer.type === 'date' && element instanceof HTMLInputElement) {
-          setText(element, formatDate(answer.iso, element));
+          const value =
+            handle.dateFormat === 'month-name-year'
+              ? new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+                  new Date(`${answer.iso.slice(0, 7)}-01T12:00:00Z`),
+                )
+              : formatDate(answer.iso, element);
+          setText(element, value);
           return { ok: true, value: element.value };
         }
         const text =
@@ -142,7 +148,7 @@ export async function applyAnswer(
       }
 
       case 'radio': {
-        const labels = handle.inputs.map(choiceLabel);
+        const labels = handle.labels ?? handle.inputs.map(choiceLabel);
         const want = wantOf(answer);
         const at = want ? choiceAt(labels, want, answer.type === 'choice' ? answer.option : null, read) : -1;
         const input = handle.inputs[at];
@@ -232,6 +238,21 @@ export async function applyAnswer(
 
       case 'typeahead':
       case 'prompt': {
+        if (handle.type === 'prompt' && handle.multiple) {
+          const texts =
+            answer.type === 'choices' ? answer.texts : answer.type === 'text' ? [answer.text] : [];
+          if (!texts.length) return { ok: false, error: 'nothing to select' };
+          for (const text of texts.slice(0, 20)) {
+            if (handle.shown?.().some((value) => norm(value) === norm(text))) continue;
+            const picked = await pickFromTypeahead(
+              handle.element,
+              text,
+              (options) => options.find((option) => norm(option) === norm(text)) ?? null,
+            );
+            if (!picked) return { ok: false, error: 'no matching option' };
+          }
+          return { ok: true, value: (handle.shown?.() ?? texts).join(', ') };
+        }
         const want = wantOf(answer);
         const query =
           answer.type === 'text'
@@ -322,7 +343,7 @@ export function readAnswer(handle: Handle, read?: readonly string[]): Answer | n
     case 'radio': {
       const at = handle.inputs.findIndex((item) => item.checked);
       if (at < 0) return null;
-      const label = asRead(handle.inputs.map(choiceLabel), at, read);
+      const label = asRead(handle.labels ?? handle.inputs.map(choiceLabel), at, read);
       return { type: 'choice', want: { kind: 'like', texts: [label] }, option: label };
     }
     case 'buttons': {
@@ -360,7 +381,10 @@ export function readAnswer(handle: Handle, read?: readonly string[]): Answer | n
         ? { type: 'choice', want: { kind: 'like', texts: [shown] }, option: shown }
         : null;
     }
-    case 'prompt':
+    case 'prompt': {
+      const texts = handle.shown?.() ?? [];
+      return texts.length ? { type: 'choices', texts } : null;
+    }
     case 'file':
     case 'dateParts':
       return null;

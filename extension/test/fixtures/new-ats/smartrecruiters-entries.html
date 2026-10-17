@@ -1,0 +1,27 @@
+<!doctype html><html><head><title>Example Labs application</title></head><body>
+<h1>Software Engineer</h1><oc-oneclick-form>
+<oc-experience>
+  <oc-experience-entry data-test="experience-entry"><p>Previously saved role</p></oc-experience-entry>
+  <oc-experience-entry data-test="experience-entry"><oc-experience-edit-form>
+    <spl-autocomplete label="Title" data-test="job-title-autocomplete"><template data-shadow><spl-input><template data-shadow><input role="combobox"></template></spl-input><div role="listbox"></div></template></spl-autocomplete>
+    <spl-autocomplete label="Company" data-test="company-autocomplete"><template data-shadow><spl-input><template data-shadow><input role="combobox"></template></spl-input><div role="listbox"></div></template></spl-autocomplete>
+    <oc-location-autocomplete-wrapper data-test="experience-form-location"><spl-autocomplete label="Office location" data-test="location-autocomplete"><template data-shadow><spl-input><template data-shadow><input role="combobox"></template></spl-input><div role="listbox"></div></template></spl-autocomplete></oc-location-autocomplete-wrapper>
+    <oc-textarea data-test="experience-description"><spl-textarea label="Description"><template data-shadow><textarea></textarea></template></spl-textarea></oc-textarea>
+    <oc-datepicker data-test="experience-date-from"><spl-date-field type="month-year" label="From" required><template data-shadow><input type="text" data-input aria-label="From"><input type="number" aria-label="Year" hidden></template></spl-date-field></oc-datepicker>
+    <oc-datepicker data-test="experience-date-to"><spl-date-field type="month-year" label="To"><template data-shadow><input type="text" data-input aria-label="To"></template></spl-date-field></oc-datepicker>
+    <oc-checkbox data-test="experience-current"><spl-checkbox label="I currently work here"><template data-shadow><input type="checkbox"></template></spl-checkbox></oc-checkbox>
+    <oc-button data-test="experience-save"><button type="button">Save</button></oc-button>
+  </oc-experience-edit-form></oc-experience-entry>
+  <oc-button data-test="add-experience"><button type="button">Add experience</button></oc-button>
+</oc-experience>
+<oc-education><oc-education-entry><oc-education-edit-form>
+  <spl-autocomplete label="Institution" data-test="institution-autocomplete"><template data-shadow><spl-input><template data-shadow><input role="combobox"></template></spl-input><div role="listbox"></div></template></spl-autocomplete>
+  <oc-input data-test="education-major"><spl-input label="Major"><template data-shadow><input></template></spl-input></oc-input>
+  <oc-input data-test="education-degree"><spl-input label="Degree"><template data-shadow><input></template></spl-input></oc-input>
+  <oc-location-autocomplete-wrapper><spl-autocomplete label="School location" data-test="location-autocomplete"><template data-shadow><spl-input><template data-shadow><input role="combobox"></template></spl-input><div role="listbox"></div></template></spl-autocomplete></oc-location-autocomplete-wrapper>
+  <oc-datepicker data-test="education-date-from"><spl-date-field type="month-year" label="From"><template data-shadow><input type="text" data-input></template></spl-date-field></oc-datepicker>
+  <oc-datepicker data-test="education-date-to"><spl-date-field type="month-year" label="To"><template data-shadow><input type="text" data-input></template></spl-date-field></oc-datepicker>
+  <oc-button data-test="education-save"><button type="button">Save</button></oc-button>
+</oc-education-edit-form></oc-education-entry></oc-education>
+<oc-button data-test="footer-next"><button type="button">Next</button></oc-button>
+</oc-oneclick-form></body></html>

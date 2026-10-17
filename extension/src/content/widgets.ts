@@ -92,7 +92,8 @@ function listboxFor(input: HTMLElement): HTMLElement | null {
 }
 
 function optionsIn(listbox: HTMLElement): HTMLElement[] {
-  if (listbox.matches('spl-select, spl-autocomplete')) return shadowOptions(listbox);
+  if (listbox.matches('spl-select, spl-autocomplete, spl-multiselect-autocomplete'))
+    return shadowOptions(listbox);
   const found = [
     ...listbox.querySelectorAll<HTMLElement>(
       '[role="option"], [role="menuitem"], [data-automation-id="promptOption"], .select__option, [id$="_dropdown-results"] li[title]',

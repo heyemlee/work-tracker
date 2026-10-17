@@ -88,7 +88,8 @@ export function shadowElements<T extends Element = HTMLElement>(root: ParentNode
 export function shadowWidget(element: Element): HTMLElement | null {
   let current: Element | null = element;
   for (let depth = 0; current && depth < 12; depth++) {
-    if (current.matches('spl-autocomplete, spl-select')) return current as HTMLElement;
+    if (current.matches('spl-autocomplete, spl-select, spl-multiselect-autocomplete'))
+      return current as HTMLElement;
     const root: Node = current.getRootNode();
     current = current.parentElement ?? (root instanceof ShadowRoot ? root.host : null);
   }

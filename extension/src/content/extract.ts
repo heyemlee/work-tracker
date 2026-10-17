@@ -186,6 +186,7 @@ export function isFilled(handle: Handle): boolean {
     case 'dateParts':
       return handle.year.value.trim() !== '';
     case 'prompt':
+      if (handle.shown) return handle.shown().length > 0;
       return Boolean(
         handle.element
           .closest('[data-automation-id="multiSelectContainer"]')

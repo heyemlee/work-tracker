@@ -86,6 +86,9 @@ export function heldBy(handle: Handle): Held | null {
       // Where the page itself says what the upload holds, its showing none is the upload being empty.
       if (handle.shown) return held(isFilled(handle), shownValue(handle), true);
       break;
+    case 'prompt':
+      if (handle.shown) return held(isFilled(handle), shownValue(handle), true);
+      break;
     default:
       break;
   }

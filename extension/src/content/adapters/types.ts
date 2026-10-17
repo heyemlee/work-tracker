@@ -2,12 +2,12 @@ import type { Ats, Entry, FieldKind, Hint, Posting } from '../../model';
 
 /** How to reach a field's controls when filling it. */
 export type Handle =
-  | { type: 'input'; element: HTMLInputElement | HTMLTextAreaElement }
+  | { type: 'input'; element: HTMLInputElement | HTMLTextAreaElement; dateFormat?: 'month-name-year' }
   | { type: 'select'; element: HTMLSelectElement }
   /** react-select, Workday's dropdown button: opened, then an option clicked. */
   | { type: 'combobox'; element: HTMLElement; shown?: () => string | null }
   | { type: 'typeahead'; element: HTMLInputElement }
-  | { type: 'radio'; inputs: HTMLInputElement[] }
+  | { type: 'radio'; inputs: HTMLInputElement[]; labels?: string[] }
   | { type: 'checkbox'; element: HTMLInputElement }
   | { type: 'multi'; inputs: HTMLInputElement[] }
   /** Choices drawn as buttons, like Ashby's Yes/No. */
@@ -29,7 +29,7 @@ export type Handle =
       year: HTMLInputElement;
     }
   /** A search box whose suggestions become chips (Workday's "How did you hear about us?", fields of study). */
-  | { type: 'prompt'; element: HTMLInputElement };
+  | { type: 'prompt'; element: HTMLInputElement; multiple?: boolean; shown?: () => string[] };
 
 /** A field an adapter finds itself, where generic extraction can't see it. */
 export interface CustomField {
