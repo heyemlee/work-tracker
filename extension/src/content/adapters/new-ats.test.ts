@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { applyAnswer as apply } from '../apply';
 import { extractFields } from '../extract';
 import { heldBy } from '../held';
+import { formSnapshot } from '../snapshot';
 import { watchSubmission } from '../submit';
 import { adapterFor } from './index';
 import { icims } from './icims';
@@ -132,6 +133,25 @@ it('iCIMS picks through the visible dropdown and reads/clears the hidden selecte
   expect(heldBy(handle)).toMatchObject({ filled: true, value: 'Canada' });
   select.value = '';
   expect(heldBy(handle)).toEqual({ filled: false });
+});
+
+it('iCIMS snapshots remove displayed answers and candidate navigation credentials', () => {
+  const { doc, adapter } = read('icims');
+  const root = adapter.form(doc)!;
+  root.setAttribute('action', '/profile?code=private-test-code');
+  const anchor = root.querySelector('a')!;
+  anchor.textContent = 'Private selected country';
+  anchor.setAttribute('aria-valuetext', 'Private selected country');
+  anchor.setAttribute('title', 'Private selected country');
+  anchor.href = '/login?eem=private-test-email';
+  const secret = doc.createElement('input');
+  secret.type = 'hidden';
+  secret.value = 'private-test-token';
+  root.append(secret);
+  const snapshot = formSnapshot(adapter, doc, extractFields(adapter, doc, 0), []);
+  expect(snapshot?.html).not.toMatch(/private-test|Private selected country/);
+  expect(snapshot?.html).toContain('PersonProfileFields.FirstName');
+  expect(anchor.textContent).toBe('Private selected country'); // Only the copy was scrubbed.
 });
 
 it('SmartRecruiters reads nested roots once and selects only the application resume dropzone', () => {

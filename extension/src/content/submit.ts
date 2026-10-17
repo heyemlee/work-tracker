@@ -82,7 +82,13 @@ export function watchSubmission(
     const form = adapter.form(doc);
     const { target } = event;
     if (pressed) return;
-    if (form && target instanceof Node && (form.contains(target) || target.contains(form))) attempt();
+    if (
+      form &&
+      target instanceof Node &&
+      (form.contains(target) || target.contains(form)) &&
+      adapter.isSubmission?.(doc, (event as SubmitEvent).submitter ?? null) !== false
+    )
+      attempt();
     else startWatching();
   };
   const onClick = (event: MouseEvent) => {

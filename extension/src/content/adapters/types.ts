@@ -63,6 +63,8 @@ export interface Adapter {
   custom?(form: Element): CustomField[];
   /** The button that sends the application, or the buttons where the page has more than one way to send it. */
   submitButton(doc: Document): HTMLElement | HTMLElement[] | null;
+  /** A native submit event is the final application action; intermediate Save/Next actions can opt out. */
+  isSubmission?(doc: Document, submitter: HTMLElement | null): boolean;
   /** The page shows that an application went through. */
   confirmed(doc: Document, url: string): boolean;
   /** Emails held in an application whose controls live inside component roots. */

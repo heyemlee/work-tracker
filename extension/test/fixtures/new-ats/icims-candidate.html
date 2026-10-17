@@ -1,0 +1,44 @@
+<!doctype html><html><head><title>Candidate Profile - Example role</title></head><body>
+<h1 class="iCIMS_Header">Example role</h1><h2>Candidate Profile</h2>
+<form id="profileForm" method="post">
+  <h3>Resume</h3><label id="label_for_PortalProfileFields.Resume_File" for="PortalProfileFields.Resume_File">Please upload your resume (max size: 5 MB).</label><span id="label_PortalProfileFields.Resume_File">Resume</span>
+  <input type="file" id="PortalProfileFields.Resume_File" name="PortalProfileFields.Resume_File" aria-required="true" aria-labelledby="label_for_PortalProfileFields.Resume_File label_PortalProfileFields.Resume_File">
+  <div data-local-credentials><h3>Create a login</h3>
+    <label for="PersonProfileFields.Login">Login</label><input id="PersonProfileFields.Login" name="PersonProfileFields.Login" autocomplete="username" aria-required="true">
+    <label for="PersonProfileFields.Password">Password</label><input type="password" id="PersonProfileFields.Password" name="PersonProfileFields.Password" autocomplete="new-password" aria-required="true">
+    <label for="PersonProfileFields.Password_Confirm">Password (Re-enter)</label><input type="password" id="PersonProfileFields.Password_Confirm" name="PersonProfileFields.Password_Confirm" autocomplete="new-password" aria-required="true">
+  </div>
+  <h3>Enter your information</h3>
+  <label for="PersonProfileFields.FirstName">First Name</label><input id="PersonProfileFields.FirstName" name="PersonProfileFields.FirstName" autocomplete="given-name" aria-required="true">
+  <label for="PersonProfileFields.LastName">Last Name</label><input id="PersonProfileFields.LastName" name="PersonProfileFields.LastName" autocomplete="family-name" aria-required="true">
+  <label for="rcf2130">Preferred First Name</label><input id="rcf2130" name="rcf2130" aria-required="true">
+  <fieldset><legend>Phones (1)</legend>
+    <label for="-1_PersonProfileFields.PhoneType">Type</label><select id="-1_PersonProfileFields.PhoneType" name="-1_PersonProfileFields.PhoneType" aria-required="true"><option value=""></option><option value="work">Work</option><option value="home">Home</option><option value="fax">Fax</option></select>
+    <label for="-1_PersonProfileFields.PhoneNumber">Number</label><input id="-1_PersonProfileFields.PhoneNumber" name="-1_PersonProfileFields.PhoneNumber" autocomplete="tel-national">
+    <label for="-1_PersonProfileFields.PhoneExtension">Extension</label><input id="-1_PersonProfileFields.PhoneExtension" name="-1_PersonProfileFields.PhoneExtension">
+  </fieldset>
+  <label for="PersonProfileFields.Email">Email</label><input type="email" id="PersonProfileFields.Email" name="PersonProfileFields.Email" autocomplete="email" aria-required="true">
+  <fieldset class="iCIMS_CollectionGroup"><legend>Addresses (1)</legend>
+    <label for="-1_PersonProfileFields.AddressType">Type</label><select id="-1_PersonProfileFields.AddressType" aria-required="true"><option value=""></option><option value="home">Home</option><option value="work">Work</option></select>
+    <label for="-1_PersonProfileFields.AddressStreet1">Address</label><input id="-1_PersonProfileFields.AddressStreet1" autocomplete="street-address" aria-required="true">
+    <label for="-1_PersonProfileFields.AddressStreet2">Address 2</label><input id="-1_PersonProfileFields.AddressStreet2" autocomplete="address-line2">
+    <label for="-1_PersonProfileFields.AddressCity">City</label><input id="-1_PersonProfileFields.AddressCity" autocomplete="address-level2" aria-required="true">
+    <label for="-1_PersonProfileFields.AddressZip">Zip/Postal Code</label><input id="-1_PersonProfileFields.AddressZip" autocomplete="postal-code" aria-required="true">
+    <label id="label_-1_PersonProfileFields.AddressCountry" for="-1_PersonProfileFields.AddressCountry">Country</label>
+    <select id="-1_PersonProfileFields.AddressCountry" class="dropdown-hide" style="display:none" role="combobox"><option value=""></option></select>
+    <a id="-1_PersonProfileFields.AddressCountry_icimsDropdown" class="dropdown-select" role="combobox" tabindex="0" aria-expanded="false" aria-required="true" aria-labelledby="label_-1_PersonProfileFields.AddressCountry"><span class="dropdown-text"><span class="dropdown-placeholder">— Make a Selection —</span></span></a>
+    <ul id="-1_PersonProfileFields.AddressCountry_dropdown-results" class="dropdown-results" role="listbox" hidden></ul>
+    <label id="label_-1_PersonProfileFields.AddressState" for="-1_PersonProfileFields.AddressState">State/Province</label>
+    <select id="-1_PersonProfileFields.AddressState" style="display:none" role="combobox"><option value="not-loaded">Please select a country</option></select>
+    <a id="-1_PersonProfileFields.AddressState_icimsDropdown" class="dropdown-select" role="combobox" tabindex="0" aria-expanded="false" aria-required="true" aria-labelledby="label_-1_PersonProfileFields.AddressState"><span class="dropdown-text"><span class="dropdown-placeholder">Please select a country</span></span></a>
+    <ul id="-1_PersonProfileFields.AddressState_dropdown-results" class="dropdown-results" role="listbox" hidden></ul>
+  </fieldset>
+  <h3>Preferences</h3>
+  <div class="iCIMS_Forms_SalaryField" id="rcf2120_SPAN"><label id="label_rcf2120">Desired Salary Min</label>
+    <label id="label_rcf2120_Currency">Currency</label><select id="rcf2120_Currency" aria-labelledby="label_rcf2120 label_rcf2120_Currency" aria-required="true"><option value="USD">USD $</option><option value="EUR">EUR €</option></select>
+    <label id="label_rcf2120_Amount">Amount</label><input id="rcf2120" aria-labelledby="label_rcf2120 label_rcf2120_Amount" aria-required="true">
+    <label id="label_rcf2120_Timeframe">Timeframe</label><select id="rcf2120_Timeframe" aria-labelledby="label_rcf2120 label_rcf2120_Timeframe" aria-required="true"><option value="hour">Hr.</option><option value="day">Da.</option></select>
+  </div>
+  <label for="rcf3049">Please enter your referrals name</label><select id="rcf3049" aria-required="true" disabled><option value=""></option></select>
+  <input type="submit" id="cp_form_submit_i" name="profileButton" value="Next">
+</form></body></html>

@@ -1,0 +1,39 @@
+{
+  "checked": "2026-10-14",
+  "publicPosting": "https://careers-appliedsystems.icims.com/jobs/6419/sales-consultant/job",
+  "observedStage": "Owner progressed from Candidate Profile (with Create a login) to the real Candidate Questions page. Both stages were inspected read-only; no credential, profile answer or qualification answer was changed by the agent.",
+  "renderedContracts": [
+    "profileForm, PersonProfileFields FirstName/LastName/Email/Login/Password/Password_Confirm",
+    "PortalProfileFields.Resume_File with aria-labelledby and aria-required",
+    "PhoneType/PhoneNumber/PhoneExtension and AddressStreet1/AddressStreet2/AddressCity/AddressZip",
+    "AddressCountry/AddressState hidden native selects and visible _icimsDropdown anchors",
+    "Country menu opens into _dropdown-results listbox with li role=option, title and dropdown-index attributes; native select still has only one option",
+    "dropdown-placeholder for unselected country and state; state placeholder has a nonempty native value",
+    "Required country/state is declared on the visible anchor, not the hidden select",
+    "Desired Salary Min has separate aria-labelledby currency, amount and timeframe controls",
+    "Disabled referral select; profileButton / cp_form_submit_i is labelled Next"
+  ],
+  "fixture": "icims-candidate.html",
+  "localOnlyConventions": [
+    "data-local-credentials marks the credential block only in the fixture.",
+    "The credential-free variant removes this block to test profile-control contracts; it is not an authenticated page capture.",
+    "Candidate/employer values, option IDs and callbacks are fictional local stand-ins. No vendor script or user value is included.",
+    "Phone/address type lists and currency/rate lists are reduced public-label examples, not exhaustive coverage."
+  ],
+  "privacy": [
+    "No input values, passwords, hidden token values or candidate query URLs were copied.",
+    "Tracked candidate-stage URLs are normalized to the public job URL; queries and fragments are removed.",
+    "Password-bearing registration forms remain unfillable as a whole; no Next or submission is automated."
+  ],
+  "remaining": "Verified contracts belong to this tenant and these two stages. No real autofill, saving, final submission or confirmation was performed. Other tenant-specific or localized question forms are not covered by this evidence.",
+  "renderedQuestionContracts": [
+    "Candidate Questions heading and form#questions on the /questions stage",
+    "Q2414/Q2415 required native selects, empty placeholder and Yes/No options",
+    "Work eligibility in either United States or Canada; sponsorship now or in the future",
+    "quesp_form_save_i: Finish Later; quesp_form_submit_i: Submit; both native submit inputs",
+    "Follow-up inspection: iCIMS_Steps_Current marks Candidate Questions as step 2 of 3; Candidate Profile is completed and EEO remains a later step, so this Submit is not the final application action"
+  ],
+  "questionFixture": "icims-questions.html",
+  "derivedQuestionVariants": "Tests with no progress list or with the later EEO step removed verify fallback/final-button behavior only. They are not captured final-stage or EEO pages.",
+  "authorizationPolicy": "Uses existing authorization rules and owner-confirmation markers. Existing US-first country policy is unchanged; combined US/Canada wording still requires owner review for the applicable jurisdiction. No AI-generated qualification answers."
+}
