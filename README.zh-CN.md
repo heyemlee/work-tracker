@@ -127,7 +127,7 @@ npm run test:ui                    # 在 Chromium 里测试主应用，模拟服
 npm run e2e -w extension           # 在保存的页面上端到端运行扩展，记录到一个模拟的 Outbox
 ```
 
-CI 会做类型检查、lint、格式检查，运行单元测试、构建，并端到端运行扩展。比较各个 Claude 模型回答开放式问题的文本评测会产生费用，只在需要时运行（`npm run eval -w extension`）。
+CI 会做类型检查、lint、格式检查，运行单元测试、构建，再在 Chromium 里测试主应用，并端到端运行扩展。比较各个 Claude 模型回答开放式问题的文本评测会产生费用，只在需要时运行（`npm run eval -w extension`）。
 
 ## 部署
 

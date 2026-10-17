@@ -154,8 +154,9 @@ npm run test:ui                    # the main app in Chromium, with the service 
 npm run e2e -w extension           # the extension end to end on saved pages, logging to a mock Outbox
 ```
 
-CI type-checks, lints, checks formatting, runs the unit tests, builds, and runs the extension end to end. The
-Claude free-text eval costs money and runs only on request (`npm run eval -w extension`).
+CI type-checks, lints, checks formatting, runs the unit tests, builds, then runs the main app's browser suite and
+the extension end to end. The Claude free-text eval costs money and runs only on request
+(`npm run eval -w extension`).
 
 ## Deploy
 
