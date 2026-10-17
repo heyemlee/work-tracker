@@ -15,7 +15,7 @@ const catalogSchema = z.object({
       sha256: z.string().regex(/^[a-f0-9]{64}$/),
       licenseFile: z.string().regex(/^[\w.-]+$/),
       licenseSha256: z.string().regex(/^[a-f0-9]{64}$/),
-      license: z.literal('MIT'),
+      license: z.enum(['MIT', 'CC-BY-SA-4.0']),
     }),
   ),
 });
@@ -54,7 +54,7 @@ async function main() {
     JSON.parse(await readFile(resolve('evals/public-sources.json'), 'utf8')),
   );
   for (const source of catalog.sources) {
-    const dir = resolve('evals/private/public-v1', source.id);
+    const dir = resolve('evals/private/public-v2', source.id);
     await mkdir(dir, { recursive: true, mode: 0o700 });
     const base = `https://raw.githubusercontent.com/${source.repository}/${source.commit}/`;
     await fetchPinned(base + source.licenseFile, source.licenseSha256, resolve(dir, source.licenseFile));
@@ -68,10 +68,10 @@ async function main() {
       ) + '\n',
       { mode: 0o600 },
     );
-    process.stdout.write(`${source.id}: original and MIT license checksums verified\n`);
+    process.stdout.write(`${source.id}: original and ${source.license} evidence checksums verified\n`);
   }
   process.stdout.write(
-    'Two original PDFs staged privately. Draft/review references separately. No paid calls.\n',
+    `${catalog.sources.length} original PDFs staged privately in public-v2. Draft/review references separately. No paid calls.\n`,
   );
 }
 main().catch((error: unknown) => {

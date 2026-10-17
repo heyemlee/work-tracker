@@ -19,7 +19,7 @@ export const manifestSchema = z
             .optional(),
           subjectId: z.string().min(1).optional(),
           referenceReview: z
-            .enum(['synthetic-fixture', 'agent-draft', 'owner-reviewed', 'unreviewed'])
+            .enum(['synthetic-fixture', 'agent-draft', 'agent-reviewed', 'owner-reviewed', 'unreviewed'])
             .default('unreviewed'),
         }),
       )
@@ -38,6 +38,18 @@ export const predictionSchema = z.discriminatedUnion('ok', [
     .passthrough(),
 ]);
 export type Prediction = z.output<typeof predictionSchema>;
+
+/** A later source review can withdraw a public sample without erasing historical runs. */
+export function assertPublicSourceEligibility(
+  cases: { id: string; provenance: string; inputHash: string }[],
+  excludedSources: { sha256: string; reason: string }[],
+) {
+  for (const item of cases) {
+    const excluded = excludedSources.find((source) => source.sha256 === item.inputHash);
+    if (item.provenance === 'public-licensed' && excluded)
+      throw new Error(`Public sample ${item.id} is excluded from live evaluation: ${excluded.reason}`);
+  }
+}
 const normalize = (value: string) => value.normalize('NFKC').toLowerCase().replace(/\s+/g, ' ').trim();
 
 /** Empty defaults don't earn accuracy points. Skills/languages are sets; employment/education remain ordered. */

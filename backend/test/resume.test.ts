@@ -5,7 +5,12 @@ import { extractResume, MAX_FILE_BYTES } from '../src/resume/extract.js';
 import { modelConfig, parseResume } from '../src/resume/model.js';
 import { resumeSchema } from '../src/resume/schema.js';
 import { resumeFactsSchema } from '../../src/domain/profile.js';
-import { compareFacts, manifestSchema, scoreSuite } from '../src/resume/evaluation.js';
+import {
+  assertPublicSourceEligibility,
+  compareFacts,
+  manifestSchema,
+  scoreSuite,
+} from '../src/resume/evaluation.js';
 
 const gold = resumeSchema.parse(
   JSON.parse(await readFile(new URL('../evals/synthetic/gold.json', import.meta.url), 'utf8')),
@@ -19,6 +24,31 @@ const toolResponse = (input: unknown = gold, stop_reason = 'tool_use') =>
       usage: { input_tokens: 100, output_tokens: 50 },
     }),
   );
+
+it('withdrawn public content is blocked before inference without erasing historical scoring', () => {
+  const item = { id: 'withdrawn', provenance: 'public-licensed', inputHash: 'a'.repeat(64) };
+  const excluded = [{ sha256: item.inputHash, reason: 'Template-only license.' }];
+  expect(() => assertPublicSourceEligibility([item], excluded)).toThrow('Template-only license');
+  expect(() =>
+    assertPublicSourceEligibility([{ ...item, inputHash: 'b'.repeat(64) }], excluded),
+  ).not.toThrow();
+  // Separate owner consent can authorize the same bytes; a public-license claim cannot.
+  expect(() => assertPublicSourceEligibility([{ ...item, provenance: 'consented' }], excluded)).not.toThrow();
+  expect(scoreSuite([{ ...item, gold }], [{ id: item.id, ok: true, facts: gold }]).failedCases).toBe(0);
+});
+
+it('source checks by an agent never become independent human review in scores', () => {
+  const item = {
+    id: 'reviewed',
+    provenance: 'public-licensed',
+    inputHash: 'b'.repeat(64),
+    gold,
+    referenceReview: 'agent-reviewed',
+  };
+  const score = scoreSuite([item], [{ id: item.id, ok: true, facts: gold }]);
+  expect(score.provisional).toBe(true);
+  expect(score.rows[0]?.referenceReview).toBe('agent-reviewed');
+});
 
 describe('Local resume extraction', () => {
   it.each(['pdf', 'docx'])('reads %s without calling a model', async (format) => {

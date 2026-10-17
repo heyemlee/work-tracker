@@ -3,7 +3,13 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { extractResume } from '../src/resume/extract.js';
-import { manifestSchema, predictionSchema, scoreSuite, type Prediction } from '../src/resume/evaluation.js';
+import {
+  assertPublicSourceEligibility,
+  manifestSchema,
+  predictionSchema,
+  scoreSuite,
+  type Prediction,
+} from '../src/resume/evaluation.js';
 import { methodSchema, modelConfig, parseResume } from '../src/resume/model.js';
 import { quoteRequest, withBudget } from '../src/resume/budget.js';
 import { PROMPT_VERSION, resumeSchema } from '../src/resume/schema.js';
@@ -88,6 +94,11 @@ async function main() {
         'Live calls require --live, ENABLE_RESUME_AI=true, RESUME_MODEL and the selected provider API key. Use plan for an offline check.',
       );
     const { cases } = await loadCases(input);
+    const catalog = JSON.parse(
+      await readFile(new URL('../../evals/public-sources.json', import.meta.url), 'utf8'),
+    );
+    if (!Array.isArray(catalog.excludedSources)) throw new Error('Missing public-source review policy.');
+    assertPublicSourceEligibility(cases, catalog.excludedSources);
     // Reserve a fresh file before any paid request; never overwrite an earlier run.
     await writeFile(resolve(output), '', { flag: 'wx', mode: 0o600 });
     // Built CLI is dist/scripts/resume.js. Anchor the ledger to this package even if invoked from another cwd.

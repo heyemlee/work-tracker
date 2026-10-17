@@ -89,18 +89,20 @@ npm run --silent resume -- score evals/private/manifest.json evals/runs/function
 
 ### 公开样本与首次模型验证（2026-10-14）
 
-已在本机准备两份不同作者的原始 PDF：[edunham/resume](https://github.com/edunham/resume) 和 [karasinski/Resume](https://github.com/karasinski/Resume)。两仓库均附 MIT 许可；固定提交、原文件 SHA-256 和许可证 SHA-256 记录在 `evals/public-sources.json`，下载时强制校验并保留许可证。
+当前有效样本为 [karasinski/Resume](https://github.com/karasinski/Resume)（MIT）和 [Igor Zarvanskyi 的 clutcher/cv](https://github.com/clutcher/cv)（CC-BY-SA-4.0）。固定提交、PDF 和许可证据的 SHA-256 记录在 `evals/public-sources.json`，下载时强制校验并保留许可证据。clutcher 原 PDF 未修改，参考标签为注明作者与改动的 schema 转录，按 CC-BY-SA-4.0 保留。
+
+**来源复核更正：** 早期 edunham 样本的源文件明确将 MIT 限定为 LaTeX 代码，正文许可范围不明确，且同一提交的 TeX 与旧 PDF 内容不同。因此移出后续公开许可评测；旧文件、标签、预测和费用记录保留为历史，不能再称两份旧样本均已确认正文 MIT 许可。CLI 在创建新预测文件或预留费用前拒绝该 PDF 的 SHA-256。后面的 v1 运行数据仅为历史记录。
 
 ```sh
 npm run build
 npm run resume:data
-npm run resume -- plan evals/private/public-v1/manifest.json
-npm run resume -- quote evals/private/public-v1/manifest.json
+npm run resume -- plan evals/private/public-v2/manifest.json
+npm run resume -- quote evals/private/public-v2/manifest.json
 ```
 
-文件与参考答案留在被 Git 忽略的 `evals/private/public-v1/`。当前参考答案为 **agent-draft**，另有 `REFERENCE-NOTES.md` 记录共享经历描述、志愿活动范围、学历未明示和日期等歧义，尚未经过用户人工复核。评分包含 `provisional`、审核状态和不同作者数量；不能用这两份样本声明可靠准确率。下载脚本不会生成或覆盖 gold 标签；换机器后需另行准备与核对参考答案。
+原件与参考答案留在被 Git 忽略的 `evals/private/public-v2/`。下载脚本只准备许可及原件，不生成 gold；换机器后需单独准备与核对参考答案。当前标签是 **agent-reviewed**：代理逐页查看 PDF，并对照内容一致的 TeX/Markdown，仍不是独立人工标注。`reference-audit.json` 记录原文页码、断词修正和取值约定。用户已确认经历只纳入工作、合同和实习，社区及志愿经历另列复核；提示词更新为 `resume-lab-v2`，限定显式技能、共享描述归属、实习/合同优先级和未知日期。原有 Outbox 简历解析入口与 schema 未改。
 
-用户选择使用 OpenAI，具体型号由网页列表自行选择。离线报价以默认 `gpt-5.4-mini` 举例：同两份 PDF 分别跑 function calling / structured output，共四次请求。按 [OpenAI 模型官方价格](https://developers.openai.com/api/docs/models/gpt-5.4-mini)核对了价格表（每百万输入 $0.75 / 输出 $4.50）；原 [Claude 价格表](https://platform.claude.com/docs/en/about-claude/pricing)保留。当前 OpenAI 离线保守预留合计约 **$0.31**（精确值见本机 `offline-quote-openai.json`），该报价本身不调用模型；切换型号后须重新报价。这不是 token 精确估计或实际收费。预留按每个请求完整 UTF-8 字节数的四倍加 16K 输入 token 余量，以及全部 8192 输出 token 上限计算；不使用缓存或批处理折扣。
+评分仍按字段位置、Unicode/大小写/空白规范化后严格比较，不为提高分数放宽规则。共享描述只挂最新角色、年限换成月份、默认 employment type 等都是表示约定，不代表额外事实。两位作者是开发样本，不能据此宣称可靠准确率。离线 quote 使用网页保存的模型，按完整请求保守预留；不是 token 精确估计或供应商账单。
 
 用户已授权首次合计上限 **$5**。CLI 要求显式 `--budget-usd`，并对两种方式、不同 manifest、反复运行共同使用包目录内 `evals/private/budget-ledger.json`：先落盘预留，再发请求；并发加锁；失败/超时不退回预留；记录已知 usage 与保守预留两项；余额不足、价格未知或账本损坏时拒绝请求。预留不是供应商账单硬限额；若供应商 usage 超过预留，后续运行立即停止，需要检查账单。网页解析也共用同一账本与 $5 上限，保存配置或切换提供方不会重置余额。这不是整个 API 账户的费用限额。
 
@@ -108,13 +110,13 @@ API Key 在网页的模型设置区保存即可，不需要发到聊天、命令
 
 ```sh
 mkdir -p evals/runs
-ENABLE_RESUME_AI=true npm run resume -- run evals/private/public-v1/manifest.json evals/runs/public-function-v1.jsonl --live --budget-usd=5 --method=function-calling
-npm run --silent resume -- score evals/private/public-v1/manifest.json evals/runs/public-function-v1.jsonl > evals/runs/public-function-v1-score.json
-ENABLE_RESUME_AI=true npm run resume -- run evals/private/public-v1/manifest.json evals/runs/public-structured-v1.jsonl --live --budget-usd=5 --method=structured-output
-npm run --silent resume -- score evals/private/public-v1/manifest.json evals/runs/public-structured-v1.jsonl > evals/runs/public-structured-v1-score.json
+ENABLE_RESUME_AI=true npm run resume -- run evals/private/public-v2/manifest.json evals/runs/public-function-v2.jsonl --live --budget-usd=5 --method=function-calling
+npm run --silent resume -- score evals/private/public-v2/manifest.json evals/runs/public-function-v2.jsonl > evals/runs/public-function-v2-score.json
+ENABLE_RESUME_AI=true npm run resume -- run evals/private/public-v2/manifest.json evals/runs/public-structured-v2.jsonl --live --budget-usd=5 --method=structured-output
+npm run --silent resume -- score evals/private/public-v2/manifest.json evals/runs/public-structured-v2.jsonl > evals/runs/public-structured-v2-score.json
 ```
 
-两份真实样本均为 PDF。DOCX 仍由同一份虚构简历的独立格式样例验证，不能计为额外真实样本。真实模型响应、账户兼容性、实际 usage/费用和字段差异报告尚待调用后验证。未部署 AWS。
+两份真实样本均为 PDF。DOCX 仍由同一份虚构简历的独立格式样例验证，不能计为额外真实样本。真实模型响应与字段差异的已完成验证见下方；实际供应商账单费用尚未核实。未部署 AWS。
 
 ### 已配置后的首次尝试（2026-10-14）
 
@@ -135,7 +137,21 @@ npm run --silent resume -- score evals/private/public-v1/manifest.json evals/run
 
 完整结果、逐字段差异和调用用量保存在本机被忽略的 `evals/runs/2026-10-14-gpt-6.1-sol-retry-d983ce47/summary.json` 及其同目录。共享账本累计保留 **$0.939512**，包含首次失败的预留；成功请求 usage 按 OpenAI 标准参考费率折算约 **$0.072902**，并非已核实的 Kabi 实际收费。Kabi 实际账单费用未知。总授权上限仍为 $5，未重置账本。
 
-本轮完成的是两份真实 PDF 的小批真实调用验证。参考标签人工复核、更具代表性的评测集和真实许可 DOCX 样本验证尚未完成，不能据此声称测试过数百份简历。iCIMS 登录后表单和 SmartRecruiters 后续步骤的既有验证边界也未改变。
+这一历史阶段完成的是两份 PDF 的小批调用。后续来源复核撤回了其中一份样本，见上方更正与下方 v2 记录。真实许可 DOCX、大样本和独立人工复核仍未完成；不能声称测试过数百份简历。扩展验证边界见 `extension/test/fixtures/new-ats/README.md`。
+
+### 来源与标签复核后的验证（2026-10-14）
+
+按用户选择固定 employment-only 口径，逐页核对两份有效 PDF 与相应源文档，修正 8 处断词/排版内容，并记录共享描述、实习/合同、学历候选资格、未知日期和技能分组的规则。标记为代理复核，未冒充独立人工标注。撤回的样本与全部旧报告保持原样，后续调用改用许可明确的替代样本。
+
+在生成并冻结 v2 标签后，用原保存的 Kabi / GPT-6.1 Sol 分别调用两种方式，共四次请求，全部成功并通过严格 Zod 校验。两种方式各匹配 **199 / 205** 个参考非空字段（预测 204 个）；严格 Precision **97.55%**、Recall **97.07%**，均标记 provisional。六处严格差异为网址末尾斜杠一处、校名引号样式三处，以及暑期学校完整名称与专业拆分两处；保留全部差异，没有据此改标签或放宽评分。
+
+结果在本机 `evals/runs/2026-10-14-source-reviewed-v2-db6c855b/`，包括冻结标签、四份预测、逐字段报告、复核说明及文件校验值。v2 换了样本并明确了提示词，**不能与 v1 分数直接比较来宣称准确率提升**。这是两位开发样本的字段一致性，仍缺独立人工复核、更大且有代表性的留出集和真实 DOCX 验证。
+
+共九次推理尝试（含历史失败），共享账本累计保守预留 **$1.791608 / $5**，成功 usage 按官方标准参考费率折算 **$0.162964**；历史失败一次仍保留预留。Kabi 实际账单未知，账本未重置。没有自动重试、改模型或部署 AWS。
+
+SmartRecruiters 的空白经历/教育编辑器已查看真实渲染结构；标准筛选题按该页面发布的组件源码重建并在本地扩展中验证。没有填写真实候选人数据或进入真实筛选步骤。iCIMS 在用户操作邮箱入口后已查看真实 Candidate Profile 的字段与下拉列表，补测懒加载菜单、非空占位提示、可见控件必填标记、含数字的字段 ID 和候选人链接清理。最初资料页仍含 Create a login 与新密码区，不能计作已完成登录；注册表单继续禁止填写，无凭据的资料样例是派生版本。
+
+用户随后进入了真实 **Candidate Questions** 页，已只读核对两道必填资格题及 Finish Later / Submit 按钮，并据此增加本地扩展测试。再次检查发现它是 **第 2/3 步**，后面还有 EEO；这里的 Submit 也只是进入后续步骤，不能仅凭按钮文字识别最终投递。题目页不再依赖姓名字段识别，资料页 Next、保存进度和仍有后续步骤的 Submit 均不再被当作正式投递。资格题沿用现有规则并要求用户确认，多国家提问的既有美国优先口径没有改动，也没有交给模型推断。没有在真实页面选择答案或提交申请；EEO 控件、其他公司定制表单、最终提交与确认页仍不属于这次覆盖范围。详见扩展样例说明。
 
 ## 数据库性能实验
 

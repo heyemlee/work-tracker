@@ -2,16 +2,6 @@
   "checked": "2026-10-14",
   "sources": [
     {
-      "id": "edunham",
-      "repository": "edunham/resume",
-      "commit": "c660d10682888a3ab45562cbf77f47fcd6e2fe79",
-      "file": "resume.pdf",
-      "sha256": "c9d1c34ec082490d4af866e7d7553c1008ae1adad260d3a96c42f03c7dc08385",
-      "licenseFile": "LICENSE.txt",
-      "licenseSha256": "62cc6ae793edd752032dc759ae94b77f4885e264fda2e4b521d4516ee9fc71bf",
-      "license": "MIT"
-    },
-    {
       "id": "karasinski",
       "repository": "karasinski/Resume",
       "commit": "ba15683e4c9910dd910826b0529fa2228855edd2",
@@ -20,6 +10,25 @@
       "licenseFile": "LICENSE",
       "licenseSha256": "2c2b578bb1a07f6d38713efd81955d365557cd63f77d5a57aadb3932c949ef5b",
       "license": "MIT"
+    },
+    {
+      "id": "clutcher",
+      "repository": "clutcher/cv",
+      "commit": "ac69a8df9c438c1ccb55d220adc32ef382b15e1b",
+      "file": "igor_zarvanskyi_sap_commerce.pdf",
+      "sha256": "499b30461649c732569240aea8b941a8b185d3a98d24e78700d92654be7d8921",
+      "licenseFile": "README.md",
+      "licenseSha256": "73f7edd306538a9a2a6d7be1bd3db605ac32a75b7cd17f1540a351fd6a62f165",
+      "license": "CC-BY-SA-4.0"
+    }
+  ],
+  "excludedSources": [
+    {
+      "id": "edunham",
+      "repository": "edunham/resume",
+      "commit": "c660d10682888a3ab45562cbf77f47fcd6e2fe79",
+      "sha256": "c9d1c34ec082490d4af866e7d7553c1008ae1adad260d3a96c42f03c7dc08385",
+      "reason": "The source explicitly limits MIT to LaTeX code; resume-content permission is unclear. The pinned TeX also differs from the older binary PDF. Historical runs are retained, but no further public-licensed live calls are permitted."
     }
   ]
 }
