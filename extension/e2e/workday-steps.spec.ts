@@ -254,7 +254,7 @@ test('is the application’s card from Apply to the page it ends on, and a posti
   // Sent. The page it ends on is the candidate's home: the card says the application was logged, there.
   await next.click();
   await page.waitForURL(/\/jobTasks\/completed\/application$/);
-  await expect(card.getByText('Logged to Outbox')).toBeVisible({ timeout: 15_000 });
+  await expect(card.getByText('Logged to Outbox', { exact: true })).toBeVisible({ timeout: 15_000 });
   await expect(card.getByText('Acme · Software Engineer')).toBeVisible();
   expect(outbox.quickAdds).toHaveLength(1);
   expect(outbox.quickAdds[0]).toMatchObject({
@@ -266,7 +266,7 @@ test('is the application’s card from Apply to the page it ends on, and a posti
   // And goes on saying so: the home's greeting is no posting's title.
   await expect(page.getByRole('heading', { name: 'Welcome, Alex Chen' })).toBeVisible();
   await page.waitForTimeout(1500);
-  await expect(card.getByText('Logged to Outbox')).toBeVisible();
+  await expect(card.getByText('Logged to Outbox', { exact: true })).toBeVisible();
   await expect(card.getByText('Acme · Software Engineer')).toBeVisible();
 
   // The home at its own address, by the board's link and without a page loaded: the log is still the card's to
@@ -317,10 +317,11 @@ test('keeps to the application for a posting saved for later, and offers nothing
   await expect(card.getByText('Nothing to fill on this step.')).toBeVisible();
   await expect(card.locator('.done')).toBeHidden();
 
-  // The owner logs it by hand before sending it: the card says so.
+  // The owner logs it by hand before sending it: the card says so in its title. (Matched exactly: the step's own
+  // hint, still showing, says it's "logged to Outbox by itself" once sent.)
   await card.getByRole('button', { name: 'More' }).click();
   await card.getByRole('menuitem', { name: 'Log to Outbox' }).click();
-  await expect(card.getByText('Logged to Outbox')).toBeVisible();
+  await expect(card.getByText('Logged to Outbox', { exact: true })).toBeVisible();
   expect(outbox.quickAdds).toHaveLength(2);
 
   // Sent: it isn't logged twice, and on the home it ends on the card has nothing to offer.
@@ -406,7 +407,7 @@ test('is the application’s panel for a posting already logged from its own car
 
   // Marked applied first, and applied to after: the note of the log gives way to the application.
   await card.getByRole('button', { name: 'Mark as applied' }).click({ timeout: 15_000 });
-  await expect(card.getByText('Logged to Outbox')).toBeVisible();
+  await expect(card.getByText('Logged to Outbox', { exact: true })).toBeVisible();
   await page.locator(named('adventureButton')).click();
   await expect(pane).toHaveClass(/\bpanel\b/);
   await expect(card.locator('.done')).toBeHidden();
