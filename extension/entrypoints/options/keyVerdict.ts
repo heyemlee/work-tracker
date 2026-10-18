@@ -10,7 +10,7 @@ export interface Verdict {
 /**
  * What a check of the key says. Only the provider turning the key away (401, 403) says the key is bad: an address
  * that isn't there (404), a provider down, no network, tell nothing of the key; and a request answered with nothing
- * usable (cut off, declined) was a key the provider took.
+ * usable (cut off, declined), or with no model by the name asked for, was a key the provider took.
  */
 export function keyVerdict(
   found: Awaited<ReturnType<typeof checkKey>>,
@@ -22,6 +22,8 @@ export function keyVerdict(
   if (!found.ok) {
     if (/^401\b/.test(detail)) return { tone: 'bad', text: s('keyRefused', { detail }) };
     if (/^403\b/.test(detail)) return { tone: 'bad', text: s('keyBad', { detail }) };
+    // OpenAI's own and the proxies speaking its API say so in a code of its own: it's the model to change.
+    if (/model_not_found/.test(detail)) return { tone: 'warn', text: s('keyOkNoModel') };
     return { tone: 'warn', text: s('keyUnchecked', { detail }) };
   }
   if (found.empty) return { tone: 'warn', text: s('keyOkEmpty', { detail: found.empty }) };

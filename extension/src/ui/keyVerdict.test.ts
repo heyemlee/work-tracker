@@ -20,6 +20,15 @@ describe('what the settings say of a key check', () => {
       });
   });
 
+  it('says it’s the model to change, not the key, where the provider has no model by that name', () => {
+    const error =
+      '404 {"error":{"message":"Model \\"gpt-5.6-terra\\" is not supported by any configured account in this group","type":"model_not_found"}}';
+    expect(keyVerdict({ ok: false, error }, false, s)).toEqual({
+      tone: 'warn',
+      text: 'The key works, but this endpoint has no model by the name chosen: pick another one above.',
+    });
+  });
+
   it('says the key works where the provider took it and no answer came back', () => {
     expect(
       keyVerdict({ ok: true, empty: 'the answer was cut off at the token limit' }, false, s),

@@ -182,7 +182,9 @@ the button: a key goes to the provider when the owner asks. The check's line say
 key didn't pass the check" — and words a 401 plainly instead of showing the provider's JSON. Only the provider
 turning the key away (401, 403) says the key is bad (`keyVerdict`, 2026-10-14): an address that isn't there, a
 provider down or no network say the key couldn't be checked, and a request answered with nothing usable (cut off at
-the token limit, declined) says the key works. The window appears in
+the token limit, declined) says the key works. So does an answer that there's no model by the name asked for
+(`model_not_found`, as OpenAI's own and the proxies speaking its API put it; 2026-10-17): the line says to pick
+another model, where it used to say to check the address and the network. The window appears in
 place rather than gliding in: Chrome drops presses on a frame from another origin while it moves and for half a
 second after. Where a page won't show the frame, the settings open in a tab after 6 s. Outbox's own page asks for
 the settings too ("Open extension settings", in its toolbar and its setup guide), and since 2026-10-07 gets the same

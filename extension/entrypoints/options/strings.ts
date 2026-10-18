@@ -44,6 +44,7 @@ const en = {
   keyBad: 'The saved key didn’t pass the check: {detail}',
   keyUnchecked: 'Couldn’t check the key: {detail}. Check the address and the network, then save again.',
   keyOkEmpty: 'The key works, but the check got no answer back ({detail}).',
+  keyOkNoModel: 'The key works, but this endpoint has no model by the name chosen: pick another one above.',
   keyRefused:
     'The saved key didn’t pass the check: the provider doesn’t recognize it (401). Make sure it’s this provider’s API key, and that it hasn’t been deleted or disabled.',
   model: 'Model',
@@ -133,6 +134,7 @@ const zh: Record<Key, string> = {
   keyBad: '保存的 key 没通过检查：{detail}',
   keyUnchecked: '没能检查这个 key：{detail}。请检查地址和网络，再保存一次。',
   keyOkEmpty: 'Key 可以用，但检查请求没拿到回答（{detail}）。',
+  keyOkNoModel: 'Key 可以用，但这个接口没有选中的这个模型，请在上面的「模型」里换一个。',
   keyRefused:
     '保存的 key 没通过检查：服务商不认这个 key（401）。请确认它是这家服务商的 API key，并且没有被删除或停用。',
   model: '模型',
