@@ -23,7 +23,7 @@ vi.mock('@anthropic-ai/sdk', () => ({
   },
 }));
 
-const { answerFields, checkKey, draftAnswer, NoApiKey, openaiEndpoint, parseResume, roomFor } =
+const { answerFields, checkKey, draftAnswer, listModels, NoApiKey, openaiEndpoint, parseResume, roomFor } =
   await import('./ai');
 
 function reply(text: string, stop = 'end_turn') {
@@ -507,6 +507,49 @@ describe('an OpenAI-compatible provider', () => {
     expect(roomFor(3000, 'medium', 'low')).toBe(3000);
     expect(roomFor(16000, 'low', 'high')).toBe(16000);
     expect(roomFor(200, 'low', 'high')).toBe(800);
+  });
+
+  it('lists the models the endpoint lets the key use, each once, in order of name', async () => {
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          object: 'list',
+          data: [
+            { id: 'gpt-5.10-sol', object: 'model' },
+            { id: 'gpt-5.9-luna', object: 'model' },
+            { id: 'claude-opus-5-5', object: 'model' },
+            { id: 'gpt-5.9-luna', object: 'model' },
+            { id: ' ', object: 'model' },
+            { object: 'model' },
+          ],
+        }),
+      ),
+    );
+    await openaiKeyItem.setValue('sk-listed');
+    await settingsItem.setValue({
+      ...DEFAULT_SETTINGS,
+      provider: 'openai',
+      openaiBaseUrl: 'https://proxy.example.com',
+    });
+    expect(await listModels()).toEqual(['claude-opus-5-5', 'gpt-5.9-luna', 'gpt-5.10-sol']);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://proxy.example.com/v1/models');
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer sk-listed');
+    // A list costs nothing: no tokens are counted for it.
+    expect(await usageItem.getValue()).toEqual([]);
+  });
+
+  it('says why where there’s no list to show: turned away, or none listed', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('{"error":{"message":"Invalid token"}}', { status: 401 }));
+    await expect(listModels()).rejects.toThrow(/^401 .*Invalid token/);
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ object: 'list', data: [] })));
+    await expect(listModels()).rejects.toThrow('listed no models');
+    fetchMock.mockResolvedValueOnce(new Response('<!doctype html><title>Proxy</title>'));
+    await expect(listModels()).rejects.toThrow('listed no models');
+    // With no key kept, nothing is asked.
+    await openaiKeyItem.setValue('');
+    await expect(listModels()).rejects.toBeInstanceOf(NoApiKey);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
   it('says so when the endpoint won’t take an effort, as the key check finds out', async () => {

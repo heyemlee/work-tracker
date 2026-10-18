@@ -104,17 +104,38 @@ test('shows the settings in a window over the page, and what’s changed there h
   await expect(card.getByRole('button', { name: '填写', exact: true })).toBeVisible();
 });
 
-test('offers the models the owner settled on, and how hard they think', async ({
+test('offers the models the endpoint lists for the key, and how hard they think', async ({
   context,
   worker,
   outbox,
 }) => {
+  // OpenAI's own address, as the settings have it to begin with, answered here: what it's asked is kept.
+  const asked: { path: string; key: string | undefined }[] = [];
+  await context.route('https://api.openai.com/**', (route) => {
+    asked.push({
+      path: new URL(route.request().url()).pathname,
+      key: route.request().headers().authorization,
+    });
+    return route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        object: 'list',
+        data: ['gpt-6-sol', 'gpt-6-luna', 'gpt-6-luna', 'gpt-5.10-terra'].map((id) => ({
+          id,
+          object: 'model',
+        })),
+      }),
+    });
+  });
   await seed(worker, outbox.url);
   await worker.evaluate(async () => {
     const { local } = (globalThis as unknown as Extension).chrome.storage;
     const { settings } = (await local.get('settings')) as { settings: object };
     // The model kept empty, as it could be while its name was typed into a field.
-    await local.set({ settings: { ...settings, aiEnabled: true, provider: 'openai', openaiModel: '' } });
+    await local.set({
+      settings: { ...settings, aiEnabled: true, provider: 'openai', openaiModel: '' },
+      openaiKey: 'sk-test-1234',
+    });
   });
   await serve(context, 'careers.acme-robotics.com', FORM, THANKS);
   const page = await context.newPage();
@@ -125,35 +146,88 @@ test('offers the models the owner settled on, and how hard they think', async ({
   const settings = await pressable(page.frameLocator('outbox-autofill iframe'));
   await settings.getByRole('tab', { name: 'AI' }).click();
 
-  // Three models to pick from, not everything the endpoint lists. With none kept, the list shows the one requests
-  // go to, not its first as if that were chosen.
+  // What the endpoint lists for the key, each once, in order of name. With none kept, the field shows the model
+  // requests go to, not the list's first as if that were chosen; the list hasn't got it, and the line says so.
   const model = settings.getByLabel('Model');
-  await expect(model.locator('option')).toHaveText(['gpt-5.6-luna', 'gpt-5.6-sol', 'gpt-5.6-terra']);
+  await expect(model.locator('option')).toHaveText([
+    'gpt-5.10-terra',
+    'gpt-6-luna',
+    'gpt-6-sol',
+    'gpt-5.6-terra',
+  ]);
   await expect(model).toHaveValue('gpt-5.6-terra');
-  await model.selectOption('gpt-5.6-sol');
+  await expect(
+    settings.getByText('gpt-5.6-terra isn’t among the models this key can use: pick another.'),
+  ).toBeVisible();
+  expect(asked).toContainEqual({ path: '/v1/models', key: 'Bearer sk-test-1234' });
+  expect(asked.every((request) => request.path === '/v1/models')).toBe(true);
+
+  // One picked from the list: the line goes, and so does the model that wasn't listed.
+  await model.selectOption('gpt-6-sol');
+  await expect(model.locator('option')).toHaveText(['gpt-5.10-terra', 'gpt-6-luna', 'gpt-6-sol']);
+  await expect(settings.getByText(/isn’t among the models/)).toHaveCount(0);
   const effort = settings.getByLabel('Reasoning effort');
   await expect(effort).toHaveValue('auto');
   await effort.selectOption('high');
   await expect
     .poll(() => stored(worker, 'settings'))
-    .toMatchObject({ openaiModel: 'gpt-5.6-sol', openaiEffort: 'high' });
+    .toMatchObject({ openaiModel: 'gpt-6-sol', openaiEffort: 'high' });
+
+  // Another address: the key isn't sent there until it's checked, and the list read at the one before is dropped.
+  const proxied: string[] = [];
+  await context.route('https://models.proxy.test/**', (route) => {
+    proxied.push(new URL(route.request().url()).pathname);
+    return route.fulfill({ status: 404, contentType: 'text/plain', body: 'Not Found' });
+  });
+  const address = settings.getByLabel('Address');
+  await address.fill('https://models.proxy.test/v1');
+  await address.press('Enter');
+  const said = (field: string) => settings.locator('label.field', { hasText: field }).locator('.saved');
+  await expect(said('Model')).toHaveText('Press Check to list models');
+  await expect(model.locator('option')).toHaveText(['gpt-6-sol']);
+  expect(proxied).toEqual([]);
+
+  // Checked, it has no list to give: the model's name is typed instead, and kept as any typed setting is.
+  await settings.getByRole('button', { name: 'Check' }).click();
+  await expect(
+    settings.getByText(/^Couldn’t read the models this key can use: 404 Not Found\./),
+  ).toBeVisible();
+  expect(proxied).toContain('/v1/models');
+  const typed = settings.getByRole('textbox', { name: /^Model/ });
+  await expect(typed).toHaveValue('gpt-6-sol');
+  await typed.fill('house-model');
+  await typed.press('Enter');
+  await expect.poll(() => stored(worker, 'settings')).toMatchObject({ openaiModel: 'house-model' });
 });
 
-/** A stand-in for an OpenAI-compatible endpoint that knows one key: asked with it, it says OK; with another, 401. */
+/**
+ * A stand-in for an OpenAI-compatible endpoint that knows one key: asked with it, it says OK and lists three models;
+ * with another, 401. What it's asked is kept, path and key.
+ */
 async function endpoint(known: string) {
+  const asked: string[] = [];
   const server = createServer((request, response) => {
+    asked.push(`${request.url} ${request.headers.authorization}`);
     request.resume();
     request.on('end', () => {
       const letIn = request.headers.authorization === `Bearer ${known}`;
       response.writeHead(letIn ? 200 : 401, { 'content-type': 'application/json' });
       response.end(
         JSON.stringify(
-          letIn
-            ? {
-                choices: [{ message: { content: 'OK' }, finish_reason: 'stop' }],
-                usage: { prompt_tokens: 1, completion_tokens: 1 },
-              }
-            : { error: { message: 'Incorrect API key provided' } },
+          !letIn
+            ? { error: { message: 'Incorrect API key provided' } }
+            : request.url?.endsWith('/models')
+              ? {
+                  object: 'list',
+                  data: ['gpt-5.6-luna', 'gpt-5.6-sol', 'gpt-5.6-terra'].map((id) => ({
+                    id,
+                    object: 'model',
+                  })),
+                }
+              : {
+                  choices: [{ message: { content: 'OK' }, finish_reason: 'stop' }],
+                  usage: { prompt_tokens: 1, completion_tokens: 1 },
+                },
         ),
       );
     });
@@ -161,6 +235,7 @@ async function endpoint(known: string) {
   await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
   return {
     url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
+    asked,
     close: () => new Promise<void>((done) => server.close(() => done())),
   };
 }
@@ -212,6 +287,9 @@ test('says how to save what’s typed, then that it’s saved, and of a key the 
     expect(await stored(worker, 'openaiKey')).toBe('sk-wrong-key-1234');
     await expect(key).toHaveValue('');
     await expect(key).toHaveAttribute('placeholder', '••••1234');
+    // Kept, and sent nowhere: the models it can use are read when it's checked.
+    await expect(said('Model')).toHaveText('Press Check to list models');
+    expect(api.asked).toEqual([]);
     await page.waitForTimeout(3000);
     await expect(said('API key')).toHaveText('Saved');
 
@@ -221,6 +299,8 @@ test('says how to save what’s typed, then that it’s saved, and of a key the 
       settings.getByText(/^The saved key didn’t pass the check: the provider doesn’t recognize it \(401\)/),
     ).toBeVisible();
     expect(await stored(worker, 'openaiKey')).toBe('sk-wrong-key-1234');
+    // Nor are any models listed for it, and the line under the fields says why.
+    await expect(settings.getByText(/^Couldn’t read the models this key can use: 401 /)).toBeVisible();
 
     // Another typed over it, and the button pressed: saved and tried in one go. The verdict of the last one goes.
     await key.fill('sk-good-key-7777');
@@ -230,7 +310,12 @@ test('says how to save what’s typed, then that it’s saved, and of a key the 
     expect(await stored(worker, 'openaiKey')).toBe('sk-good-key-7777');
     await expect(key).toHaveAttribute('placeholder', '••••7777');
 
-    // A choice says it too.
+    // With a key it knows, its models are listed. A choice says it's saved too.
+    await expect(settings.getByLabel('Model').locator('option')).toHaveText([
+      'gpt-5.6-luna',
+      'gpt-5.6-sol',
+      'gpt-5.6-terra',
+    ]);
     await settings.getByLabel('Model').selectOption('gpt-5.6-sol');
     await expect(said('Model')).toHaveText('Saved');
     await expect(settings.getByText('The key works.')).toHaveCount(0);

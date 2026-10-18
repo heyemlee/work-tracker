@@ -44,9 +44,6 @@ export type Language = 'auto' | 'en' | 'zh';
 /** How hard an OpenAI-compatible model thinks before it answers; "auto" leaves it to each kind of request. */
 export type Effort = 'auto' | 'low' | 'medium' | 'high';
 
-/** The models the settings offer for an OpenAI-compatible endpoint: the owner's pick of what theirs lists. */
-export const OPENAI_MODELS = ['gpt-5.6-luna', 'gpt-5.6-sol', 'gpt-5.6-terra'];
-
 export interface Settings {
   /** Where Outbox runs; `http://localhost:5180` while developing. */
   outboxUrl: string;
@@ -56,7 +53,7 @@ export interface Settings {
   anthropicBaseUrl: string;
   /** An OpenAI-compatible endpoint: OpenAI's own, or a proxy. `/v1` is added when it has no path. */
   openaiBaseUrl: string;
-  /** Whatever model name the endpoint accepts. */
+  /** Whatever model name the endpoint accepts: the settings offer the ones its `/models` lists for the key. */
   openaiModel: string;
   openaiEffort: Effort;
   /** Warn after this many postings at one company in 30 days. */

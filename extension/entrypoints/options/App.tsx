@@ -11,7 +11,7 @@ import {
 } from 'react';
 import type { WxtStorageItem } from 'wxt/utils/storage';
 import { BrandMark } from '../../../src/ui/BrandMark';
-import { checkKey } from '../../src/background/ai';
+import { checkKey, listModels } from '../../src/background/ai';
 import { toBackground, type SettingsStatus } from '../../src/messages';
 import type { Ats } from '../../src/model';
 import { missingItems } from '../../src/profile/profile';
@@ -23,7 +23,6 @@ import {
   finalsItem,
   memoryItem,
   MODELS,
-  OPENAI_MODELS,
   openaiKeyItem,
   pendingLogsItem,
   profileItem,
@@ -418,10 +417,36 @@ function Key({
   );
 }
 
+/** What an endpoint's list of models came to: still being read, the models, or why there are none to show. */
+type Listed = 'reading' | { models: string[] } | { error: string };
+
 function Ai({ s, settings }: Props) {
   const save = useSave(settings);
   const openai = settings.provider === 'openai';
   const usage = useItem(usageItem) ?? [];
+  const openaiKey = useItem(openaiKeyItem);
+  const keyKept = openaiKey === undefined ? undefined : openaiKey !== '';
+  // The models the endpoint lists for the kept key: read as the section opens, with what's in use (each fill sends
+  // the key there anyway), then at each check. A key or an address changed in between goes nowhere until it's
+  // checked, as a key is tried only when asked, and the list read for the one before is dropped. Each read has a
+  // number; null: none in use.
+  const [listing, setListing] = useState<number | null>(0);
+  const listings = useRef(0);
+  const [answer, setAnswer] = useState<{ listing: number; listed: Listed } | null>(null);
+  useEffect(() => {
+    if (listing === null || !openai || !keyKept) return undefined;
+    let current = true;
+    const done = (listed: Listed) => current && setAnswer({ listing, listed });
+    listModels().then(
+      (models) => done({ models }),
+      (error: unknown) => done({ error: error instanceof Error ? error.message : String(error) }),
+    );
+    return () => {
+      current = false;
+    };
+  }, [listing, openai, keyKept]);
+  const listed: Listed | null =
+    listing === null || !openai || !keyKept ? null : answer?.listing === listing ? answer.listed : 'reading';
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const month = new Date().toLocaleDateString('en-CA').slice(0, 7);
   const thisMonth = usage.filter((day) => day.day.startsWith(month));
@@ -443,14 +468,17 @@ function Ai({ s, settings }: Props) {
     const mine = ++asked.current;
     setVerdict({ tone: 'wait', text: s('checking') });
     await written;
+    if (openai) setListing(++listings.current);
     const found = await checkKey();
     if (mine !== asked.current) return;
     setVerdict(keyVerdict(found, openai && settings.openaiEffort !== 'auto', s));
   };
-  // The models the owner settled on, and whatever else the setting already holds.
-  const models = OPENAI_MODELS.includes(settings.openaiModel)
-    ? OPENAI_MODELS
-    : [...OPENAI_MODELS, settings.openaiModel].filter(Boolean);
+  // What the endpoint lists, and the model kept where it isn't listed: what's in use is shown as it is, never the
+  // list's first in its place. Until there's a list, the model kept alone.
+  const listedModels = typeof listed === 'object' && listed && 'models' in listed ? listed.models : null;
+  const unread = typeof listed === 'object' && listed && 'error' in listed ? listed.error : null;
+  const gone = listedModels !== null && !listedModels.includes(settings.openaiModel);
+  const models = listedModels && !gone ? listedModels : [...(listedModels ?? []), settings.openaiModel];
   return (
     <>
       <Toggles>
@@ -485,7 +513,10 @@ function Ai({ s, settings }: Props) {
                 value={settings.openaiBaseUrl}
                 placeholder="https://api.openai.com/v1"
                 clean={openaiAddress}
-                onSave={(openaiBaseUrl) => change({ openaiBaseUrl })}
+                onSave={(openaiBaseUrl) => {
+                  setListing(null);
+                  change({ openaiBaseUrl });
+                }}
               />
             ) : (
               // Anthropic's own API unless another address is typed; emptied, it's Anthropic's own again.
@@ -505,13 +536,34 @@ function Ai({ s, settings }: Props) {
               s={s}
               settings={settings}
               checking={verdict?.tone === 'wait'}
-              onKept={forget}
+              onKept={() => {
+                forget();
+                setListing(null);
+              }}
               onCheck={(written) => void check(written)}
             />
-            {openai ? (
+            {/* With no list to pick from, the model's name is typed. */}
+            {openai && unread !== null ? (
+              <Kept
+                key="openaiModel"
+                s={s}
+                label={s('model')}
+                name="openaiModel"
+                value={settings.openaiModel}
+                onSave={(openaiModel) => change({ openaiModel })}
+              />
+            ) : openai ? (
               <Choice
                 label={s('model')}
-                note={<Saved s={s} name="openaiModel" />}
+                note={
+                  listed === 'reading' ? (
+                    <span className="saved">{s('reading')}</span>
+                  ) : listed === null && keyKept ? (
+                    <span className="saved">{s('checkToList')}</span>
+                  ) : (
+                    <Saved s={s} name="openaiModel" />
+                  )
+                }
                 value={settings.openaiModel}
                 options={models.map((model) => ({ value: model, label: model }))}
                 onChange={(openaiModel) => change({ openaiModel })}
@@ -536,6 +588,14 @@ function Ai({ s, settings }: Props) {
             )}
           </Grid>
           {openai && <Note>{s('effortHelp')}</Note>}
+          {/* A check's answer says firsthand whether the model is there: what the list suggests gives way to it. */}
+          {openai && (unread !== null || (gone && !verdict)) && (
+            <p className="sheet-note warn" role="status">
+              {unread !== null
+                ? s('modelsUnread', { detail: unread })
+                : s('modelGone', { model: settings.openaiModel })}
+            </p>
+          )}
           {verdict && (
             <p className={`sheet-note ${verdict.tone}`} role="status">
               {verdict.text}

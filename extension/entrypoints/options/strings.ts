@@ -47,6 +47,10 @@ const en = {
   keyRefused:
     'The saved key didn’t pass the check: the provider doesn’t recognize it (401). Make sure it’s this provider’s API key, and that it hasn’t been deleted or disabled.',
   model: 'Model',
+  reading: 'Reading…',
+  checkToList: 'Press Check to list models',
+  modelGone: '{model} isn’t among the models this key can use: pick another.',
+  modelsUnread: 'Couldn’t read the models this key can use: {detail}. Type the model’s name instead.',
   effort: 'Reasoning effort',
   'effort.auto': 'Auto',
   'effort.low': 'Low',
@@ -132,6 +136,10 @@ const zh: Record<Key, string> = {
   keyRefused:
     '保存的 key 没通过检查：服务商不认这个 key（401）。请确认它是这家服务商的 API key，并且没有被删除或停用。',
   model: '模型',
+  reading: '正在读取…',
+  checkToList: '点「检查」读取可用模型',
+  modelGone: '这个 key 能用的模型里没有 {model}，请换一个。',
+  modelsUnread: '没能读到这个 key 能用的模型：{detail}。可以直接输入模型名。',
   effort: '推理强度',
   'effort.auto': '自动',
   'effort.low': '低',

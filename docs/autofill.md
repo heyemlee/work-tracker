@@ -551,9 +551,14 @@ else keep an answer isn't known.
   Its own key, also only in `chrome.storage.local`. Structured output goes as a strict `json_schema`, a resume as a PDF
   `file` part; a proxy that refuses `max_completion_tokens` or structured output gets the request again without it.
   Token counts are recorded, cost isn't: the proxy's prices aren't known. The free-text eval still runs on Claude.
-  The settings offer three models to pick from (`OPENAI_MODELS` in `storage.ts`: GPT-5.6 Luna, Sol and Terra, the
-  owner's pick from their endpoint's list) and a reasoning effort (decided 2026-10-07): "auto" keeps each request's
-  own (low to answer leftover fields and read a resume, medium to draft), or low, medium or high for all of them,
+  The settings offer the models the endpoint lists for the key at its `/models` (`listModels` in `background/ai.ts`;
+  since 2026-10-17, when the owner's endpoint no longer had the three GPT-5.6 models the list had been fixed to),
+  each once, in order of name. The list is read as the AI section opens, with the key and address in use (each fill
+  sends the key there anyway), and again at each check; a key or an address changed in between is sent nowhere until
+  it's checked, and the list read for the one before is dropped. A model kept that the list lacks stays chosen, and
+  a line says so until a check answers for it; an endpoint with no list to give has the model's name typed instead.
+  They offer a reasoning effort too (decided 2026-10-07): "auto" keeps each request's own (low to answer leftover
+  fields and read a resume, medium to draft), or low, medium or high for all of them,
   sent as `reasoning_effort`. Thinking is paid for in output tokens, so a request made with more effort than it was
   sized for gets more room in step (`roomFor` in `background/ai.ts`), up to the largest limit a request already
   uses. An endpoint that refuses the parameter gets the request again without it, and the settings' key check says

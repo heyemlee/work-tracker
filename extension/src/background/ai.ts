@@ -224,6 +224,27 @@ async function openaiKey(): Promise<string> {
   return key;
 }
 
+/**
+ * The models the OpenAI-compatible endpoint lets the kept key use, as its `/models` lists them (`{ data: [{ id }] }`,
+ * which OpenAI and the proxies speaking its API answer with): each once, in order of name, versions by number. It
+ * costs no tokens. An endpoint that lists none, or turns the request away, is an error with its status.
+ */
+export async function listModels(): Promise<string[]> {
+  const key = await openaiKey();
+  const { openaiBaseUrl } = await getSettings();
+  const response = await fetch(`${openaiEndpoint(openaiBaseUrl)}/models`, {
+    headers: { Authorization: `Bearer ${key}` },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!response.ok) throw new Error(`${response.status} ${(await response.text()).slice(0, 400)}`);
+  const listed = ((await response.json().catch(() => null)) as { data?: { id?: unknown }[] } | null)?.data;
+  const ids = (Array.isArray(listed) ? listed : [])
+    .map((model) => (typeof model?.id === 'string' ? model.id.trim() : ''))
+    .filter(Boolean);
+  if (!ids.length) throw new Error('the endpoint listed no models');
+  return [...new Set(ids)].sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
+}
+
 type ChatBody = Record<string, unknown>;
 
 const THINKING = { low: 1, medium: 2, high: 4 };
