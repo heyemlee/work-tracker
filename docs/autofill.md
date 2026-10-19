@@ -70,7 +70,11 @@ on its left while filling and while AI writes; it looks down at the list, with a
 required fields empty; it hops when the work ends with nothing left; it shakes at an error the card shows. The
 logged and saved cards show it happy. Put aside, it peeks out of the tab at the window's edge, and gives a little
 under the pointer. Loading inside the extension (the profile's window, a resume's preview, AI writing) is its
-three dots.
+three dots. The toolbar button (`background/icon.ts`) says the same on its tab: still, the plain icon, while nothing
+happens; the three dots while the extension reads, fills or AI writes; a two-second hop when that ends with nothing
+left, or when an application is logged; a blue dot while something waits on the owner. It is drawn in the service
+worker on an OffscreenCanvas a dozen times a second while it moves, and not at all at rest: a worker kept awake to
+blink would keep Chrome busy for nothing.
 
 **The toolbar button on any other page** (decided 2026-10-12: the owner pressed it somewhere and nothing came, and
 asked whether it shouldn't come up on other pages too). It did come up on most, and took whatever page it was on

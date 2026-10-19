@@ -20,6 +20,7 @@ import {
 import { bridgeStatus, fromOutbox, readResumeForOutbox } from './bridge';
 import { showBubble } from './bubble';
 import { dropFixedSnapshots } from './fixed';
+import { forgetButton, resetButton } from './icon';
 import { forgetTab, openCard, showForm } from './inject';
 import { flushQueue, syncProfile } from './outbox';
 import { enterPreview, openPreview, previewOf } from './preview';
@@ -114,8 +115,14 @@ export function startBackground(): void {
     if (tab.id !== undefined) void ask(tab.id);
   });
 
+  // A page loading in a tab: the toolbar button's picture was the last page's.
+  browser.webNavigation.onCommitted.addListener(({ tabId, frameId }) => {
+    if (frameId === 0) resetButton(tabId);
+  });
+
   browser.tabs.onRemoved.addListener((tabId) => {
     forgetTab(tabId);
+    forgetButton(tabId);
     dropTickets(tabId);
     void dropSession(tabId);
   });

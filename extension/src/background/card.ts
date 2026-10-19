@@ -29,6 +29,7 @@ import {
 import { answerFields, draftAnswer, NoApiKey, similarFinals } from './ai';
 import { asForm, fillFrames, frameOf, readOptions, scanFrames } from './frames';
 import { loadSnapshot, OutboxSignedOut, quickAddOrQueue, syncProfile, undoQuickAdd } from './outbox';
+import { showOnButton } from './icon';
 import { getSession, updateSession, type TabSession } from './session';
 
 const today = () => toIsoDate(new Date());
@@ -189,7 +190,7 @@ export async function cardState(session: TabSession, outbox?: OutboxState): Prom
   // The page may have been seen to change while the rest was read, and its list sent on its own (`pageHolds`): the
   // list here is of the tab as it is now, so that it never takes an older one's place on the card.
   const latest = (await getSession(session.tabId)) ?? session;
-  return {
+  const state: CardState = {
     phase: session.phase,
     ats: session.ats,
     posting: session.posting,
@@ -224,6 +225,9 @@ export async function cardState(session: TabSession, outbox?: OutboxState): Prom
           : session.ai,
     error: session.error,
   };
+  // Whatever the card is told, the toolbar button shows too: the card may be put aside, or closed.
+  showOnButton(session.tabId, state);
+  return state;
 }
 
 /** Sends the tab's card its new state; the card may not be there yet. */
