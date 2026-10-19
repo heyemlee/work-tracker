@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { loadFixture } from '../test/fixtures';
 import { gem } from './adapters/gem';
+import { generic } from './adapters/generic';
 import type { Handle } from './adapters/types';
 import { extractFields } from './extract';
-import { formSnapshot } from './snapshot';
+import { formSnapshot, pageSnapshot } from './snapshot';
 
 // A page Gem's own code drew from a made-up posting with each of its kinds of question, before any was answered.
 const url = 'https://jobs.gem.com/acme-robotics/am9icG9zdDr2DjIQ3bPcrRLp0z2TjYKi';
@@ -139,6 +140,63 @@ describe('a fill report of a Gem page', () => {
     answer(doc);
     const before = doc.body.innerHTML;
     report(doc);
+    expect(doc.body.innerHTML).toBe(before);
+  });
+});
+
+describe('a fill report of a page no form was read on', () => {
+  /**
+   * Made up: a step of an application whose questions the card couldn't read, as Indeed Apply's are left, answered;
+   * the owner greeted at the top and summed up below, as such steps do; the card drawn into it.
+   */
+  const step = () => {
+    const doc = document.implementation.createHTMLDocument('Indeed Apply');
+    doc.body.innerHTML =
+      '<header><span>Hi, Alex</span> <span>Signed in as ALEX CHEN</span> <span>alex@example.com</span></header>' +
+      '<main><h1>Answer these questions from the employer</h1><form>' +
+      '<fieldset><legend>Are you legally authorized to work in the United States?</legend>' +
+      '<label><input type="radio" name="auth" value="yes" checked> Yes</label>' +
+      '<label><input type="radio" name="auth" value="no"> No</label></fieldset>' +
+      '<label for="years">How many years of Python experience do you have?</label>' +
+      '<input id="years" type="number" value="3">' +
+      '<label for="why">Why this role?</label><textarea id="why">Because I like robots.</textarea>' +
+      '<div contenteditable="true">My cover note</div>' +
+      '<input type="hidden" name="csrf" value="token-123"></form>' +
+      '<section aria-label="Your contact information for Alex Chen"><p>Alex Chen</p><p>+1 (408) 555-0100</p>' +
+      '<p>1 Infinite Loop, Cupertino, CA</p><a href="mailto:recruiting@acme.example">Write to us</a></section></main>' +
+      '<script>window.applicant = "Alex Chen";</script><outbox-autofill></outbox-autofill>';
+    return doc;
+  };
+  const owner = { words: ['Alex', 'Chen', '1 Infinite Loop'], phone: '4085550100' };
+
+  it('keeps the page, blanked as a form is, without its scripts or the card', () => {
+    const { html, fields } = pageSnapshot(generic, step(), null, owner)!;
+    expect(fields).toEqual([]);
+    for (const text of [
+      'Answer these questions from the employer',
+      'Are you legally authorized to work in the United States?',
+      'How many years of Python experience do you have?',
+      'Why this role?',
+    ])
+      expect(html).toContain(text);
+    for (const text of ['checked', 'value="3"', 'Because I like robots', 'My cover note', 'token-123'])
+      expect(html).not.toContain(text);
+    expect(html).not.toMatch(/<script|outbox-autofill/);
+  });
+
+  it('leaves the owner out of what the page says: their names, street and phone, and every email', () => {
+    const { html } = pageSnapshot(generic, step(), null, owner)!;
+    expect(html).not.toMatch(/alex|chen|infinite loop|555|@|example\.com/i);
+    // What isn't theirs alone stays: the greeting's words, the town.
+    expect(html).toContain('Hi,');
+    expect(html).toContain('Cupertino, CA');
+    expect(html).toContain('Your contact information for');
+  });
+
+  it('leaves the page itself as it was', () => {
+    const doc = step();
+    const before = doc.body.innerHTML;
+    pageSnapshot(generic, doc, null, owner);
     expect(doc.body.innerHTML).toBe(before);
   });
 });

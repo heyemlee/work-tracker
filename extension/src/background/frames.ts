@@ -21,6 +21,12 @@ export async function scanFrames(
   return scans.filter((scan): scan is FrameScan => scan !== null);
 }
 
+/** The ids of a tab's frames, the top one's (0) among them. */
+export async function frameIds(tabId: number): Promise<number[]> {
+  const frames = (await browser.webNavigation.getAllFrames({ tabId })) ?? [{ frameId: 0 }];
+  return frames.map(({ frameId }) => frameId);
+}
+
 /** Tells every frame of a tab that the owner says the page is an application: each reads its form as one. */
 export async function asForm(tabId: number): Promise<void> {
   const frames = (await browser.webNavigation.getAllFrames({ tabId })) ?? [{ frameId: 0 }];

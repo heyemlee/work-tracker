@@ -4,7 +4,7 @@ import type { QuickAddInput } from '@domain/repository';
 import { buildRows } from '@domain/rows';
 import type { Snapshot } from '@domain/types';
 import { browser } from 'wxt/browser';
-import type { Answer, FrameHeld, FrameScan, Held, PlannedField, ScannedField } from '../model';
+import type { Answer, FrameHeld, FrameScan, Held, OwnerTraces, PlannedField, ScannedField } from '../model';
 import type { H1bTable } from '../match/h1b';
 import { matchReport } from '../match/report';
 import { isDone, toFrame, type CapturedAnswer, type CardState, type ChecklistItem } from '../messages';
@@ -27,7 +27,7 @@ import {
   type FormSnapshot,
 } from '../storage';
 import { answerFields, draftAnswer, NoApiKey, similarFinals } from './ai';
-import { asForm, fillFrames, frameOf, readOptions, scanFrames } from './frames';
+import { asForm, fillFrames, frameIds, frameOf, readOptions, scanFrames } from './frames';
 import { loadSnapshot, OutboxSignedOut, quickAddOrQueue, syncProfile, undoQuickAdd } from './outbox';
 import { showOnButton } from './icon';
 import { getSession, updateSession, type TabSession } from './session';
@@ -896,7 +896,8 @@ async function undoNow(tabId: number, url: string): Promise<CardState> {
 /**
  * The same form captured again: its posting, its page, its step and its questions. Greenhouse's embedded forms all
  * sit at one address, the posting named in parameters the report leaves out: two postings asking the same questions
- * are two reports.
+ * are two reports. A page with no questions read is the same only as it was: one address holds each posting's
+ * step of Indeed's own application.
  */
 function sameForm(a: FormSnapshot, b: FormSnapshot): boolean {
   return (
@@ -905,23 +906,40 @@ function sameForm(a: FormSnapshot, b: FormSnapshot): boolean {
     a.url === b.url &&
     a.step === b.step &&
     a.fields.length === b.fields.length &&
-    a.fields.every((field, index) => field.label === b.fields[index]?.label)
+    a.fields.every((field, index) => field.label === b.fields[index]?.label) &&
+    (a.fields.length > 0 || a.html === b.html)
   );
 }
 
+/** What a report leaves out of a page besides its inputs' values: the owner's names, street and phone. */
+function ownerTraces(profile: Profile | null): OwnerTraces {
+  if (!profile) return { words: [], phone: '' };
+  const { first, last, preferred } = profile.name;
+  return {
+    words: [first, last, preferred, profile.address.line1]
+      .map((word) => word.trim())
+      .filter((word) => word.length > 1),
+    phone: profile.phone.replace(/\D/g, '').slice(-10),
+  };
+}
+
 /**
- * "This page didn't fill right": saves each form frame's structure, without values. Pressed again on the same
- * form, the newer capture takes the older one's place.
+ * "This page didn't fill right": saves each form frame's structure, without values. Where no form was read, the
+ * page itself, which is what a report is most often for: each frame says whether it's worth keeping (the top one,
+ * one holding a form). Pressed again on the same form, the newer capture takes the older one's place.
  */
 export async function snapshot(tabId: number): Promise<number> {
   const session = await getSession(tabId);
   if (!session) return 0;
-  const frames = [...new Set(session.fields.map((field) => frameOf(field.id)))];
+  const read = [...new Set(session.fields.map((field) => frameOf(field.id)))];
+  const frames = read.length > 0 ? read : await frameIds(tabId);
+  const owner = ownerTraces(await profileItem.getValue());
   const saved: FormSnapshot[] = [];
   for (const frameId of frames) {
     try {
       const shot = await toFrame(tabId, frameId, 'frame:snapshot', {
         plan: session.plan.filter((entry) => frameOf(entry.fieldId) === frameId),
+        owner,
       });
       if (shot)
         saved.push({

@@ -232,3 +232,12 @@ export interface PlannedField {
   note: string | null;
   critical: boolean;
 }
+
+/**
+ * What tells who the owner is where a page shows it outside its inputs (a greeting, a summary before sending), for a
+ * report of the page to leave out: their names and street as written, their phone's digits.
+ */
+export interface OwnerTraces {
+  words: string[];
+  phone: string;
+}

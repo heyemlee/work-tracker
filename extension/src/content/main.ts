@@ -6,7 +6,7 @@ import { applyAnswer, readAnswer, type Applied } from './apply';
 import { sleep } from './dom';
 import { controlsOf, extractFields, fieldIds, holdsPicks, isFilled, type Extraction } from './extract';
 import { heldBy, shownValue, watchHeld } from './held';
-import { formSnapshot } from './snapshot';
+import { formSnapshot, pageSnapshot } from './snapshot';
 import { watchSubmission } from './submit';
 import { fileFromBase64, readComboboxOptions } from './widgets';
 import { holdTranslation, leaveUntranslated, ownWords } from './words';
@@ -14,6 +14,13 @@ import { holdTranslation, leaveUntranslated, ownWords } from './words';
 /** How the page moves to a field: gliding, unless the owner's system asks for less motion. */
 const glide = (): ScrollBehavior =>
   window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+
+/** A frame big enough to hold a form, with something in it that takes input. */
+const holdsForm = (doc: Document) =>
+  window.innerWidth * window.innerHeight >= 300 * 300 &&
+  doc.querySelector(
+    'input:not([type="hidden"]), textarea, select, [contenteditable]:not([contenteditable="false"])',
+  ) !== null;
 
 /** A field as the fill left it, and when: what the page is seen to hold later counts for more. */
 const left = (applied: Applied): Applied => ({ ...applied, at: Date.now() });
@@ -228,7 +235,12 @@ export function startContent(): () => void {
           return true;
         }
         case 'frame:snapshot':
-          return extraction ? formSnapshot(adapter, document, extraction, message.plan) : null;
+          // The form, where one was read. Else the page itself, which the card didn't know how to read: the top
+          // one, or a frame in it that holds a form, not a widget's (a captcha's box, a card number's line).
+          return (
+            (extraction && formSnapshot(adapter, document, extraction, message.plan, message.owner)) ??
+            (top || holdsForm(document) ? pageSnapshot(adapter, document, extraction, message.owner) : null)
+          );
         case 'frame:asForm':
           // The owner's word for it, from the card: the next read takes the page's form for an application.
           adapter.asApplication?.(document);

@@ -509,6 +509,15 @@ address, and two postings asking the same questions were one report), the newer 
 takes the older one's place, and a snapshot leaves the list when a build that fixes it is loaded — its id goes into
 `src/background/fixed.ts` with the fix.
 
+A page the card couldn't read can be reported too (2026-10-19, after the owner found no way to on a step of Indeed
+Apply's): the menu has the item wherever the card took the page for a job's, on the sites the extension knows, and
+on any page with a form, though not on a page the owner only reads (their mail, the news). Where no form was read, the
+page itself is saved, blanked as a form is (`pageSnapshot` in `content/snapshot.ts`): the top frame's, and that of a
+frame big enough to hold a form with something in it to type into, not a captcha's box. A report of a page carries
+what the page says besides its inputs, so the owner is taken out of every report, form or page: their names, street
+and phone as the profile has them, and every email address (`leaveOut`). Pages with no questions read are one report
+only when they are the same page: Indeed Apply's steps keep one address from one posting to the next.
+
 Emptying the inputs doesn't take every value out of a page that keeps answers in markup of its own, so an adapter
 can finish the job on the snapshot's copy of the form (`blank`). Gem's does (2026-10-08). There a dropdown is a
 button that reads its pick, a radio's circle, a checkbox's box and a rating's number are drawn in the look of the one
@@ -760,7 +769,8 @@ a posting there shows a note. It is a note, not a block.
 The profile and the resume PDFs are stored in the owner's own D1 database behind Google sign-in limited to their
 account, and copied into the browser that fills. Remembered answers and the API key stay on the machine; a resume PDF
 goes to the model only when the owner asks the profile panel to read it. Claude receives field labels and options, the profile parts a question needs, and the posting's text for
-drafts — never voluntary (EEO) answers or work-authorization questions. Form snapshots carry no values.
+drafts — never voluntary (EEO) answers or work-authorization questions. Fill reports carry no values, nor the
+owner's name, street, phone or emails where a page shows them.
 
 **What the page can reach** (decided 2026-10-07). The card sits in the page it helps with, and that page's scripts
 are anyone's: the career site's own, its analytics, a session recorder that takes down open shadow roots with the

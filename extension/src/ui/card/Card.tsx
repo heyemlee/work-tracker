@@ -765,6 +765,10 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   // its log button for every posting, applied to or not: its Easy Apply happens right there.
   const postingPage =
     !home && !applying && Boolean(state.posting?.company) && (linkedin || state.tracked !== 'applied');
+  // A page to report as not filled right: an application's, a job's, one on a site the extension knows, one with a
+  // form on it. Not a page the owner reads (their mail, the news), which a report would keep a copy of.
+  const reportable =
+    state.hasForm || state.jobPage || state.otherForm || (state.ats !== null && state.ats !== 'generic');
   const menu = [
     ...(canLog && !linkedin && !postingPage ? [{ label: t('log'), run: log }] : []),
     ...(home && state.otherForm
@@ -778,7 +782,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
           },
         ]
       : []),
-    ...(state.hasForm
+    ...(reportable
       ? [
           {
             label: t('snapshot'),

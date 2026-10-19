@@ -3,7 +3,17 @@ import type { ResumeFacts } from '@domain/profile';
 import type { QuickAddResult } from '@domain/repository';
 import type { AccountColor } from '@domain/types';
 import { browser, type Browser } from 'wxt/browser';
-import type { Answer, Ats, FieldStatus, FrameHeld, FrameScan, PlannedField, Posting, Source } from './model';
+import type {
+  Answer,
+  Ats,
+  FieldStatus,
+  FrameHeld,
+  FrameScan,
+  OwnerTraces,
+  PlannedField,
+  Posting,
+  Source,
+} from './model';
 import type { MatchReport } from './match/report';
 import type { Profile } from './profile/schema';
 import type { FormSnapshot } from './storage';
@@ -219,7 +229,10 @@ export interface ToFrame {
   'frame:options': { request: { fieldIds: string[] }; response: Record<string, string[]> };
   'frame:read': { request: { fieldIds: string[] }; response: CapturedAnswer[] };
   'frame:focus': { request: { fieldId: string }; response: boolean };
-  'frame:snapshot': { request: { plan: PlannedField[] }; response: Omit<FormSnapshot, 'id' | 'at'> | null };
+  'frame:snapshot': {
+    request: { plan: PlannedField[]; owner: OwnerTraces };
+    response: Omit<FormSnapshot, 'id' | 'at'> | null;
+  };
   /** The owner says the page is an application: the frame reads its form as one from now on. */
   'frame:asForm': { request: Record<string, never>; response: void };
   'card:update': { request: { state: CardState }; response: void };

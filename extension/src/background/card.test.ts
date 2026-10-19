@@ -542,6 +542,65 @@ describe('"This page didn’t fill right"', () => {
     expect(await snapshot(TAB)).toBe(0);
     expect(await snapshotsItem.getValue()).toEqual([]);
   });
+
+  it('asks every frame for its page where no form was read, and keeps what each finds worth keeping', async () => {
+    await updateSession(TAB, URL_, () => ({ fields: [] }));
+    // Typed loosely, as the frames' messages are: the fake's own type for it answers nothing.
+    vi.spyOn(fakeBrowser.webNavigation, 'getAllFrames').mockResolvedValue([
+      { frameId: 0 },
+      { frameId: 5 },
+    ] as never);
+    // The top frame keeps its page; the other is a widget's, with nothing in it worth a report.
+    const page = { ...form([]), html: '<body><h1>Answer these questions from the employer</h1></body>' };
+    frame.mockImplementation((async (_tab: number, _message: unknown, { frameId }: { frameId: number }) =>
+      frameId === 0 ? page : null) as never);
+    expect(await snapshot(TAB)).toBe(1);
+    expect(frame.mock.calls.map((call) => (call as unknown[])[2])).toEqual([{ frameId: 0 }, { frameId: 5 }]);
+    expect((await snapshotsItem.getValue())[0]).toMatchObject({ html: page.html, fields: [] });
+  });
+
+  it('tells the frames what of the owner to leave out of the page: their names, street and phone', async () => {
+    await profileItem.setValue(
+      makeProfile({
+        address: {
+          line1: '1 Infinite Loop',
+          city: 'Cupertino',
+          state: 'CA',
+          zip: '95014',
+          country: 'United States',
+        },
+      }),
+    );
+    frame.mockResolvedValue(form(['First Name']));
+    await snapshot(TAB);
+    expect(frame).toHaveBeenCalledWith(
+      TAB,
+      expect.objectContaining({
+        type: 'frame:snapshot',
+        owner: { words: ['Alex', 'Chen', 'Al', '1 Infinite Loop'], phone: '4085550100' },
+      }),
+      { frameId: 0 },
+    );
+  });
+
+  it('keeps two pages at one address apart where no questions were read to tell them by', async () => {
+    await updateSession(TAB, URL_, () => ({ fields: [] }));
+    vi.spyOn(fakeBrowser.webNavigation, 'getAllFrames').mockResolvedValue([{ frameId: 0 }] as never);
+    // Indeed Apply's first step of questions, for one posting and then another.
+    for (const html of [
+      '<body><label>Years of Python?</label></body>',
+      '<body><label>Can you commute?</label></body>',
+    ]) {
+      frame.mockResolvedValue({ ...form([]), html });
+      await snapshot(TAB);
+    }
+    frame.mockResolvedValue({ ...form([]), html: '<body><label>Can you commute?</label></body>' });
+    await snapshot(TAB);
+    expect((await snapshotsItem.getValue()).map((shot) => shot.html)).toEqual([
+      '<body><label>Can you commute?</label></body>',
+      '<body><label>Years of Python?</label></body>',
+    ]);
+  });
 });
 
 describe('filling', () => {
