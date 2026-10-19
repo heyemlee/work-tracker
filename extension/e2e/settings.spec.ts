@@ -520,13 +520,13 @@ test('deletes what the extension keeps in this browser, asked twice', async ({ c
   await expect(settings.getByText('Backend', { exact: true })).toBeVisible();
 
   await settings.getByRole('tab', { name: 'General' }).click();
-  await settings.getByRole('button', { name: 'Delete everything' }).click();
+  await settings.getByRole('button', { name: 'Delete extension data' }).click();
   // Nothing goes on the first press.
   expect(await stored(worker, 'memory')).toHaveLength(1);
   await settings.getByRole('alert').getByRole('button', { name: 'Cancel' }).click();
   await expect(settings.getByRole('alert')).toHaveCount(0);
-  await settings.getByRole('button', { name: 'Delete everything' }).click();
-  await settings.getByRole('alert').getByRole('button', { name: 'Delete everything' }).click();
+  await settings.getByRole('button', { name: 'Delete extension data' }).click();
+  await settings.getByRole('alert').getByRole('button', { name: 'Delete extension data' }).click();
   await expect(settings.getByRole('alert')).toHaveCount(0);
   expect(await stored(worker, 'memory')).toBeUndefined();
   expect(await stored(worker, 'snapshots')).toBeUndefined();

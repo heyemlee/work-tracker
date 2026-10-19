@@ -81,7 +81,7 @@ const en = {
   data: 'Data',
   exportAll: 'Export extension data (JSON)',
   exportHelp: 'The export leaves out the API key.',
-  deleteAll: 'Delete everything',
+  deleteAll: 'Delete extension data',
   confirmDelete:
     'Delete the profile copy, resume copies, remembered answers, reports and the API key from this browser?',
   cancel: 'Cancel',
@@ -171,7 +171,7 @@ const zh: Record<Key, string> = {
   data: '数据',
   exportAll: '导出扩展数据（JSON）',
   exportHelp: '导出的内容不含 API key。',
-  deleteAll: '清空全部',
+  deleteAll: '清空扩展数据',
   confirmDelete: '要从这个浏览器删除资料副本、简历副本、记住的回答、记录和 API key 吗？',
   cancel: '取消',
 };
