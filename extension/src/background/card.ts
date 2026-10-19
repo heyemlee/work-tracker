@@ -266,6 +266,9 @@ export async function readTab(tabId: number, url: string, moved = false): Promis
     lastUsedItem.getValue(),
     loadH1b(),
   ]);
+  // No frame answered: the page that asked is going, or gone, as a step of Indeed Apply's that sends the tab on at
+  // once. What the tab held stands, for the page that comes next to build on.
+  if (scans.length === 0 && previous) return cardState(previous, outbox);
   const resumes = await resumeChoices(outbox.snapshot);
   const found = merge(scans, previous);
   const job = matchedJob(outbox.snapshot, found);
