@@ -114,7 +114,7 @@ npm run dev:local                  # 样例数据存在浏览器里，不需要�
 npm run ext:build                  # 构建扩展，输出到 extension/.output/chrome-mv3
 npm --prefix backend run infra:up  # 岗位发现和简历工具背后服务的 PostgreSQL
 npm --prefix backend run dev       # 启动服务，127.0.0.1:3100，与 npm run dev 同时运行
-npm run icons                      # 从 src/assets/outbox.svg 重新生成网页和扩展的图标
+npm run icons                      # 用小果冻静止时的样子重新生成网页和扩展的图标
 ```
 
 服务的首次安装见 [backend/README.md](backend/README.md)；网页怎样连接它、哪些只在本地运行，见 [docs/local-tools.md](docs/local-tools.md)。

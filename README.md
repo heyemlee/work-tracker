@@ -140,7 +140,7 @@ npm run dev:local                  # sample data in the browser, no backend
 npm run ext:build                  # the extension, into extension/.output/chrome-mv3
 npm --prefix backend run infra:up  # PostgreSQL for the service behind Discover and Resume tools
 npm --prefix backend run dev       # the service, on 127.0.0.1:3100 next to npm run dev
-npm run icons                      # the app's and the extension's icons, from src/assets/outbox.svg
+npm run icons                      # the app's and the extension's icons, drawn from the pet at rest
 ```
 
 The service's first-time setup is in [backend/README.md](backend/README.md) (in Chinese); how the app reaches it,

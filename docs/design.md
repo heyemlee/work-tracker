@@ -109,14 +109,15 @@ popovers); content sits on clean, opaque surfaces so dense lists stay readable.
 - **Type** — the system stack (SF Pro / PingFang SC); tabular numerals for counts.
 - **Glass** — blur + saturation + specular edge highlight in every browser; SVG displacement refraction as a
   Chromium-only progressive enhancement.
-- **The pet** (`src/ui/pet`, 2026-10-18) — Outbox's mark, alive: a black mochi with upright pill eyes (white on the
-  dark theme), drawn as SVG paths by a small engine of springs, no library. It is the toolbar's logo and the sign-in
-  page's, and what loading looks like everywhere: three dots taking turns to hop (`PetDots`). Opening slowly (past
-  300 ms), the dots wait in the middle of the page, run back into the pet, and it hops into the toolbar as the page
-  shows through. Signing in, it looks down at the button the pointer or the keyboard is on, turns into the dots
-  while Google answers, and shakes when sign-in doesn't go through. Its eyes never follow the pointer: it looks
-  where something happens. Under reduced motion it only blinks (the dots pulse in place); a small pet waiting for
-  its next blink draws nothing until then. The character is Outbox's own; the engine's debts are in `engine.ts`.
+- **The pet** (`src/ui/pet`, 2026-10-18) — Outbox's mark, alive: a black mochi with upright pill eyes (white on
+  the dark theme), drawn as SVG paths by a small engine of springs, no library. It is the toolbar's logo and the
+  sign-in page's, the app and extension icons (`npm run icons` draws them from its resting frame), and what loading
+  looks like everywhere: three dots taking turns to hop (`PetDots`). Opening slowly (past 300 ms), the dots wait in
+  the middle of the page, run back into the pet, and it hops into the toolbar as the page shows through. Signing
+  in, it looks down at the button the pointer or the keyboard is on, turns into the dots while Google answers, and
+  shakes when sign-in doesn't go through. Its eyes never follow the pointer: it looks where something happens.
+  Under reduced motion it only blinks (the dots pulse in place); a small pet waiting for its next blink draws
+  nothing until then. The character is Outbox's own; the engine's debts are in `engine.ts`.
 - Light and dark follow the system. Honors `prefers-reduced-motion` and `prefers-reduced-transparency`.
 - The prototype has a hidden tweak panel (`?tweaks`) for accent, glass blur / tint, refraction, and glow.
 
