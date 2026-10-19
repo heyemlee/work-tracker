@@ -13,7 +13,8 @@ Principles: rules first, AI for what rules can't place; the owner always presses
 owner's own Outbox account and browser.
 
 Non-goals: submitting on the owner's behalf; finding postings or applying in bulk; evading bot detection (simulated
-typing, fingerprint spoofing, CAPTCHA solving); automating LinkedIn, whose terms forbid it; storing portal passwords
+typing, fingerprint spoofing, CAPTCHA solving); automating LinkedIn or Indeed Apply, whose terms forbid it (Indeed's
+job seekers' terms: "any automation, scripting, or bots to automate the Indeed Apply process"); storing portal passwords
 (Chrome's password manager does that).
 
 ## 2. How it's used
@@ -54,8 +55,10 @@ itself, and until they are there the Fill button waits, grayed; its last page sh
 nothing to fill, and there the card says that the log follows the sending by itself. What the card offers on a
 posting, to mark it applied or to save it, it offers on the posting only: logging by hand is in the ⋯ menu on
 every page of an application. On its sign-up page the extension fills the email and Chrome generates and saves
-the password. On LinkedIn the first of a posting's two buttons reads **Log to Outbox**, since Easy Apply happens
-right there, and stays for a posting already applied to. On other sites the card opens by itself on a form
+the password. On LinkedIn and Indeed the first of a posting's two buttons reads **Log to Outbox**, since Easy Apply
+and Indeed Apply happen right there, and stays for a posting already applied to; an application logged from Indeed's
+posting goes under Outbox's Indeed channel. Indeed Apply itself (`smartapply.indeed.com`) gets nothing filled and no
+card unasked; asked for on Indeed, the card says why it fills nothing there. On other sites the card opens by itself on a form
 with a resume upload and a name or email field — not on a job board's own apply flow, such as LinkedIn's or Indeed's
 — or from the toolbar, and fills what the field dictionary recognizes. Closed, the card stays closed on that page;
 the toolbar button brings it back. Where it lies over something the owner wants to see, its – button puts it aside:
@@ -420,6 +423,7 @@ attached once Gem names it (below).
 | Workday    | `*.myworkdayjobs.com`, `*.myworkdaysite.com`                   | One Fill per page; built from `data-automation-id` names   |
 | Gem        | `jobs.gem.com`                                                 | React, no `<form>`; fields named by the text beside them   |
 | LinkedIn   | `linkedin.com/jobs`                                            | No filling: Log to Outbox                                  |
+| Indeed     | `*.indeed.com`: a job's page, a search, the home page          | No filling (Indeed Apply's terms): Log to Outbox           |
 | Other      | Any                                                            | Dictionary only; card opens on a form with a resume upload |
 
 On those other sites the generic adapter also says what the page is when the card is asked for there

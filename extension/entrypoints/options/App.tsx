@@ -628,6 +628,7 @@ const ATS_NAMES: Record<Ats, string> = {
   workday: 'Workday',
   gem: 'Gem',
   linkedin: 'LinkedIn',
+  indeed: 'Indeed',
   icims: 'iCIMS',
   smartrecruiters: 'SmartRecruiters',
   workable: 'Workable',

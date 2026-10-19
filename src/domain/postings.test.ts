@@ -69,6 +69,32 @@ describe('cleanLink', () => {
     );
   });
 
+  it('reduces an Indeed search, or a job’s page with Indeed’s tracking, to the job’s own page', () => {
+    expect(
+      cleanLink('https://www.indeed.com/jobs?q=software+engineer&l=San+Jose%2C+CA&vjk=d501d1fd236f6dc3'),
+    ).toBe('https://www.indeed.com/viewjob?jk=d501d1fd236f6dc3');
+    expect(
+      cleanLink('https://www.indeed.com/viewjob?from=social_other&jk=5a2e49e6872d0c2b&tk=1k5anvctr297q000'),
+    ).toBe('https://www.indeed.com/viewjob?jk=5a2e49e6872d0c2b');
+    expect(cleanLink('https://www.indeed.com/rc/clk?jk=bc4aecf5372762d9&bb=pOYjSR1AtJfS&vjs=3')).toBe(
+      'https://www.indeed.com/viewjob?jk=bc4aecf5372762d9',
+    );
+    // A country's own site keeps its jobs; Indeed's other hosts show theirs on www.
+    expect(cleanLink('https://ca.indeed.com/viewjob?jk=0123456789abcdef')).toBe(
+      'https://ca.indeed.com/viewjob?jk=0123456789abcdef',
+    );
+    expect(cleanLink('https://indeed.com/?vjk=0123456789abcdef')).toBe(
+      'https://www.indeed.com/viewjob?jk=0123456789abcdef',
+    );
+    // A company's page names the job it was come to from, and is no job's page; a look-alike host is no Indeed.
+    expect(cleanLink('https://www.indeed.com/cmp/Jll?fromjk=5a2e49e6872d0c2b')).toBe(
+      'https://www.indeed.com/cmp/Jll?fromjk=5a2e49e6872d0c2b',
+    );
+    expect(cleanLink('https://notindeed.com/viewjob?jk=0123456789abcdef')).toBe(
+      'https://notindeed.com/viewjob?jk=0123456789abcdef',
+    );
+  });
+
   it('adds https to a bare domain and rejects anything that is not a web link', () => {
     expect(cleanLink(' jobs.lever.co/acme/1 ')).toBe('https://jobs.lever.co/acme/1');
     expect(cleanLink('mailto:jobs@acme.com')).toBeNull();

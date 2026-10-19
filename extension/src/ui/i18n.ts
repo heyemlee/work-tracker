@@ -33,6 +33,8 @@ const en = {
   profileEdit: 'Edit your autofill information',
   noResume: 'No resume PDF on Outbox',
   'home.none': 'No application form on this page.',
+  'home.indeed':
+    'Indeed’s terms don’t allow tools to fill Indeed Apply, so nothing is filled on Indeed. Log a posting to Outbox from its page.',
   'home.open': 'Open my applications',
   'home.asForm': 'Treat this page as an application',
   'bubble.text':
@@ -128,6 +130,8 @@ const zh: Record<Key, string> = {
   profileEdit: '编辑我的资料',
   noResume: 'Outbox 上还没有简历 PDF',
   'home.none': '这个页面没有发现申请表。',
+  'home.indeed':
+    'Indeed 的条款不允许用工具自动填写 Indeed Apply，所以在 Indeed 上不填写。可以在职位页把它记录到 Outbox。',
   'home.open': '打开我的投递记录',
   'home.asForm': '把这一页当作申请表',
   'bubble.text':

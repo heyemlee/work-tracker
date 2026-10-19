@@ -109,6 +109,14 @@ export function cleanLink(text: string): string | null {
   if (isUnder(url.hostname, 'linkedin.com') && linkedInJob) {
     return `https://www.linkedin.com/jobs/view/${encodeURIComponent(linkedInJob)}/`;
   }
+  // So does Indeed's (`vjk`), and a job's own page and its links name it with `jk`, among tracking parameters of
+  // Indeed's own: keep the job's page. A country's site (ca.indeed.com) keeps its jobs; Indeed's other hosts
+  // (Indeed Apply's, its sign-in) show their jobs on www.
+  const indeedJob = url.searchParams.get('vjk') ?? url.searchParams.get('jk');
+  if (isUnder(url.hostname, 'indeed.com') && indeedJob && /^[0-9a-f]{16}$/.test(indeedJob)) {
+    const site = /^[a-z]{2}\.indeed\.com$/.test(url.hostname) ? url.hostname : 'www.indeed.com';
+    return `https://${site}/viewjob?jk=${indeedJob}`;
+  }
   return url.toString();
 }
 

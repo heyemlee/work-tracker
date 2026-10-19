@@ -6,6 +6,7 @@ export type Ats =
   | 'workday'
   | 'gem'
   | 'linkedin'
+  | 'indeed'
   | 'icims'
   | 'smartrecruiters'
   | 'workable'

@@ -728,13 +728,15 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     setPreviewing(null);
   };
   const drafting = state.phase === 'drafting';
-  const linkedin = state.ats === 'linkedin';
+  // LinkedIn and Indeed have ways to apply of their own (Easy Apply, Indeed Apply), which the extension leaves to the
+  // owner: on their postings the card is there to log them to Outbox.
+  const boardApply = state.ats === 'linkedin' || state.ats === 'indeed';
   // Once logged, the card offers it again for another account that hasn't applied yet: another account applying to
   // the same posting from this tab.
   const chosen = state.accounts.find((account) => account.id === state.accountId);
   const another = chosen !== undefined && chosen.id !== state.logged?.accountId && chosen.appliedAt === null;
   const canLog =
-    (state.hasForm || linkedin || state.posting !== null) &&
+    (state.hasForm || boardApply || state.posting !== null) &&
     (!state.logged || state.logged.undone || another);
 
   const years = state.match?.h1b?.years ?? [];
@@ -761,16 +763,16 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     total: counted.length,
   });
 
-  // On a posting no one is applying to yet, saving and logging are buttons of their own (below). LinkedIn keeps
-  // its log button for every posting, applied to or not: its Easy Apply happens right there.
+  // On a posting no one is applying to yet, saving and logging are buttons of their own (below). LinkedIn and Indeed
+  // keep their log button for every posting, applied to or not: applying happens right there.
   const postingPage =
-    !home && !applying && Boolean(state.posting?.company) && (linkedin || state.tracked !== 'applied');
+    !home && !applying && Boolean(state.posting?.company) && (boardApply || state.tracked !== 'applied');
   // A page to report as not filled right: an application's, a job's, one on a site the extension knows, one with a
   // form on it. Not a page the owner reads (their mail, the news), which a report would keep a copy of.
   const reportable =
     state.hasForm || state.jobPage || state.otherForm || (state.ats !== null && state.ats !== 'generic');
   const menu = [
-    ...(canLog && !linkedin && !postingPage ? [{ label: t('log'), run: log }] : []),
+    ...(canLog && !boardApply && !postingPage ? [{ label: t('log'), run: log }] : []),
     ...(home && state.otherForm
       ? [
           {
@@ -865,7 +867,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
       );
     const logButton = canLog && (
       <button className="primary" onClick={log}>
-        {linkedin ? t('log') : t('markApplied')}
+        {boardApply ? t('log') : t('markApplied')}
       </button>
     );
     main = (
@@ -940,7 +942,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
 
         <div className="body">
           {noticeLine}
-          {home && <div className="hint">{t('home.none')}</div>}
+          {home && <div className="hint">{t(state.ats === 'indeed' ? 'home.indeed' : 'home.none')}</div>}
 
           {/* Applied to before: said first and in color, with who did and when. A form is as quick to fill a second
             time as the first. */}
@@ -966,7 +968,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
 
           {/* Who applies and with which resume, each choice on its own line: an address or a file name cut short
             tells nothing. */}
-          {(applying || (linkedin && !home)) && state.accounts.length > 0 && (
+          {(applying || (boardApply && !home)) && state.accounts.length > 0 && (
             <section className="section">
               <h2 className="label">{t('account')}</h2>
               <Choices

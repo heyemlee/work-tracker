@@ -1,4 +1,7 @@
-/** Applicant-tracking hosts where application forms live. The content script runs in every frame on them. */
+/**
+ * Applicant-tracking hosts where application forms live, and the job boards' pages that show a posting to log
+ * (LinkedIn's, Indeed's). The content script runs in every frame on them.
+ */
 export const ATS_MATCHES = [
   '*://boards.greenhouse.io/*',
   '*://job-boards.greenhouse.io/*',
@@ -11,6 +14,14 @@ export const ATS_MATCHES = [
   '*://*.myworkdayjobs.com/*',
   '*://*.myworkdaysite.com/*',
   '*://www.linkedin.com/jobs/*',
+  // A job's own page, and the lists that show one beside them: a search, Indeed's home page, a company's jobs. Not
+  // Indeed Apply (smartapply.indeed.com), which the extension stays out of unless the toolbar button is pressed.
+  '*://*.indeed.com/viewjob*',
+  '*://*.indeed.com/jobs*',
+  '*://*.indeed.com/q-*',
+  '*://*.indeed.com/',
+  '*://*.indeed.com/?*',
+  '*://*.indeed.com/cmp/*',
   '*://*.icims.com/*',
   '*://jobs.smartrecruiters.com/*',
   '*://apply.workable.com/*',

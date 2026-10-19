@@ -2,6 +2,7 @@ import { ashby } from './ashby';
 import { gem } from './gem';
 import { generic } from './generic';
 import { greenhouse } from './greenhouse';
+import { indeed } from './indeed';
 import { lever } from './lever';
 import { linkedin } from './linkedin';
 import { icims } from './icims';
@@ -21,6 +22,7 @@ export function adapterFor(url: string): Adapter {
   if (host === 'jobs.gem.com') return gem;
   if (isUnder(host, 'myworkdayjobs.com') || isUnder(host, 'myworkdaysite.com')) return workday;
   if (isUnder(host, 'linkedin.com')) return linkedin;
+  if (isUnder(host, 'indeed.com')) return indeed;
   if (isUnder(host, 'icims.com')) return icims;
   if (host === 'jobs.smartrecruiters.com') return smartrecruiters;
   if (host === 'apply.workable.com') return workable;

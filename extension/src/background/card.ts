@@ -774,6 +774,21 @@ function accountSent(session: TabSession, snapshot: Snapshot | null): string | n
   return only && named.length === 1 ? only.id : session.accountId;
 }
 
+/**
+ * The channel an application goes under: a job board's own, where it was logged from the board's posting, else the
+ * company's site. Indeed's is Outbox's own channel from when Outbox has one (an Outbox not yet deployed with it would
+ * turn the log down), else one of the owner's called Indeed, else Other.
+ */
+function channelOf(session: TabSession, snapshot: Snapshot | null): string {
+  if (session.ats === 'linkedin') return 'ch_linkedin';
+  if (session.ats !== 'indeed') return 'ch_company_site';
+  const channels = snapshot?.channels ?? [];
+  const indeed =
+    channels.find((channel) => channel.id === 'ch_indeed') ??
+    channels.find((channel) => channel.name.trim().toLowerCase() === 'indeed');
+  return indeed?.id ?? 'ch_other';
+}
+
 /** Why a log or a save didn't reach Outbox, where it wasn't queued: signed out, or turned down there. */
 const failure = (error: unknown) => (error instanceof OutboxSignedOut ? 'signedOut' : 'rejected');
 
@@ -812,7 +827,7 @@ async function logNow(tabId: number, url: string, manual: boolean): Promise<Card
     url: posting.url,
     jobId: job?.job.id ?? null,
     accountIds: session.accountId ? [session.accountId] : [],
-    channelId: session.ats === 'linkedin' ? 'ch_linkedin' : 'ch_company_site',
+    channelId: channelOf(session, outbox.snapshot),
     resumeId,
     appliedAt: today(),
   };

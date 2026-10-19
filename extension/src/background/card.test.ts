@@ -1,8 +1,9 @@
+import { BUILTIN_CHANNELS } from '@domain/channels';
 import type { QuickAddResult } from '@domain/repository';
-import type { Snapshot } from '@domain/types';
+import type { Channel, Snapshot } from '@domain/types';
 import { beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { fakeBrowser } from 'wxt/testing/fake-browser';
-import type { FrameScan, PlannedField, Posting, ScannedField } from '../model';
+import type { Ats, FrameScan, PlannedField, Posting, ScannedField } from '../model';
 import type { FormSnapshot } from '../storage';
 import { makeProfile } from '../test/profiles';
 
@@ -600,6 +601,38 @@ describe('"This page didn’t fill right"', () => {
       '<body><label>Can you commute?</label></body>',
       '<body><label>Years of Python?</label></body>',
     ]);
+  });
+});
+
+describe('the channel a log goes under', () => {
+  const ON_INDEED = 'https://www.indeed.com/viewjob?jk=5a2e49e6872d0c2b';
+  let tab = 900;
+  const logFrom = async (ats: Ats, channels: readonly Channel[]) => {
+    tab += 1;
+    loadSnapshot.mockResolvedValue({ ...empty, channels: [...channels] });
+    await updateSession(tab, ON_INDEED, () => ({ ats, posting: { ...posting, ats, url: ON_INDEED } }));
+    await logApplication(tab, ON_INDEED, true);
+    return (quickAddOrQueue.mock.lastCall?.[0] as { channelId: string }).channelId;
+  };
+
+  beforeEach(() => {
+    fakeBrowser.reset();
+    vi.clearAllMocks();
+    quickAddOrQueue.mockResolvedValue(saved);
+  });
+
+  it('is LinkedIn’s or Indeed’s for a posting logged from the board, else the company’s site', async () => {
+    expect(await logFrom('linkedin', BUILTIN_CHANNELS)).toBe('ch_linkedin');
+    expect(await logFrom('indeed', BUILTIN_CHANNELS)).toBe('ch_indeed');
+    expect(await logFrom('greenhouse', BUILTIN_CHANNELS)).toBe('ch_company_site');
+  });
+
+  it('is the owner’s own Indeed, else Other, from an Outbox that has no Indeed of its own yet', async () => {
+    const before = BUILTIN_CHANNELS.filter((channel) => channel.id !== 'ch_indeed');
+    expect(await logFrom('indeed', [...before, { id: 'ch_9', name: ' Indeed ', builtin: false }])).toBe(
+      'ch_9',
+    );
+    expect(await logFrom('indeed', before)).toBe('ch_other');
   });
 });
 
