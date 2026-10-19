@@ -114,3 +114,88 @@ test('shows its settings over Outbox’s page when asked there, not in a tab', a
   await page.keyboard.down('Escape');
   await expect(page.locator('outbox-autofill')).toHaveCount(0);
 });
+
+test('draws its settings in a frame of Outbox’s own window: one section, in Outbox’s language', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  await seed(worker, outbox.url);
+  // No language chosen in the extension: it follows Outbox's.
+  await worker.evaluate(async () => {
+    const { chrome } = globalThis as unknown as {
+      chrome: {
+        storage: {
+          local: { get(key: string): Promise<Record<string, object>>; set(items: object): Promise<void> };
+        };
+      };
+    };
+    const { settings } = await chrome.storage.local.get('settings');
+    await chrome.storage.local.set({ settings: { ...settings, language: 'auto' } });
+  });
+  const { page, replies, ask } = await openOutbox(context);
+  await expect.poll(replies).toContainEqual(expect.objectContaining({ type: 'hello' }));
+  await ask({ type: 'ping', locale: 'zh' });
+
+  await ask({ type: 'settings-frame', id: 'f1', section: 'ai', dark: false });
+  const answer = async () => (await replies()).find((reply) => reply.type === 'settings-frame');
+  await expect.poll(answer).toMatchObject({
+    id: 'f1',
+    url: expect.stringMatching(/^chrome-extension:\/\/\w+\/options\.html#ticket=/),
+  });
+  const url = String((await answer())?.url);
+
+  // Outbox's window puts the page in a frame and listens to it.
+  await page.evaluate((url) => {
+    const said: unknown[] = [];
+    Object.assign(window, { said });
+    const frame = document.createElement('iframe');
+    addEventListener('message', (event) => {
+      if (event.source === frame.contentWindow) said.push(event.data);
+    });
+    frame.src = url;
+    frame.style.cssText = 'width: 680px; height: 560px; border: 0';
+    document.body.append(frame);
+  }, url);
+  const said = () => page.evaluate(() => (window as unknown as { said: unknown[] }).said);
+  await expect.poll(said).toContainEqual({ source: 'outbox-autofill', type: 'settings-shown' });
+  const settings = await pressable(page.frameLocator('iframe'));
+  // The section asked for alone, in Chinese: no title and no sections of its own, Outbox's window has those.
+  await expect(settings.getByRole('switch', { name: '使用 AI' })).toBeVisible();
+  await expect(settings.getByRole('heading')).toHaveCount(0);
+  await expect(settings.getByRole('tab')).toHaveCount(0);
+
+  // The window turns it to another section, and to dark.
+  const tell = (message: object) =>
+    page.evaluate(
+      (message) => document.querySelector('iframe')?.contentWindow?.postMessage(message, '*'),
+      message,
+    );
+  await tell({ type: 'settings:section', section: 'general' });
+  await expect(settings.getByLabel('同公司提醒')).toBeVisible();
+  // Its language is Outbox's, chosen there: none to pick here.
+  await expect(settings.getByText('语言', { exact: true })).toHaveCount(0);
+  await expect(settings.getByRole('button', { name: '导出全部' })).toBeVisible();
+  await tell({ type: 'settings:scheme', dark: true });
+  await expect(settings.locator('.pane')).toHaveClass(/\bdark\b/);
+
+  // Outbox's language changes, and the page with it.
+  await ask({ type: 'ping', locale: 'en' });
+  await expect(settings.getByLabel('Same-company warning')).toBeVisible();
+
+  // Escape there asks the window to close; the frame stays until the window takes it away.
+  await settings.getByLabel('Same-company warning').click();
+  await page.keyboard.press('Escape');
+  await expect.poll(said).toContainEqual({ source: 'outbox-autofill', type: 'settings-close' });
+
+  // The ticket was good for one showing: the same address in another frame draws nothing.
+  await page.evaluate((url) => {
+    const again = document.createElement('iframe');
+    again.id = 'again';
+    again.src = url + '&again';
+    document.body.append(again);
+  }, url);
+  await expect(
+    page.frameLocator('#again').getByText('Open the settings from the Outbox Autofill card.'),
+  ).toBeVisible();
+});

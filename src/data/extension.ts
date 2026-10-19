@@ -133,7 +133,8 @@ export async function readResumeWithExtension(file: File): Promise<ResumeFacts> 
     let timer = 0;
     const onMessage = (event: MessageEvent) => {
       const message = fromExtension(event);
-      if (!message || message.type === 'hello' || message.id !== id) return;
+      if (message?.type !== 'parse-result' && message?.type !== 'parse-error') return;
+      if (message.id !== id) return;
       finish();
       if (message.type === 'parse-error') return reject(new ExtensionError(message.error, message.detail));
       const facts = resumeFactsSchema.safeParse(message.facts);

@@ -1,3 +1,10 @@
+import {
+  EXTENSION_SECTIONS,
+  FROM_EXTENSION,
+  type ExtensionSection,
+  type FromSettingsFrame,
+  type ToSettingsFrame,
+} from '@domain/bridge';
 import { Check, X } from 'lucide-react';
 import {
   createContext,
@@ -42,8 +49,7 @@ import { resolveLanguage } from '../../src/ui/i18n';
 import { keyVerdict, type Verdict } from './keyVerdict';
 import { strings, type Strings } from './strings';
 
-const SECTIONS = ['connection', 'ai', 'reports', 'memory', 'general'] as const;
-type Section = (typeof SECTIONS)[number];
+type Section = ExtensionSection;
 
 interface Props {
   s: Strings;
@@ -721,7 +727,8 @@ function Memory({ s }: Props) {
   );
 }
 
-function General({ s, settings }: Props) {
+/** `language`: false in Outbox's window, whose own language the extension's follows unless one is chosen here. */
+function General({ s, settings, language = true }: Props & { language?: boolean }) {
   const save = useSave(settings);
   // Deleting everything is asked twice, here in the window.
   const [confirming, setConfirming] = useState(false);
@@ -737,17 +744,19 @@ function General({ s, settings }: Props) {
   return (
     <>
       <Grid>
-        <Choice
-          label={s('language')}
-          note={<Saved s={s} name="language" />}
-          value={settings.language}
-          options={[
-            { value: 'auto', label: s('auto') },
-            { value: 'en', label: 'English' },
-            { value: 'zh', label: '简体中文' },
-          ]}
-          onChange={(language) => save({ language })}
-        />
+        {language && (
+          <Choice
+            label={s('language')}
+            note={<Saved s={s} name="language" />}
+            value={settings.language}
+            options={[
+              { value: 'auto', label: s('auto') },
+              { value: 'en', label: 'English' },
+              { value: 'zh', label: '简体中文' },
+            ]}
+            onChange={(language) => save({ language })}
+          />
+        )}
         <Count
           label={s('limit')}
           note={<Saved s={s} name="sameCompanyLimit" />}
@@ -792,17 +801,35 @@ function General({ s, settings }: Props) {
   );
 }
 
+/** Says something to the window around this page: Outbox's settings window, which the page can't otherwise reach. */
+const toWindow = (type: FromSettingsFrame['type']) =>
+  window.parent.postMessage({ source: FROM_EXTENSION, type } satisfies FromSettingsFrame, '*');
+
 /**
  * The settings: sections down the left, the one open to its right, as in the profile's window. Framed, they fill the
  * card's window over a page and close back to it; in a tab of their own they're that window on a plain ground.
- * Everything saves as it's changed, and says so where it was changed.
+ * Embedded in Outbox's own settings window, which has the title, the sections down its side and the glass, they're
+ * the open section alone, the one that window asks for, on the side of light or dark it says. Everything saves as
+ * it's changed, and says so where it was changed.
  */
-export function App({ framed, dark }: { framed: boolean; dark: boolean }) {
+export function App({
+  framed,
+  embedded = false,
+  section: first = 'connection',
+  dark: side,
+}: {
+  framed: boolean;
+  embedded?: boolean;
+  /** The section to open on. */
+  section?: Section;
+  dark: boolean;
+}) {
   const kept = useItem(settingsItem);
   const outbox = useItem(outboxLanguageItem);
   const settings = withDefaults(kept);
   const s = strings(resolveLanguage(settings.language, outbox ?? null));
-  const [section, setSection] = useState<Section>('connection');
+  const [section, setSection] = useState<Section>(first);
+  const [dark, setDark] = useState(side);
 
   const [mark, setMark] = useState<Mark | null>(null);
   const wrote = useCallback<Saving['wrote']>(async (name, write) => {
@@ -821,7 +848,10 @@ export function App({ framed, dark }: { framed: boolean; dark: boolean }) {
   }, [mark]);
   const saving = useMemo(() => ({ mark, wrote }), [mark, wrote]);
 
-  const close = useCallback(() => void toBackground('settings:close', {}).catch(() => undefined), []);
+  const close = useCallback(() => {
+    if (embedded) toWindow('settings-close');
+    else void toBackground('settings:close', {}).catch(() => undefined);
+  }, [embedded]);
   useEffect(() => {
     if (!framed) return undefined;
     // What's typed into a field is kept as the field is left (or at Enter): a window closed with the keyboard still
@@ -832,10 +862,16 @@ export function App({ framed, dark }: { framed: boolean; dark: boolean }) {
       leave();
       close();
     };
-    // Closed from outside the frame (a press beside the window), the card says so first.
+    // Closed from outside the frame (a press beside the window), the window says so first. Outbox's window also
+    // picks the section and the side of light or dark: the card's has the sections in here, on the page's side.
     const onMessage = (event: MessageEvent) => {
-      if (event.source === window.parent && (event.data as { type?: string })?.type === 'settings:closing')
-        leave();
+      if (event.source !== window.parent) return;
+      const message = event.data as ToSettingsFrame | null;
+      if (message?.type === 'settings:closing') leave();
+      if (!embedded) return;
+      if (message?.type === 'settings:section' && EXTENSION_SECTIONS.includes(message.section))
+        setSection(message.section);
+      if (message?.type === 'settings:scheme') setDark(message.dark === true);
     };
     document.addEventListener('keydown', onKey);
     window.addEventListener('message', onMessage);
@@ -843,12 +879,37 @@ export function App({ framed, dark }: { framed: boolean; dark: boolean }) {
       document.removeEventListener('keydown', onKey);
       window.removeEventListener('message', onMessage);
     };
-  }, [framed, close]);
+  }, [framed, embedded, close]);
+
+  // A frame is clear only where its page and the window around it agree on light or dark.
+  useEffect(() => {
+    document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+  }, [dark]);
 
   // Until the settings are read there's nothing true to show: not their language, not what's switched on.
-  if (!kept || outbox === undefined) return null;
+  const ready = kept !== undefined && outbox !== undefined;
+  // Outbox's window shows the frame once there's something in it: told once.
+  const told = useRef(false);
+  useEffect(() => {
+    if (!embedded || !ready || told.current) return;
+    told.current = true;
+    toWindow('settings-shown');
+  }, [embedded, ready]);
+  if (!ready) return null;
 
-  const pane = (
+  const fields = (
+    <div className="sheet-fields" role={embedded ? undefined : 'tabpanel'} aria-label={s(`tab.${section}`)}>
+      {/* Another address is another Outbox: asked anew. */}
+      {section === 'connection' && <Connection key={settings.outboxUrl} s={s} settings={settings} />}
+      {section === 'ai' && <Ai s={s} settings={settings} />}
+      {section === 'reports' && <Reports s={s} settings={settings} />}
+      {section === 'memory' && <Memory s={s} settings={settings} />}
+      {section === 'general' && <General s={s} settings={settings} language={!embedded} />}
+    </div>
+  );
+  const pane = embedded ? (
+    <div className={`pane embedded${dark ? ' dark' : ''}`}>{fields}</div>
+  ) : (
     <div className={`pane${dark ? ' dark' : ''}`}>
       <header className="sheet-head">
         <Pet size={26} />
@@ -861,7 +922,7 @@ export function App({ framed, dark }: { framed: boolean; dark: boolean }) {
       </header>
       <div className="sheet-main">
         <Track className="sheet-nav" current={section} role="tablist" aria-orientation="vertical">
-          {SECTIONS.map((name) => (
+          {EXTENSION_SECTIONS.map((name) => (
             <button
               key={name}
               data-key={name}
@@ -874,14 +935,7 @@ export function App({ framed, dark }: { framed: boolean; dark: boolean }) {
             </button>
           ))}
         </Track>
-        <div className="sheet-fields" role="tabpanel" aria-label={s(`tab.${section}`)}>
-          {/* Another address is another Outbox: asked anew. */}
-          {section === 'connection' && <Connection key={settings.outboxUrl} s={s} settings={settings} />}
-          {section === 'ai' && <Ai s={s} settings={settings} />}
-          {section === 'reports' && <Reports s={s} settings={settings} />}
-          {section === 'memory' && <Memory s={s} settings={settings} />}
-          {section === 'general' && <General s={s} settings={settings} />}
-        </div>
+        {fields}
       </div>
     </div>
   );

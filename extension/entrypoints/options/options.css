@@ -2,6 +2,21 @@
    theirs alone. */
 @import '../../src/ui/card/page.css';
 
+/* In Outbox's own settings window, which has the title, the sections down its side and the glass: the open
+   section's fields alone, as far in from the frame's edges as Outbox's own pages are from theirs. */
+html.embedded .pane > .sheet-fields {
+  flex: 1;
+  min-height: 0;
+  padding: 4px 24px 24px;
+}
+
+/* The frame is only as wide as that window leaves beside its sections: two fields to a line wherever they fit. */
+@media (min-width: 440px) {
+  html.embedded .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* A tab of its own: the same window, on a plain ground. */
 .tab-page {
   min-height: 100%;

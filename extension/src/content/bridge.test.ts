@@ -20,6 +20,7 @@ function page(backend: Partial<BridgeBackend> = {}) {
     status: async () => ({ readiness: 'ready', version: '0.1.0', logged: false }),
     parse: async () => ({ ok: false, error: 'failed', detail: 'unset' }),
     openOptions: async () => undefined,
+    settingsFrame: async () => ({ page: 'chrome-extension://abc/options.html', ticket: 't1' }),
     language: async () => undefined,
     ...backend,
   });
@@ -62,6 +63,38 @@ describe('the bridge to Outbox’s page', () => {
     close();
     await settle();
     expect(posted.map((message) => message.type)).toEqual(['hello', 'hello']);
+  });
+
+  it('answers a request for its settings with the address of a frame for Outbox’s own window', async () => {
+    const settingsFrame = vi.fn(async () => ({ page: 'chrome-extension://abc/options.html', ticket: 't1' }));
+    const { posted, send } = page({ settingsFrame });
+    send({ source: FROM_PAGE, type: 'settings-frame', id: 's1', section: 'ai', dark: true });
+    send({ source: FROM_PAGE, type: 'settings-frame', id: 's2', section: 'somewhere', dark: 'yes' });
+    await settle();
+    expect(settingsFrame).toHaveBeenCalledTimes(2);
+    const frames = posted.filter((message) => message.type === 'settings-frame');
+    expect(frames).toEqual([
+      {
+        source: FROM_EXTENSION,
+        type: 'settings-frame',
+        id: 's1',
+        url: 'chrome-extension://abc/options.html#ticket=t1&embed=1&section=ai&dark=1',
+      },
+      // A section it doesn't have opens on the first; anything but true is light.
+      {
+        source: FROM_EXTENSION,
+        type: 'settings-frame',
+        id: 's2',
+        url: 'chrome-extension://abc/options.html#ticket=t1&embed=1&section=connection&dark=0',
+      },
+    ]);
+  });
+
+  it('says nothing to a request for its settings when it got no ticket', async () => {
+    const { posted, send } = page({ settingsFrame: async () => undefined });
+    send({ source: FROM_PAGE, type: 'settings-frame', id: 's3', section: 'ai', dark: false });
+    await settle();
+    expect(posted.map((message) => message.type)).toEqual(['hello']);
   });
 
   it('keeps the language Outbox’s pings say it shows', async () => {
