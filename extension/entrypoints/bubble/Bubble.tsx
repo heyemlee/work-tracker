@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser';
-import { BrandMark } from '../../../src/ui/BrandMark';
+import { Pet } from '../../../src/ui/pet/Pet';
 import type { Translate } from '../../src/ui/i18n';
 
 /**
@@ -11,7 +11,7 @@ export function Bubble({ t, outboxUrl, dark }: { t: Translate; outboxUrl: string
   return (
     <div className={`pane bubble${dark ? ' dark' : ''}`}>
       <header className="bubble-head">
-        <BrandMark size={22} />
+        <Pet size={24} />
         Outbox Autofill
       </header>
       <p className="bubble-text">{t('bubble.text')}</p>

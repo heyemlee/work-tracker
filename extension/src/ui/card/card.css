@@ -105,6 +105,16 @@
   --acc-gray: #98989d;
 }
 
+/* Outbox's pet (src/ui/pet), the card's mark: black on light glass, white on dark, its eyes the other way round.
+   Set where the glass is chosen, so a dark one takes the dark pet. */
+.card,
+.tab,
+.sheet,
+.pane {
+  --pet-ink: var(--accent);
+  --pet-eye: var(--on-accent);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -1092,13 +1102,8 @@ span.choice-fold {
   padding: 14px 12px 14px 16px;
 }
 
-.done-icon {
-  flex: none;
-  color: var(--fg-2);
-}
-
-.done-icon.ok {
-  color: var(--green);
+.done-pet {
+  margin: -6px -4px -6px -2px;
 }
 
 .done-text {
@@ -1116,27 +1121,6 @@ span.choice-fold {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.spinner {
-  width: 14px;
-  height: 14px;
-  border-radius: 999px;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  animation: spin 0.8s linear infinite;
-}
-
-.spinner.small {
-  width: 10px;
-  height: 10px;
-  border-width: 1.5px;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* The profile's own window: over the page, in the middle of it, the page dimmed behind. Its glass is tinted as
@@ -1661,9 +1645,5 @@ button.input:focus-visible {
   .choice-fold,
   .track > .lens.sliding {
     transition: none;
-  }
-
-  .spinner {
-    animation-duration: 2.4s;
   }
 }

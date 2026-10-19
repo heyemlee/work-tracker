@@ -64,6 +64,14 @@ as it was left. So do the toolbar button and a log, which the card comes back to
 doesn't. There is no keyboard shortcut (⌥⇧F filled until 2026-10-14; the owner had it taken out: pressed while a fill
 ran or AI was writing, it started a second fill beside the first).
 
+**Outbox's pet** (2026-10-18). The card's mark is Outbox's pet (`src/ui/pet`, see design.md), and it says what the
+extension is doing (`src/pet.ts` has the words): its eyes go along lines while the page is read; it nods at the form
+on its left while filling and while AI writes; it looks down at the list, with a blue dot, when the fill left
+required fields empty; it hops when the work ends with nothing left; it shakes at an error the card shows. The
+logged and saved cards show it happy. Put aside, it peeks out of the tab at the window's edge, and gives a little
+under the pointer. Loading inside the extension (the profile's window, a resume's preview, AI writing) is its
+three dots.
+
 **The toolbar button on any other page** (decided 2026-10-12: the owner pressed it somewhere and nothing came, and
 asked whether it shouldn't come up on other pages too). It did come up on most, and took whatever page it was on
 for a job: the owner's mail under its title, with **Mark as applied** beneath; **Fill** for a site's sign-up or

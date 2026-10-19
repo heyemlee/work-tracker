@@ -5,12 +5,10 @@ import {
   ChevronDown,
   ChevronRight,
   CircleAlert,
-  CircleCheck,
   Ellipsis,
   Eye,
   FileText,
   Minus,
-  RotateCcw,
   X,
 } from 'lucide-react';
 import {
@@ -25,10 +23,12 @@ import {
 } from 'react';
 import { parseIsoDate, toIsoDate } from '@domain/dates';
 import { browser } from 'wxt/browser';
-import { BrandMark } from '../../../../src/ui/BrandMark';
+import type { PetMood } from '../../../../src/ui/pet/engine';
+import { Pet, PetDots } from '../../../../src/ui/pet/Pet';
 import { adapterFor } from '../../content/adapters';
 import { isDone, toBackground, type CardResume, type CardState, type ChecklistItem } from '../../messages';
 import type { Signal } from '../../match/scan';
+import { failed, waitingOnOwner, working } from '../../pet';
 import { DEFAULT_SETTINGS, getSettings } from '../../storage';
 import { resolveLanguage, translator, type MessageKey, type Translate } from '../i18n';
 import { Framed } from './Framed';
@@ -556,6 +556,22 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     return () => clearTimeout(timer);
   }, [ending]);
 
+  // The pet in the header is at work while the extension is, and hops when the work ends with nothing left to fill.
+  const atWork = state !== null && working(state);
+  const [wasAtWork, setWasAtWork] = useState(false);
+  const [cheering, setCheering] = useState(false);
+  if (atWork !== wasAtWork) {
+    setWasAtWork(atWork);
+    if (!atWork && state !== null && state.checklist.length > 0 && !waitingOnOwner(state)) setCheering(true);
+  }
+  useEffect(() => {
+    if (!cheering) return undefined;
+    const timer = setTimeout(() => setCheering(false), 2000);
+    return () => clearTimeout(timer);
+  }, [cheering]);
+  // Leaned out over, the pet on the tab of a card put aside gives a little.
+  const [tabPokes, setTabPokes] = useState(0);
+
   // Put aside or brought back by hand, the keyboard goes along: to the tab, and back to the button it was put
   // aside with.
   const tabButton = useRef<HTMLButtonElement>(null);
@@ -616,10 +632,11 @@ export function Card({ startOpen }: { startOpen: boolean }) {
       ref={tabButton}
       className={`tab glass${dark ? ' dark' : ''}${aside ? ' on' : ''}`}
       onClick={() => move('open')}
+      onPointerEnter={() => setTabPokes((n) => n + 1)}
       aria-label={t('back')}
       title={t('back')}
     >
-      <BrandMark size={24} />
+      <Pet size={30} mood="peek" poke={tabPokes} />
     </button>
   );
   const openSettings = () => setSettingsOpen(true);
@@ -653,11 +670,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
       <>
         <div className={frame} role="dialog" aria-label="Outbox Autofill">
           <div className="done">
-            {undone ? (
-              <RotateCcw size={16} className="done-icon" />
-            ) : (
-              <CircleCheck size={18} className="done-icon ok" />
-            )}
+            <Pet size={30} className="done-pet" mood={undone ? 'idle' : 'happy'} arrive />
             <div className="done-text">
               <div className="done-title">{undone ? t('undone') : t('logged')}</div>
               {posting && <div className="done-posting">{posting}</div>}
@@ -688,11 +701,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
       <>
         <div className={frame} role="dialog" aria-label="Outbox Autofill">
           <div className="done">
-            {undone ? (
-              <RotateCcw size={16} className="done-icon" />
-            ) : (
-              <CircleCheck size={18} className="done-icon ok" />
-            )}
+            <Pet size={30} className="done-pet" mood={undone ? 'idle' : 'happy'} arrive />
             <div className="done-text">
               <div className="done-title">{undone ? t('undone') : t('savedDone')}</div>
               {posting && <div className="done-posting">{posting}</div>}
@@ -785,6 +794,17 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     { label: t('options'), run: openSettings },
   ];
 
+  const petMood: PetMood =
+    state.phase === 'reading'
+      ? 'read'
+      : state.phase === 'filling' || state.phase === 'drafting'
+        ? 'work'
+        : failed(state)
+          ? 'oops'
+          : cheering
+            ? 'happy'
+            : 'idle';
+
   let main: ReactNode = null;
   if (state.hasForm) {
     main =
@@ -808,7 +828,7 @@ export function Card({ startOpen }: { startOpen: boolean }) {
             {/* While AI writes, filling again would race it. */}
             {drafting ? (
               <span className="drafting">
-                <span className="spinner small" />
+                <PetDots size={16} />
                 {t('drafting')}
               </span>
             ) : (
@@ -873,7 +893,14 @@ export function Card({ startOpen }: { startOpen: boolean }) {
     <>
       <div className={`${frame}${applying ? ' panel' : ''}`} role="dialog" aria-label="Outbox Autofill">
         <header className="head">
-          <BrandMark size={24} className="brand-mark" />
+          {/* Fields the fill left empty: it looks down at the list, with a dot. */}
+          <Pet
+            size={26}
+            className="brand-mark"
+            mood={petMood}
+            look={waitingOnOwner(state) ? 'down' : null}
+            badge={waitingOnOwner(state)}
+          />
           {/* The page already says whose posting this is: the company waits in the hover, with the match check. */}
           <div
             className="head-text"

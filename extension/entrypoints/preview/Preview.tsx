@@ -3,6 +3,7 @@ import { getDocument, GlobalWorkerOptions, type PDFDocumentProxy, type RenderTas
 import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { base64ToBytes } from '@domain/resumes';
+import { PetDots } from '../../../src/ui/pet/Pet';
 import { toBackground, type ResumePreview } from '../../src/messages';
 import type { Translate } from '../../src/ui/i18n';
 
@@ -185,7 +186,7 @@ export function Preview({ t, dark, entered }: { t: Translate; dark: boolean; ent
         </div>
       ) : (
         <div className="preview-wait" role="status" aria-label={t('preview.opening')}>
-          <span className="spinner" />
+          <PetDots size={28} />
         </div>
       )}
     </div>

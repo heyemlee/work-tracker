@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { PetDots } from '../../../../src/ui/pet/Pet';
 import { toBackground, type CardState, type ProfileDraft } from '../../messages';
 import {
   EDUCATION_LEVELS,
@@ -195,7 +196,7 @@ export function ProfileSheet({
               <Fields section={section} draft={draft} update={update} t={t} />
             ) : (
               <div className="sheet-wait">
-                <span className="spinner" />
+                <PetDots size={20} />
                 {t('profile.loading')}
               </div>
             )}
