@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { ChevronRight, FileText, LoaderCircle, Upload } from 'lucide-react';
+import { ChevronRight, FileText, Upload } from 'lucide-react';
 import { Popover } from 'radix-ui';
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react';
 import { ExtensionError, readResumeWithExtension, useExtension } from '../data/extension';
@@ -27,6 +27,7 @@ import { useI18n } from '../i18n/context';
 import type { MessageKey } from '../i18n/messages';
 import { navigate, PAGE_PATHS, setLeaveGuard } from '../state/router';
 import { showToast } from '../state/toasts';
+import { PetDots } from './pet/Pet';
 import { Button } from './primitives';
 import { describeIssue, extensionText } from './profileText';
 import { SectionBody } from './ProfileFields';
@@ -240,11 +241,7 @@ function Editor({
     education: draft.education.length,
     experience: draft.experience.length,
   };
-  const resumeIcon = reading ? (
-    <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
-  ) : (
-    <FileText className="size-3.5" aria-hidden="true" />
-  );
+  const resumeIcon = reading ? <PetDots size={18} /> : <FileText className="size-3.5" aria-hidden="true" />;
 
   return (
     <>

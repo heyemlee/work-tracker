@@ -1,9 +1,8 @@
 import clsx from 'clsx';
 import { Switch as RadixSwitch } from 'radix-ui';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
-import { BrandMark } from './BrandMark';
-
-export { BrandMark } from './BrandMark';
+import { useArrival } from './pet/arrival';
+import { Pet } from './pet/Pet';
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   label: string;
@@ -91,10 +90,14 @@ export function Section({
   );
 }
 
+/** Outbox's name and its pet. As Outbox opens, the pet waiting in the middle of the page flies here (Arrival). */
 export function Brand() {
+  const { flying, landings } = useArrival();
   return (
     <div className="flex shrink-0 items-center gap-2 pr-1">
-      <BrandMark />
+      <span data-brand-pet className={clsx(flying && 'invisible')}>
+        <Pet size={30} poke={landings} />
+      </span>
       <span className="hidden text-[17px] font-semibold tracking-[-0.02em] min-[420px]:inline">Outbox</span>
     </div>
   );

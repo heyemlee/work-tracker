@@ -11,6 +11,7 @@ import { useI18n } from './i18n/context';
 import { getPrefs } from './state/prefs';
 import { navigate, PAGE_PATHS, useLocation } from './state/router';
 import { ApplicationsPage } from './ui/ApplicationsPage';
+import { Arrival } from './ui/Arrival';
 import { Composer } from './ui/Composer';
 import { Guide } from './ui/Guide';
 import { DiscoverPage } from './ui/DiscoverPage';
@@ -45,7 +46,12 @@ function Gate() {
     return <SignIn />;
   if (user.isError) return <LoadError onRetry={() => void user.refetch()} />;
   if (snapshot.isError) return <LoadError onRetry={() => void snapshot.refetch()} />;
-  return snapshot.data ? <Workspace snapshot={snapshot.data} /> : null;
+  return (
+    <>
+      {snapshot.data && <Workspace snapshot={snapshot.data} />}
+      <Arrival ready={snapshot.data !== undefined} />
+    </>
+  );
 }
 
 function LoadError({ onRetry }: { onRetry: () => void }) {

@@ -3,7 +3,8 @@ import { initialAuthError, signInWithGoogle } from '../data/auth';
 import { useI18n } from '../i18n/context';
 import { updatePrefs } from '../state/prefs';
 import { useLiquidGlass } from './glass/useLiquidGlass';
-import { BrandMark, Button } from './primitives';
+import { Pet } from './pet/Pet';
+import { Button } from './primitives';
 
 function GoogleMark() {
   return (
@@ -34,6 +35,8 @@ export function SignIn() {
   const glass = useLiquidGlass(paneRef, { radius: 32, bevel: 20 });
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
+  // The pointer or the keyboard on the button: the pet looks down at it.
+  const [eyeing, setEyeing] = useState(false);
   // Better Auth reports a blocked sign-up as unable_to_create_user: the account isn't on the allowlist.
   const redirectError = initialAuthError
     ? t(initialAuthError === 'unable_to_create_user' ? 'signIn.notAllowed' : 'signIn.incomplete')
@@ -58,10 +61,17 @@ export function SignIn() {
         className="glass w-full max-w-[400px] rounded-[32px] px-8 pt-10 pb-7 text-center"
       >
         {glass.filter}
-        <div className="flex justify-center">
-          <BrandMark size={56} />
+        {/* Waiting on Google, it turns into the loading dots; a sign-in that didn't go through, it shakes. */}
+        <div className="-mt-3 flex justify-center">
+          <Pet
+            size={92}
+            fit="stage"
+            shadow
+            mood={pending ? 'think' : failed || redirectError ? 'oops' : 'idle'}
+            look={eyeing && !pending ? 'down' : null}
+          />
         </div>
-        <h1 className="mt-5 text-[28px] font-semibold tracking-[-0.025em]">Outbox</h1>
+        <h1 className="mt-1 text-[28px] font-semibold tracking-[-0.025em]">Outbox</h1>
         <p className="mt-1 text-[17px] text-fg-2">{t('signIn.title')}</p>
         <p className="mx-auto mt-5 max-w-[280px] text-[13px] leading-relaxed text-fg-3">{t('signIn.body')}</p>
         <Button
@@ -69,6 +79,10 @@ export function SignIn() {
           className="mt-7 h-11 w-full gap-2.5 text-[15px]"
           disabled={pending}
           onClick={() => void start()}
+          onPointerEnter={() => setEyeing(true)}
+          onPointerLeave={() => setEyeing(false)}
+          onFocus={() => setEyeing(true)}
+          onBlur={() => setEyeing(false)}
         >
           <span className="grid size-6 place-items-center rounded-full bg-white">
             <GoogleMark />

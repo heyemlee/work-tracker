@@ -3,6 +3,7 @@ import { Dialog } from 'radix-ui';
 import { X } from 'lucide-react';
 import { useId, useRef, type ReactNode } from 'react';
 import { LocalToolsError, localToolsAvailable } from '../data/localTools';
+import { PetDots } from './pet/Pet';
 import { Button, IconButton } from './primitives';
 
 export const toolInput =
@@ -88,7 +89,8 @@ export function ToolNotice({
   const { t } = useI18n();
   return (
     <div role={error ? 'alert' : 'status'} className="card mt-5 p-5 text-[14px] text-fg-2">
-      <p>
+      <p className="flex items-center gap-2.5">
+        {loading && <PetDots size={24} />}
         {loading
           ? t('local.loading')
           : !localToolsAvailable

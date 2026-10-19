@@ -1,17 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import {
-  AtSign,
-  Check,
-  CircleCheck,
-  FileText,
-  FileUp,
-  LoaderCircle,
-  Plus,
-  Puzzle,
-  ShieldCheck,
-  X,
-} from 'lucide-react';
+import { AtSign, Check, CircleCheck, FileText, FileUp, Plus, Puzzle, ShieldCheck, X } from 'lucide-react';
 import { useRef, useState, type ReactNode } from 'react';
 import {
   ExtensionError,
@@ -41,6 +30,7 @@ import { navigate, PAGE_PATHS } from '../state/router';
 import { showToast } from '../state/toasts';
 import { useLiquidGlass } from './glass/useLiquidGlass';
 import { Link } from './Link';
+import { PetDots } from './pet/Pet';
 import { Brand, Button, IconButton } from './primitives';
 import { Grid, SectionBody, Text, Toggle } from './ProfileFields';
 import { ResumeReview } from './ProfilePage';
@@ -201,7 +191,7 @@ function Footer({
         disabled={nextDisabled || busy}
         onClick={next}
       >
-        {busy && <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />}
+        {busy && <PetDots size={20} />}
         {nextLabel ?? t('guide.next')}
       </Button>
     </>
@@ -398,11 +388,7 @@ function ResumesStep({ snapshot, go }: { snapshot: Snapshot; go: Go }) {
           over ? 'border-accent bg-accent/10 text-accent' : 'border-hairline text-fg-2 hover:bg-fill',
         )}
       >
-        {uploading ? (
-          <LoaderCircle className="size-5 animate-spin" aria-hidden="true" />
-        ) : (
-          <FileUp className="size-5" aria-hidden="true" />
-        )}
+        {uploading ? <PetDots size={26} /> : <FileUp className="size-5" aria-hidden="true" />}
         <span>{uploading ? t('resumes.uploading') : t('guide.resumes.drop')}</span>
         <span className="text-[12px] text-fg-3">{t('resumes.limit')}</span>
       </button>
@@ -599,7 +585,7 @@ function Reader({ saved, snapshot, go }: { saved: SavedProfile | null; snapshot:
   else if (phase === 'reading')
     content = (
       <p className="flex items-center gap-2 text-[14px] text-fg-2">
-        <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+        <PetDots size={20} />
         {t('guide.read.reading', { name: chosen?.name ?? '' })}
       </p>
     );

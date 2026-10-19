@@ -1,14 +1,5 @@
 import clsx from 'clsx';
-import {
-  ExternalLink,
-  FileText,
-  FileUp,
-  IdCard,
-  LoaderCircle,
-  RefreshCw,
-  Trash2,
-  Upload,
-} from 'lucide-react';
+import { ExternalLink, FileText, FileUp, IdCard, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { resumeFileUrl } from '../data/httpRepository';
 import { formatSize, loadResumePdf, resumeProblem, uploadResume } from '../data/resumes';
@@ -22,6 +13,7 @@ import { formatShortDate } from '../i18n/format';
 import { usePrefs } from '../state/prefs';
 import { navigate, PAGE_PATHS } from '../state/router';
 import { showToast } from '../state/toasts';
+import { PetDots } from './pet/Pet';
 import { Button, IconButton } from './primitives';
 
 const hasFiles = (event: DragEvent) => event.dataTransfer?.types.includes('Files') ?? false;
@@ -134,11 +126,7 @@ export function ResumesPage({ snapshot }: { snapshot: Snapshot }) {
         </Button>
         {snapshot.resumes.length > 0 && (
           <Button variant="primary" onClick={() => pick(null)} disabled={busy === 'new'}>
-            {busy === 'new' ? (
-              <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
-            ) : (
-              <Upload className="size-3.5" aria-hidden="true" />
-            )}
+            {busy === 'new' ? <PetDots size={18} /> : <Upload className="size-3.5" aria-hidden="true" />}
             {busy === 'new' ? t('resumes.uploading') : t('resumes.upload')}
           </Button>
         )}
@@ -154,7 +142,7 @@ export function ResumesPage({ snapshot }: { snapshot: Snapshot }) {
           >
             <span className="grid size-12 place-items-center rounded-full bg-fill">
               {busy === 'new' ? (
-                <LoaderCircle className="size-6 animate-spin text-fg-2" aria-hidden="true" />
+                <PetDots size={28} className="text-fg-2" />
               ) : (
                 <FileUp className="size-6 text-fg-2" aria-hidden="true" />
               )}
@@ -244,11 +232,7 @@ function ResumeRow({
             file ? 'bg-accent/12 text-accent' : 'bg-fill-2 text-fg-3',
           )}
         >
-          {busy ? (
-            <LoaderCircle className="size-5 animate-spin" aria-hidden="true" />
-          ) : (
-            <FileText className="size-5" aria-hidden="true" />
-          )}
+          {busy ? <PetDots size={26} /> : <FileText className="size-5" aria-hidden="true" />}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-2">

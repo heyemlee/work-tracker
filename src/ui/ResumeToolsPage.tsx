@@ -1,15 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import {
-  ArrowRight,
-  Check,
-  ChevronDown,
-  Download,
-  FileText,
-  LoaderCircle,
-  Settings2,
-  Upload,
-} from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Download, FileText, Settings2, Upload } from 'lucide-react';
 import clsx from 'clsx';
 import {
   localToolRequest,
@@ -26,6 +17,7 @@ import { useI18n } from '../i18n/context';
 import { setLeaveGuard } from '../state/router';
 import { showToast } from '../state/toasts';
 import { ToolDialog, ToolNotice, toolInput, toolPage } from './LocalTools';
+import { PetDots } from './pet/Pet';
 import { Button } from './primitives';
 
 const STATUS_KEY = ['local-tools', 'resume-status'];
@@ -207,11 +199,7 @@ export function ResumeToolsPage({ onReview }: { onReview: (facts: ResumeFacts) =
                 }}
               >
                 <span className="mb-5 grid size-14 place-items-center rounded-2xl bg-fill text-fg-2">
-                  {busy ? (
-                    <LoaderCircle className="size-6 animate-spin" />
-                  ) : (
-                    <Upload className="size-6" strokeWidth={1.5} />
-                  )}
+                  {busy ? <PetDots size={30} /> : <Upload className="size-6" strokeWidth={1.5} />}
                 </span>
                 <h2 className="text-[21px] font-semibold tracking-tight">
                   {t(busy ? 'resumeTools.reading' : 'resumeTools.startTitle')}
@@ -352,7 +340,7 @@ export function ResumeToolsPage({ onReview }: { onReview: (facts: ResumeFacts) =
                     disabled={busy || !text.trim() || !canParse || settingsDirty}
                     onClick={() => void parse()}
                   >
-                    {busy && <LoaderCircle className="size-4 animate-spin" />}
+                    {busy && <PetDots size={20} />}
                     {parsing ? t('resumeTools.parsing') : t('resumeTools.parseShort')}
                     {!busy && <ArrowRight className="size-4" />}
                   </Button>

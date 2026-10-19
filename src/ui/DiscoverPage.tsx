@@ -15,7 +15,6 @@ import {
   SlidersHorizontal,
   X,
 } from 'lucide-react';
-import clsx from 'clsx';
 import { localToolRequest, type Board, type DiscoveredJob, type SyncStatus } from '../data/localTools';
 import { useRepository } from '../data/store';
 import { saveDiscoveredPosting, trackedPosting } from '../domain/discovery';
@@ -25,6 +24,7 @@ import { useI18n } from '../i18n/context';
 import { navigate, PAGE_PATHS, useLocation } from '../state/router';
 import { showToast } from '../state/toasts';
 import { ToolDialog, ToolNotice, toolInput, toolPage } from './LocalTools';
+import { PetDots } from './pet/Pet';
 import { Button, IconButton } from './primitives';
 
 export function DiscoverPage({
@@ -129,7 +129,7 @@ export function DiscoverPage({
           : t('discover.never')
       }
     >
-      <RefreshCw className={clsx('size-3.5', status.data?.running && 'animate-spin')} />
+      {status.data?.running ? <PetDots size={18} /> : <RefreshCw className="size-3.5" />}
       {status.data?.running
         ? t('discover.syncing', { done: status.data.completed, total: status.data.total })
         : t('discover.sync')}

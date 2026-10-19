@@ -44,6 +44,11 @@
   --thumb: #ffffff;
   --thumb-shadow: 0 1px 2px rgb(0 0 0 / 0.1), 0 3px 8px -2px rgb(0 0 0 / 0.14);
 
+  /* The pet (src/ui/pet): its body takes the text's color, its eyes the cards'. A dark body catches a little light;
+     a light one, on a dark theme, doesn't show it. */
+  --pet-eye: var(--surface);
+  --pet-gloss: 1;
+
   /* Glass: the floating control layer. */
   --glass-rgb: 255 255 255;
   --glass-alpha: 0.5;
@@ -104,6 +109,7 @@
   --card-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.07);
   --thumb: rgb(255 255 255 / 0.18);
   --thumb-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+  --pet-gloss: 0;
 
   --glass-rgb: 34 34 38;
   --glass-alpha: 0.5;
