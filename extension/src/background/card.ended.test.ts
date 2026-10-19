@@ -48,6 +48,7 @@ const page = (read: Posting | null, more: Partial<FrameScan> = {}): FrameScan[] 
     sends: false,
     jobLike: true,
     otherForm: false,
+    boardApplying: false,
     fields: [],
     posting: read,
     step: null,

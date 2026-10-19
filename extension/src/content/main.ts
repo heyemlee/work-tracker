@@ -119,6 +119,7 @@ export function startContent(): () => void {
       sends: [adapter.submitButton(document)].flat().some((button) => button !== null),
       jobLike: adapter.jobLike?.(document, location.href) ?? true,
       otherForm: adapter.otherForm?.(document) ?? false,
+      boardApplying: adapter.boardApplying?.(document, location.href) ?? false,
       ...reading,
     };
   }

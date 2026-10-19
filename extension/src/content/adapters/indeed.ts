@@ -89,8 +89,9 @@ function jobKey(doc: Document, url: string): string | null {
 /**
  * Indeed's terms forbid automating Indeed Apply ("any automation, scripting, or bots"), so, as on LinkedIn, there's
  * no form here: the card reads the posting the owner is looking at, on its own page or open beside a list of jobs,
- * to log it to Outbox or save it for later. The pages are drawn in React Native for the web, with no class names to
- * go by but test ids; the older header's ids follow.
+ * to log it to Outbox or save it for later, and stays that posting's on the steps of Indeed Apply that follow. The
+ * pages are drawn in React Native for the web, with no class names to go by but test ids; the older header's ids
+ * follow.
  */
 export const indeed: Adapter = {
   ats: 'indeed',
@@ -135,4 +136,7 @@ export const indeed: Adapter = {
   submitButton: () => null,
 
   confirmed: () => false,
+
+  // Indeed Apply's steps, which fill nothing here either, and name no posting: the tab's, the one applied to, stands.
+  boardApplying: (_doc, url) => new URL(url).hostname === 'smartapply.indeed.com',
 };

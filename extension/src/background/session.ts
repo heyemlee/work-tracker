@@ -20,6 +20,8 @@ export interface TabSession {
   jobLike: boolean;
   /** No application form was found, and the page has a form the owner can say is one. */
   otherForm: boolean;
+  /** The page is a step of the job board's own way to apply (Indeed Apply), for the tab's posting. */
+  boardApplying: boolean;
   step: string | null;
   fields: ScannedField[];
   plan: PlannedField[];
@@ -67,6 +69,7 @@ export function emptySession(tabId: number, url: string): TabSession {
     sends: false,
     jobLike: false,
     otherForm: false,
+    boardApplying: false,
     step: null,
     fields: [],
     plan: [],

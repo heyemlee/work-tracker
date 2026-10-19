@@ -82,6 +82,11 @@ export interface CardState {
   jobPage: boolean;
   /** No application form was found, and the page has a form the owner can say is one. */
   otherForm: boolean;
+  /**
+   * The page is a step of the job board's own way to apply (Indeed Apply), for the posting the card shows: there's
+   * nothing to fill, and nothing to save for later.
+   */
+  boardApplying: boolean;
   step: string | null;
   outbox: 'connected' | 'signedOut' | 'unreachable';
   /** Whose answers fill the form, and how many of the blanks most forms ask about the profile still has. */

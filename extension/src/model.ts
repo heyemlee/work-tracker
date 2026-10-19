@@ -140,6 +140,11 @@ export interface FrameScan {
   jobLike: boolean;
   /** No application form was found in the frame, and it has a form the owner can say is one. */
   otherForm: boolean;
+  /**
+   * The frame is a step of a job board's own way to apply (Indeed Apply), which doesn't name the posting it's for:
+   * the tab's posting, the one the owner came from, stands while the steps go on.
+   */
+  boardApplying: boolean;
   posting: Posting | null;
   fields: ScannedField[];
   /** Workday's current step ("My Information"); null elsewhere. */

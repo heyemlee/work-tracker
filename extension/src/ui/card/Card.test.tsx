@@ -33,6 +33,7 @@ const base: CardState = {
   sends: false,
   jobPage: true,
   otherForm: false,
+  boardApplying: false,
   step: null,
   outbox: 'connected',
   profile: { name: 'Alex Chen', blanks: 0 },

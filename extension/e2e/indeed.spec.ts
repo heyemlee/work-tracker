@@ -2,8 +2,8 @@ import { expect, type Worker } from '@playwright/test';
 import { BUILTIN_CHANNELS } from '../../src/domain/channels';
 import { fixture, SNAPSHOT, seed, serve, test } from './harness';
 
-// Indeed's terms forbid automating Indeed Apply: as on LinkedIn, the card reads the posting to log it, and fills
-// nothing.
+// Indeed's terms forbid automating Indeed Apply: as on LinkedIn, the card reads the posting to log it, and stays that
+// posting's on Indeed Apply's steps, filling nothing.
 
 const VIEWJOB = 'https://www.indeed.com/viewjob?jk=5a2e49e6872d0c2b';
 const QUESTIONS = 'https://smartapply.indeed.com/beta/indeedapply/form/questions-module/questions/1';
@@ -80,7 +80,56 @@ test('logs an Indeed posting from its own card, under Indeed', async ({ context,
   });
 });
 
-test('stays out of Indeed Apply until asked, then says why it fills nothing there', async ({
+test('stays the posting’s card on the steps of Indeed Apply, to log it there, filling nothing', async ({
+  context,
+  worker,
+  outbox,
+}) => {
+  outbox.snapshot = { ...SNAPSHOT, channels: [...BUILTIN_CHANNELS] };
+  await seed(worker, outbox.url);
+  const saved = fixture('indeed/viewjob.html');
+  await serve(context, 'www.indeed.com', saved, saved);
+  await serve(context, 'smartapply.indeed.com', STEP, STEP);
+  const page = await context.newPage();
+  await page.goto(VIEWJOB);
+  const card = page.locator('outbox-autofill');
+  await expect(card.locator('.title')).toHaveText('Senior Director, Facilities & Engineering', {
+    timeout: 15_000,
+  });
+
+  // "Apply now" takes the tab to Indeed Apply, whose steps name no posting: the card comes up for the one applied
+  // to, with its log and nothing to fill or to save for later.
+  const apply = await page.getByTestId('viewjob-indeed-apply').getAttribute('href');
+  await page.goto(apply!);
+  await page.goto(QUESTIONS);
+  await expect(card.locator('.title')).toHaveText('Senior Director, Facilities & Engineering', {
+    timeout: 15_000,
+  });
+  await expect(card.locator('.actions button')).toHaveText(['Log to Outbox']);
+  await expect(card.getByRole('button', { name: /^Fill/ })).toHaveCount(0);
+
+  // The step can be reported as it is, under the posting.
+  await card.getByRole('button', { name: 'More' }).click();
+  await expect(card.getByRole('menuitem')).toHaveText(['This page didn’t fill right', 'Settings']);
+  await card.getByRole('menuitem', { name: 'This page didn’t fill right' }).click();
+  await expect(card.getByText(/^Saved the form’s structure/)).toBeVisible();
+  const [report] = await reports(worker);
+  expect(report).toMatchObject({ ats: 'indeed', url: QUESTIONS, fields: [] });
+  expect(report!.html).toContain('How many years of experience do you have with Python?');
+  // Without what Indeed put in, or who the owner is.
+  expect(report!.html).not.toMatch(/Santa Clara|checked|Alex|Chen|@example\.com|555/);
+
+  await card.getByRole('button', { name: 'Log to Outbox' }).click();
+  await expect(card.getByText('Logged to Outbox', { exact: true })).toBeVisible();
+  expect(outbox.quickAdds.at(-1)).toMatchObject({
+    companyName: 'US AMR-Jones Lang LaSalle Americas, Inc.',
+    title: 'Senior Director, Facilities & Engineering',
+    url: VIEWJOB,
+    channelId: 'ch_indeed',
+  });
+});
+
+test('on Indeed Apply opened with no posting before it, waits to be asked, and says why it fills nothing', async ({
   context,
   worker,
   outbox,
@@ -91,7 +140,7 @@ test('stays out of Indeed Apply until asked, then says why it fills nothing ther
   await page.goto(QUESTIONS);
   await page.bringToFront();
 
-  // Nothing of the extension's runs there by itself.
+  // No posting to be the card of: nothing comes up by itself.
   const pane = page.locator('outbox-autofill').getByRole('dialog', { name: 'Outbox Autofill' });
   await page.waitForTimeout(1500);
   await expect(pane).toHaveCount(0);

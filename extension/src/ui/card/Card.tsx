@@ -858,8 +858,9 @@ export function Card({ startOpen }: { startOpen: boolean }) {
   } else if (postingPage) {
     // A posting without a form yet: say it was applied to, or save it for later. Saying so comes first and stands
     // out: it's what the owner mostly presses there, and on LinkedIn applying happens right on the page (Easy Apply).
+    // Applying to it on the board's own steps already, there's no saving it for later.
     const saveButton =
-      state.tracked !== null ? null : (
+      state.tracked !== null || state.boardApplying ? null : (
         <button className="secondary" onClick={save}>
           <Bookmark size={14} />
           {t('save')}

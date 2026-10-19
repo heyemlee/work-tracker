@@ -57,8 +57,11 @@ posting, to mark it applied or to save it, it offers on the posting only: loggin
 every page of an application. On its sign-up page the extension fills the email and Chrome generates and saves
 the password. On LinkedIn and Indeed the first of a posting's two buttons reads **Log to Outbox**, since Easy Apply
 and Indeed Apply happen right there, and stays for a posting already applied to; an application logged from Indeed's
-posting goes under Outbox's Indeed channel. Indeed Apply itself (`smartapply.indeed.com`) gets nothing filled and no
-card unasked; asked for on Indeed, the card says why it fills nothing there. On other sites the card opens by itself on a form
+posting goes under Outbox's Indeed channel. Indeed Apply's steps (`smartapply.indeed.com`) name no posting, so the
+card there is the posting's the tab came from, with its Log to Outbox and nothing to fill or to save for later (the
+owner's call, 2026-10-19: "让卡片在那里也自己出来"); a step that sends the tab on as it loads, as Indeed Apply's first
+address does, leaves the tab's posting as it was. Opened with no posting before it, Indeed Apply gets no card
+unasked, and asked for, the card says why it fills nothing. On other sites the card opens by itself on a form
 with a resume upload and a name or email field — not on a job board's own apply flow, such as LinkedIn's or Indeed's
 — or from the toolbar, and fills what the field dictionary recognizes. Closed, the card stays closed on that page;
 the toolbar button brings it back. Where it lies over something the owner wants to see, its – button puts it aside:
@@ -423,7 +426,7 @@ attached once Gem names it (below).
 | Workday    | `*.myworkdayjobs.com`, `*.myworkdaysite.com`                   | One Fill per page; built from `data-automation-id` names   |
 | Gem        | `jobs.gem.com`                                                 | React, no `<form>`; fields named by the text beside them   |
 | LinkedIn   | `linkedin.com/jobs`                                            | No filling: Log to Outbox                                  |
-| Indeed     | `*.indeed.com`: a job's page, a search, the home page          | No filling (Indeed Apply's terms): Log to Outbox           |
+| Indeed     | `*.indeed.com`: a job's page, a search, home; Indeed Apply     | No filling (Indeed Apply's terms): Log to Outbox           |
 | Other      | Any                                                            | Dictionary only; card opens on a form with a resume upload |
 
 On those other sites the generic adapter also says what the page is when the card is asked for there

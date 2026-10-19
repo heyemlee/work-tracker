@@ -51,10 +51,17 @@ describe('Indeed', () => {
       expect(runsOn(ATS_MATCHES, url), url).toBe(true);
   });
 
-  it('stays out of Indeed Apply, its sign-in and the rest, until the toolbar button is pressed', () => {
+  it('runs on Indeed Apply’s steps too, where the card stays the posting’s', () => {
     for (const url of [
+      'https://smartapply.indeed.com/beta/indeedapply/applybyapplyablejobid?indeedApplyableJobId=bd71dcf1',
       'https://smartapply.indeed.com/beta/indeedapply/form/questions-module/questions/1',
       'https://smartapply.indeed.com/beta/indeedapply/form/review-module',
+    ])
+      expect(runsOn(ATS_MATCHES, url), url).toBe(true);
+  });
+
+  it('stays out of Indeed’s sign-in and the rest, until the toolbar button is pressed', () => {
+    for (const url of [
       'https://secure.indeed.com/auth?continue=https%3A%2F%2Fwww.indeed.com%2Fjobs',
       'https://www.indeed.com/career-advice/finding-a-job/how-to-apply',
       'https://notindeed.com/viewjob?jk=0123456789abcdef',

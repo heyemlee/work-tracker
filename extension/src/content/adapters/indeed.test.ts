@@ -94,6 +94,18 @@ describe('indeed', () => {
     ).toBeNull();
   });
 
+  it('tells Indeed Apply’s steps, which go on with the tab’s posting, from Indeed’s own pages', () => {
+    const doc = page('viewjob');
+    expect(
+      indeed.boardApplying!(
+        doc,
+        'https://smartapply.indeed.com/beta/indeedapply/form/questions-module/questions/1',
+      ),
+    ).toBe(true);
+    expect(indeed.boardApplying!(doc, VIEWJOB)).toBe(false);
+    expect(indeed.boardApplying!(doc, SEARCH)).toBe(false);
+  });
+
   it('fills nothing, sends nothing and tells no confirmation: Indeed’s terms forbid automating Indeed Apply', () => {
     const doc = page('viewjob');
     expect(indeed.form(doc)).toBeNull();

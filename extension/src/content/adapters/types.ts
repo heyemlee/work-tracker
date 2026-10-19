@@ -109,4 +109,9 @@ export interface Adapter {
   otherForm?(doc: Document): boolean;
   /** The owner says the page is an application: its form is read as one for as long as the page keeps its address. */
   asApplication?(doc: Document): void;
+  /**
+   * The page is a step of the job board's own way to apply, for the posting the tab was just on, and doesn't name it
+   * (Indeed Apply's): the tab's posting stands.
+   */
+  boardApplying?(doc: Document, url: string): boolean;
 }

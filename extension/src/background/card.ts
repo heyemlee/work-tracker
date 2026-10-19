@@ -59,6 +59,14 @@ function merge(scans: FrameScan[], previous: TabSession | null) {
   const withPosting =
     [...forms, ...scans].find((scan) => scan.posting?.title || scan.posting?.company) ?? scans[0] ?? null;
   let posting = withPosting?.posting ?? null;
+  // Indeed Apply's steps name no posting: theirs is the one the tab came from, on the same board.
+  const boardApplying = scans.some((scan) => scan.boardApplying);
+  if (
+    !posting &&
+    previous?.posting &&
+    scans.some((scan) => scan.boardApplying && scan.ats === previous.posting?.ats)
+  )
+    posting = previous.posting;
   // Workday's apply pages don't repeat the posting: keep what the job page said.
   if (posting && previous?.posting && posting.url.startsWith(previous.posting.url)) {
     posting = {
@@ -77,6 +85,7 @@ function merge(scans: FrameScan[], previous: TabSession | null) {
     // The frame the posting is read from is the page itself: a frame inside it at a job's address makes it no job.
     jobLike: withPosting?.jobLike ?? false,
     otherForm: forms.length === 0 && scans.some((scan) => scan.otherForm),
+    boardApplying,
     step: forms.find((scan) => scan.step)?.step ?? null,
     fields: forms.flatMap((scan) => scan.fields),
   };
@@ -199,6 +208,7 @@ export async function cardState(session: TabSession, outbox?: OutboxState): Prom
     sends: session.sends,
     jobPage: isJobPage(session, job !== null),
     otherForm: session.otherForm,
+    boardApplying: session.boardApplying,
     step: session.step,
     outbox: status,
     profile: profile ? { name: fullName(profile).trim(), blanks: missingItems(profile).length } : null,

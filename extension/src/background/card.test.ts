@@ -172,6 +172,7 @@ describe('telling a job’s page from any other', () => {
     sends: false,
     jobLike: false,
     otherForm: false,
+    boardApplying: false,
     posting: null,
     fields: [],
     step: null,
@@ -190,6 +191,32 @@ describe('telling a job’s page from any other', () => {
     syncProfile.mockResolvedValue(null);
   });
 
+  it('keeps the posting the tab came from on the steps of Indeed Apply, which name none', async () => {
+    const job: Posting = {
+      ...posting,
+      ats: 'indeed',
+      url: 'https://www.indeed.com/viewjob?jk=5a2e49e6872d0c2b',
+    };
+    const step = 'https://smartapply.indeed.com/beta/indeedapply/form/questions-module/questions/1';
+    scanFrames.mockResolvedValue([read({ ats: 'indeed', posting: job })]);
+    await readTab(tab, job.url);
+    scanFrames.mockResolvedValue([read({ ats: 'indeed', boardApplying: true })]);
+    expect(await readTab(tab, step)).toMatchObject({
+      ats: 'indeed',
+      posting: job,
+      jobPage: true,
+      boardApplying: true,
+    });
+    // Step after step.
+    expect(await readTab(tab, step.replace(/questions-module.*/, 'review-module'), true)).toMatchObject({
+      posting: job,
+      jobPage: true,
+    });
+    // Back on Indeed with no posting on show, the card has none.
+    scanFrames.mockResolvedValue([read({ ats: 'indeed' })]);
+    expect(await readTab(tab, 'https://www.indeed.com/')).toMatchObject({ posting: null, jobPage: false });
+  });
+
   it('keeps what the tab held where no frame answers: a page that sends the tab on as it loads', async () => {
     const job: Posting = {
       ...posting,
@@ -200,12 +227,27 @@ describe('telling a job’s page from any other', () => {
     await readTab(tab, job.url);
     // Indeed Apply's first address hands the tab on to its first step before the card there is read.
     scanFrames.mockResolvedValue([]);
+    await readTab(
+      tab,
+      'https://smartapply.indeed.com/beta/indeedapply/applybyapplyablejobid?indeedApplyableJobId=1',
+    );
+    scanFrames.mockResolvedValue([read({ ats: 'indeed', boardApplying: true })]);
     expect(
-      await readTab(
-        tab,
-        'https://smartapply.indeed.com/beta/indeedapply/applybyapplyablejobid?indeedApplyableJobId=1',
-      ),
-    ).toMatchObject({ posting: job, jobPage: true });
+      await readTab(tab, 'https://smartapply.indeed.com/beta/indeedapply/form/contact-info'),
+    ).toMatchObject({
+      posting: job,
+      jobPage: true,
+    });
+  });
+
+  it('takes no other site’s posting into Indeed Apply, nor any where the tab had none', async () => {
+    const step = 'https://smartapply.indeed.com/beta/indeedapply/form/contact-info';
+    scanFrames.mockResolvedValue([read({ ats: 'greenhouse', posting })]);
+    await readTab(tab, URL_);
+    scanFrames.mockResolvedValue([read({ ats: 'indeed', boardApplying: true })]);
+    expect(await readTab(tab, step)).toMatchObject({ posting: null, jobPage: false, boardApplying: true });
+    // Opened by itself, in a tab of its own.
+    expect(await readTab(tab + 1000, step)).toMatchObject({ posting: null, jobPage: false });
   });
 
   it('takes a page on any other site for a job only where the page gives itself out as one', async () => {
@@ -679,6 +721,7 @@ describe('filling', () => {
       sends: true,
       jobLike: true,
       otherForm: false,
+      boardApplying: false,
       posting,
       fields,
       step: null,
