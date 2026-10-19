@@ -10,6 +10,7 @@ import { useThemeSync } from './hooks/useThemeSync';
 import { useI18n } from './i18n/context';
 import { getPrefs } from './state/prefs';
 import { navigate, PAGE_PATHS, useLocation } from './state/router';
+import { openSettings, useSettingsPage } from './state/settingsWindow';
 import { ApplicationsPage } from './ui/ApplicationsPage';
 import { Arrival } from './ui/Arrival';
 import { Composer } from './ui/Composer';
@@ -72,7 +73,6 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
   const { page, params } = useLocation();
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<Id | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [composing, setComposing] = useState(false);
   const [resumeReview, setResumeReview] = useState<ResumeFacts | null>(null);
   const rows = useMemo(() => buildRows(snapshot), [snapshot]);
@@ -87,6 +87,7 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
   }, []);
 
   // N opens the quick-add panel anywhere but the guide and over the settings dialog.
+  const settingsOpen = useSettingsPage() !== null;
   useHotkey('n', () => !settingsOpen && page !== 'welcome' && setComposing(true));
 
   const composer = (
@@ -102,7 +103,7 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
       }}
       onOpenSettings={() => {
         setComposing(false);
-        setSettingsOpen(true);
+        openSettings('accounts');
       }}
     />
   );
@@ -112,6 +113,7 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
       <>
         <Guide snapshot={snapshot} step={Number(params.get('step') ?? 1)} />
         <Toaster />
+        <SettingsDialog snapshot={snapshot} />
       </>
     );
 
@@ -122,7 +124,6 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
         query={query}
         onQuery={setQuery}
         onCompose={() => setComposing(true)}
-        onOpenSettings={() => setSettingsOpen(true)}
         snapshot={snapshot}
       />
       {page === 'applications' && (
@@ -164,7 +165,7 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
       <TabBar page={page} onCompose={() => setComposing(true)} />
       {composer}
       <Toaster />
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} snapshot={snapshot} />
+      <SettingsDialog snapshot={snapshot} />
       <TweakPanel />
     </>
   );

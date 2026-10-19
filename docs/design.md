@@ -48,13 +48,14 @@ rejected, it displays the furthest rejected one, dimmed. Filters use the rollup.
 
 - **Pages** — Applications `/`, Resumes `/resumes`, Profile `/profile` and Insights `/insights`, each with its own
   address, as labelled tabs in the floating toolbar (a glass tab bar at the bottom on phones, with a round New
-  button beside it). The toolbar also holds search, New, and one ⋯ menu for everything else: Settings, the
-  extension's settings, CSV export, the setup guide, sign-out. The extension's state is on its row there
-  (connected, or what it needs in a line under it: its key, AI turned on, installing), and the ⋯ button carries a
-  dot only while it needs something. Until 2026-10-10 the state had a button of its own, lit green when all was
-  well, and the menu sat behind the account's picture with a language toggle that Settings has too. Jobright's
-  sidebar was the alternative; a sidebar was tried and dropped on 2026-09-24, and Simplify gets by with a top bar
-  alone.
+  button beside it). The toolbar also holds search, New, and one ⋯ menu for everything else: Settings (Outbox's and
+  the extension's, in one window since 2026-10-19), CSV export, the setup guide, sign-out. What the extension needs
+  (its key, AI turned on, installing) is said in a line under Settings, which then opens where it's dealt with, and
+  the ⋯ button carries a dot only while it needs something. Until 2026-10-19 the extension's settings had a row of
+  their own there, saying "Connected" when all was well; until 2026-10-10 the state had a button of its own, lit
+  green when all was well, and the menu sat behind the account's picture with a language toggle that Settings has
+  too. Jobright's sidebar was the alternative; a sidebar was tried and dropped on 2026-09-24, and Simplify gets by
+  with a top bar alone.
 - **First run** — a guide at `/welcome`, six steps, each skippable: the emails applied with, the resumes, the
   extension and its key (checked live), a resume read into the profile, the answers no resume holds (work
   authorization, preferences, EEO — rules only, never AI), done (with a daily goal). It opens by itself for an
@@ -88,8 +89,16 @@ rejected, it displays the furthest rejected one, dimmed. Filters use the rollup.
   a link that's already tracked attaches to its job, so applying from another account is paste, pick, `Enter`.
 - **Detail** — a glass side panel on desktop, a bottom sheet on mobile: per-account stage control, rejected
   toggle, apply with another account, the posting's link, notes, timeline.
-- **Settings** — a dialog: accounts (an email address and a color each), channels, language, the daily goal, CSV
-  export.
+- **Settings** — one window for Outbox's settings and the extension's (decided 2026-10-19, where they had been two
+  windows of two looks, side by side in the menu): Outbox's pages — accounts (an email address and a color each),
+  channels, and General (language, appearance, the daily goal, hiding rejected jobs, CSV export, sign-out) — and
+  then the extension's — Connection, AI, Fill reports, Remembered answers, Other — down the left, the open one to
+  their right. The extension's pages are its own settings page in a frame of its own origin, so its API key stays out
+  of Outbox's reach ([autofill.md](autofill.md), "Settings"); where it isn't running, its part of the list is one
+  page saying so, with the way to the guide's step for installing it. The language chosen here is the extension's
+  too, unless one is chosen in the extension's own window. Phones have no extension, and get Outbox's settings
+  alone, one under another. The window opens at the page asked for: the account list from New, the AI page from the
+  guide's extension step, and from the menu whatever the extension needs.
 - **Resumes** — their own page: upload a PDF (or drop it), and it becomes a version named after the file. Each can
   be renamed, opened, replaced, deleted, or read into the profile, and shows how often it went out and its OA rate.
   The extension attaches these PDFs, so each version is uploaded once, here.

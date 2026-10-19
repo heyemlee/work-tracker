@@ -1,11 +1,11 @@
 import clsx from 'clsx';
-import { Download, Ellipsis, LogOut, Map as MapIcon, Plus, Puzzle, Search, Settings2, X } from 'lucide-react';
+import { Download, Ellipsis, LogOut, Map as MapIcon, Plus, Search, Settings2, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Popover } from 'radix-ui';
 import { useRef, useState, type ReactNode } from 'react';
 import { signOut } from '../data/auth';
 import { downloadCsv } from '../data/export';
-import { openExtensionOptions, useExtension, type ExtensionInfo } from '../data/extension';
+import { useExtension, type ExtensionInfo } from '../data/extension';
 import { localRepository, useCurrentUser } from '../data/store';
 import { FILTERS, type Filter } from '../domain/rows';
 import type { Snapshot } from '../domain/types';
@@ -14,6 +14,7 @@ import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useI18n } from '../i18n/context';
 import type { MessageKey } from '../i18n/messages';
 import { navigate, PAGE_PATHS, type Page } from '../state/router';
+import { openSettings, type SettingsPage } from '../state/settingsWindow';
 import { useLiquidGlass } from './glass/useLiquidGlass';
 import { Link } from './Link';
 import { PAGES, useProfileBlanks } from './pages';
@@ -53,11 +54,10 @@ interface ToolbarProps {
   query: string;
   onQuery: (query: string) => void;
   onCompose: () => void;
-  onOpenSettings: () => void;
   snapshot: Snapshot;
 }
 
-export function Toolbar({ page, query, onQuery, onCompose, onOpenSettings, snapshot }: ToolbarProps) {
+export function Toolbar({ page, query, onQuery, onCompose, snapshot }: ToolbarProps) {
   const { t } = useI18n();
   const paneRef = useRef<HTMLDivElement>(null);
   const glass = useLiquidGlass(paneRef, { radius: 22, bevel: 14 });
@@ -159,7 +159,7 @@ export function Toolbar({ page, query, onQuery, onCompose, onOpenSettings, snaps
             <Plus className="size-[18px]" aria-hidden="true" />
             <span>{t('toolbar.new')}</span>
           </button>
-          <MoreMenu snapshot={snapshot} onOpenSettings={onOpenSettings} />
+          <MoreMenu snapshot={snapshot} />
         </div>
       </div>
     </header>
@@ -175,10 +175,11 @@ const STATUS_COLOR: Record<ExtensionInfo['state'], string | null> = {
 };
 
 /**
- * Everything that is neither a page nor New, behind one button: settings, the extension's, CSV export, the setup
- * guide and signing out. The button carries a dot only while the extension needs something.
+ * Everything that is neither a page nor New, behind one button: settings (Outbox's and the extension's, in one
+ * window), CSV export, the setup guide and signing out. The button carries a dot only while the extension needs
+ * something, which Settings then says, and opens where it's dealt with.
  */
-function MoreMenu({ snapshot, onOpenSettings }: { snapshot: Snapshot; onOpenSettings: () => void }) {
+function MoreMenu({ snapshot }: { snapshot: Snapshot }) {
   const { t } = useI18n();
   const { data: user } = useCurrentUser();
   const extension = useExtension();
@@ -191,12 +192,15 @@ function MoreMenu({ snapshot, onOpenSettings }: { snapshot: Snapshot; onOpenSett
   };
 
   const ready = extension.state === 'ready';
-  const missing = extension.state === 'missing';
   const color = STATUS_COLOR[extension.state];
   const summary = ready ? t('ext.ready') : t(`ext.${extension.state}` as MessageKey);
-  const status = color && <Status color={color}>{summary}</Status>;
   const dot = desktop && !ready && color;
   const label = dot ? `${t('menu.label')} · ${summary}` : t('menu.label');
+  const settingsAt: SettingsPage = !dot
+    ? 'accounts'
+    : extension.state === 'missing'
+      ? 'extension.install'
+      : 'extension.ai';
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
@@ -231,25 +235,13 @@ function MoreMenu({ snapshot, onOpenSettings }: { snapshot: Snapshot; onOpenSett
               <div className="mx-2 mb-1 h-px bg-hairline" />
             </>
           )}
-          <MenuItem icon={<Settings2 className="size-4" />} onClick={() => choose(onOpenSettings)}>
+          <MenuItem
+            icon={<Settings2 className="size-4" />}
+            note={dot && <Status color={dot}>{summary}</Status>}
+            onClick={() => choose(() => openSettings(settingsAt))}
+          >
             {t('menu.settings')}
           </MenuItem>
-          {/* Connected says so beside the label; anything else says what it needs on a line of its own. */}
-          {desktop && (
-            <MenuItem
-              icon={<Puzzle className="size-4" />}
-              title={
-                ready && extension.version ? t('ext.version', { version: extension.version }) : undefined
-              }
-              aside={ready && status}
-              note={!ready && status}
-              onClick={() =>
-                choose(missing ? () => navigate(`${PAGE_PATHS.welcome}?step=3`) : openExtensionOptions)
-              }
-            >
-              {missing ? t('guide.ext.install') : t('menu.extension')}
-            </MenuItem>
-          )}
           <MenuItem
             icon={<Download className="size-4" />}
             onClick={() => choose(() => downloadCsv(snapshot))}
@@ -293,19 +285,15 @@ function Status({ color, children }: { color: string; children: ReactNode }) {
 interface MenuItemProps {
   icon: ReactNode;
   onClick: () => void;
-  title?: string;
-  /** Beside the label, at the row's end. */
-  aside?: ReactNode;
   /** A line of its own under the label. */
   note?: ReactNode;
   children: ReactNode;
 }
 
-function MenuItem({ icon, onClick, title, aside, note, children }: MenuItemProps) {
+function MenuItem({ icon, onClick, note, children }: MenuItemProps) {
   return (
     <button
       type="button"
-      title={title}
       onClick={onClick}
       className="flex w-full items-start gap-2.5 rounded-[12px] px-2.5 py-2 text-left text-[14px] leading-5 transition-colors hover:bg-fill focus-visible:bg-fill focus-visible:outline-none"
     >
@@ -313,10 +301,7 @@ function MenuItem({ icon, onClick, title, aside, note, children }: MenuItemProps
         {icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="flex items-center justify-between gap-3">
-          {children}
-          {aside}
-        </span>
+        <span className="block">{children}</span>
         {note && <span className="mt-0.5 block">{note}</span>}
       </span>
     </button>

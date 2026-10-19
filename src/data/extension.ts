@@ -6,6 +6,7 @@ import {
   MAX_RESUME_TEXT,
   type ExtensionMessage,
   type ExtensionReadiness,
+  type ExtensionSection,
   type PageMessage,
   type ParseError,
 } from '../domain/bridge';
@@ -61,7 +62,9 @@ function set(next: ExtensionInfo) {
  * Asks the extension to say hello, and tells it the language Outbox shows, for its own to follow. Silence means it
  * isn't running on this page.
  */
-function check() {
+export function checkExtension(): void {
+  // Its answer is listened for from the first ask on.
+  if (!started) return start();
   send({ source: FROM_PAGE, type: 'ping', locale: getPrefs().locale });
   window.clearTimeout(awaiting);
   awaiting = window.setTimeout(() => {
@@ -82,18 +85,18 @@ function start() {
     if (message.readiness === 'ready' && !setup.extensionReady) updateSetup({ extensionReady: true });
     if (message.logged && !setup.extensionLogged) updateSetup({ extensionLogged: true });
   });
-  window.addEventListener('focus', check);
+  window.addEventListener('focus', checkExtension);
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) check();
+    if (!document.hidden) checkExtension();
   });
-  // Another language chosen: the extension's follows at once.
+  // Another language chosen: the extension's follows at once, in its settings open beside it too.
   let locale = getPrefs().locale;
   subscribePrefs(() => {
     if (getPrefs().locale === locale) return;
     locale = getPrefs().locale;
-    check();
+    checkExtension();
   });
-  check();
+  checkExtension();
 }
 
 function subscribe(listener: () => void) {
@@ -111,15 +114,44 @@ export function useExtension({ watch = false }: { watch?: boolean } = {}): Exten
   useEffect(() => {
     start();
     if (!watch) return;
-    const timer = window.setInterval(check, 2000);
+    const timer = window.setInterval(checkExtension, 2000);
     return () => window.clearInterval(timer);
   }, [watch]);
   return useSyncExternalStore(subscribe, () => info);
 }
 
-/** Has the extension show its settings, in a window of its own over this page. Does nothing without the extension. */
+/**
+ * Has the extension show its settings in a window of its own over this page: what a build of it from before
+ * Outbox's settings window could show them in does. Does nothing without the extension.
+ */
 export function openExtensionOptions(): void {
   send({ source: FROM_PAGE, type: 'open-options' });
+}
+
+/**
+ * The address of the extension's settings page, for a frame in Outbox's settings window: one section, on a light or
+ * a dark ground, on a ticket good for one showing. Null where nothing answers within a few seconds: no extension, or
+ * a build from before.
+ */
+export function askSettingsFrame(section: ExtensionSection, dark: boolean): Promise<string | null> {
+  const id = crypto.randomUUID();
+  return new Promise((resolve) => {
+    let timer = 0;
+    const onMessage = (event: MessageEvent) => {
+      const message = fromExtension(event);
+      if (message?.type !== 'settings-frame' || message.id !== id) return;
+      // The extension's own page, and nothing else, goes into the frame.
+      finish(message.url.startsWith('chrome-extension://') ? message.url : null);
+    };
+    const finish = (url: string | null) => {
+      window.removeEventListener('message', onMessage);
+      window.clearTimeout(timer);
+      resolve(url);
+    };
+    timer = window.setTimeout(() => finish(null), 3000);
+    window.addEventListener('message', onMessage);
+    send({ source: FROM_PAGE, type: 'settings-frame', id, section, dark });
+  });
 }
 
 /** Has the extension read a resume PDF with the owner's key. Takes up to a minute or so. */

@@ -198,14 +198,31 @@ the token limit, declined) says the key works. So does an answer that there's no
 (`model_not_found`, as OpenAI's own and the proxies speaking its API put it; 2026-10-17): the line says to pick
 another model, where it used to say to check the address and the network. The window appears in
 place rather than gliding in: Chrome drops presses on a frame from another origin while it moves and for half a
-second after. Where a page won't show the frame, the settings open in a tab after 6 s. Outbox's own page asks for
-the settings too ("Open extension settings", in its toolbar and its setup guide), and since 2026-10-07 gets the same
-window over itself, with no card under it (`ui/card/settingsWindow.tsx`), where the settings used to take a tab. As
-the window closes the page is told again how the extension is doing, so a key just added shows there at once.
+second after. Where a page won't show the frame, the settings open in a tab after 6 s.
+
+On Outbox's own page (decided 2026-10-19) the extension's settings are pages of Outbox's settings window, below
+Outbox's own, where they used to be a second menu row opening a second window (from 2026-10-07 the same window as
+the card's, over Outbox with no card under it, `ui/card/settingsWindow.tsx`; before that a tab). Outbox's window
+draws the section list; the page asks for the settings through the bridge (`settings-frame`), the content script
+asks the service worker for a ticket for its tab, as the card does, and hands back the settings' address, which
+Outbox's window puts in a frame of its own. Framed so (`embed=1` in the address), the settings page draws the one
+section asked for, with no title and no list of sections, on the side of light or dark Outbox's theme is on, and
+turns to another section or side when that window says (`settings:section`, `settings:scheme`), says when it has
+drawn, and at Escape asks to be closed (`settings-shown`, `settings-close`, posted to the window around it). Outbox
+can't read the frame any more than a career site can, and only Outbox's pages get a ticket this way: the bridge's
+script runs nowhere else. The frame goes in once the window has stopped moving (the half second above) and stays
+while the window is open, unseen under Outbox's own pages. The window's glass is a layer of its own under its
+content there: Chrome draws a frame of another origin inside an element with a backdrop filter under that filter,
+blurring the window's whole content with it. As Outbox's window closes the page asks again how the extension is
+doing, so a key just added shows in the menu at once. A build of the extension from before draws nothing there; the
+page says so after a few seconds, with a button to its settings in its own window over the page, which builds since
+still open when an older Outbox page asks (`open-options`).
 
 The language follows Outbox's (2026-10-19): Outbox's page says which it shows with each ping
 (`outbox:language`, kept in `local:outboxLanguage`), and the extension's own "auto", renamed "Follow Outbox", takes
-it, the browser's only until Outbox has said; English or Chinese chosen in the extension's settings still wins.
+it, the browser's only until Outbox has said; English or Chinese chosen in the extension's settings still wins. In
+Outbox's window the extension's General section, named Other there, leaves the language out: Outbox's General has it
+for both.
 
 **Resumes** (decided 2026-09-28, replacing PDFs added on the options page) are uploaded on Outbox, on their own page: one PDF per resume version, up to 1.4 MB, stored in D1 as base64 (`resume_files`, apart from the
 version so the snapshot never reads it). Base64 rather than a blob: D1 hands a blob to the Worker as an array of
@@ -729,9 +746,9 @@ a posting there shows a note. It is a note, not a block.
 - **Save for later** on a posting sends a quick add with no account, which Outbox shows as a saved job, with Undo
   the same way. The first log with an account is remembered (`local:logged`): Outbox's setup checklist asks the
   extension, over the page bridge, whether it has logged an application yet, along with its version and whether it
-  can read resumes. The bridge also shows the extension's settings when Outbox's page asks, for the API key: in
-  their window over that page ([Settings](#4-profile)); and Outbox's pings say its language, which the extension's
-  follows.
+  can read resumes. The bridge also hands Outbox's settings window the extension's settings, for the API key: a
+  frame of the extension's own, on a ticket ([Settings](#4-profile)); and Outbox's pings say its language, which
+  the extension's follows.
 - **Sign-in:** requests carry Outbox's session cookie (the extension has host permission). If Chrome doesn't send it,
   a content script on the Outbox tab reads the session token from `/api/auth/get-session`, and the service worker
   sends it as a bearer token (Better Auth's `bearer` plugin). If both fail, the card asks the owner to open Outbox.

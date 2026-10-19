@@ -2,12 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { AtSign, Check, CircleCheck, FileText, FileUp, Plus, Puzzle, ShieldCheck, X } from 'lucide-react';
 import { useRef, useState, type ReactNode } from 'react';
-import {
-  ExtensionError,
-  openExtensionOptions,
-  readResumeWithExtension,
-  useExtension,
-} from '../data/extension';
+import { ExtensionError, readResumeWithExtension, useExtension } from '../data/extension';
 import { formatSize, loadResumePdf, resumeProblem, uploadResume } from '../data/resumes';
 import { PROFILE_KEY, useCurrentUser, useProfile, useRepository } from '../data/store';
 import {
@@ -27,6 +22,7 @@ import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useI18n } from '../i18n/context';
 import { updatePrefs, updateSetup, usePrefs } from '../state/prefs';
 import { navigate, PAGE_PATHS } from '../state/router';
+import { openSettings } from '../state/settingsWindow';
 import { showToast } from '../state/toasts';
 import { useLiquidGlass } from './glass/useLiquidGlass';
 import { Link } from './Link';
@@ -463,7 +459,7 @@ function ExtensionStep({ go }: { go: Go }) {
           body={t('guide.ext.keyBody')}
         >
           {installed && !ready && (
-            <Button variant="primary" className="mt-3" onClick={openExtensionOptions}>
+            <Button variant="primary" className="mt-3" onClick={() => openSettings('extension.ai')}>
               {t('ext.openOptions')}
             </Button>
           )}
