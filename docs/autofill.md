@@ -203,6 +203,10 @@ the settings too ("Open extension settings", in its toolbar and its setup guide)
 window over itself, with no card under it (`ui/card/settingsWindow.tsx`), where the settings used to take a tab. As
 the window closes the page is told again how the extension is doing, so a key just added shows there at once.
 
+The language follows Outbox's (2026-10-19): Outbox's page says which it shows with each ping
+(`outbox:language`, kept in `local:outboxLanguage`), and the extension's own "auto", renamed "Follow Outbox", takes
+it, the browser's only until Outbox has said; English or Chinese chosen in the extension's settings still wins.
+
 **Resumes** (decided 2026-09-28, replacing PDFs added on the options page) are uploaded on Outbox, on their own page: one PDF per resume version, up to 1.4 MB, stored in D1 as base64 (`resume_files`, apart from the
 version so the snapshot never reads it). Base64 rather than a blob: D1 hands a blob to the Worker as an array of
 numbers, which costs more CPU than the free plan allows, and a row holds at most 2 MB. `GET /api/resumes/:id/file`
@@ -726,7 +730,8 @@ a posting there shows a note. It is a note, not a block.
   the same way. The first log with an account is remembered (`local:logged`): Outbox's setup checklist asks the
   extension, over the page bridge, whether it has logged an application yet, along with its version and whether it
   can read resumes. The bridge also shows the extension's settings when Outbox's page asks, for the API key: in
-  their window over that page ([Settings](#4-profile)).
+  their window over that page ([Settings](#4-profile)); and Outbox's pings say its language, which the extension's
+  follows.
 - **Sign-in:** requests carry Outbox's session cookie (the extension has host permission). If Chrome doesn't send it,
   a content script on the Outbox tab reads the session token from `/api/auth/get-session`, and the service worker
   sends it as a bearer token (Better Auth's `bearer` plugin). If both fail, the card asks the owner to open Outbox.

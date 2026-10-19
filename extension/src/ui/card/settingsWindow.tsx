@@ -1,6 +1,6 @@
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 import { toBackground } from '../../messages';
-import { getSettings } from '../../storage';
+import { getSettings, outboxLanguageItem } from '../../storage';
 import { resolveLanguage, translator } from '../i18n';
 import { pageIsDark } from './scheme';
 import { SettingsFrame } from './SettingsFrame';
@@ -21,8 +21,8 @@ export function showSettings(ctx: ContentScriptContext): Promise<void> {
 }
 
 async function open(ctx: ContentScriptContext): Promise<void> {
-  const { language } = await getSettings();
-  const t = translator(resolveLanguage(language));
+  const [{ language }, outbox] = await Promise.all([getSettings(), outboxLanguageItem.getValue()]);
+  const t = translator(resolveLanguage(language, outbox));
   let closed = () => {};
   const closing = new Promise<void>((resolve) => {
     closed = resolve;

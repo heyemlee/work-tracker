@@ -12,7 +12,12 @@ export type ExtensionReadiness = 'ready' | 'no-key' | 'ai-off';
 export type ParseError = 'no-key' | 'ai-off' | 'too-large' | 'failed';
 
 export type PageMessage =
-  | { source: typeof FROM_PAGE; type: 'ping' }
+  | {
+      source: typeof FROM_PAGE;
+      type: 'ping';
+      /** Outbox's language, which the extension's follows unless one is chosen there. Absent before 2026-10-19. */
+      locale?: 'en' | 'zh';
+    }
   /** Opens the extension's settings, where its AI key goes. */
   | { source: typeof FROM_PAGE; type: 'open-options' }
   | {

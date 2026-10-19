@@ -140,6 +140,10 @@ export const outboxTokenItem = storage.defineItem<string | null>('local:outboxTo
 export const pendingLogsItem = storage.defineItem<PendingLog[]>('local:pendingLogs', { fallback: [] });
 /** An application has been logged to Outbox from this browser at least once; Outbox's setup checklist asks. */
 export const loggedItem = storage.defineItem<boolean>('local:logged', { fallback: false });
+/** The language Outbox's page last said it shows: the extension's follows it while its own setting is "auto". */
+export const outboxLanguageItem = storage.defineItem<'en' | 'zh' | null>('local:outboxLanguage', {
+  fallback: null,
+});
 /** The account and the Outbox resume version picked last. */
 export const lastUsedItem = storage.defineItem<{ accountId: string | null; resumeId: string | null }>(
   'local:lastUsed',

@@ -104,7 +104,8 @@ export function updateSetup(patch: Partial<SetupPrefs>): void {
   updatePrefs((prefs) => ({ setup: { ...prefs.setup, ...patch } }));
 }
 
-function subscribe(listener: () => void) {
+/** Calls `listener` after every change to the preferences; returns a function that stops it. */
+export function subscribePrefs(listener: () => void): () => void {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
@@ -125,5 +126,5 @@ export function liveDefaults(lastUsed: LastUsed, snapshot: Snapshot): LastUsed {
 
 /** Selects a slice of preferences. Selectors must return stored values rather than build new objects. */
 export function usePrefs<T>(selector: (prefs: Prefs) => T): T {
-  return useSyncExternalStore(subscribe, () => selector(current));
+  return useSyncExternalStore(subscribePrefs, () => selector(current));
 }

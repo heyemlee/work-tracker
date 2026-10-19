@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { toBackground } from '../../src/messages';
-import { getSettings } from '../../src/storage';
+import { getSettings, outboxLanguageItem } from '../../src/storage';
 import { resolveLanguage, translator } from '../../src/ui/i18n';
 import { Preview } from './Preview';
 import './preview.css';
@@ -20,16 +20,16 @@ const entered = toBackground('preview:enter', { ticket: params.get('ticket') ?? 
   () => 'refused' as const,
 );
 
-// The settings say which language; if they can't be read, the browser's does.
-void getSettings()
+// The settings say which language, or Outbox's; if they can't be read, the browser's does.
+void Promise.all([getSettings(), outboxLanguageItem.getValue()])
   .then(
-    ({ language }) => language,
-    () => 'auto' as const,
+    ([{ language }, outbox]) => resolveLanguage(language, outbox),
+    () => resolveLanguage('auto'),
   )
   .then((language) =>
     createRoot(document.getElementById('root')!).render(
       <StrictMode>
-        <Preview t={translator(resolveLanguage(language))} dark={dark} entered={entered} />
+        <Preview t={translator(language)} dark={dark} entered={entered} />
       </StrictMode>,
     ),
   );

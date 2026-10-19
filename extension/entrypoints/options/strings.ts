@@ -75,7 +75,7 @@ const en = {
   memoryNone: 'Nothing remembered yet.',
 
   language: 'Language',
-  auto: 'Follow the browser',
+  auto: 'Follow Outbox',
   limit: 'Same-company warning',
   limitHelp: 'Warns at this many postings at one company within 30 days.',
   data: 'Data',
@@ -165,7 +165,7 @@ const zh: Record<Key, string> = {
   memoryNone: '还没有记住的回答。',
 
   language: '语言',
-  auto: '跟随浏览器',
+  auto: '跟随 Outbox',
   limit: '同公司提醒',
   limitHelp: '30 天内在同一家投到这么多个岗位时提醒。',
   data: '数据',

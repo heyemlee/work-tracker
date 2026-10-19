@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { getSettings } from '../../src/storage';
+import { getSettings, outboxLanguageItem } from '../../src/storage';
 import { resolveLanguage, translator } from '../../src/ui/i18n';
 import { Bubble } from './Bubble';
 import './bubble.css';
@@ -9,10 +9,14 @@ import './bubble.css';
 const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
 
-void getSettings().then((settings) =>
+void Promise.all([getSettings(), outboxLanguageItem.getValue()]).then(([settings, outbox]) =>
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      <Bubble t={translator(resolveLanguage(settings.language))} outboxUrl={settings.outboxUrl} dark={dark} />
+      <Bubble
+        t={translator(resolveLanguage(settings.language, outbox))}
+        outboxUrl={settings.outboxUrl}
+        dark={dark}
+      />
     </StrictMode>,
   ),
 );

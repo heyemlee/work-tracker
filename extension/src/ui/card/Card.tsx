@@ -29,7 +29,7 @@ import { adapterFor } from '../../content/adapters';
 import { isDone, toBackground, type CardResume, type CardState, type ChecklistItem } from '../../messages';
 import type { Signal } from '../../match/scan';
 import { failed, waitingOnOwner, working } from '../../pet';
-import { DEFAULT_SETTINGS, getSettings } from '../../storage';
+import { DEFAULT_SETTINGS, getSettings, outboxLanguageItem } from '../../storage';
 import { resolveLanguage, translator, type MessageKey, type Translate } from '../i18n';
 import { Framed } from './Framed';
 import { ProfileSheet } from './ProfileSheet';
@@ -479,8 +479,8 @@ export function Card({ startOpen }: { startOpen: boolean }) {
 
   const readSettings = useCallback(
     () =>
-      void getSettings().then((settings) => {
-        setT(() => translator(resolveLanguage(settings.language)));
+      void Promise.all([getSettings(), outboxLanguageItem.getValue()]).then(([settings, outbox]) => {
+        setT(() => translator(resolveLanguage(settings.language, outbox)));
         setOutboxUrl(settings.outboxUrl);
       }),
     [],

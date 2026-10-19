@@ -12,12 +12,15 @@ export interface BridgeBackend {
   parse(pdf: string, text: string): Promise<ToBackground['resume:parse']['response'] | undefined>;
   /** Shows the settings; settles once they're closed. */
   openOptions(): Promise<void>;
+  /** Keeps the language Outbox shows, for the extension's to follow. */
+  language(language: 'en' | 'zh'): Promise<void>;
 }
 
 /**
  * Answers Outbox's page, which can't reach the extension itself: whether a resume can be read (and the version, and
  * whether an application was logged, for its setup checklist), the read resume, and showing the settings where the
- * key goes. Only messages from this window and origin count. Returns a function that stops listening.
+ * key goes. Its pings say which language it shows. Only messages from this window and origin count. Returns a
+ * function that stops listening.
  */
 export function startBridge(win: Window, backend: BridgeBackend): () => void {
   const origin = win.location.origin;
@@ -43,9 +46,14 @@ export function startBridge(win: Window, backend: BridgeBackend): () => void {
       id?: unknown;
       pdf?: unknown;
       text?: unknown;
+      locale?: unknown;
     } | null;
     if (!data || data.source !== FROM_PAGE) return;
-    if (data.type === 'ping') void hello();
+    if (data.type === 'ping') {
+      if (data.locale === 'en' || data.locale === 'zh')
+        void backend.language(data.locale).catch(() => undefined);
+      void hello();
+    }
     // What the settings changed (a key added, AI turned on) reaches the page as they close.
     if (data.type === 'open-options') void backend.openOptions().then(hello, () => undefined);
     if (data.type !== 'parse-resume' || typeof data.id !== 'string' || typeof data.pdf !== 'string') return;

@@ -197,6 +197,8 @@ export interface ToBackground {
   };
   /** From Outbox's page, through its content script: can a resume be read, and what the setup checklist asks. */
   'bridge:status': { request: Record<string, never>; response: BridgeStatus };
+  /** From Outbox's page: the language it shows, which the extension's follows unless one is chosen there. */
+  'outbox:language': { request: { language: 'en' | 'zh' }; response: void };
   /** From Outbox's page: read this resume PDF (base64) with the owner's key. */
   'resume:parse': {
     request: { pdf: string; text: string };

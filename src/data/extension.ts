@@ -11,7 +11,7 @@ import {
 } from '../domain/bridge';
 import { resumeFactsSchema, type ResumeFacts } from '../domain/profile';
 import { bytesToBase64 } from '../domain/resumes';
-import { getPrefs, updateSetup } from '../state/prefs';
+import { getPrefs, subscribePrefs, updateSetup } from '../state/prefs';
 import { pdfText } from './pdfText';
 
 /** Whether the autofill extension runs on this page, and whether it can read a resume. */
@@ -57,9 +57,12 @@ function set(next: ExtensionInfo) {
   for (const listener of listeners) listener();
 }
 
-/** Asks the extension to say hello. Silence means it isn't running on this page. */
+/**
+ * Asks the extension to say hello, and tells it the language Outbox shows, for its own to follow. Silence means it
+ * isn't running on this page.
+ */
 function check() {
-  send({ source: FROM_PAGE, type: 'ping' });
+  send({ source: FROM_PAGE, type: 'ping', locale: getPrefs().locale });
   window.clearTimeout(awaiting);
   awaiting = window.setTimeout(() => {
     if (info.state !== 'missing') set({ ...info, state: 'missing' });
@@ -82,6 +85,13 @@ function start() {
   window.addEventListener('focus', check);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) check();
+  });
+  // Another language chosen: the extension's follows at once.
+  let locale = getPrefs().locale;
+  subscribePrefs(() => {
+    if (getPrefs().locale === locale) return;
+    locale = getPrefs().locale;
+    check();
   });
   check();
 }

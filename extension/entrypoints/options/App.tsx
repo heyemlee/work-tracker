@@ -24,6 +24,7 @@ import {
   memoryItem,
   MODELS,
   openaiKeyItem,
+  outboxLanguageItem,
   pendingLogsItem,
   profileItem,
   profileSourceItem,
@@ -798,8 +799,9 @@ function General({ s, settings }: Props) {
  */
 export function App({ framed, dark }: { framed: boolean; dark: boolean }) {
   const kept = useItem(settingsItem);
+  const outbox = useItem(outboxLanguageItem);
   const settings = withDefaults(kept);
-  const s = strings(resolveLanguage(settings.language));
+  const s = strings(resolveLanguage(settings.language, outbox ?? null));
   const [section, setSection] = useState<Section>('connection');
 
   const [mark, setMark] = useState<Mark | null>(null);
@@ -844,7 +846,7 @@ export function App({ framed, dark }: { framed: boolean; dark: boolean }) {
   }, [framed, close]);
 
   // Until the settings are read there's nothing true to show: not their language, not what's switched on.
-  if (!kept) return null;
+  if (!kept || outbox === undefined) return null;
 
   const pane = (
     <div className={`pane${dark ? ' dark' : ''}`}>

@@ -20,6 +20,7 @@ function page(backend: Partial<BridgeBackend> = {}) {
     status: async () => ({ readiness: 'ready', version: '0.1.0', logged: false }),
     parse: async () => ({ ok: false, error: 'failed', detail: 'unset' }),
     openOptions: async () => undefined,
+    language: async () => undefined,
     ...backend,
   });
   return { posted, send };
@@ -61,6 +62,18 @@ describe('the bridge to Outbox’s page', () => {
     close();
     await settle();
     expect(posted.map((message) => message.type)).toEqual(['hello', 'hello']);
+  });
+
+  it('keeps the language Outbox’s pings say it shows', async () => {
+    const language = vi.fn(async () => undefined);
+    const { posted, send } = page({ language });
+    send({ source: FROM_PAGE, type: 'ping', locale: 'zh' });
+    send({ source: FROM_PAGE, type: 'ping', locale: 'fr' });
+    send({ source: FROM_PAGE, type: 'ping' });
+    await settle();
+    expect(language.mock.calls).toEqual([['zh']]);
+    // Each ping is answered all the same.
+    expect(posted.map((message) => message.type)).toEqual(['hello', 'hello', 'hello', 'hello']);
   });
 
   it('reads a resume and answers with the same id', async () => {

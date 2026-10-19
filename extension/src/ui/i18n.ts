@@ -190,8 +190,13 @@ const zh: Record<Key, string> = {
 
 export type Translate = (key: Key, values?: Record<string, string | number>) => string;
 
-export function resolveLanguage(setting: Language): 'en' | 'zh' {
+/**
+ * The language to show: the one chosen in the settings; with none chosen, Outbox's (its page says which it shows),
+ * and before Outbox has said, the browser's.
+ */
+export function resolveLanguage(setting: Language, outbox: 'en' | 'zh' | null = null): 'en' | 'zh' {
   if (setting !== 'auto') return setting;
+  if (outbox) return outbox;
   return typeof navigator !== 'undefined' && navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en';
 }
 

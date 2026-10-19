@@ -2,7 +2,7 @@ import type { ExtensionReadiness } from '@domain/bridge';
 import { browser } from 'wxt/browser';
 import { OUTBOX_MATCHES } from '../hosts';
 import type { BridgeStatus, ToBackground } from '../messages';
-import { aiKey, getSettings, loggedItem } from '../storage';
+import { aiKey, getSettings, loggedItem, outboxLanguageItem } from '../storage';
 import { NoApiKey, parseResume } from './ai';
 
 /** Only Outbox's own pages may ask the extension to spend the owner's key. */
@@ -20,6 +20,15 @@ export async function readiness(): Promise<ExtensionReadiness> {
 export async function bridgeStatus(): Promise<BridgeStatus> {
   const [ready, logged] = await Promise.all([readiness(), loggedItem.getValue()]);
   return { readiness: ready, version: browser.runtime.getManifest().version, logged };
+}
+
+/**
+ * Keeps the language Outbox's page shows, for the extension's own to follow. Its page says so each time it asks how
+ * the extension is doing: written only when it changed.
+ */
+export async function followOutbox(language: 'en' | 'zh'): Promise<void> {
+  if (language !== 'en' && language !== 'zh') return;
+  if ((await outboxLanguageItem.getValue()) !== language) await outboxLanguageItem.setValue(language);
 }
 
 /** Reads a resume for Outbox's profile page. */

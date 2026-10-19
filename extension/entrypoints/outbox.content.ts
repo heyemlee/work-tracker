@@ -20,6 +20,7 @@ export default defineContentScript({
       status: () => toBackground('bridge:status', {}),
       parse: (pdf, text) => toBackground('resume:parse', { pdf, text }),
       openOptions: () => showSettings(ctx),
+      language: (language) => toBackground('outbox:language', { language }),
     });
     ctx.onInvalidated(stop);
     try {

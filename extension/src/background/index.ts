@@ -17,7 +17,7 @@ import {
   submitConfirmed,
   undo,
 } from './card';
-import { bridgeStatus, fromOutbox, readResumeForOutbox } from './bridge';
+import { bridgeStatus, followOutbox, fromOutbox, readResumeForOutbox } from './bridge';
 import { showBubble } from './bubble';
 import { dropFixedSnapshots } from './fixed';
 import { forgetButton, resetButton } from './icon';
@@ -40,8 +40,13 @@ export function startBackground(): void {
       if (message.type === 'profile:save') return storeProfile(tabId, message.profile);
       if (message.type === 'settings:status') return settingsStatus();
       if (message.type === 'settings:deleteAll') return deleteEverything();
-      if (message.type === 'bridge:status' || message.type === 'resume:parse') {
+      if (
+        message.type === 'bridge:status' ||
+        message.type === 'resume:parse' ||
+        message.type === 'outbox:language'
+      ) {
         if (!fromOutbox(sender.url)) return undefined;
+        if (message.type === 'outbox:language') return followOutbox(message.language);
         return message.type === 'bridge:status'
           ? bridgeStatus()
           : readResumeForOutbox(message.pdf, message.text);
