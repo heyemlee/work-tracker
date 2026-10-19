@@ -175,7 +175,7 @@ test('draws its settings in a frame of Outbox’s own window: one section, in Ou
   await expect(settings.getByLabel('同公司提醒')).toBeVisible();
   // Its language is Outbox's, chosen there: none to pick here.
   await expect(settings.getByText('语言', { exact: true })).toHaveCount(0);
-  await expect(settings.getByRole('button', { name: '导出全部' })).toBeVisible();
+  await expect(settings.getByRole('button', { name: '导出扩展数据（JSON）' })).toBeVisible();
   await tell({ type: 'settings:scheme', dark: true });
   await expect(settings.locator('.pane')).toHaveClass(/\bdark\b/);
 

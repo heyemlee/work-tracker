@@ -79,7 +79,7 @@ const en = {
   limit: 'Same-company warning',
   limitHelp: 'Warns at this many postings at one company within 30 days.',
   data: 'Data',
-  exportAll: 'Export everything',
+  exportAll: 'Export extension data (JSON)',
   exportHelp: 'The export leaves out the API key.',
   deleteAll: 'Delete everything',
   confirmDelete:
@@ -169,7 +169,7 @@ const zh: Record<Key, string> = {
   limit: '同公司提醒',
   limitHelp: '30 天内在同一家投到这么多个岗位时提醒。',
   data: '数据',
-  exportAll: '导出全部',
+  exportAll: '导出扩展数据（JSON）',
   exportHelp: '导出的内容不含 API key。',
   deleteAll: '清空全部',
   confirmDelete: '要从这个浏览器删除资料副本、简历副本、记住的回答、记录和 API key 吗？',

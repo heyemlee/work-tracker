@@ -179,7 +179,8 @@ extension's origin. The settings' page is reachable by address from any site, so
 the card asked the service worker for, for its tab, good once (`background/tickets.ts`); in a tab of its own (the
 browser's "Options") it draws as it is. Five sections —
 Connection (Outbox, the profile's and resumes' copies, Outbox's address), AI, Fill reports, Remembered answers,
-General (language, the same-company warning, export and delete) — each saving as it's changed, with no Save button
+General (language, the same-company warning, export and delete of what the extension keeps) — each saving as it's
+changed, with no Save button
 to tell it by. So a field says it at the end of its label (decided 2026-10-09, when the owner couldn't tell whether
 what they'd typed was saved): "Press Enter to save" while an address or a key is typed and not yet kept, then
 "✓ Saved" for a moment once the browser has kept it, after a choice from a list too; "Couldn't save" if it didn't. Text

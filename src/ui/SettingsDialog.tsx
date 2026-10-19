@@ -811,7 +811,7 @@ function GeneralSettings({ snapshot }: { snapshot: Snapshot }) {
         </span>
         <Button onClick={() => downloadCsv(snapshot)}>
           <Download className="size-3.5" aria-hidden="true" />
-          CSV
+          {t('settings.exportButton')}
         </Button>
       </Row>
       {resetSample ? (
