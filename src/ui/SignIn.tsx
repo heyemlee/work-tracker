@@ -72,8 +72,7 @@ export function SignIn() {
           />
         </div>
         <h1 className="mt-1 text-[28px] font-semibold tracking-[-0.025em]">Outbox</h1>
-        <p className="mt-1 text-[17px] text-fg-2">{t('signIn.title')}</p>
-        <p className="mx-auto mt-5 max-w-[280px] text-[13px] leading-relaxed text-fg-3">{t('signIn.body')}</p>
+        <p className="mx-auto mt-3 max-w-[280px] text-[13px] leading-relaxed text-fg-3">{t('signIn.body')}</p>
         <Button
           variant="primary"
           className="mt-7 h-11 w-full gap-2.5 text-[15px]"

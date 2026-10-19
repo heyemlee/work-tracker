@@ -281,7 +281,6 @@ const en = {
   'error.load': 'Couldn’t load your applications.',
   'error.retry': 'Try again',
 
-  'signIn.title': 'Every application, every account.',
   'signIn.body': 'Outbox is a private workspace. Sign in with the owner’s Google account.',
   'signIn.google': 'Continue with Google',
   'signIn.failed': 'Couldn’t start sign-in. Try again.',
@@ -933,7 +932,6 @@ const zh: Record<MessageKey, string> = {
   'error.load': '加载失败。',
   'error.retry': '重试',
 
-  'signIn.title': '每一次投递，每一个账户。',
   'signIn.body': 'Outbox 是私人工作区，请使用所有者的 Google 账号登录。',
   'signIn.google': '使用 Google 登录',
   'signIn.failed': '无法开始登录，请重试。',
