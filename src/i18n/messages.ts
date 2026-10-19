@@ -284,6 +284,7 @@ const en = {
 
   'channel.company_site': 'Company site',
   'channel.linkedin': 'LinkedIn',
+  'channel.indeed': 'Indeed',
   'channel.referral': 'Referral',
   'channel.recruiter': 'Recruiter',
   'channel.other': 'Other',
@@ -945,6 +946,7 @@ const zh: Record<MessageKey, string> = {
 
   'channel.company_site': '官网',
   'channel.linkedin': 'LinkedIn',
+  'channel.indeed': 'Indeed',
   'channel.referral': '内推',
   'channel.recruiter': 'Recruiter',
   'channel.other': '其他',

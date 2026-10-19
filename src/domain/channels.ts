@@ -7,6 +7,7 @@ import type { Channel } from './types';
 export const BUILTIN_CHANNELS: readonly Channel[] = [
   { id: 'ch_company_site', name: 'company_site', builtin: true },
   { id: 'ch_linkedin', name: 'linkedin', builtin: true },
+  { id: 'ch_indeed', name: 'indeed', builtin: true },
   { id: 'ch_referral', name: 'referral', builtin: true },
   { id: 'ch_recruiter', name: 'recruiter', builtin: true },
   { id: 'ch_other', name: 'other', builtin: true },

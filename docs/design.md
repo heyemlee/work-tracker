@@ -24,15 +24,15 @@ Company 1─n Job 1─n Application 1─n Event
                     └─ ResumeVersion  which resume was sent
 ```
 
-| Entity        | Fields                                                                | Notes                                                                            |
-| ------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Company       | name                                                                  | Unique by normalized name; drives autocomplete                                   |
-| Job           | company\*, title, url, notes                                          | One posting. Title, link and notes are optional                                  |
-| Application   | job\*, account\*, channel, resume, stage, rejected, appliedAt, source | At most one per (job, account)                                                   |
-| Account       | label, email, color                                                   | Never stores passwords — use a password manager                                  |
-| ResumeVersion | name, file                                                            | A name (e.g. `SDE-v3`) and its PDF, up to 1.4 MB; the file is loaded on its own  |
-| Channel       | name, builtin                                                         | Built-ins: Company site, LinkedIn, Referral, Recruiter, Other; user can add more |
-| Event         | job, application, type, from, to, at, actor                           | Append-only timeline written on every change; actor is `user` or `agent`         |
+| Entity        | Fields                                                                | Notes                                                                                    |
+| ------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Company       | name                                                                  | Unique by normalized name; drives autocomplete                                           |
+| Job           | company\*, title, url, notes                                          | One posting. Title, link and notes are optional                                          |
+| Application   | job\*, account\*, channel, resume, stage, rejected, appliedAt, source | At most one per (job, account)                                                           |
+| Account       | label, email, color                                                   | Never stores passwords — use a password manager                                          |
+| ResumeVersion | name, file                                                            | A name (e.g. `SDE-v3`) and its PDF, up to 1.4 MB; the file is loaded on its own          |
+| Channel       | name, builtin                                                         | Built-ins: Company site, LinkedIn, Indeed, Referral, Recruiter, Other; user can add more |
+| Event         | job, application, type, from, to, at, actor                           | Append-only timeline written on every change; actor is `user` or `agent`                 |
 
 **Stages are fixed.** An application moves Applied → OA → Offer. _Saved_ is not an application stage: it is a
 job with no applications yet. _Rejected_ is a flag rather than a stage, so "rejected after OA" keeps its stage.
