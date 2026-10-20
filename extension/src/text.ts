@@ -63,7 +63,9 @@ export function findOption(options: readonly string[], candidates: readonly stri
     const exact = normalized.indexOf(wanted);
     if (exact >= 0) return options[exact] ?? null;
     const pattern = new RegExp(`(^| )${escapeRegExp(wanted)}( |$)`);
-    const index = normalized.findIndex((option) => pattern.test(option));
+    // Not where the option says it isn't: "I am not a US resident" is no answer for the United States.
+    const denied = new RegExp(`(^| )(not|non|outside)( (a|an|the|in|of|from))* ${escapeRegExp(wanted)}( |$)`);
+    const index = normalized.findIndex((option) => pattern.test(option) && !denied.test(option));
     if (index >= 0) return options[index] ?? null;
   }
   return null;

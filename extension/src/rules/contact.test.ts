@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { FieldKind, ScannedField } from '../model';
 import { planForm } from '../plan';
 import { makeProfile } from '../test/profiles';
+import { findOption } from '../text';
 import { pickOption } from './options';
 
 function answerFor(label: string, options: string[]) {
@@ -66,6 +67,15 @@ describe('picking the United States', () => {
     expect(answerFor('Country', ['United States Minor Outlying Islands', 'United States', 'Uruguay'])).toBe(
       'United States',
     );
+  });
+
+  it('by the state, where a list of states asks where a US resident lives', () => {
+    // Aura's Greenhouse form: "I am not a US resident" first, then the states.
+    const RESIDENCE = ['I am not a US resident', 'Alabama', 'California', 'Colorado'];
+    expect(answerFor('What is your country of residence?', RESIDENCE)).toBe('California');
+    // As the dropdown is filled, its options read only once it's open.
+    expect(findOption(RESIDENCE, ['United States', 'USA', 'US', 'California'])).toBe('California');
+    expect(findOption(['Non-US citizen', 'US citizen'], ['US'])).toBe('US citizen');
   });
 
   it('in a list that names countries in Chinese', () => {

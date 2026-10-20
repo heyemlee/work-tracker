@@ -51,6 +51,9 @@ export const FIXED_SNAPSHOTS: ReadonlySet<string> = new Set([
   // Fixed 2026-10-20: on Cursor's own careers form the radios' questions were read as blank, so the sponsorship and
   // voluntary questions stayed empty, and a Yes or No with no question took a remembered answer.
   '903d3d38-5496-43bd-ae40-6c10278b30f0',
+  // Fixed 2026-10-20: Aura's Greenhouse form asks the country of residence by state, after "I am not a US resident",
+  // which was picked for the US.
+  '1ee1d581-1b4b-449d-9e42-95ed3f998a5b',
 ]);
 
 /** Takes the reports this build fixes off the list. */

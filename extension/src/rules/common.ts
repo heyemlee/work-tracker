@@ -225,7 +225,13 @@ function countryNames(country: string): string[] {
 function ownCountry(key: string, field: ScannedField, ctx: RuleContext): Resolution {
   const country = ctx.profile.address.country;
   if (isTextKind(field.kind)) return text(key, field, country);
-  const names = countryNames(country);
+  // Some forms ask where a US resident lives by their state, beside "I am not a US resident" (Aura's): the state's
+  // name answers there, after every name of the country. Not its code: "CA" is Canada's too.
+  const state =
+    key === 'address.country' && isUnitedStates(country)
+      ? stateNames(ctx.profile.address.state).filter((name) => name.length > 2)
+      : [];
+  const names = [...countryNames(country), ...state];
   const named = field.options.find((option) => names.some((name) => norm(name) === norm(option)));
   if (named) return text(key, field, named);
   const full = field.options.length ? names.filter((name) => /\s/.test(name.trim())) : names;
