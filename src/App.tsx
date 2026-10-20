@@ -119,13 +119,7 @@ function Workspace({ snapshot }: { snapshot: Snapshot }) {
 
   return (
     <>
-      <Toolbar
-        page={page}
-        query={query}
-        onQuery={setQuery}
-        onCompose={() => setComposing(true)}
-        snapshot={snapshot}
-      />
+      <Toolbar page={page} query={query} onQuery={setQuery} onCompose={() => setComposing(true)} />
       {page === 'applications' && (
         <ApplicationsPage
           snapshot={snapshot}

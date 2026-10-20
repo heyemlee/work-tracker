@@ -49,7 +49,7 @@ rejected, it displays the furthest rejected one, dimmed. Filters use the rollup.
 - **Pages** — Applications `/`, Resumes `/resumes`, Profile `/profile` and Insights `/insights`, each with its own
   address, as labelled tabs in the floating toolbar (a glass tab bar at the bottom on phones, with a round New
   button beside it). The toolbar also holds search, New, and one ⋯ menu for everything else: Settings (Outbox's and
-  the extension's, in one window since 2026-10-19), CSV export, the setup guide, sign-out. What the extension needs
+  the extension's, in one window since 2026-10-19), the setup guide, sign-out. What the extension needs
   (its key, AI turned on, installing) is said in a line under Settings, which then opens where it's dealt with, and
   the ⋯ button carries a dot only while it needs something. Until 2026-10-19 the extension's settings had a row of
   their own there, saying "Connected" when all was well; until 2026-10-10 the state had a button of its own, lit
@@ -91,7 +91,7 @@ rejected, it displays the furthest rejected one, dimmed. Filters use the rollup.
   toggle, apply with another account, the posting's link, notes, timeline.
 - **Settings** — one window for Outbox's settings and the extension's (decided 2026-10-19, where they had been two
   windows of two looks, side by side in the menu): Outbox's pages — accounts (an email address and a color each),
-  channels, and General (language, appearance, the daily goal, hiding rejected jobs, CSV export, sign-out) — and
+  channels, and General (language, appearance, the daily goal, hiding rejected jobs, sign-out) — and
   then the extension's — Connection, AI, Fill reports, Remembered answers, Other — down the left, the open one to
   their right. The extension's pages are its own settings page in a frame of its own origin, so its API key stays out
   of Outbox's reach ([autofill.md](autofill.md), "Settings"); where it isn't running, its part of the list is one

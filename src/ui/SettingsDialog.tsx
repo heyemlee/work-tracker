@@ -1,10 +1,9 @@
 import clsx from 'clsx';
-import { Download, LogOut, Plus, RotateCcw, Trash2, X } from 'lucide-react';
+import { LogOut, Plus, RotateCcw, Trash2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Dialog, Popover } from 'radix-ui';
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { signOut } from '../data/auth';
-import { downloadCsv } from '../data/export';
 import { askSettingsFrame, checkExtension, openExtensionOptions, useExtension } from '../data/extension';
 import { localRepository, useCurrentUser, useRepository } from '../data/store';
 import {
@@ -180,7 +179,7 @@ function SettingsBody({ desktop, snapshot, ...paged }: BodyProps) {
             <Channels snapshot={snapshot} />
           </Group>
           <Group title={t('settings.general')}>
-            <GeneralSettings snapshot={snapshot} />
+            <GeneralSettings />
           </Group>
         </div>
       )}
@@ -266,7 +265,7 @@ function Paged({ page, snapshot, settled, frameRef, onFrameClose }: Omit<BodyPro
                 <Channels snapshot={snapshot} />
               </div>
             )}
-            {shown === 'general' && <GeneralSettings snapshot={snapshot} />}
+            {shown === 'general' && <GeneralSettings />}
             {shown === 'extension.install' && <Install />}
           </div>
         )}
@@ -730,7 +729,7 @@ function ColorPicker({ value, onChange }: { value: AccountColor; onChange: (colo
   );
 }
 
-function GeneralSettings({ snapshot }: { snapshot: Snapshot }) {
+function GeneralSettings() {
   const { t } = useI18n();
   const run = useRepository();
   const locale = usePrefs((p) => p.locale);
@@ -803,16 +802,6 @@ function GeneralSettings({ snapshot }: { snapshot: Snapshot }) {
           onCheckedChange={(value) => updatePrefs({ hideRejected: value })}
           label={t('settings.hideRejected')}
         />
-      </Row>
-      <Row className="justify-between gap-4 py-2 pr-2 pl-3">
-        <span className="min-w-0">
-          <span className="block text-[14px]">{t('settings.export')}</span>
-          <span className="block text-[12px] text-fg-3">{t('settings.exportHint')}</span>
-        </span>
-        <Button onClick={() => downloadCsv(snapshot)}>
-          <Download className="size-3.5" aria-hidden="true" />
-          {t('settings.exportButton')}
-        </Button>
       </Row>
       {resetSample ? (
         <Row className="justify-between gap-4 py-2 pr-2 pl-3">

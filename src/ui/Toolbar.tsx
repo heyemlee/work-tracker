@@ -1,14 +1,12 @@
 import clsx from 'clsx';
-import { Download, Ellipsis, LogOut, Map as MapIcon, Plus, Search, Settings2, X } from 'lucide-react';
+import { Ellipsis, LogOut, Map as MapIcon, Plus, Search, Settings2, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Popover } from 'radix-ui';
 import { useRef, useState, type ReactNode } from 'react';
 import { signOut } from '../data/auth';
-import { downloadCsv } from '../data/export';
 import { useExtension, type ExtensionInfo } from '../data/extension';
 import { localRepository, useCurrentUser } from '../data/store';
 import { FILTERS, type Filter } from '../domain/rows';
-import type { Snapshot } from '../domain/types';
 import { useHotkey } from '../hooks/useHotkey';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useI18n } from '../i18n/context';
@@ -54,10 +52,9 @@ interface ToolbarProps {
   query: string;
   onQuery: (query: string) => void;
   onCompose: () => void;
-  snapshot: Snapshot;
 }
 
-export function Toolbar({ page, query, onQuery, onCompose, snapshot }: ToolbarProps) {
+export function Toolbar({ page, query, onQuery, onCompose }: ToolbarProps) {
   const { t } = useI18n();
   const paneRef = useRef<HTMLDivElement>(null);
   const glass = useLiquidGlass(paneRef, { radius: 22, bevel: 14 });
@@ -159,7 +156,7 @@ export function Toolbar({ page, query, onQuery, onCompose, snapshot }: ToolbarPr
             <Plus className="size-[18px]" aria-hidden="true" />
             <span>{t('toolbar.new')}</span>
           </button>
-          <MoreMenu snapshot={snapshot} />
+          <MoreMenu />
         </div>
       </div>
     </header>
@@ -176,10 +173,10 @@ const STATUS_COLOR: Record<ExtensionInfo['state'], string | null> = {
 
 /**
  * Everything that is neither a page nor New, behind one button: settings (Outbox's and the extension's, in one
- * window), CSV export, the setup guide and signing out. The button carries a dot only while the extension needs
+ * window), the setup guide and signing out. The button carries a dot only while the extension needs
  * something, which Settings then says, and opens where it's dealt with.
  */
-function MoreMenu({ snapshot }: { snapshot: Snapshot }) {
+function MoreMenu() {
   const { t } = useI18n();
   const { data: user } = useCurrentUser();
   const extension = useExtension();
@@ -241,12 +238,6 @@ function MoreMenu({ snapshot }: { snapshot: Snapshot }) {
             onClick={() => choose(() => openSettings(settingsAt))}
           >
             {t('menu.settings')}
-          </MenuItem>
-          <MenuItem
-            icon={<Download className="size-4" />}
-            onClick={() => choose(() => downloadCsv(snapshot))}
-          >
-            {t('menu.export')}
           </MenuItem>
           <MenuItem
             icon={<MapIcon className="size-4" />}

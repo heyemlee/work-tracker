@@ -128,7 +128,7 @@ page its own code drew. The design is in
   a flag, not a stage, so "rejected after the OA" keeps its stage.
 - Log one in about five seconds by keyboard, or paste the posting's link; adds and deletes can be undone.
 - Insights show the funnel and the OA rate of each resume version and channel. Liquid Glass with real refraction
-  in Chromium, English and Chinese, CSV export, and a phone layout.
+  in Chromium, English and Chinese, and a phone layout.
 
 ## Develop
 
