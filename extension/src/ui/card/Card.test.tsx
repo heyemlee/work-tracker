@@ -42,7 +42,6 @@ const base: CardState = {
   resumes: [],
   resumeId: null,
   match: null,
-  duplicateHint: false,
   checklist: [],
   logged: null,
   saved: null,

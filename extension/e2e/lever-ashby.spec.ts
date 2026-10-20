@@ -210,7 +210,7 @@ test('fills an Ashby application: system fields, yes/no buttons, radio groups', 
   await page.locator('outbox-autofill .card').screenshot({ path: 'e2e/output/ashby-card.png' });
 });
 
-test('says first that a posting was applied to before: who did, when, and what a second account risks', async ({
+test('says first that a posting was applied to before: who did and when', async ({
   context,
   worker,
   outbox,
@@ -261,8 +261,8 @@ test('says first that a posting was applied to before: who did, when, and what a
   await expect(said).toContainText('Already applied to this posting');
   await expect(said).toContainText('alex.chen@example.org');
   await expect(said).toContainText('3 days ago');
-  // Ashby merges candidates by name: the account still free to apply is one more of the same person.
-  await expect(said).toContainText('a second account may count as a duplicate');
+  // Only who and when ("不需要显示下面的字", 2026-10-20).
+  await expect(said).not.toContainText('duplicate');
   // It stands above the accounts, where the one that applied can't be chosen.
   expect(
     await said.evaluate(

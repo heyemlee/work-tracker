@@ -589,12 +589,6 @@ a:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
-.applied-more {
-  font-size: 12px;
-  color: var(--yellow);
-  text-wrap: balance;
-}
-
 .section {
   display: flex;
   flex-direction: column;

@@ -195,7 +195,6 @@ export async function cardState(session: TabSession, outbox?: OutboxState): Prom
     color: account.color,
     appliedAt: applied.get(account.id) ?? null,
   }));
-  const otherApplied = [...applied.keys()].some((id) => id !== session.accountId);
   // The page may have been seen to change while the rest was read, and its list sent on its own (`pageHolds`): the
   // list here is of the tab as it is now, so that it never takes an older one's place on the card.
   const latest = (await getSession(session.tabId)) ?? session;
@@ -217,11 +216,6 @@ export async function cardState(session: TabSession, outbox?: OutboxState): Prom
     resumes,
     resumeId: session.resumeId,
     match: session.match,
-    duplicateHint:
-      (session.ats === 'ashby' || session.ats === 'workday') &&
-      otherApplied &&
-      session.accountId !== null &&
-      !applied.has(session.accountId),
     checklist: checklist(latest),
     logged: session.logged,
     saved: session.saved,

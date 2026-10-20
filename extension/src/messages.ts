@@ -96,8 +96,6 @@ export interface CardState {
   resumes: CardResume[];
   resumeId: string | null;
   match: MatchReport | null;
-  /** Ashby and Workday merge candidates, so a second account on one posting shows up as a duplicate. */
-  duplicateHint: boolean;
   checklist: ChecklistItem[];
   /** `accountId`: the account it was logged for (none on logs made before 2026-10-14). */
   logged: { result: QuickAddResult; undone: boolean; manual: boolean; accountId?: string | null } | null;

@@ -646,9 +646,6 @@ H-1B history is a compact table built from the USCIS H-1B Employer Data Hub file
 employers, bundled with the extension) and matched by normalized company name. A company with no approvals on record
 raises nothing: the match is by name, and most small employers aren't in the table.
 
-**Duplicate hint.** Ashby and Workday merge candidates by name and contact details, so picking a second account for
-a posting there shows a note. It is a note, not a block.
-
 ## 8. Logging to Outbox
 
 - On a detected submission the service worker sends a quick add: company, title, link, the existing job when the

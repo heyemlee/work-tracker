@@ -962,7 +962,6 @@ export function Card({ startOpen }: { startOpen: boolean }) {
                       </div>
                     ),
                 )}
-                {state.duplicateHint && <div className="applied-more">{t('duplicate')}</div>}
               </div>
             </div>
           )}
