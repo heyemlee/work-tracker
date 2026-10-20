@@ -193,6 +193,17 @@ describe('a fill report of a page no form was read on', () => {
     expect(html).toContain('Your contact information for');
   });
 
+  it("takes out what a page's own trackers and file buttons say of the answers", () => {
+    // Cursor's form: Google Tag Manager marks each control a visitor touched, and the upload's button names the file.
+    document.body.innerHTML = `<form data-gtm-form-interact-id="0"><label for="r">Resume</label>
+      <input id="r" type="file" data-gtm-form-interact-field-id="0"><button type="button">🗎 Alex_Chen_Resume.pdf</button>
+      <label><input type="radio" name="g" data-gtm-form-interact-field-id="6"><span>Male</span></label>
+      <label><input type="radio" name="g"><span>Female</span></label><p>Upload .pdf or .docx</p></form>`;
+    const { html } = pageSnapshot(generic, document, null)!;
+    expect(html).not.toMatch(/gtm|Resume\.pdf/);
+    expect(html).toContain('Upload .pdf or .docx');
+  });
+
   it('leaves the page itself as it was', () => {
     const doc = step();
     const before = doc.body.innerHTML;

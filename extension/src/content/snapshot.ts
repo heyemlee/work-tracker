@@ -1,7 +1,7 @@
 import type { OwnerTraces, PlannedField } from '../model';
 import type { FormSnapshot } from '../storage';
 import type { Adapter } from './adapters/types';
-import type { Extraction } from './extract';
+import { FILE_NAME, type Extraction } from './extract';
 
 /**
  * Elements whose text shows what was typed or chosen: emptied in a snapshot. An attached file is named in an element
@@ -63,6 +63,17 @@ function blankCopy(adapter: Adapter, root: Element, owner: OwnerTraces): Element
     box.textContent = '';
   for (const option of copy.querySelectorAll('option')) option.removeAttribute('selected');
   for (const shown of copy.querySelectorAll(SHOWS_VALUE)) shown.textContent = '';
+  // A file's name shown in a page's own words, on a button or beside the upload (Cursor's "🗎 Alex_Chen_Resume.pdf").
+  const texts = copy.ownerDocument.createTreeWalker(copy, NodeFilter.SHOW_TEXT);
+  for (let node = texts.nextNode(); node; node = texts.nextNode())
+    if (FILE_NAME.test((node.textContent ?? '').trim())) node.textContent = '';
+  // Google Tag Manager marks each control a visitor has touched, which tells the choice they made.
+  for (const element of copy.querySelectorAll(
+    '[data-gtm-form-interact-field-id], [data-gtm-form-interact-id]',
+  )) {
+    element.removeAttribute('data-gtm-form-interact-field-id');
+    element.removeAttribute('data-gtm-form-interact-id');
+  }
   // select2 (Lever's school list) shows a pick as its text and again as its tooltip; with none, it shows its prompt.
   for (const pick of copy.querySelectorAll('.select2-selection__rendered[title]')) {
     pick.textContent = '';
