@@ -7,10 +7,10 @@ import type { Page } from '../state/router';
 /** Main pages; compact navigation groups secondary destinations under More. */
 export const PAGES: readonly { page: Page; icon: LucideIcon; label: MessageKey }[] = [
   { page: 'applications', icon: Send, label: 'nav.applications' },
-  { page: 'discovery', icon: Compass, label: 'nav.discovery' },
   { page: 'resumes', icon: FileText, label: 'nav.resumes' },
-  { page: 'resumeTools', icon: FileScan, label: 'nav.resumeTools' },
   { page: 'profile', icon: IdCard, label: 'nav.profile' },
+  { page: 'discovery', icon: Compass, label: 'nav.discovery' },
+  { page: 'resumeTools', icon: FileScan, label: 'nav.resumeTools' },
   { page: 'insights', icon: ChartColumn, label: 'nav.insights' },
 ];
 
