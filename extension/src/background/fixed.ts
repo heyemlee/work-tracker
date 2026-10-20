@@ -35,6 +35,8 @@ export const FIXED_SNAPSHOTS: ReadonlySet<string> = new Set([
   // it's signed on were read without their questions, and stayed empty.
   '0a21376d-d791-4755-a478-d11cc9ec908e',
   '9a183bff-c572-4e3d-bcec-6e007715f06f',
+  // Fixed 2026-10-20: ExactCare's Workday form got the owner's email for both professional references.
+  '9a4fc101-d89e-4c4a-a7b5-de14aa3ff3b4',
 ]);
 
 /** Takes the reports this build fixes off the list. */

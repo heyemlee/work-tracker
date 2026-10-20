@@ -165,6 +165,17 @@ describe("questions from the owner's snapshots", () => {
     ).toMatchObject({ status: 'missing', answer: null });
   });
 
+  it("gives no reference the owner's email", () => {
+    // ExactCare's Workday form, its text run together as the page draws it.
+    const reference = question(
+      'Please provide the following information for your first professional reference:NameJob TitleCompanyProfessional RelationshipPhone NumberEmail Address',
+      'textarea',
+    );
+    expect(answer(reference)).toMatchObject({ key: 'reference', status: 'missing', answer: null });
+    expect(answer(question('Reference Email Address', 'email'))).toMatchObject({ answer: null });
+    expect(answer(question('Reference Phone Number', 'tel'))).toMatchObject({ answer: null });
+  });
+
   it('reads "If this role requires relocation" as whether they would move', () => {
     expect(
       answer(

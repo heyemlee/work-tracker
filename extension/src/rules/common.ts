@@ -278,6 +278,15 @@ export const RULES: readonly Rule[] = [
   },
   { key: 'file', test: /./, kinds: ['file'], answer: (field) => empty('file', field, 'attachment') },
 
+  // A reference's name, title, phone and email are someone else's: never the owner's.
+  {
+    key: 'reference',
+    test: /\breferences?\b/,
+    not: /reference (number|code|no|id)\b|(job|posting|requisition) reference/,
+    kinds: ['text', 'textarea', 'email', 'tel'],
+    answer: (field) => empty('reference', field),
+  },
+
   // Names.
   {
     key: 'name.legalIfDifferent',
