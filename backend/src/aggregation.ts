@@ -1,9 +1,11 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import type { Board } from '../generated/prisma/client.js';
 import { Db } from './db.js';
 import { fetchListings, type Listing } from './providers.js';
 import { providerSchema } from './validation.js';
+
+const DAY = 24 * 60 * 60 * 1000;
 
 interface SyncResult {
   board: string;
@@ -46,9 +48,13 @@ export class Aggregation {
       );
     return this.status();
   }
-  @Cron('0 0 4 * * *', { timeZone: 'America/Los_Angeles' })
+  /** The computer this runs on sleeps through any set hour, so the hourly check syncs once the last sync is a day old. */
+  @Cron(CronExpression.EVERY_HOUR)
   async daily() {
-    if (process.env.ENABLE_SYNC === 'true') this.start();
+    if (process.env.ENABLE_SYNC !== 'true' || this.running) return;
+    const [{ followed, last }] = await this.db.$queryRaw<{ followed: number; last: Date | null }[]>`
+      SELECT count(*)::int AS followed, max("syncedAt") AS last FROM "Board" WHERE enabled`;
+    if (followed && (!last || Date.now() - last.getTime() >= DAY)) this.start();
   }
   async importBoard(board: Board, listings: Listing[]) {
     return this.db.$transaction(
