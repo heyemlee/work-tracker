@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ScannedField } from './model';
 import { aiCandidates, planForm } from './plan';
-import { memoryKey } from './rules/memory';
+import { memoryKey, remember } from './rules/memory';
 import { makeProfile } from './test/profiles';
 
 const ctx = {
@@ -215,6 +215,20 @@ describe("questions from the owner's snapshots", () => {
     expect(
       answer(question('Graduation date (2024-2026 graduates)', 'select', ['2024', '2025', '2026'])),
     ).toMatchObject({ answer: { option: '2025' } });
+  });
+});
+
+describe('a question with no label', () => {
+  // Cursor's radios were read without their questions: every Yes or No without one is the same "question".
+  const unnamed: ScannedField = { ...whyUs(false), label: '', kind: 'radio', options: ['Yes', 'No'] };
+  const yes = { type: 'choice' as const, want: { kind: 'like' as const, texts: ['Yes'] }, option: 'Yes' };
+
+  it('is neither remembered nor answered from memory', () => {
+    expect(remember([], unnamed, yes, '2026-10-20T00:00:00.000Z')).toEqual([]);
+    const kept = [
+      { key: memoryKey(unnamed), label: '', answer: yes, uses: 3, updatedAt: '2026-10-19T00:00:00.000Z' },
+    ];
+    expect(planForm([unnamed], ctx, kept)[0]).toMatchObject({ status: 'missing', answer: null });
   });
 });
 

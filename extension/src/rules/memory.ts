@@ -24,7 +24,11 @@ export function memoryKey(field: Pick<ScannedField, 'label' | 'kind' | 'options'
   return `${norm(field.label)}|${shape}|${options}`;
 }
 
+/** A field that says nothing of what it asks: two such are not the same question, whatever they offer. */
+const unnamed = (field: Pick<ScannedField, 'label'>) => norm(field.label) === '';
+
 export function recall(memory: readonly MemoryEntry[], field: ScannedField): MemoryEntry | null {
+  if (unnamed(field)) return null;
   const key = memoryKey(field);
   return memory.find((entry) => entry.key === key) ?? null;
 }
@@ -37,6 +41,7 @@ export function remember(
   now: string,
   { byAi = false, limit = 500 }: { byAi?: boolean; limit?: number } = {},
 ): MemoryEntry[] {
+  if (unnamed(field)) return [...memory];
   const key = memoryKey(field);
   const previous = memory.find((entry) => entry.key === key);
   const entry: MemoryEntry = {
