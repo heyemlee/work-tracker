@@ -742,7 +742,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     key: 'essentialFunctions',
-    test: /perform (the |these |all )?(essential|core) (functions|duties)/,
+    test: /perform (the |these |all )?(essential|core) (functions|duties)|meet (the )?attendance requirements/,
     answer: (field) => yesNo('essentialFunctions', field, true),
   },
   {

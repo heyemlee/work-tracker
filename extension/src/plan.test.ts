@@ -176,6 +176,17 @@ describe("questions from the owner's snapshots", () => {
     expect(answer(question('Reference Phone Number', 'tel'))).toMatchObject({ answer: null });
   });
 
+  it('says yes to meeting the attendance the job asks for, as to its essential functions', () => {
+    expect(
+      answer(
+        question('Are you able to meet the attendance requirements listed in the job description?', 'radio', [
+          'Yes',
+          'No',
+        ]),
+      ),
+    ).toMatchObject({ key: 'essentialFunctions', answer: { option: 'Yes' } });
+  });
+
   it('reads "If this role requires relocation" as whether they would move', () => {
     expect(
       answer(
