@@ -15,7 +15,7 @@ function page(withCredentials = false) {
     resolve(__dirname, '../../../test/fixtures/new-ats/icims-candidate.html'),
     'utf8',
   );
-  // A derived fixture variant, not a claim that an authenticated page was observed.
+  // The login part is drawn as Rivian's Candidate Profile draws its "Create a login" (2026-10-19).
   if (!withCredentials) doc.querySelector('[data-local-credentials]')!.remove();
   return doc;
 }
@@ -106,11 +106,13 @@ it.each(['last', 'absent'])('keeps final question submission detection when prog
   }
 });
 
-it('recognizes candidate setup as an application step while leaving the whole registration form unfillable', () => {
+it('fills a Candidate Profile that creates a login, and leaves the login to the owner', () => {
   const doc = page(true);
   expect(icims.applying!(doc, url)).toBe(true);
-  expect(icims.form(doc)).toBeNull();
-  expect(extractFields(icims, doc, 1).fields).toEqual([]);
+  expect(icims.form(doc)).toBe(doc.querySelector('#profileForm'));
+  const { fields } = extractFields(icims, doc, 1);
+  expect(fields.map((f) => f.label)).toEqual(extractFields(icims, page(), 1).fields.map((f) => f.label));
+  expect(fields.some((f) => /login|password/i.test(f.label))).toBe(false);
   expect(icims.submitButton(doc)).toBeNull();
   expect(icims.posting(doc, url)?.url).toBe('https://careers-example.icims.com/jobs/123/example-role/job');
 });

@@ -33,7 +33,7 @@ for(const id of [country,state]) {
 </script>`;
 
 for (const credentials of [true, false]) {
-  test(`iCIMS candidate profile ${credentials ? 'blocks registration fields' : 'fills a derived profile with lazy country and state menus'}`, async ({
+  test(`iCIMS candidate profile ${credentials ? 'that creates a login is filled but for the login' : 'fills a derived profile with lazy country and state menus'}`, async ({
     context,
     worker,
     outbox,
@@ -51,7 +51,7 @@ for (const credentials of [true, false]) {
       }),
     );
     let html = fixture('new-ats/icims-candidate.html');
-    // Derived credential-free variant; not an authenticated page capture.
+    // Without the login a profile like Rivian's asks the owner to create.
     if (!credentials) html = html.replace(/<div data-local-credentials>[\s\S]*?<\/div>/, '');
     html = html.replace('</body>', behavior + '</body>');
     await context.route('**/*', (route) => {
@@ -74,36 +74,28 @@ for (const credentials of [true, false]) {
     const frame = page.frameLocator('iframe');
     const card = page.locator('outbox-autofill');
     await expect(frame.locator('#profileForm')).toBeVisible();
-    if (credentials) {
-      await expect(card.getByRole('button', { name: /^Fill/ })).toBeDisabled();
-      await expect(frame.locator('[id="PersonProfileFields.Login"]')).toHaveValue('');
-      await expect(frame.locator('[id="PersonProfileFields.Password"]')).toHaveValue('');
-      await expect(frame.locator('[id="PersonProfileFields.FirstName"]')).toHaveValue('');
-      expect(await frame.locator('input[type=file]').evaluate((e: HTMLInputElement) => e.files?.length)).toBe(
-        0,
-      );
-    } else {
-      await frame.locator('[id="PersonProfileFields.FirstName"]').fill('Manual first name');
-      await card.getByRole('button', { name: /^Fill/ }).click();
-      await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45000 });
-      await expect(frame.locator('[id="PersonProfileFields.FirstName"]')).toHaveValue('Manual first name');
-      // Email follows the selected application account under the existing fill policy.
-      await expect(frame.locator('[id="PersonProfileFields.Email"]')).toHaveValue('alex@example.com');
-      await expect(frame.locator('[id="-1_PersonProfileFields.AddressStreet1"]')).toHaveValue(
-        '1 Sample Street',
-      );
-      await expect(frame.locator('[id="-1_PersonProfileFields.AddressCountry"]')).toHaveValue(
-        'United States',
-      );
-      await expect(frame.locator('[id="-1_PersonProfileFields.AddressState"]')).toHaveValue('California');
-      expect(await frame.locator('input[type=file]').evaluate((e: HTMLInputElement) => e.files?.length)).toBe(
-        1,
-      );
-      await frame
-        .locator('[id="-1_PersonProfileFields.AddressCountry_icimsDropdown"]')
-        .scrollIntoViewIfNeeded();
-      await page.screenshot({ path: test.info().outputPath('icims-profile.png') });
-    }
+    await frame.locator('[id="PersonProfileFields.FirstName"]').fill('Manual first name');
+    await card.getByRole('button', { name: /^Fill/ }).click();
+    await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45000 });
+    await expect(frame.locator('[id="PersonProfileFields.FirstName"]')).toHaveValue('Manual first name');
+    // Email follows the selected application account under the existing fill policy.
+    await expect(frame.locator('[id="PersonProfileFields.Email"]')).toHaveValue('alex@example.com');
+    await expect(frame.locator('[id="-1_PersonProfileFields.AddressStreet1"]')).toHaveValue(
+      '1 Sample Street',
+    );
+    await expect(frame.locator('[id="-1_PersonProfileFields.AddressCountry"]')).toHaveValue('United States');
+    await expect(frame.locator('[id="-1_PersonProfileFields.AddressState"]')).toHaveValue('California');
+    expect(await frame.locator('input[type=file]').evaluate((e: HTMLInputElement) => e.files?.length)).toBe(
+      1,
+    );
+    await frame
+      .locator('[id="-1_PersonProfileFields.AddressCountry_icimsDropdown"]')
+      .scrollIntoViewIfNeeded();
+    await page.screenshot({ path: test.info().outputPath('icims-profile.png') });
+    // The login is the owner's to choose.
+    if (credentials)
+      for (const id of ['Login', 'Password', 'Password_Confirm'])
+        await expect(frame.locator(`[id="PersonProfileFields.${id}"]`)).toHaveValue('');
     expect(
       await frame.locator('body').evaluate(() => (window as unknown as { submissions: number }).submissions),
     ).toBe(0);

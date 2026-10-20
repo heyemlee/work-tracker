@@ -82,11 +82,11 @@ it('Jobvite finds the resume outside the form without confusing it with the cove
   expect(adapter.submitButton(doc)).toBe(doc.querySelector('button[type="submit"]'));
 });
 
-it('iCIMS excludes login, password and search forms', () => {
+it('iCIMS excludes login, sign-in and search forms', () => {
   const doc = page('icims');
   for (const html of [
     '<form id="enterEmailForm"><input id="email" type="email"></form>',
-    '<form><input id="PersonProfileFields.FirstName"><input id="PersonProfileFields.LastName"><input type="password"></form>',
+    '<form><input id="PersonProfileFields.Login"><input type="password"></form>',
     '<form id="searchForm"><input name="searchKeyword"></form>',
   ]) {
     doc.body.innerHTML = html;

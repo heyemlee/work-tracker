@@ -24,14 +24,16 @@ const hints: Record<string, Hint> = {
   linkedinurl: 'links.linkedin',
   resume: 'resume',
 };
+/** The login a Candidate Profile can ask the owner to create with it: theirs to choose, never filled. */
+const LOGIN = /^PersonProfileFields\.(?:Login|Password)/i;
 function form(doc: Document) {
-  // The email-only gate and account/password forms must never be treated as applications.
+  // The email-only gate and the sign-in form are no applications. A Candidate Profile that creates a login on the way
+  // (Rivian's) is one: its login is left out (`skip`).
   return (
     [...doc.querySelectorAll('form')].find(
       (node) =>
         !isHidden(node) &&
         node.id !== 'enterEmailForm' &&
-        !node.querySelector('input[type="password"]') &&
         !!node.querySelector(
           '[id*="PersonProfileFields.FirstName"], [name*="PersonProfileFields.FirstName"]',
         ) &&
@@ -74,6 +76,7 @@ export const icims: Adapter = {
     // Candidate/login URLs can carry access codes. A tracked link must point back to the public posting.
     return { ...result, url: path ? `${link.origin}${path[1]}job` : link.href };
   },
+  skip: (control) => LOGIN.test(control.id || control.getAttribute('name') || ''),
   hint(control) {
     const key = /PersonProfileFields\.(.+)/i
       .exec(control.id || control.getAttribute('name') || '')?.[1]
@@ -127,7 +130,7 @@ export const icims: Adapter = {
     return fields;
   },
   applying(doc, url) {
-    // Registration/profile setup is part of applying, but a password-bearing form stays unfillable.
+    // Registration/profile setup is part of applying.
     return (
       !!form(doc) ||
       (!!doc.querySelector('form#profileForm [id="PersonProfileFields.FirstName"]') &&
