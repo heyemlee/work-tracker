@@ -17,6 +17,7 @@
     "db:deploy": "prisma migrate deploy",
     "seed": "npm run build && node --env-file-if-exists=.env dist/scripts/seed.js",
     "sync": "npm run build && node --env-file-if-exists=.env dist/scripts/sync.js",
+    "autostart": "node dist/scripts/autostart.js",
     "resume": "node --env-file-if-exists=.env dist/scripts/resume.js",
     "resume:data": "node dist/scripts/resume-public-data.js",
     "perf:up": "docker compose --profile performance up -d postgres perf-redis --wait",

@@ -2,6 +2,8 @@ name: outbox-lab
 services:
   postgres:
     image: postgres:17-alpine
+    # Back whenever Docker starts, for the service the deployed app reaches.
+    restart: unless-stopped
     environment:
       POSTGRES_USER: outbox
       POSTGRES_PASSWORD: outbox
