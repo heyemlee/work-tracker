@@ -7,16 +7,19 @@ afterEach(() => {
 });
 
 describe('local service client', () => {
-  it('never contacts localhost from a production build', async () => {
+  it('goes through the Worker with the session in a production build, never to localhost', async () => {
     vi.stubEnv('DEV', false);
-    const fetcher = vi.fn();
+    const fetcher = vi.fn().mockResolvedValue(Response.json({ code: 'NOT_HOSTED' }, { status: 404 }));
     vi.stubGlobal('fetch', fetcher);
     const { localToolRequest } = await import('./localTools');
     await expect(localToolRequest('/api/boards')).rejects.toMatchObject({
       unavailable: true,
       message: 'NOT_HOSTED',
     });
-    expect(fetcher).not.toHaveBeenCalled();
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/tools/api/boards',
+      expect.objectContaining({ credentials: 'same-origin', headers: {} }),
+    );
   });
   it('uses the separate same-origin prefix, omits main-site credentials and keeps FormData intact', async () => {
     vi.stubEnv('DEV', true);

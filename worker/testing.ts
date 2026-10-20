@@ -17,7 +17,8 @@ export async function startTestDatabase(): Promise<{
   d1: D1Database;
   dispose: () => Promise<void>;
 }> {
-  const proxy = await getPlatformProxy<Env>({ persist: false });
+  // The tools binding reaches the owner's computer only once deployed: tests open no remote session for it.
+  const proxy = await getPlatformProxy<Env>({ persist: false, remoteBindings: false });
   const d1 = proxy.env.DB;
   for (const [, sql] of Object.entries(migrations).sort(([a], [b]) => a.localeCompare(b))) {
     const statements = sql

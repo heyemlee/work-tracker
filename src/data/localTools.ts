@@ -8,20 +8,24 @@ export class LocalToolsError extends Error {
   }
 }
 
-/** This build has a dev-only same-origin bridge. Production must never reach a visitor's localhost. */
-export const localToolsAvailable = import.meta.env.DEV;
+/**
+ * In development, Vite's same-origin bridge to the service on this machine (scripts/localToolsProxy.ts). Deployed, the
+ * Worker's /api/tools, which checks the session and reaches the owner's computer through a tunnel (worker/tools.ts).
+ * Neither ever calls a visitor's localhost.
+ */
+const dev = import.meta.env.DEV;
 
 export async function localToolRequest<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
-  if (!localToolsAvailable) throw new LocalToolsError('NOT_HOSTED', true);
   const form = body instanceof FormData;
   let response: Response;
   try {
-    response = await fetch(`/local-tools${path}`, {
+    response = await fetch(`${dev ? '/local-tools' : '/api/tools'}${path}`, {
       method,
-      credentials: 'omit',
+      // The bridge has no use for the site's cookies; the Worker needs the session's.
+      credentials: dev ? 'omit' : 'same-origin',
       cache: 'no-store',
       headers: {
-        'x-outbox-local': '1',
+        ...(dev ? { 'x-outbox-local': '1' } : {}),
         ...(body !== undefined && !form ? { 'Content-Type': 'application/json' } : {}),
       },
       body: body === undefined ? undefined : form ? body : JSON.stringify(body),
@@ -31,6 +35,8 @@ export async function localToolRequest<T>(path: string, method = 'GET', body?: u
   }
   const data = await response.json().catch(() => null);
   if (!response.ok || !data) {
+    // A deployment with no service connected says so, and there's nothing to retry.
+    if (data?.code === 'NOT_HOSTED') throw new LocalToolsError('NOT_HOSTED', true);
     const unavailable = !data || ['SERVICE_UNAVAILABLE', 'LOCAL_ONLY', 'NOT_FOUND'].includes(data.code);
     throw new LocalToolsError(
       typeof data?.message === 'string' ? data.message : 'REQUEST_FAILED',

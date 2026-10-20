@@ -1,19 +1,10 @@
 import type { IncomingMessage } from 'node:http';
 import type { Plugin } from 'vite';
+import { localToolPath } from '../src/domain/localTools';
 
 const PREFIX = '/local-tools';
 const TARGET = 'http://127.0.0.1:3100';
 const MAX_BYTES = 6 * 1024 * 1024;
-
-/** Only the local tool's public API. Never proxy files, arbitrary destinations, or the Worker's /api. */
-export function localToolPath(method: string, path: string): boolean {
-  if (method === 'GET')
-    return /^\/(health|api\/(jobs(?:\/[\da-f-]{36})?|boards|sync|resumes\/status))$/.test(path);
-  if (method === 'POST')
-    return /^\/api\/(boards|sync|resumes\/(extract|parse|models|check-connection))$/.test(path);
-  if (method === 'PATCH') return /^\/api\/boards\/[\da-f-]{36}$/.test(path);
-  return ['PUT', 'DELETE'].includes(method) && path === '/api/resumes/settings';
-}
 
 export function trustedLocalRequest(
   request: Pick<IncomingMessage, 'headers' | 'method'>,

@@ -61,6 +61,8 @@ const en = {
   'local.loading': 'Connecting to the local service…',
   'local.offline':
     'The local service is unavailable. Start the service in backend/ and its PostgreSQL database, then retry.',
+  'local.unreachable':
+    'Can’t reach the service on your computer. It may be asleep, or the service isn’t running. Your tracker and profile remain available.',
   'local.notHosted':
     'This feature is ready for local development. A hosted service has not been connected to this site yet. Your tracker and profile remain available.',
   'local.failed': 'The request failed. Please retry.',
@@ -732,6 +734,8 @@ const zh: Record<MessageKey, string> = {
   'local.badge': '本地服务',
   'local.loading': '正在连接本地服务…',
   'local.offline': '本地服务未连接。请启动 backend/ 中的服务及 PostgreSQL 数据库，然后重试。',
+  'local.unreachable':
+    '连不上你电脑上的服务：电脑可能在睡眠，或者服务没有运行。投递追踪和个人资料仍可正常使用。',
   'local.notHosted': '此功能目前支持本地开发使用，本站尚未接入托管服务。投递追踪和个人资料仍可正常使用。',
   'local.failed': '操作未完成，请重试。',
   'local.retry': '重试',

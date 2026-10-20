@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { csrf } from 'hono/csrf';
 import { createMiddleware } from 'hono/factory';
 import { HTTPException } from 'hono/http-exception';
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { ConflictError, NotFoundError } from '../src/domain/errors';
 import { profileSchema } from '../src/domain/profile';
 import type { Repository } from '../src/domain/repository';
@@ -11,6 +12,7 @@ import { createAuth, type Auth } from './auth';
 import { createDb, type Db } from './db';
 import { user as users } from './db/auth-schema';
 import { createD1Repository } from './repository';
+import { forwardToTools } from './tools';
 import * as body from './validation';
 
 export interface SessionUser {
@@ -187,7 +189,16 @@ const api = new Hono<AppEnv>()
   .get('/profile', async (c) => c.json({ saved: await c.var.repo.loadProfile() }))
   .put('/profile', zValidator('json', profileSchema), async (c) =>
     c.json(await c.var.repo.saveProfile(c.req.valid('json'))),
-  );
+  )
+
+  // Discover and Resume tools, served from the owner's computer (worker/tools.ts).
+  .all('/tools/*', async (c) => {
+    const reply = await forwardToTools(c.req.raw, c.env);
+    return c.body(reply.body, reply.status as ContentfulStatusCode, {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+    });
+  });
 
 export const app = new Hono<AppEnv>()
   // Rejects cross-site form posts; JSON requests from other origins are already stopped by CORS preflight.

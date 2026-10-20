@@ -3,7 +3,8 @@ import { once } from 'node:events';
 import type { AddressInfo } from 'node:net';
 import type { ViteDevServer } from 'vite';
 import { describe, expect, it, vi } from 'vitest';
-import { localToolPath, localToolsProxy, trustedLocalRequest } from './localToolsProxy';
+import { localToolPath } from '../src/domain/localTools';
+import { localToolsProxy, trustedLocalRequest } from './localToolsProxy';
 
 describe('local bridge boundary', () => {
   const valid = {

@@ -1,5 +1,5 @@
 import { makeSignature } from 'better-auth/crypto';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { app } from './app';
 import { createAuth } from './auth';
 import { user } from './db/auth-schema';
@@ -90,5 +90,28 @@ describe('who a request is from', () => {
 
   it('looks the session up again once the cookie is gone', async () => {
     expect(await me(signedIn)).toMatchObject({ status: 200, statements: 2 });
+  });
+});
+
+describe('Discover and Resume tools', () => {
+  it('reach the service on the owner’s computer for a signed-in owner only', async () => {
+    const TOOLS = {
+      fetch: vi.fn(() => Promise.resolve(Response.json([{ company: 'Example' }]))),
+    } as unknown as Fetcher;
+    const connected = { ...env, TOOLS, TOOLS_TOKEN: 'a-tools-token' } as Env;
+    const boards = (cookie: string | undefined, bindings: Env) =>
+      app.request('/api/tools/api/boards', { headers: cookie ? { cookie } : {} }, bindings);
+
+    expect((await boards(undefined, connected)).status).toBe(401);
+    expect(TOOLS.fetch).not.toHaveBeenCalled();
+
+    const answer = await boards(signedIn, connected);
+    expect(answer.status).toBe(200);
+    expect(answer.headers.get('cache-control')).toBe('no-store');
+    expect(await answer.json()).toEqual([{ company: 'Example' }]);
+    // What Better Auth set while it looked the session up still reaches the browser.
+    expect(answer.headers.getSetCookie().some((cookie) => cookie.startsWith(`${cacheName}=`))).toBe(true);
+
+    expect(await (await boards(signedIn, env)).json()).toEqual({ code: 'NOT_HOSTED' });
   });
 });
