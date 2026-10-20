@@ -48,8 +48,8 @@ itself, and a NestJS service that gathers open roles from job boards and parses 
 
 One Worker serves the built app and the API under `/api`, with data in D1. The extension reads the profile and
 resume PDFs from that API and logs each submission to it; its AI key stays in the extension. Discover and Resume
-tools reach the NestJS service in `backend/` through the dev server, so a production build shows them as
-unavailable.
+tools reach the NestJS service in `backend/`, which runs on the owner's computer: through the dev server locally,
+and from the deployed app through the Worker and a Cloudflare Tunnel.
 
 - **Private by default.** Google sign-in for allowlisted emails only. Every query is scoped to the signed-in user,
   request bodies are validated, and cross-site form posts are rejected.

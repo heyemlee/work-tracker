@@ -1,7 +1,8 @@
 # Discover and Resume tools in development
 
 Discover and Resume tools run on the NestJS service in [`backend/`](../backend), with its own PostgreSQL
-database. The app reaches it only through the Vite dev server, so the service runs next to `npm run dev`.
+database. In development the app reaches it through the Vite dev server, so the service runs next to `npm run dev`;
+the deployed app reaches the same service through a tunnel (below).
 
 ## Start
 
@@ -46,11 +47,14 @@ local Host, peer address, same-origin writes and `x-outbox-local`, then adapts t
 `LocalGuard`. It strips main-site cookies and authorization headers. `/api/*` goes to the Worker, resume
 attachments included. Do not expose the dev server or the service publicly.
 
-## Not hosted
+## On the deployed site
 
-A production build shows these pages as unavailable and never contacts a visitor's localhost. Hosting them would
-take a separately hosted service and database, data and secrets scoped to each signed-in user, and a same-origin
-gateway; deploying the Worker hosts neither the service nor its database.
+The deployed app calls the Worker's `/api/tools`, never a visitor's localhost. The Worker checks the session,
+allows the same routes as the bridge, and forwards them over a Cloudflare Tunnel to the computer the service runs
+on, with a token in place of the browser's cookies. The service takes them on a second loopback port,
+127.0.0.1:3101, which opens only with `TOOLS_TOKEN` set and serves the API alone, not the service's own pages. Its
+data, model settings and spending ledger are the ones local development uses. Setup is in
+[deploy.md](deploy.md#discover-and-resume-tools); without it, the deployed pages say no service is connected.
 
 ## Browser tests
 

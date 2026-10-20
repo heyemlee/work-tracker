@@ -2,8 +2,9 @@
 
 The NestJS service behind Outbox's **Discover** and **Resume tools** pages. It runs on your machine: it gathers
 the open roles of the companies you follow from their public job boards, and reads resumes into profile facts
-with an LLM. The tracker and the extension don't need it, and a production build of the app shows these two
-pages as unavailable without ever calling a visitor's machine.
+with an LLM. The tracker and the extension don't need it. The deployed app reaches it through a Cloudflare Tunnel
+once one is connected (below), and shows these two pages as unavailable until then; it never calls a visitor's
+machine.
 
 TypeScript · NestJS · Prisma · PostgreSQL · zod · pdf.js · Mammoth · Redis · Vitest · Playwright
 
@@ -24,10 +25,32 @@ app reaches the service through a same-origin bridge that exists only in develop
 [docs/local-tools.md](../docs/local-tools.md). The service also serves pages of its own at
 <http://127.0.0.1:3100> and `/resume-lab`.
 
-Settings live in `.env` (copy `.env.example`): `ENABLE_SYNC=true` syncs the followed boards once a day, and
-`ENABLE_RESUME_AI=true` with a provider, model and key turns on parsing. The model settings in the app's Resume
-tools page and on the service's own `/resume-lab` page write the same file; only the service's page takes a key.
-`npm run sync` runs one sync by hand, and `npm run infra:down` stops the database.
+Settings live in `.env` (copy `.env.example`): `ENABLE_SYNC=true` syncs the followed boards once a day (checked
+every hour, so a computer that slept through it catches up), and `ENABLE_RESUME_AI=true` with a provider, model and
+key turns on parsing. The model settings in the app's Resume tools page and on the service's own `/resume-lab` page
+write the same file; only the service's page takes a key. `npm run sync` runs one sync by hand, and
+`npm run infra:down` stops the database.
+
+## From the deployed site
+
+The deployed app uses this same service, with its data, model settings and spending ledger, while it runs on your
+computer. The Worker checks your session and forwards the pages' calls through a Cloudflare Tunnel with a token the
+two share. The service takes them on a second loopback port, 127.0.0.1:3101, which opens only when `TOOLS_TOKEN` is
+set in `.env` and serves the API alone. Connecting the tunnel and the Worker is in
+[docs/deploy.md](../docs/deploy.md#discover-and-resume-tools).
+
+To keep it running, set Docker Desktop to start when you sign in (the database container restarts with Docker),
+then install a login agent that starts the built service and starts it again if it stops:
+
+```bash
+npm run build
+npm run autostart -- install   # now and at every login; logs to ~/Library/Logs/outbox-tools.log
+npm run autostart -- restart   # after the next build
+npm run autostart -- remove
+```
+
+The agent holds port 3100, so stop it before `npm run dev`. If the repository sits in a folder macOS protects
+(Desktop, Documents), allow Node to read it when macOS asks, or the agent can't start.
 
 ## Job boards
 

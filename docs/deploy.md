@@ -14,7 +14,8 @@ asset request now counts as a Worker request (a page load asks for three or four
 
 The files name one deployment's addresses. For your own copy, change them before the steps below:
 
-- `wrangler.jsonc`: the hostname in `routes` (step 3) and the `DB` entry's `database_id` (step 1).
+- `wrangler.jsonc`: the hostname in `routes` (step 3), the `DB` entry's `database_id` (step 1), and the `TOOLS`
+  entry under `vpc_services`: yours from [Discover and Resume tools](#discover-and-resume-tools), or none.
 - `extension/src/hosts.ts`: `OUTBOX_MATCHES`, the pages where the extension takes Outbox's session and
   answers its messages.
 - `extension/src/storage.ts`: `outboxUrl` in `DEFAULT_SETTINGS`, where the extension sends its API calls until
@@ -57,11 +58,31 @@ in. `workers.dev` stays off, so the app has a single origin.
 
 ### Discover and Resume tools
 
-The new routes are included in the app deployment, but their job-sync and parsing service is local only.
-Production shows an unavailable message and never contacts a visitor's localhost. Deploying the Worker does
-not publish `backend/`, its PostgreSQL database, model settings, or keys. These pages work fully in local
-development with the service running; making them available online requires a separately hosted and
-authenticated service with user-scoped data, model settings and budgets. This UI release adds no D1 migrations.
+These pages run on the NestJS service in `backend/`, on your own computer, and the deployed app reaches it through
+`/api/tools`: the Worker checks the session, lets through only the routes the pages call, and forwards them over a
+Cloudflare Tunnel with a token the service checks on a port of its own ([`worker/tools.ts`](../worker/tools.ts)).
+Nothing is opened to the internet, and the service, its database and the model keys stay on that computer. The
+pages work while it's awake and the service runs, and say they can't reach it otherwise. Until the steps below are
+done, they say no service is connected; the tracker and profile work either way.
+
+1. Set `TOOLS_TOKEN` in `backend/.env` to a long random string, and keep the service running at login
+   ([backend/README.md](../backend/README.md#from-the-deployed-site)).
+2. On the dashboard's **Workers VPC** page, create a tunnel and run the install command it shows on that computer,
+   which keeps `cloudflared` running as a service.
+3. Register the service on the tunnel, and put the ID this prints in `wrangler.jsonc` under `vpc_services`, as the
+   `TOOLS` binding:
+
+   ```bash
+   npx wrangler vpc service create outbox-tools --type http --tunnel-id <tunnel id> --ipv4 127.0.0.1 --http-port 3101
+   ```
+
+4. Give the Worker the same token, then deploy:
+
+   ```bash
+   npx wrangler secret put TOOLS_TOKEN
+   ```
+
+Workers VPC is in open beta and free on every plan while it is.
 
 ## 4. Google sign-in and secrets
 

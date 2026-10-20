@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 552" width="960" height="552" role="img" aria-labelledby="title desc">
   <title id="title">Outbox architecture</title>
-  <desc id="desc">The web app and the Autofill extension talk to one Cloudflare Worker, which serves the app, runs a Hono API with Better Auth, and stores data in D1. The extension asks Claude only for fields its rules can't place. A NestJS service behind Discover and Resume tools reads public job boards into PostgreSQL and parses resumes with OpenAI or Anthropic; the app reaches it through the dev server.</desc>
+  <desc id="desc">The web app and the Autofill extension talk to one Cloudflare Worker, which serves the app, runs a Hono API with Better Auth, and stores data in D1. The extension asks Claude only for fields its rules can't place. A NestJS service behind Discover and Resume tools reads public job boards into PostgreSQL and parses resumes with OpenAI or Anthropic; the app reaches it through the dev server, and the deployed app through the Worker and a Cloudflare Tunnel to the computer it runs on.</desc>
   <style>
     text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; }
     .eyebrow { font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; fill: #8e8e93; }
@@ -69,7 +69,7 @@
   <text class="edge" x="698" y="186" text-anchor="middle">SQL</text>
   <text class="edge" x="702" y="334" text-anchor="middle">sessions</text>
   <text class="edge" x="452" y="34" text-anchor="middle">only fields the rules can't place · your own key</text>
-  <text class="edge" x="276" y="452" text-anchor="middle">/local-tools · dev server</text>
+  <text class="edge" x="276" y="452" text-anchor="middle">dev server · Cloudflare Tunnel</text>
 
   <!-- Pulses: a log from the extension lands in D1 and comes back to the app's list; the extension asks Claude; the
        app asks the service, which reads the job boards and, on Parse, a model -->
