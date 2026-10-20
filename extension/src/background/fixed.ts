@@ -48,6 +48,9 @@ export const FIXED_SNAPSHOTS: ReadonlySet<string> = new Set([
   // typed in) were left empty. Reported twice.
   '0d07a3a9-a690-432f-a114-98d3297c5957',
   '12a3e95f-1c7b-454b-9321-4319532154e3',
+  // Fixed 2026-10-20: on Cursor's own careers form the radios' questions were read as blank, so the sponsorship and
+  // voluntary questions stayed empty, and a Yes or No with no question took a remembered answer.
+  '903d3d38-5496-43bd-ae40-6c10278b30f0',
 ]);
 
 /** Takes the reports this build fixes off the list. */

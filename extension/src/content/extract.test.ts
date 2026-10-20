@@ -107,6 +107,26 @@ describe('extractFields', () => {
     expect(after.find((field) => field.label === 'Race')?.id).not.toBeOneOf(before);
   });
 
+  it('names a group of radios by the label that names the group, star and all', () => {
+    // Cursor's own careers form (it posts to Ashby): each question's label names its radios' name, which no
+    // element has for an id, and each choice is a label round its radio.
+    document.body.innerHTML = `<form id="application-form">
+      <label for="q1">Will you now or in the future require visa sponsorship?<span aria-label="required">*</span></label>
+      <div><label><input type="radio" name="q1"><span>Yes</span></label><label><input type="radio" name="q1"><span>No</span></label></div>
+      <label for="survey:1:_systemfield_eeoc_gender"><strong>Gender</strong></label>
+      <div><label><input type="radio" name="survey:1:_systemfield_eeoc_gender"><span>Male</span></label><label><input type="radio" name="survey:1:_systemfield_eeoc_gender"><span>Female</span></label></div>
+    </form>`;
+    const { fields } = extractFields(greenhouse, document, 0);
+    expect(fields.map(({ label, required, options }) => ({ label, required, options }))).toEqual([
+      {
+        label: 'Will you now or in the future require visa sponsorship?',
+        required: true,
+        options: ['Yes', 'No'],
+      },
+      { label: 'Gender', required: false, options: ['Male', 'Female'] },
+    ]);
+  });
+
   it('gives the next page in the tab ids of its own', () => {
     // AI's answer for a field of the posting left behind arrives as the next one's form is up: it names no field there.
     document.body.innerHTML =

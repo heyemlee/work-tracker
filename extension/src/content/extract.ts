@@ -52,6 +52,13 @@ function holdsOnly(element: Element, inputs: HTMLInputElement[]): boolean {
   );
 }
 
+/** A label for a group of radios by their name, where no element has it for an id (Cursor's own form, for Ashby). */
+function labelByName(input: HTMLInputElement): Element | null {
+  const doc = input.ownerDocument;
+  if (input.type !== 'radio' || !input.name || doc.getElementById(input.name)) return null;
+  return doc.querySelector(`label[for="${attributeValue(input.name)}"]`);
+}
+
 function groupLabel(inputs: HTMLInputElement[]): string {
   const first = inputs[0];
   if (!first) return '';
@@ -72,6 +79,8 @@ function groupLabel(inputs: HTMLInputElement[]): string {
   const legend =
     fieldset && !(lone && !holdsOnly(fieldset, inputs)) ? fieldset.querySelector('legend') : null;
   if (legend) return textOf(legend);
+  const named = textOf(labelByName(first));
+  if (named) return named;
   const container = questionContainer(first);
   // A container holding only this input's own label is a choice, not the question: look one level up.
   const questionBox =
@@ -84,7 +93,7 @@ function groupLabel(inputs: HTMLInputElement[]): string {
 }
 
 /** "Alex_Chen_Resume.pdf", not "Accepted types: .pdf, .docx" or "Upload .pdf". */
-const FILE_NAME = /^[^\s:,][^:,]{0,200}[^\s.:,]\.(pdf|docx?|rtf|odt|txt)$/i;
+export const FILE_NAME = /^[^\s:,][^:,]{0,200}[^\s.:,]\.(pdf|docx?|rtf|odt|txt)$/i;
 
 /**
  * The file an upload holds: the one chosen in it, or one the page shows by name next to it, as Workday does with the
@@ -380,7 +389,10 @@ export function extractFields(
         description: descriptionOf(first),
         kind,
         options: kind === 'checkbox' ? [] : options,
-        required: inputs.some((input) => isRequired(input, label)),
+        // Such a label marks the question required with a star of its own.
+        required:
+          inputs.some((input) => isRequired(input, label)) ||
+          /[*✱]\s*$/.test(labelByName(first)?.textContent ?? ''),
         hint: adapter.hint?.(first) ?? null,
         section: sectionOf(first),
         entry: adapter.entry?.(first) ?? null,
