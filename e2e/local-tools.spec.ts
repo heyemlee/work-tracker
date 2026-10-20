@@ -324,15 +324,24 @@ for (const [width, locale, theme] of [
     });
     await page.getByRole('button', { name: locale === 'zh' ? '关闭' : 'Close', exact: true }).click();
     if (width < 1280) {
+      // A narrow screen keeps Profile and Insights behind More.
       await page
         .getByRole('button', { name: locale === 'zh' ? '更多页面' : 'More pages', exact: true })
         .click();
-      await page.getByRole('link', { name: locale === 'zh' ? '简历' : 'Resumes', exact: true }).click();
-      await expect(page).toHaveURL(/\/resumes$/);
-      await page
-        .getByRole('link', { name: locale === 'zh' ? '简历工具' : 'Resume tools', exact: true })
-        .click();
-    } else await page.getByRole('link', { name: 'Resume tools', exact: true }).click();
+      await expect(page.getByRole('dialog').getByRole('link')).toHaveText(
+        locale === 'zh' ? ['资料', '数据'] : ['Profile', 'Insights'],
+      );
+      await page.keyboard.press('Escape');
+    }
+    // Resume tools has no entry of its own: it opens from Resumes, which stays lit, in either navigation.
+    const resumes = page.getByRole('link', { name: locale === 'zh' ? '简历' : 'Resumes', exact: true });
+    await resumes.click();
+    await expect(page).toHaveURL(/\/resumes$/);
+    await page
+      .getByRole('button', { name: locale === 'zh' ? '简历工具' : 'Resume tools', exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/resume-tools$/);
+    await expect(resumes).toHaveAttribute('aria-current', 'true');
     await expect(
       page.getByRole('heading', { name: locale === 'zh' ? '简历工具' : 'Resume tools', exact: true }),
     ).toBeVisible();

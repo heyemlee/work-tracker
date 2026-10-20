@@ -15,7 +15,7 @@ import { navigate, PAGE_PATHS, type Page } from '../state/router';
 import { openSettings, type SettingsPage } from '../state/settingsWindow';
 import { useLiquidGlass } from './glass/useLiquidGlass';
 import { Link } from './Link';
-import { PAGES, useProfileBlanks } from './pages';
+import { navCurrent, PAGES, useProfileBlanks } from './pages';
 import { Brand } from './primitives';
 import { SegmentedControl } from './SegmentedControl';
 
@@ -82,12 +82,13 @@ export function Toolbar({ page, query, onQuery, onCompose }: ToolbarProps) {
         <nav aria-label={t('nav.label')} className="hidden flex-1 justify-center xl:flex">
           <div className="inline-flex rounded-full bg-fill p-[3px]">
             {PAGES.map((item) => {
-              const active = item.page === page;
+              const current = navCurrent(item.page, page);
+              const active = current !== undefined;
               return (
                 <Link
                   key={item.page}
                   to={PAGE_PATHS[item.page]}
-                  aria-current={active ? 'page' : undefined}
+                  aria-current={current}
                   className={clsx(
                     'relative flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-full px-3 text-[13px] font-medium whitespace-nowrap transition-colors',
                     active ? 'text-fg' : 'text-fg-2 hover:text-fg',
@@ -316,14 +317,15 @@ export function TabBar({ page, onCompose }: { page: Page; onCompose: () => void 
       >
         {glass.filter}
         {PAGES.filter((item) => COMPACT_PAGES.includes(item.page)).map((item) => {
-          const active = item.page === page;
+          const current = navCurrent(item.page, page);
+          const active = current !== undefined;
           const Icon = item.icon;
           return (
             <Link
               key={item.page}
               to={PAGE_PATHS[item.page]}
               aria-label={t(item.label)}
-              aria-current={active ? 'page' : undefined}
+              aria-current={current}
               className={clsx(
                 'relative flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-medium transition-colors',
                 active ? 'bg-fill-2 text-fg' : 'text-fg-2',
@@ -331,13 +333,7 @@ export function TabBar({ page, onCompose }: { page: Page; onCompose: () => void 
             >
               <Icon className="size-5" aria-hidden="true" />
               <span className="whitespace-nowrap">
-                {t(
-                  item.page === 'applications'
-                    ? 'nav.compactApplications'
-                    : item.page === 'resumeTools'
-                      ? 'nav.compactTools'
-                      : item.label,
-                )}
+                {t(item.page === 'applications' ? 'nav.compactApplications' : item.label)}
               </span>
               {item.page === 'profile' && blanks > 0 && (
                 <span
@@ -362,13 +358,13 @@ export function TabBar({ page, onCompose }: { page: Page; onCompose: () => void 
   );
 }
 
-const COMPACT_PAGES: Page[] = ['applications', 'discovery', 'resumeTools'];
+const COMPACT_PAGES: Page[] = ['applications', 'resumes', 'discovery'];
 
 function MorePages({ page }: { page: Page }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const items = PAGES.filter((item) => !COMPACT_PAGES.includes(item.page));
-  const current = items.find((item) => item.page === page);
+  const current = items.find((item) => navCurrent(item.page, page));
   const Icon = current?.icon ?? Ellipsis;
   const blanks = useProfileBlanks();
   return (
@@ -406,7 +402,7 @@ function MorePages({ page }: { page: Page }) {
                 key={item.page}
                 to={PAGE_PATHS[item.page]}
                 onClick={() => setOpen(false)}
-                aria-current={page === item.page ? 'page' : undefined}
+                aria-current={navCurrent(item.page, page)}
                 className="flex items-center gap-3 rounded-xl px-3 py-3 text-[14px] hover:bg-fill"
               >
                 <ItemIcon className="size-4" />

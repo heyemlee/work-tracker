@@ -16,8 +16,9 @@ npm --prefix backend run dev      # 127.0.0.1:3100; leave running alongside npm 
 
 Open [Discover](http://127.0.0.1:5180/discover) or [Resume tools](http://127.0.0.1:5180/resume-tools). Both pages
 have their own routes, survive a reload, work with back and forward, and share the app's themes, glass and
-English and Chinese copy. On a narrow screen the navigation shows Tracker, Discover, Tools and More, with Resumes,
-Profile and Insights under More.
+English and Chinese copy. Resume tools has no navigation entry of its own: it is part of Resumes, opened from that
+page's header or from Profile, and Resumes stays lit while it is open. On a narrow screen the navigation shows
+Tracker, Resumes, Discover and More, with Profile and Insights under More.
 
 ## Discover
 
