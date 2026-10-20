@@ -37,6 +37,9 @@ export const FIXED_SNAPSHOTS: ReadonlySet<string> = new Set([
   '9a183bff-c572-4e3d-bcec-6e007715f06f',
   // Fixed 2026-10-20: ExactCare's Workday form got the owner's email for both professional references.
   '9a4fc101-d89e-4c4a-a7b5-de14aa3ff3b4',
+  // Fixed 2026-10-20: on Benchling's Ashby form, Ethnicity and Veteran Branch of Service (lists searched as they're
+  // typed in) were left empty.
+  '0d07a3a9-a690-432f-a114-98d3297c5957',
 ]);
 
 /** Takes the reports this build fixes off the list. */

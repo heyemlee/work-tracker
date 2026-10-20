@@ -262,7 +262,14 @@ export async function applyAnswer(
               : answer.type === 'choices'
                 ? (answer.texts[0] ?? '')
                 : '';
-        if (!query || !want) return { ok: false, error: 'nothing to search for' };
+        if (!want) return { ok: false, error: 'nothing to search for' };
+        // A choice told by what it means, not by its words (a survey's "Decline to self identify"), in a dropdown
+        // that searches as it's typed in (Ashby's longer lists): its whole list is opened and read.
+        if (!query) {
+          if (handle.type !== 'typeahead') return { ok: false, error: 'nothing to search for' };
+          const choice = await pickFromCombobox(handle.element, (texts) => resolveChoice(texts, want, null));
+          return choice ? { ok: true, value: choice } : { ok: false, error: 'no matching option' };
+        }
         // Search by the most distinctive part: "Santa Clara, CA" finds "Santa Clara, California, United States", and
         // "United States of America (+1)" is searched without its dialing code.
         const bare = query.replace(/\s*\([^)]*\)/g, '').trim() || query;

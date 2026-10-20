@@ -245,6 +245,38 @@ describe('applyAnswer', () => {
     }
   });
 
+  it('opens a searchable list and picks a survey answer that has no words to search for', async () => {
+    // Ashby's longer lists, as its own page code draws them (Benchling's survey): typing searches, a down arrow
+    // opens the whole list in a portal at the end of the page.
+    html(
+      '<fieldset><label for="eth">Ethnicity</label><div><input id="eth" role="combobox" aria-expanded="false"><button type="button"></button></div></fieldset>',
+    );
+    const input = $<HTMLInputElement>('#eth');
+    input.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowDown' || input.getAttribute('aria-expanded') === 'true') return;
+      const portal = document.createElement('div');
+      portal.setAttribute('data-floating-ui-portal', '');
+      portal.innerHTML = `<div id="list" role="listbox">${['East Asian (Chinese, Japanese, Korean or Mongolian)', 'White', 'Decline to Self Identify'].map((text) => `<div role="option"><span>${text}</span></div>`).join('')}</div>`;
+      document.body.append(portal);
+      input.setAttribute('aria-expanded', 'true');
+      input.setAttribute('aria-controls', 'list');
+      for (const option of portal.querySelectorAll('[role="option"]'))
+        option.addEventListener('click', () => {
+          input.value = option.textContent!;
+          portal.remove();
+          input.setAttribute('aria-expanded', 'false');
+          input.removeAttribute('aria-controls');
+        });
+    });
+    const result = await applyAnswer(
+      { type: 'typeahead', element: input },
+      { type: 'choice', want: { kind: 'eeo', field: 'race', value: 'decline' }, option: null },
+      noFile,
+    );
+    expect(result).toEqual({ ok: true, value: 'Decline to Self Identify' });
+    expect(input.value).toBe('Decline to Self Identify');
+  });
+
   it('reports a choice the page doesn’t offer instead of guessing', async () => {
     html('<select id="s"><option>Red</option><option>Blue</option></select>');
     const result = await applyAnswer(
