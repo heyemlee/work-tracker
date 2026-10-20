@@ -218,6 +218,23 @@ describe("questions from the owner's snapshots", () => {
   });
 });
 
+describe('a phone number asked for without its country code', () => {
+  const number = (phone: string) =>
+    planForm(
+      [{ ...whyUs(false), label: 'Phone', kind: 'text', hint: 'phone.national' }],
+      { ...ctx, profile: makeProfile({ phone }) },
+      [],
+    )[0];
+
+  it('leaves the code out, however the number is written', () => {
+    expect(number('+1 408-555-0100')).toMatchObject({ key: 'phone', answer: { text: '408-555-0100' } });
+    expect(number('+1 (408) 555-0100')).toMatchObject({ answer: { text: '(408) 555-0100' } });
+    expect(number('+14085550100')).toMatchObject({ answer: { text: '408-555-0100' } });
+    expect(number('+86 138 0013 8000')).toMatchObject({ answer: { text: '138 0013 8000' } });
+    expect(number('408-555-0100')).toMatchObject({ answer: { text: '408-555-0100' } });
+  });
+});
+
 describe('a group of boxes none of which carries the answer', () => {
   // A list of offices to tick, none of them in Santa Clara: the plan used to count the question as filled.
   const offices = question('In what location(s) are you available to work?', 'multi', [

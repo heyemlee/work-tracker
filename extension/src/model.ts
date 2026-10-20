@@ -11,6 +11,7 @@ export type Ats =
   | 'smartrecruiters'
   | 'workable'
   | 'jobvite'
+  | 'eightfold'
   | 'generic';
 
 export type FieldKind =
@@ -43,6 +44,8 @@ export type Hint =
   | 'name.preferred'
   | 'email'
   | 'phone'
+  /** The number without its country code, which the form asks for apart. */
+  | 'phone.national'
   | 'phone.country'
   | 'phone.type'
   | 'location'

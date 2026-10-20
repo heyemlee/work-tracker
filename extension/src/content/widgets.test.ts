@@ -213,3 +213,33 @@ describe('a dropdown whose list is drawn apart from its button', () => {
     expect(button.textContent).toBe('Please select');
   });
 });
+
+describe('a dropdown that names its list before drawing it', () => {
+  // Eightfold's: each search box names its list from the start, draws it on a down arrow, and the last field's list
+  // is still fading out when the next box is opened.
+  it('waits for its own list, not the one still on the page', async () => {
+    document.body.innerHTML = `
+      <ul id="list-2" role="listbox"><li><button role="option">🇺🇸 (+1) United States of America</button></li></ul>
+      <input id="country" role="combobox" aria-controls="list-5" aria-expanded="false">`;
+    const input = document.querySelector<HTMLInputElement>('#country')!;
+    input.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowDown') return;
+      setTimeout(() => {
+        document.body.insertAdjacentHTML(
+          'beforeend',
+          '<ul id="list-5" role="listbox"><li><button role="option">阿富汗</button></li><li><button role="option">美国</button></li></ul>',
+        );
+        input.setAttribute('aria-expanded', 'true');
+        for (const option of document.querySelectorAll('#list-5 [role="option"]'))
+          option.addEventListener('click', () => {
+            input.value = option.textContent!;
+            document.querySelector('#list-5')!.remove();
+          });
+      }, 60);
+    });
+    expect(await pickFromCombobox(input, (texts) => texts.find((text) => text === '美国') ?? null)).toBe(
+      '美国',
+    );
+    expect(input.value).toBe('美国');
+  });
+});

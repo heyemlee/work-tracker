@@ -74,8 +74,8 @@ and from the deployed app through the Worker and a Cloudflare Tunnel.
 The extension in [`extension/`](extension) fills applications from the profile you keep in Outbox and logs each
 submission to it. It never presses Submit: you check every answer first.
 
-- **Rules first.** Adapters for Greenhouse, Lever, Ashby, Workday, Gem, iCIMS, SmartRecruiters, Workable and
-  Jobvite drive each form's widgets, with a generic adapter for other forms. Work authorization is answered by
+- **Rules first.** Adapters for Greenhouse, Lever, Ashby, Workday, Gem, iCIMS, SmartRecruiters, Workable,
+  Jobvite and Eightfold drive each form's widgets, with a generic adapter for other forms. Work authorization is answered by
   fixed rules for the job's country, never by a model, and always marked for you to check.
 - **Claude for the rest.** Fields the rules can't place go to Claude in one request per form; anything under 0.7
   confidence stays blank. Essay questions get a short draft grounded in the resume and the posting.
@@ -93,7 +93,8 @@ Rules-only fill accuracy on 22 saved application pages, every expected answer ch
 | Ashby      |     6 |         78 / 78 |                    77% |
 
 The blank required fields are essays and questions only the applicant can answer. Workday (behind a sign-in),
-iCIMS, SmartRecruiters, Workable and Jobvite are tested on pages modeled on their forms instead. The design is in
+iCIMS, SmartRecruiters, Workable and Jobvite are tested on pages modeled on their forms instead, and Eightfold on a
+page its own code drew. The design is in
 [docs/autofill.md](docs/autofill.md).
 
 ### Discover, Resume tools and Tracker

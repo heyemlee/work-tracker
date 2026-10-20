@@ -74,6 +74,20 @@ export function interviewedAt(profile: Profile, company: string): boolean {
   return target !== '' && profile.answers.interviewedAt.some((name) => normalizeCompanyName(name) === target);
 }
 
+/**
+ * The phone number without its country code, for a form that asks for the code apart: "+1 408-555-0100" is
+ * "408-555-0100". A number written without a code stays as it is.
+ */
+export function nationalPhone(phone: string): string {
+  const number = phone.trim();
+  const spaced = /^\+\d{1,3}[\s.-]+(\S.*)$/.exec(number);
+  if (spaced) return spaced[1] ?? number;
+  // Written as one run of digits: a North American number is the code 1 and ten digits.
+  const digits = number.replace(/[\s().-]/g, '');
+  const american = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(digits);
+  return american ? american.slice(1).join('-') : number;
+}
+
 /** "Santa Clara, CA". */
 export function cityState(profile: Profile): string {
   return [profile.address.city, profile.address.state].filter(Boolean).join(', ');

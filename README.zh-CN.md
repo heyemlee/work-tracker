@@ -62,7 +62,7 @@
 
 [`extension/`](extension) 里的扩展用你在 Outbox 维护的资料填写申请表，提交后把这份申请记到 Outbox。它从不替你点提交：每个答案都由你检查过再提交。
 
-- **规则优先。** Greenhouse、Lever、Ashby、Workday、Gem、iCIMS、SmartRecruiters、Workable 和 Jobvite 各有适配器操作表单控件，其他表单走通用适配器。工作许可按岗位所在国家用固定规则回答，从不交给模型，并且总会标出来请你确认。
+- **规则优先。** Greenhouse、Lever、Ashby、Workday、Gem、iCIMS、SmartRecruiters、Workable、Jobvite 和 Eightfold 各有适配器操作表单控件，其他表单走通用适配器。工作许可按岗位所在国家用固定规则回答，从不交给模型，并且总会标出来请你确认。
 - **剩下的交给 Claude。** 规则放不下的字段，每张表单只发一次请求给 Claude；置信度低于 0.7 的留空。开放式问题会根据简历和岗位写一段简短的草稿。
 - **填之前先做匹配检查：** 是否要求公民身份或安全许可、资历要求、这家公司的 H-1B 批准记录，以及近 30 天你投了它几个岗位。只提醒，从不拦着。
 - **自动记录。** 提交后的确认页一加载，这份申请就带着渠道、简历版本和链接记到 Outbox，并且可以撤销。
@@ -75,7 +75,7 @@
 | Lever      |      6 | 115 / 115 |          79% |
 | Ashby      |      6 |   78 / 78 |          77% |
 
-留空的必填项是开放式问题和只有申请人自己能答的问题。Workday（需要登录才能看到表单）、iCIMS、SmartRecruiters、Workable 和 Jobvite 在仿照各自表单的页面上测试。设计文档见 [docs/autofill.md](docs/autofill.md)。
+留空的必填项是开放式问题和只有申请人自己能答的问题。Workday（需要登录才能看到表单）、iCIMS、SmartRecruiters、Workable 和 Jobvite 在仿照各自表单的页面上测试，Eightfold 在它自己的代码画出的页面上测试。设计文档见 [docs/autofill.md](docs/autofill.md)。
 
 ### 岗位发现、简历工具与投递追踪
 

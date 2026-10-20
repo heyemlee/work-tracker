@@ -35,6 +35,9 @@ export const FIXED_SNAPSHOTS: ReadonlySet<string> = new Set([
   // it's signed on were read without their questions, and stayed empty.
   '0a21376d-d791-4755-a478-d11cc9ec908e',
   '9a183bff-c572-4e3d-bcec-6e007715f06f',
+  // Fixed 2026-10-20: Eightfold's form, drawn in Chinese for a browser that asks for it, was read by labels no rule
+  // knows; the resume, country code and country stayed empty. Read now by its own ids and its choices' English.
+  '1e1b7145-8990-4800-ad83-3f2517e9112b',
   // Fixed 2026-10-20: Rivian's iCIMS Candidate Profile, which creates a login on the way, wasn't read at all. Filled
   // now but for the login.
   '84d00fcd-57ea-4bf8-9af0-08850f9a7745',

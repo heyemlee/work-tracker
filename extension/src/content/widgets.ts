@@ -71,6 +71,9 @@ function listboxFor(input: HTMLElement): HTMLElement | null {
   const controls = input.getAttribute('aria-controls') ?? input.getAttribute('aria-owns');
   const byId = controls ? doc.getElementById(controls) : null;
   if (byId) return byId;
+  // It names its list, which isn't drawn yet: another list on the page is the last field's, still going (Eightfold's
+  // fades out after a pick).
+  if (controls) return null;
   // react-select draws its menu beside its control. With none there it is closed, and another list on the page (a
   // phone widget's hidden countries) isn't this field's.
   const control = input.closest('[class*="select__control"]');

@@ -11,6 +11,7 @@ import { workable } from './workable';
 import { jobvite } from './jobvite';
 import type { Adapter } from './types';
 import { workday } from './workday';
+import { eightfold } from './eightfold';
 
 const isUnder = (host: string, domain: string) => host === domain || host.endsWith(`.${domain}`);
 
@@ -27,6 +28,7 @@ export function adapterFor(url: string): Adapter {
   if (host === 'jobs.smartrecruiters.com') return smartrecruiters;
   if (host === 'apply.workable.com') return workable;
   if (host === 'jobs.jobvite.com') return jobvite;
+  if (isUnder(host, 'eightfold.ai')) return eightfold;
   return generic;
 }
 

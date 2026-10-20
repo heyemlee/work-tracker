@@ -1,5 +1,5 @@
 import type { Entry, Hint, PlannedField, ScannedField, Source } from './model';
-import { latestEducation } from './profile/profile';
+import { latestEducation, nationalPhone } from './profile/profile';
 import type { Education, Experience } from './profile/schema';
 import { answerAuth, classifyAuth, postingCountry } from './rules/authorization';
 import { findRule, RULES } from './rules/common';
@@ -246,6 +246,7 @@ function resolveHint(hint: Hint, field: ScannedField, ctx: RuleContext): Resolut
     const eeo = hint.slice(4) as 'gender' | 'hispanic' | 'race' | 'veteran' | 'disability';
     return choose(hint, field, eeoWant(eeo, ctx.profile));
   }
+  if (hint === 'phone.national') return text('phone', field, nationalPhone(ctx.profile.phone));
   // Ashby's name field keeps its hint when a form relabels it "Preferred First & Last Name".
   const relabeled = hint === 'name.full' && /\bpreferred\b/.test(norm(field.label));
   const key = relabeled ? 'name.preferred' : HINT_RULE_KEYS[hint];

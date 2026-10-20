@@ -633,6 +633,7 @@ const ATS_NAMES: Record<Ats, string> = {
   smartrecruiters: 'SmartRecruiters',
   workable: 'Workable',
   jobvite: 'Jobvite',
+  eightfold: 'Eightfold',
   generic: '',
 };
 

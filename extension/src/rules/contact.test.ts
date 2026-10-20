@@ -50,6 +50,14 @@ describe('picking the United States', () => {
         'United States Minor Outlying Islands (+1)',
       ]),
     ).toBe('United States (+1)');
+    // Eightfold's, by country code: the minor islands (UM) ahead of the country (US).
+    expect(
+      answerFor('Country Code', [
+        '🇺🇬 (+256) Uganda',
+        '🇺🇲 (+1) United States Minor Outlying Islands',
+        '🇺🇸 (+1) United States of America',
+      ]),
+    ).toBe('🇺🇸 (+1) United States of America');
   });
 
   it('for the country, spelled out or not', () => {
@@ -58,6 +66,11 @@ describe('picking the United States', () => {
     expect(answerFor('Country', ['United States Minor Outlying Islands', 'United States', 'Uruguay'])).toBe(
       'United States',
     );
+  });
+
+  it('in a list that names countries in Chinese', () => {
+    // Eightfold's, for a browser that asks for Chinese.
+    expect(answerFor('Country', ['阿富汗', '英国', '美国', '美属萨摩亚'])).toBe('美国');
   });
 });
 

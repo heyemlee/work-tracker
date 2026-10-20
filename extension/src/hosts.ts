@@ -27,6 +27,7 @@ export const ATS_MATCHES = [
   '*://jobs.smartrecruiters.com/*',
   '*://apply.workable.com/*',
   '*://jobs.jobvite.com/*',
+  '*://*.eightfold.ai/*',
 ];
 
 /** Where Outbox runs. The content script on these pages hands the session token to the service worker. */
