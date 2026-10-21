@@ -147,6 +147,7 @@ describe('the bridge to Outbox’s page', () => {
 
   it('only takes requests from Outbox’s own pages', () => {
     expect(fromOutbox('https://tracker.haoyang.us/')).toBe(true);
+    // Tests run as a development build does, where Outbox on this machine counts too.
     expect(fromOutbox('http://localhost:5180/?x=1')).toBe(true);
     expect(fromOutbox('https://tracker.haoyang.us.evil.example/')).toBe(false);
     expect(fromOutbox('https://jobs.lever.co/acme')).toBe(false);

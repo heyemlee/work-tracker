@@ -30,8 +30,16 @@ export const ATS_MATCHES = [
   '*://*.eightfold.ai/*',
 ];
 
-/** Where Outbox runs. The content script on these pages hands the session token to the service worker. */
-export const OUTBOX_MATCHES = ['https://tracker.haoyang.us/*', 'http://localhost:5180/*'];
+/**
+ * Where Outbox runs. The content script on these pages hands the session token to the service worker, and only these
+ * pages may ask the extension for anything. Outbox on this machine (`npm run dev`) is one of them for a development
+ * build alone (`npm run ext:dev`): a published build takes no local page for Outbox.
+ */
+export function outboxMatches(development: boolean): string[] {
+  return ['https://tracker.haoyang.us/*', ...(development ? ['http://localhost:5180/*'] : [])];
+}
+
+export const OUTBOX_MATCHES = outboxMatches(import.meta.env.DEV);
 
 /**
  * Job boards with apply flows of their own (LinkedIn's Easy Apply, Indeed Apply…) and sites that keep a resume on

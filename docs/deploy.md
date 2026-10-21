@@ -125,7 +125,9 @@ The extension is loaded unpacked in Chrome; it isn't published to the Chrome Web
    ```
 
 2. In Chrome, open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked** and pick
-   `extension/.output/chrome-mv3`. After each rebuild, press the reload arrow on the extension's card.
+   `extension/.output/chrome-mv3`. After each rebuild, press the reload arrow on the extension's card. This build
+   takes no page on this machine for Outbox: with Outbox running locally, build with `npm run ext:dev` and load
+   `extension/.output/chrome-mv3-dev` instead.
 3. On Outbox, open the resumes panel (the document icon in the toolbar) and upload each resume PDF you send; each
    becomes a resume version. The extension downloads the one picked on its card.
 4. Press **Fill profile** on a resume (this needs step 6's API key), or import a profile saved as JSON once from
