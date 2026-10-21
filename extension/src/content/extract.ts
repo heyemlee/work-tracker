@@ -2,10 +2,13 @@ import type { FieldKind, ScannedField } from '../model';
 import { clean } from '../text';
 import type { Adapter, CustomField, Handle } from './adapters/types';
 import {
+  asksSeveral,
   attributeValue,
   descriptionOf,
+  holdsOnly,
   isHidden,
   isRequired,
+  labelBefore,
   labelOf,
   questionContainer,
   questionText,
@@ -45,13 +48,6 @@ function choiceLabel(input: HTMLInputElement): string {
   return text;
 }
 
-/** The element holds no form control but these: a question of its own, not a section of several. */
-function holdsOnly(element: Element, inputs: HTMLInputElement[]): boolean {
-  return [...element.querySelectorAll('input:not([type="hidden"]), select, textarea')].every((control) =>
-    inputs.includes(control as HTMLInputElement),
-  );
-}
-
 /** A label for a group of radios by their name, where no element has it for an id (Cursor's own form, for Ashby). */
 function labelByName(input: HTMLInputElement): Element | null {
   const doc = input.ownerDocument;
@@ -75,9 +71,12 @@ function groupLabel(inputs: HTMLInputElement[]): string {
       .trim();
     if (text) return text;
   }
+  // A section's legend names none of the questions in it (Pinpoint's "3. Questions" over its yes-or-no questions).
   const fieldset = first.closest('fieldset');
   const legend =
-    fieldset && !(lone && !holdsOnly(fieldset, inputs)) ? fieldset.querySelector('legend') : null;
+    fieldset && (lone ? holdsOnly(fieldset, inputs) : !asksSeveral(fieldset, inputs))
+      ? fieldset.querySelector('legend')
+      : null;
   if (legend) return textOf(legend);
   const named = textOf(labelByName(first));
   if (named) return named;
@@ -87,7 +86,10 @@ function groupLabel(inputs: HTMLInputElement[]): string {
     container && inputs.every((input) => container.contains(input))
       ? container
       : questionContainer(container ?? first);
-  const text = questionBox ? questionText(questionBox) : '';
+  const text =
+    questionBox && !asksSeveral(questionBox, inputs)
+      ? questionText(questionBox)
+      : textOf(labelBefore(first, questionBox));
   const choices = new Set(inputs.map(choiceLabel));
   return choices.has(text) ? '' : text;
 }
@@ -391,7 +393,7 @@ export function extractFields(
         options: kind === 'checkbox' ? [] : options,
         // Such a label marks the question required with a star of its own.
         required:
-          inputs.some((input) => isRequired(input, label)) ||
+          inputs.some((input) => isRequired(input, label, inputs)) ||
           /[*✱]\s*$/.test(labelByName(first)?.textContent ?? ''),
         hint: adapter.hint?.(first) ?? null,
         section: sectionOf(first),
@@ -435,7 +437,10 @@ function fileLabel(input: HTMLInputElement, label: string): string {
   const group = input.closest('[role="group"], .field, .application-question, fieldset, [class*="upload"]');
   const labelledBy = group?.getAttribute('aria-labelledby');
   const named = labelledBy ? textOf(input.ownerDocument.getElementById(labelledBy)) : '';
-  return named || (group ? questionText(group) : '') || label;
+  // A section's heading ("2. Profile") isn't the upload's question: the label just before it is ("Résumé / CV").
+  const asked =
+    group && !asksSeveral(group, [input]) ? questionText(group) : textOf(labelBefore(input, group));
+  return named || asked || label;
 }
 
 export function controlsOf(handle: Handle): Element[] {

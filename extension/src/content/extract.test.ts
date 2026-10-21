@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { planForm } from '../plan';
+import { makeProfile } from '../test/profiles';
+import { generic } from './adapters/generic';
 import { greenhouse } from './adapters/greenhouse';
 import { readAnswer } from './apply';
 import { attachedFile, extractFields, fieldIds, heldFile, isFilled } from './extract';
@@ -124,6 +127,96 @@ describe('extractFields', () => {
         options: ['Yes', 'No'],
       },
       { label: 'Gender', required: false, options: ['Male', 'Female'] },
+    ]);
+  });
+
+  it('names each field in a section by its own label, never by the section’s heading', () => {
+    // Pinpoint's form (Brivo's, 2026-10-21): each field's label sits beside it with no `for`, and the section's legend
+    // offers "Apply with LinkedIn". Read by the legend, the street, city and zip were filled with the LinkedIn link.
+    document.body.innerHTML = `<form id="application-form">
+      <fieldset><legend><div><span>1.</span>Personal Details<p>We'll need these details in order to be able to contact you.</p></div><div><a href="#"><span>Apply with LinkedIn</span></a></div></legend>
+        <div class="col-1-1"><label class="external-form__label external-form__label--required" for="first">First Name</label><input required id="first" name="application_form[application][first_name]"></div>
+        <div class="col-1-1"><label for="linkedin"><span class="external-form__label">LinkedIn URL</span></label><input id="linkedin" type="text"></div>
+        <div class="col-1-1"><div class="frow">
+          <div class="col-1-1"><label class="external-form__label external-form__label--required">Country</label><div class="react-select"><div class="react-select__control"><div class="react-select__value-container"><div class="react-select__input-container"><input id="application_form[application][country]" role="combobox"></div></div></div></div></div>
+          <div class="col-1-1"><label class="external-form__label external-form__label--required">Street Address</label><input name="application_form[application][address1]" id="address1" required placeholder="Street Address"></div>
+          <div class="col-1-1"><label class="external-form__label external-form__label--required">City</label><input name="application_form[application][address2]" id="address2" required></div>
+          <div class="col-1-1"><label class="external-form__label external-form__label--required">Zipcode</label><input name="application_form[application][postcode]" id="postcode" required></div>
+        </div></div>
+      </fieldset>
+      <fieldset><legend><span>2.</span> Profile</legend>
+        <div><div class="external-form__label"><div class="external-form__label--required">Résumé / CV</div>
+          <span>Accepted file formats are .pdf and .docx</span></div>
+          <div class="file-field"><input type="file" id="cv" name="application_form[application][cv]"><label for="cv">Attach Résumé / CV</label></div></div>
+        <div><label class="external-form__label" for="summary"><div>Personal Summary</div>
+          <span>This section is optional.</span></label><textarea id="summary"></textarea></div>
+      </fieldset>
+      <fieldset><legend><span>3.</span>Questions</legend>
+        <div><label class="external-form__label" for="salary"><span class="external-form__label--title external-form__label--required">What is your desired fixed (base) salary for this position?</span></label><input id="salary" type="number" required></div>
+        <div><label class="external-form__label" for="answers_3_boolean_answer"><span class="external-form__label--title external-form__label--required">Are you legally eligible to work in the U.S.?</span></label>
+          <div><div><div id="answer-label-3-true" style="display: none">Are you legally eligible to work in the U.S.? yes</div><input type="radio" id="answers_3_true" name="answers[3]" aria-labelledby="answer-label-3-true"><label for="answers_3_true">Yes</label></div>
+          <div><input type="radio" id="answers_3_false" name="answers[3]"><label for="answers_3_false">No</label></div></div></div>
+      </fieldset>
+    </form>`;
+    const { fields } = extractFields(generic, document, 0);
+    expect(fields.map(({ label, required }) => ({ label, required }))).toEqual([
+      { label: 'First Name', required: true },
+      { label: 'LinkedIn URL', required: false },
+      { label: 'Country', required: true },
+      { label: 'Street Address', required: true },
+      { label: 'City', required: true },
+      { label: 'Zipcode', required: true },
+      { label: 'Résumé / CV Accepted file formats are .pdf and .docx', required: true },
+      // A mark elsewhere in the section isn't this field's: the summary is optional, and isn't written by AI.
+      { label: 'Personal Summary This section is optional.', required: false },
+      { label: 'What is your desired fixed (base) salary for this position?', required: true },
+      { label: 'Are you legally eligible to work in the U.S.?', required: true },
+    ]);
+    const profile = makeProfile({
+      address: {
+        line1: '1 Main St',
+        city: 'Santa Clara',
+        state: 'CA',
+        zip: '95050',
+        country: 'United States',
+      },
+    });
+    const plan = planForm(
+      fields,
+      {
+        profile,
+        email: 'alex@example.com',
+        resumeId: 'resume-1',
+        posting: null,
+        today: '2026-10-21',
+        appliedBefore: false,
+      },
+      [],
+    );
+    const typed = Object.fromEntries(
+      plan.map((entry, index) => [
+        fields[index]!.label,
+        entry.answer?.type === 'text' ? entry.answer.text : entry.key,
+      ]),
+    );
+    expect(typed).toMatchObject({
+      'LinkedIn URL': profile.links.linkedin,
+      'Street Address': '1 Main St',
+      City: 'Santa Clara',
+      Zipcode: '95050',
+      'Résumé / CV Accepted file formats are .pdf and .docx': 'resume',
+    });
+  });
+
+  it('leaves a field with no name of its own in a section nameless, not named by the section', () => {
+    // Nameless, no rule answers it and it isn't put to AI: it's left to the owner.
+    document.body.innerHTML = `<form id="application-form"><fieldset><legend>Apply with LinkedIn</legend>
+      <div><label class="label" for="first">First Name</label><input id="first"></div>
+      <div><input id="mystery"></div>
+    </fieldset></form>`;
+    expect(extractFields(greenhouse, document, 0).fields.map((field) => field.label)).toEqual([
+      'First Name',
+      '',
     ]);
   });
 

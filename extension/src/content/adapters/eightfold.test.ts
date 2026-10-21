@@ -53,7 +53,8 @@ describe('Eightfold', () => {
       { label: '电子邮件', kind: 'text', hint: 'email', required: true },
       { label: '名', kind: 'text', hint: 'name.first', required: true },
       { label: '姓', kind: 'text', hint: 'name.last', required: true },
-      { label: '电话', kind: 'text', hint: 'phone.national', required: true },
+      // By its own placeholder: "电话" is the heading over it and the code beside it, which has a name of its own.
+      { label: '电话号码', kind: 'text', hint: 'phone.national', required: true },
       { label: '城市', kind: 'text', hint: 'address.city', required: true },
       {
         label: 'Will you now, or in the future, require visa sponsorship? If so, please explain.',
@@ -82,7 +83,7 @@ describe('Eightfold', () => {
     expect(answer('电子邮件')).toMatchObject({ status: 'filled', answer: { text: 'alex@example.com' } });
     expect(answer('名')).toMatchObject({ status: 'filled', answer: { text: 'Alex' } });
     // The number alone: the code is chosen beside it, and the box takes only digits, dashes and brackets.
-    expect(answer('电话')).toMatchObject({ status: 'filled', answer: { text: '408-555-0100' } });
+    expect(answer('电话号码')).toMatchObject({ status: 'filled', answer: { text: '408-555-0100' } });
     expect(answer('上传您的简历')).toMatchObject({
       status: 'filled',
       answer: { type: 'file', resumeId: 'res-1' },

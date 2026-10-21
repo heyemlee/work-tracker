@@ -54,6 +54,9 @@ export const FIXED_SNAPSHOTS: ReadonlySet<string> = new Set([
   // Fixed 2026-10-20: Aura's Greenhouse form asks the country of residence by state, after "I am not a US resident",
   // which was picked for the US.
   '1ee1d581-1b4b-449d-9e42-95ed3f998a5b',
+  // Fixed 2026-10-21: on Brivo's Pinpoint form the street, city and zip were read by their section's heading ("…
+  // Apply with LinkedIn") and got the LinkedIn link; the resume, state and work authorization went unread.
+  '29c16443-4b22-4892-9ea9-0af9d0049e4e',
 ]);
 
 /** Takes the reports this build fixes off the list. */
