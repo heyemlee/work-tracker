@@ -1,0 +1,6 @@
+{
+  "extDescription": {
+    "message": "Fills job applications from your Outbox profile and logs each one you send. Works with Greenhouse, Lever, Ashby, Workday and more.",
+    "description": "The extension's one-line summary, shown in the Chrome Web Store and on chrome://extensions."
+  }
+}

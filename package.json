@@ -31,6 +31,7 @@
     "auth:schema": "npx --yes auth@1.7.5 generate --config scripts/auth-schema.config.ts --output worker/db/auth-schema.ts --yes",
     "ext:dev": "npm run dev -w extension",
     "ext:build": "npm run build -w extension",
+    "ext:zip": "npm run zip -w extension",
     "test:ui": "playwright test"
   },
   "dependencies": {

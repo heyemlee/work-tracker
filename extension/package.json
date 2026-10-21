@@ -1,13 +1,14 @@
 {
   "name": "outbox-autofill",
   "private": true,
-  "version": "0.1.0",
-  "description": "Fills job applications from a profile kept on this machine and logs each submission to Outbox.",
+  "version": "1.0.0",
+  "description": "Fills job applications from your Outbox profile and logs each one you send to Outbox.",
   "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "wxt build --mode development",
     "build": "wxt build",
+    "zip": "wxt zip",
     "typecheck": "tsc --noEmit -p .",
     "test": "vitest run",
     "postinstall": "wxt prepare",

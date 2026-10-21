@@ -16,8 +16,9 @@ export default defineConfig({
   alias: { '@domain': '../src/domain' },
   manifest: {
     name: 'Outbox Autofill',
-    description:
-      'Fills job applications from a profile kept on this machine and logs each submission to Outbox.',
+    // The Chrome Web Store's summary, in English and in Chinese (public/_locales).
+    description: '__MSG_extDescription__',
+    default_locale: 'en',
     // The card is injected into the top frame of any site that embeds an application form, and the service
     // worker talks to Outbox and to the Claude API.
     host_permissions: ['<all_urls>'],

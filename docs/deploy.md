@@ -109,14 +109,17 @@ npx wrangler secret put GOOGLE_CLIENT_SECRET
 npx wrangler secret put OWNER_EMAILS           # the Google account(s) allowed in, comma-separated
 ```
 
-Secrets apply immediately. Only emails in `OWNER_EMAILS` can create an account; anyone else is turned away.
+Secrets apply immediately. Only emails in `OWNER_EMAILS` can create an account; anyone else is turned away. To
+let someone else in, add their email there and to the consent screen's test users
+([chrome-web-store.md](chrome-web-store.md#letting-someone-in)).
 
 Migration `0003_profiles` adds the autofill profile's table: run `npm run db:migrate:remote` before deploying
 this version.
 
 ## Autofill extension
 
-The extension is loaded unpacked in Chrome; it isn't published to the Chrome Web Store.
+The extension can go on the Chrome Web Store as an unlisted item, installed from its link: how is in
+[chrome-web-store.md](chrome-web-store.md). For your own Outbox, build it and load it unpacked:
 
 1. Build it:
 

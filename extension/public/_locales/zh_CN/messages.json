@@ -1,0 +1,6 @@
+{
+  "extDescription": {
+    "message": "用你在 Outbox 里的资料填写求职申请，并把每份投出的申请记到 Outbox。支持 Greenhouse、Lever、Ashby、Workday 等。",
+    "description": "The extension's one-line summary, shown in the Chrome Web Store and on chrome://extensions."
+  }
+}
