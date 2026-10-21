@@ -101,3 +101,26 @@ describe('the card as LinkedIn moves to another posting in place', () => {
     await vi.waitFor(() => expect(host.querySelector('[role="dialog"]')).toBeNull(), { timeout: 4000 });
   });
 });
+
+describe("the profile's line", () => {
+  it('counts one blank as one', async () => {
+    for (const [blanks, said] of [
+      [1, '1 blank'],
+      [3, '3 blanks'],
+    ] as const) {
+      vi.mocked(toBackground).mockImplementation((async (type: string) =>
+        type === 'card:state'
+          ? { ...base, hasForm: true, jobPage: false, profile: { name: 'Alex Chen', blanks } }
+          : undefined) as never);
+      const host = document.body.appendChild(document.createElement('div'));
+      await act(async () => {
+        root = createRoot(host);
+        root.render(<Card startOpen />);
+      });
+      await vi.waitFor(() => expect(host.querySelector('.choice-note')?.textContent).toBe(said));
+      act(() => root?.unmount());
+      root = undefined;
+      host.remove();
+    }
+  });
+});

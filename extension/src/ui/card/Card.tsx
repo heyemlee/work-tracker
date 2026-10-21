@@ -1022,7 +1022,11 @@ export function Card({ startOpen }: { startOpen: boolean }) {
               <button className="choices link" onClick={() => setEditing(true)} title={t('profileEdit')}>
                 <span className="choice-text">{state.profile.name || t('profile')}</span>
                 {state.profile.blanks > 0 && (
-                  <span className="choice-note">{t('profileBlanks', { n: state.profile.blanks })}</span>
+                  <span className="choice-note">
+                    {state.profile.blanks === 1
+                      ? t('profileBlank')
+                      : t('profileBlanks', { n: state.profile.blanks })}
+                  </span>
                 )}
                 <ChevronRight size={14} className="link-arrow" />
               </button>
