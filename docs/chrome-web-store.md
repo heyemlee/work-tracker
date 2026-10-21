@@ -124,7 +124,9 @@ purpose, no creditworthiness or lending).
 ## Test instructions
 
 The review needs an Outbox account. Create a Google account for it with no 2-step verification, let it in (below),
-sign in with it once, and give it a made-up profile and resume. Then paste, with its address and password:
+and sign in with it once. Give it the made-up profile and resume in `extension/store/review/`: **Profile** →
+**Import JSON** with `review-profile.json`, then save; **Resumes** → **Upload PDF** with `Alex_Chen_Resume.pdf`. Then
+paste, with its address and password:
 
 ```text
 Outbox Autofill fills forms from an Outbox account. Sign in at https://tracker.haoyang.us with this Google account (its profile and resume are made-up test data):
