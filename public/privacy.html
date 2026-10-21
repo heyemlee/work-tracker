@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="How Outbox and the Outbox Autofill extension handle your data." />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=mochi" />
+    <title>Privacy policy · Outbox</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --fg: #1d1d1f;
+        --fg-2: #6e6e73;
+        --rule: #e5e5ea;
+        --link: #1d1d1f;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #000000;
+          --fg: #f5f5f7;
+          --fg-2: #a1a1a6;
+          --rule: #2c2c2e;
+          --link: #f5f5f7;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          16px/1.6 -apple-system,
+          BlinkMacSystemFont,
+          'SF Pro Text',
+          'Helvetica Neue',
+          'PingFang SC',
+          'Hiragino Sans GB',
+          'Microsoft YaHei',
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 48px 16px 80px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+      header a.home {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--fg);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      header img {
+        width: 28px;
+        height: 28px;
+      }
+      nav a {
+        color: var(--fg-2);
+        font-size: 14px;
+        text-decoration: none;
+        margin-left: 12px;
+      }
+      nav a:hover {
+        color: var(--fg);
+      }
+      h1 {
+        font-size: 32px;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+        margin: 0 0 4px;
+      }
+      h2 {
+        font-size: 19px;
+        margin: 36px 0 8px;
+      }
+      .updated {
+        color: var(--fg-2);
+        margin: 0 0 24px;
+      }
+      p,
+      li {
+        margin: 0 0 12px;
+      }
+      ul {
+        padding-left: 22px;
+        margin: 0 0 12px;
+      }
+      a {
+        color: var(--link);
+        text-underline-offset: 3px;
+      }
+      section + section {
+        border-top: 1px solid var(--rule);
+        margin-top: 56px;
+        padding-top: 40px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <a class="home" href="/"><img src="/favicon.svg?v=mochi" alt="" />Outbox</a>
+        <nav><a href="#en">English</a><a href="#zh">简体中文</a></nav>
+      </header>
+
+      <section id="en" lang="en">
+        <h1>Privacy policy</h1>
+        <p class="updated">Outbox and Outbox Autofill · Last updated October 20, 2026</p>
+
+        <p>
+          Outbox (tracker.haoyang.us) is a job-application tracker. Outbox Autofill is its Chrome extension:
+          it fills job application forms from the profile you keep in Outbox and records each application you
+          send. Both are an
+          <a href="https://github.com/heyemlee/work-tracker">open-source project</a> run by its developer.
+          This page says what data they handle, where it goes, and how to remove it.
+        </p>
+
+        <h2>What Outbox keeps</h2>
+        <p>
+          You sign in to Outbox with your Google account, and Google gives Outbox your name, email address and
+          profile picture. Only approved email addresses can sign in.
+        </p>
+        <p>
+          What you put in Outbox is stored under your account in its database on Cloudflare (Cloudflare D1):
+        </p>
+        <ul>
+          <li>your applications, the jobs and companies they're for, and your notes on them;</li>
+          <li>your resume versions and their PDF files;</li>
+          <li>
+            your autofill profile: contact details, address, links, work authorization, education, work
+            history, preferences, and the answers you choose for voluntary self-identification questions (such
+            as gender, race, veteran and disability status).
+          </li>
+        </ul>
+
+        <h2>What the extension does with your data</h2>
+        <ul>
+          <li>
+            On a site it doesn't know, it only looks for an application form (a resume upload beside name or
+            email fields). It does nothing else there unless it finds one or you click its icon.
+          </li>
+          <li>
+            To fill a form, it downloads your profile and the resume you pick from Outbox, using your Outbox
+            sign-in, and keeps a copy in Chrome on your computer.
+          </li>
+          <li>
+            On an application page it reads the form's questions and the job posting, and fills in answers. It
+            never submits a form: you do.
+          </li>
+          <li>
+            When you send an application, it sends Outbox the company, the job title, the posting's link, and
+            the email address and resume version you used, so the application shows in your tracker. You can
+            undo it.
+          </li>
+          <li>
+            It remembers answers you type into questions it couldn't fill, to offer them next time. They stay
+            in Chrome on your computer.
+          </li>
+          <li>
+            "This page didn't fill right" saves the page's structure, with your answers and details taken out,
+            in Chrome on your computer. It isn't sent anywhere.
+          </li>
+          <li>
+            Its settings, including any AI key you enter, stay in Chrome on your computer and are never sent
+            to Outbox.
+          </li>
+        </ul>
+
+        <h2>AI providers</h2>
+        <p>
+          AI is optional. If you add an API key in the extension's settings, the extension sends requests from
+          your browser straight to the provider you chose (OpenAI or another OpenAI-compatible service, or
+          Anthropic), with your key. A request holds what its answer needs: the question, the job posting, and
+          the parts of your profile or resume that bear on it, or a resume's text when you ask to read it into
+          your profile. That provider handles the data under its own terms and privacy policy. Without a key,
+          nothing goes to an AI provider.
+        </p>
+        <p>
+          On the website, Resume tools can read a resume you choose into your profile. That runs on a service
+          operated with Outbox, which sends the resume's text to OpenAI or Anthropic for that one request; the
+          text is held in memory only and isn't saved. Discover reads public job boards and needs nothing of
+          yours.
+        </p>
+
+        <h2>Who else receives data</h2>
+        <ul>
+          <li>Cloudflare hosts Outbox and its database.</li>
+          <li>Google provides sign-in.</li>
+          <li>The AI provider you choose, as described above.</li>
+        </ul>
+        <p>
+          Nothing is sold, shared for advertising, or used for anything but the features above. Outbox and the
+          extension use no analytics, ads or tracking. Outbox Autofill's use of data follows the
+          <a href="https://developer.chrome.com/docs/webstore/program-policies/user-data-faq"
+            >Chrome Web Store User Data Policy</a
+          >, including its Limited Use requirements.
+        </p>
+
+        <h2>Your choices</h2>
+        <ul>
+          <li>Edit or delete your applications, resumes and profile in Outbox at any time.</li>
+          <li>
+            Delete remembered answers and saved reports in the extension's settings. Removing the extension
+            deletes everything it kept in Chrome.
+          </li>
+          <li>To have your Outbox account and everything in it deleted, ask through the contact below.</li>
+        </ul>
+
+        <h2>Changes and contact</h2>
+        <p>
+          If this policy changes, this page will say so, with a new date. For questions or requests, open an
+          issue at
+          <a href="https://github.com/heyemlee/work-tracker/issues">github.com/heyemlee/work-tracker</a>, or
+          write to the email address on Outbox Autofill's Chrome Web Store page.
+        </p>
+      </section>
+
+      <section id="zh" lang="zh-CN">
+        <h1>隐私政策</h1>
+        <p class="updated">Outbox 与 Outbox Autofill · 最后更新于 2026 年 10 月 20 日</p>
+
+        <p>
+          Outbox（tracker.haoyang.us）是一个求职申请追踪工具。Outbox Autofill 是它的 Chrome 扩展：用你在
+          Outbox 里保存的资料填写求职申请表，并记录你投出的每一份申请。两者都是由其开发者维护的<a
+            href="https://github.com/heyemlee/work-tracker"
+            >开源项目</a
+          >。本页说明它们处理哪些数据、数据去向，以及如何删除。
+        </p>
+
+        <h2>Outbox 保存什么</h2>
+        <p>你用 Google 账号登录 Outbox，Google 会提供你的姓名、邮箱和头像。只有获准的邮箱才能登录。</p>
+        <p>你存进 Outbox 的内容，保存在它位于 Cloudflare 的数据库（Cloudflare D1）中，归在你的账号下：</p>
+        <ul>
+          <li>你的申请记录、对应的职位和公司，以及你的备注；</li>
+          <li>你的各个简历版本及其 PDF 文件；</li>
+          <li>
+            你的自动填写资料：联系方式、地址、链接、工作许可、教育经历、工作经历、偏好，以及你为自愿身份调查题（如性别、种族、退伍军人身份、残疾状况）选定的答案。
+          </li>
+        </ul>
+
+        <h2>扩展如何使用你的数据</h2>
+        <ul>
+          <li>
+            在它不认识的网站上，它只查看页面上有没有申请表（简历上传框加上姓名或邮箱栏）。除非找到申请表或你点了它的图标，它什么都不做。
+          </li>
+          <li>
+            填表时，它用你的 Outbox 登录状态，从 Outbox 下载你的资料和你选的简历，并在你电脑上的 Chrome
+            里留一份副本。
+          </li>
+          <li>在申请页面上，它读取表单的题目和职位描述，并填入答案。它从不替你提交，提交由你来点。</li>
+          <li>
+            你提交申请后，它把公司、职位名称、职位链接、你用的邮箱和简历版本发给
+            Outbox，让这份申请出现在你的追踪列表里。你可以撤销。
+          </li>
+          <li>
+            它会记住你在它没填上的题目里亲手填的答案，下次再遇到时提供。这些答案只保存在你电脑上的 Chrome 里。
+          </li>
+          <li>
+            “这页没填好”会把页面的结构（已去掉你的答案和个人信息）保存在你电脑上的 Chrome
+            里，不会发送到任何地方。
+          </li>
+          <li>它的设置，包括你填入的 AI key，只保存在你电脑上的 Chrome 里，从不发送给 Outbox。</li>
+        </ul>
+
+        <h2>AI 服务商</h2>
+        <p>
+          AI 是可选的。如果你在扩展设置里填了 API key，扩展会用你的
+          key，从你的浏览器直接向你选的服务商（OpenAI 或其他兼容 OpenAI 的服务，或
+          Anthropic）发送请求。请求里只有回答所需的内容：题目、职位描述、你资料或简历中相关的部分；或者在你要求把简历读进资料时，发送简历的文字。服务商按它自己的条款和隐私政策处理这些数据。不填
+          key，就不会向任何 AI 服务商发送数据。
+        </p>
+        <p>
+          网站上的 Resume tools 可以把你选的简历读进资料。它运行在与 Outbox
+          配套的服务上，该服务只为这一次请求把简历文字发给 OpenAI 或
+          Anthropic；文字只留在内存里，不会保存。Discover 读取公开的招聘网站，不需要你的任何数据。
+        </p>
+
+        <h2>还有谁会收到数据</h2>
+        <ul>
+          <li>Cloudflare：托管 Outbox 及其数据库。</li>
+          <li>Google：提供登录。</li>
+          <li>你选择的 AI 服务商，如上所述。</li>
+        </ul>
+        <p>
+          数据不会被出售，不会用于广告，也不会用于上述功能以外的任何用途。Outbox
+          和扩展都不使用任何统计、广告或追踪。Outbox Autofill 对数据的使用遵守<a
+            href="https://developer.chrome.com/docs/webstore/program-policies/user-data-faq"
+            >Chrome 应用商店用户数据政策</a
+          >，包括其中的有限使用（Limited Use）要求。
+        </p>
+
+        <h2>你的选择</h2>
+        <ul>
+          <li>你随时可以在 Outbox 里修改或删除你的申请、简历和资料。</li>
+          <li>
+            在扩展设置里可以删除记住的答案和保存的反馈记录。卸载扩展会删除它在 Chrome 里保存的所有内容。
+          </li>
+          <li>如需删除你的 Outbox 账号及其中的全部数据，请通过下方联系方式提出。</li>
+        </ul>
+
+        <h2>变更与联系</h2>
+        <p>
+          本政策如有变更，会在本页注明并更新日期。如有问题或请求，请在
+          <a href="https://github.com/heyemlee/work-tracker/issues">github.com/heyemlee/work-tracker</a>
+          提交 issue，或写信到 Outbox Autofill 在 Chrome 应用商店页面上列出的邮箱。
+        </p>
+      </section>
+    </main>
+  </body>
+</html>
