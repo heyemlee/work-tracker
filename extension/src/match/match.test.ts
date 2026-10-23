@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 // @ts-expect-error: a plain JavaScript build script, imported here to keep its key in step with the extension's.
 import { employerKey as scriptKey } from '../../scripts/build-h1b.mjs';
 import { employerKey, findEmployer, type H1bTable } from './h1b';
+import type { Snapshot } from '@domain/types';
 import { matchReport } from './report';
 import { minimumYears, scanPosting } from './scan';
 
@@ -113,5 +114,58 @@ describe('H-1B lookup', () => {
     ]) {
       expect(scriptKey(name)).toBe(employerKey(name));
     }
+  });
+});
+
+describe('applications at the same company', () => {
+  const at = '2026-10-01T00:00:00.000Z';
+  const snapshot: Snapshot = {
+    accounts: [],
+    resumes: [],
+    channels: [],
+    companies: [{ id: 'c1', name: 'Acme', createdAt: at }],
+    jobs: ['j1', 'j2', 'j3'].map((id) => ({
+      id,
+      companyId: 'c1',
+      title: null,
+      url: null,
+      notes: '',
+      createdAt: at,
+      updatedAt: at,
+    })),
+    applications: ['j1', 'j2', 'j3'].map((jobId) => ({
+      id: `a-${jobId}`,
+      jobId,
+      accountId: 'me',
+      channelId: null,
+      resumeId: null,
+      stage: 'applied',
+      rejected: false,
+      appliedAt: '2026-10-01',
+      source: 'user',
+      createdAt: at,
+      updatedAt: at,
+    })),
+  };
+
+  it('notes the count without turning the match yellow', () => {
+    const report = matchReport({
+      posting: {
+        ats: 'greenhouse',
+        company: 'Acme',
+        title: 'Software Engineer',
+        url: 'https://job-boards.greenhouse.io/acme/jobs/4',
+        location: null,
+        description: 'We build developer tools.',
+      },
+      applicantYears: 2,
+      snapshot,
+      h1b: null,
+      today: '2026-10-06',
+      jobId: null,
+      sameCompanyLimit: 3,
+    });
+    expect(report.level).toBe('green');
+    expect(report.signals).toEqual([{ level: 'note', code: 'sameCompany', evidence: '3' }]);
   });
 });

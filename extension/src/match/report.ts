@@ -11,7 +11,7 @@ export interface MatchReport {
   h1b: H1bRecord | null;
 }
 
-const rank: Record<Level, number> = { green: 0, yellow: 1, red: 2 };
+const rank: Record<Signal['level'], number> = { note: -1, green: 0, yellow: 1, red: 2 };
 
 /** Postings at this company applied to in the last 30 days, other than this one. */
 export function recentAtCompany(
@@ -49,7 +49,7 @@ export function matchReport(input: {
   if (input.snapshot && posting.company) {
     const recent = recentAtCompany(input.snapshot, posting.company, input.today, input.jobId);
     if (recent >= input.sameCompanyLimit)
-      signals.push({ level: 'yellow', code: 'sameCompany', evidence: String(recent) });
+      signals.push({ level: 'note', code: 'sameCompany', evidence: String(recent) });
   }
 
   let h1b: H1bRecord | null = null;
@@ -62,7 +62,7 @@ export function matchReport(input: {
   }
 
   const level = signals.reduce<Level>(
-    (worst, signal) => (rank[signal.level] > rank[worst] ? signal.level : worst),
+    (worst, signal) => (signal.level !== 'note' && rank[signal.level] > rank[worst] ? signal.level : worst),
     'green',
   );
   return { level, signals: [...signals].sort((a, b) => rank[b.level] - rank[a.level]), h1b };

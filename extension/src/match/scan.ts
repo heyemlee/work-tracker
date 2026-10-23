@@ -6,7 +6,8 @@
 export type Level = 'green' | 'yellow' | 'red';
 
 export interface Signal {
-  level: Level;
+  /** `note` is a fact for the owner, neither a good sign nor a warning: it leaves the match's level alone. */
+  level: Level | 'note';
   code:
     | 'citizenship'
     | 'clearance'

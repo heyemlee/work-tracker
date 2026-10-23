@@ -344,10 +344,11 @@ a:focus-visible {
   line-height: 16px;
 }
 
-.reasons.red {
+/* Each reason in its own color; a note keeps the text's. */
+.reasons .red {
   color: var(--red);
 }
-.reasons.yellow {
+.reasons .yellow {
   color: var(--yellow);
 }
 

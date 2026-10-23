@@ -925,7 +925,14 @@ export function Card({ startOpen }: { startOpen: boolean }) {
               <span>{home ? 'Outbox Autofill' : (state.posting?.title ?? t('outbox'))}</span>
             </div>
             {reasons.length > 0 && (
-              <div className={`reasons ${match!.level}`}>{reasons.map(signalText).join(' · ')}</div>
+              <div className="reasons">
+                {reasons.map((signal, index) => (
+                  <span key={signal.code} className={signal.level}>
+                    {index > 0 && ' · '}
+                    {signalText(signal)}
+                  </span>
+                ))}
+              </div>
             )}
           </div>
           <Menu items={menu} label={t('more')} />
