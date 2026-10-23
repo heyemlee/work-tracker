@@ -1,6 +1,6 @@
 import { cleanLink, companyFromSlug, parsePosting } from '@domain/postings';
 import type { FieldKind, Hint, Posting } from '../../model';
-import { htmlText, jsonAfter, textOf, wordsAt } from '../dom';
+import { htmlText, jsonAfter, sleep, textOf, waitFor, wordsAt } from '../dom';
 import type { Adapter } from './types';
 
 const HINTS: Record<string, Hint> = {
@@ -124,6 +124,17 @@ export const greenhouse: Adapter = {
 
   // "Enter manually" text boxes duplicate the resume and cover letter uploads.
   skip: (control) => /^(resume|cover_letter)_text$/.test(control.id),
+
+  // Greenhouse sends an attached file to its storage first, under a progress bar, and takes it into the form when
+  // that's done. The form keeps its answers in one record that each field's change writes over whole, from the record
+  // as last drawn: a field filled between the upload's end and the page's next drawing wrote the record from before
+  // the file over it. The file was lost while its name still showed, and the form said the resume was missing
+  // (Otter.ai, 2026-10-23). The fill goes on once the bar is gone, which is after the form has drawn the file in, or
+  // after the upload failed.
+  async resumeRead(doc) {
+    await sleep(300);
+    await waitFor(() => !doc.querySelector('.file-upload__progressbar'), 30_000, 100);
+  },
 
   submitButton: (doc) =>
     doc.querySelector<HTMLElement>(

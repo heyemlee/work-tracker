@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { planForm } from '../../plan';
 import { pickOption } from '../../rules/options';
 import { loadFixture } from '../../test/fixtures';
@@ -232,5 +232,51 @@ describe('a fill report of a Greenhouse page', () => {
         required,
       }));
     expect(read(saved)).toEqual(read(doc));
+  });
+});
+
+describe('once the resume is attached to a Greenhouse form', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** The upload box as Greenhouse draws it while the file is on its way; returns a way to end the upload. */
+  function uploading() {
+    document.body.innerHTML =
+      '<div class="file-upload"><div class="file-upload__wrapper"><div role="progressbar" class="file-upload__progressbar"></div></div></div>';
+    return () => {
+      document.querySelector('.file-upload__wrapper')!.innerHTML =
+        '<div class="file-upload__filename"><span>resume.pdf</span></div>';
+    };
+  }
+
+  /** How long the fill waits before it goes on, in ms. */
+  async function waited() {
+    const started = Date.now();
+    const waiting = greenhouse.resumeRead!(document).then(() => Date.now() - started);
+    await vi.runAllTimersAsync();
+    return waiting;
+  }
+
+  it('goes on only when the upload is over, however long it takes', async () => {
+    for (const ms of [1500, 9000]) {
+      setTimeout(uploading(), ms);
+      const took = await waited();
+      expect(took).toBeGreaterThanOrEqual(ms);
+      expect(took).toBeLessThanOrEqual(ms + 150);
+    }
+  });
+
+  it('goes on after a moment where no upload is under way', async () => {
+    document.body.innerHTML = '<div class="file-upload__filename"><span>resume.pdf</span></div>';
+    expect(await waited()).toBeLessThanOrEqual(400);
+  });
+
+  it('waits no longer than half a minute for an upload that never ends', async () => {
+    uploading();
+    expect(await waited()).toBeLessThanOrEqual(31_000);
   });
 });
