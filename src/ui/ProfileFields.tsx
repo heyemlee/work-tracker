@@ -400,6 +400,12 @@ export function SectionBody({
               options={EEO_ORIENTATIONS.map((value) => ({ value, label: eeoLabel(value) }))}
               onChange={(orientation) => patch('eeo', { orientation })}
             />
+            <Choice
+              label={t('profile.f.transgender')}
+              value={eeo.transgender}
+              options={EEO_YES_NO.map((value) => ({ value, label: eeoLabel(value) }))}
+              onChange={(transgender) => patch('eeo', { transgender })}
+            />
           </Grid>
         </>
       );

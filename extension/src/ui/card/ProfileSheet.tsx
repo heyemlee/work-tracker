@@ -583,6 +583,12 @@ function Fields({
               options={options(EEO_ORIENTATIONS, 'eeo')}
               onChange={(orientation) => patch('eeo', { orientation })}
             />
+            <Choice
+              label={f('transgender')}
+              value={eeo.transgender}
+              options={options(EEO_YES_NO, 'eeo')}
+              onChange={(transgender) => patch('eeo', { transgender })}
+            />
           </Grid>
         </>
       );

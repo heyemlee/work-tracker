@@ -83,3 +83,26 @@ describe('a list that asks race and Hispanic origin at once', () => {
     expect(pickEeoOption(['White', 'Asian'], 'race', 'white', true)).toBe('White');
   });
 });
+
+describe('transgender', () => {
+  // DoorDash's Greenhouse form, from the owner's report.
+  const doordash = ['Yes', 'No', "I don't wish to answer"];
+
+  it('answers from the profile', () => {
+    const profile = makeProfile({ eeo: { transgender: 'no' } });
+    expect(eeoWant('transgender', profile)).toMatchObject({ value: 'no' });
+    expect(pickEeoOption(doordash, 'transgender', 'no')).toBe('No');
+    expect(pickEeoOption(doordash, 'transgender', 'yes')).toBe('Yes');
+  });
+
+  it('reads the longer wordings', () => {
+    const long = ['I identify as transgender', 'I do not identify as transgender', 'Prefer not to say'];
+    expect(pickEeoOption(long, 'transgender', 'no')).toBe('I do not identify as transgender');
+    expect(pickEeoOption(long, 'transgender', 'yes')).toBe('I identify as transgender');
+  });
+
+  it('declines until the profile says otherwise', () => {
+    expect(eeoWant('transgender', makeProfile())).toMatchObject({ value: 'decline' });
+    expect(pickEeoOption(doordash, 'transgender', 'decline')).toBe("I don't wish to answer");
+  });
+});

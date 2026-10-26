@@ -103,6 +103,7 @@ export const profileSchema = z.object({
       disability: z.enum(EEO_YES_NO).default('decline'),
       /** Some forms add it to the voluntary survey; "gay" covers their "Gay or lesbian" and "Homosexual". */
       orientation: z.enum(EEO_ORIENTATIONS).default('decline'),
+      transgender: z.enum(EEO_YES_NO).default('decline'),
     })
     .default({
       gender: 'decline',
@@ -111,6 +112,7 @@ export const profileSchema = z.object({
       veteran: 'decline',
       disability: 'decline',
       orientation: 'decline',
+      transgender: 'decline',
     }),
   answers: z
     .object({
@@ -199,6 +201,7 @@ export function emptyProfile(): Profile {
       veteran: 'decline',
       disability: 'decline',
       orientation: 'decline',
+      transgender: 'decline',
     },
     answers: profileSchema.shape.answers.parse({}),
     writing: { summary: '', stories: [], snippets: [] },

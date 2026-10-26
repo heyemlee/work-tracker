@@ -60,6 +60,9 @@ export const FIXED_SNAPSHOTS: ReadonlySet<string> = new Set([
   // Fixed 2026-10-23: on Otter.ai's Greenhouse form the resume showed as attached, but the form had lost it to a
   // field filled while its upload ended, and asked for it again.
   '138f89e1-a9b2-44e4-a9d6-0749f439504c',
+  // Fixed 2026-10-26: DoorDash's Greenhouse form asks "Do you identify as transgender?", which was always declined:
+  // the profile now holds the answer.
+  '69f7df7a-4aee-4df9-a108-033596375a53',
 ]);
 
 /** Takes the reports this build fixes off the list. */

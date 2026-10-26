@@ -25,7 +25,7 @@ export function eeoWant(field: EeoField, profile: Profile): Want {
     veteran: eeo.veteran,
     disability: eeo.disability,
     orientation: eeo.orientation,
-    transgender: 'decline',
+    transgender: eeo.transgender,
   };
   // Some lists ask race and Hispanic origin at once (Workday's "Ethnicity": "Hispanic or Latino" beside
   // "White (Not Hispanic or Latino)"): there a yes to Hispanic is the answer.
@@ -106,6 +106,10 @@ export function pickEeoOption(
       return pattern ? find((text) => pattern.test(text) && !/\bnot\b/.test(text)) : null;
     }
     case 'transgender':
-      return null;
+      if (value === 'no')
+        return find((text) => leads(text, 'no') || /^i (do not|don t) identify as trans/.test(text));
+      return find(
+        (text) => (leads(text, 'yes') || /^i identify as trans/.test(text)) && !/do not|don t/.test(text),
+      );
   }
 }
