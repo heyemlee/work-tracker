@@ -1,6 +1,6 @@
 import type { Answer, ScannedField } from '../model';
 import { norm } from '../text';
-import { isChoiceKind, isTextKind } from './resolve';
+import { isChoiceKind, isTextKind, onlyDate } from './resolve';
 
 /** An answer the owner typed into a field the rules didn't fill, kept to fill the same question next time. */
 export interface MemoryEntry {
@@ -24,8 +24,13 @@ export function memoryKey(field: Pick<ScannedField, 'label' | 'kind' | 'options'
   return `${norm(field.label)}|${shape}|${options}`;
 }
 
-/** A field that says nothing of what it asks: two such are not the same question, whatever they offer. */
-const unnamed = (field: Pick<ScannedField, 'label'>) => norm(field.label) === '';
+/**
+ * A field that says nothing of what it asks, or not whose: no label, or a date's words alone ("End date year", a
+ * job's or a school's). Two such are not the same question, whatever they offer: Lyft's current job got an end year
+ * typed on another form weeks before (2026-10-23).
+ */
+export const unnamed = (field: Pick<ScannedField, 'label'>) =>
+  norm(field.label) === '' || onlyDate(field.label);
 
 export function recall(memory: readonly MemoryEntry[], field: ScannedField): MemoryEntry | null {
   if (unnamed(field)) return null;

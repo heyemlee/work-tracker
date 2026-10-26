@@ -259,6 +259,37 @@ describe('what a sent form teaches for next time', () => {
     await submitAttempt(TAB, URL_, sent('Yes'), []);
     expect((await memoryItem.getValue()).map((entry) => entry.answer)).toMatchObject([{ option: 'Yes' }]);
   });
+
+  // Greenhouse's dropdowns show their options only once opened: the plan wanted a no it hadn't seen as "No", and the
+  // fill picked "No". Remembered as the owner's, it filled Lyft's next form as theirs (2026-10-23).
+  it('isn’t a rule’s pick among options the plan hadn’t seen, sent as the fill left it', async () => {
+    await updateSession(TAB, URL_, () => ({
+      fields: [{ ...contact, kind: 'combobox', options: [] }],
+      plan: [{ ...proposed, answer: { type: 'choice', want: { kind: 'no' }, option: null } }],
+      results: { [contact.id]: { ok: true, value: 'No' } },
+    }));
+    await submitAttempt(TAB, URL_, sent('No'), []);
+    expect(await memoryItem.getValue()).toEqual([]);
+    await submitAttempt(TAB, URL_, sent('Yes'), []);
+    expect((await memoryItem.getValue()).map((entry) => entry.answer)).toMatchObject([{ option: 'Yes' }]);
+  });
+
+  it('isn’t a job’s own field: its label is the next job’s too', async () => {
+    const title: ScannedField = {
+      ...contact,
+      id: '0:title',
+      label: 'Title',
+      kind: 'text',
+      options: [],
+      entry: { kind: 'experience', index: 1 },
+    };
+    await updateSession(TAB, URL_, () => ({
+      fields: [title],
+      plan: [{ ...proposed, fieldId: title.id, status: 'missing', answer: null, key: 'experience.title#1' }],
+    }));
+    await submitAttempt(TAB, URL_, [{ fieldId: title.id, answer: { type: 'text', text: 'Founder' } }], []);
+    expect(await memoryItem.getValue()).toEqual([]);
+  });
 });
 
 describe('an answer AI wrote, as the form is sent', () => {

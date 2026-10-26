@@ -7,9 +7,12 @@ import { answerConsent, isConsent } from './rules/consent';
 import type { RuleContext } from './rules/context';
 import { classifyEeo, eeoWant } from './rules/eeo';
 import { classifyFreeText } from './rules/freeText';
-import { recall, type MemoryEntry } from './rules/memory';
-import { choose, date, empty, isTextKind, text, yesNo, type Resolution } from './rules/resolve';
-import { norm } from './text';
+import { recall, unnamed, type MemoryEntry } from './rules/memory';
+import { choose, date, empty, fits, isTextKind, text, yesNo, type Resolution } from './rules/resolve';
+import { norm, words } from './text';
+
+/** What rules answer from the newest job or school. */
+const NEWEST = new Set(['current.company', 'current.title', 'education.school', 'education.degree', 'education.field', 'education.gpa', 'education.graduation']); // prettier-ignore
 
 /**
  * Decides what goes into each field. Layers, first match wins:
@@ -32,11 +35,23 @@ export function planForm(
   // Work experience or education the page filled in (Workday's "Autofill with Resume") is left to the page: its
   // entries needn't follow the profile's order, so filling their gaps from the profile could mix two jobs.
   const started = new Set(fields.flatMap((field) => (field.entry && field.filled ? [field.entry.kind] : [])));
-  return fields.map((field) =>
-    field.entry && started.has(field.entry.kind)
-      ? leftToPage(field, field.entry)
-      : planField(field, ctx, memory),
-  );
+  const newest = new Set<string>();
+  return fields.map((field) => {
+    if (field.entry && started.has(field.entry.kind)) return leftToPage(field, field.entry);
+    const planned = planField(field, ctx, memory);
+    // Where the form doesn't number its jobs and schools, the newest one's answers go to the first field asking:
+    // a second "Company name" or "School" is another one's, which nothing tells. (A question asked twice, or one
+    // widget read twice in two kinds, is the same question.)
+    if (field.entry || !planned.answer || !NEWEST.has(planned.key ?? '')) return planned;
+    if (field.label.includes('?') || words(field.label).length > 3) return planned;
+    const asked = `${planned.key}|${norm(field.label)}|${field.kind}`;
+    if (!newest.has(asked)) {
+      newest.add(asked);
+      return planned;
+    }
+    const status = field.required ? ('missing' as const) : ('skipped' as const);
+    return { ...planned, status, answer: null, source: null, note: 'one of several alike' };
+  });
 }
 
 function leftToPage(field: ScannedField, entry: Entry): PlannedField {
@@ -56,7 +71,13 @@ export function planField(
   ctx: RuleContext,
   memory: readonly MemoryEntry[],
 ): PlannedField {
-  const { resolution, source } = resolve(field, ctx, memory);
+  const found = resolve(field, ctx, memory);
+  const { source } = found;
+  // An answer the field can't take was meant for another question: the field is left for the owner.
+  const resolution =
+    found.resolution.answer && !fits(field, found.resolution.answer)
+      ? empty(found.resolution.key, field, 'doesn’t fit the field', found.resolution.critical)
+      : found.resolution;
   // A field the page already filled (a parsed resume, a Workday profile, the owner's typing) is kept. Where a rule
   // has an answer, the content script makes that call as it fills: uploading the resume can fill more fields.
   if (!resolution.answer && field.filled) {
@@ -275,11 +296,9 @@ function resolveEntry(field: ScannedField, ctx: RuleContext): Resolution | null 
       case 'experience.current':
         return yesNo(key, field, job.end === null);
       case 'experience.start':
-        return date(key, field, `${job.start}-01`, job.start);
+        return datePart(key, field, job.start);
       case 'experience.end':
-        return job.end
-          ? date(key, field, `${job.end}-01`, job.end)
-          : empty(key, { ...field, required: false });
+        return job.end ? datePart(key, field, job.end) : empty(key, { ...field, required: false });
       case 'experience.description':
         return text(key, field, job.description);
       default:
@@ -314,7 +333,10 @@ function resolveEntry(field: ScannedField, ctx: RuleContext): Resolution | null 
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; // prettier-ignore
 
-/** A month ("2023-09") as the field asks for it: the month's name where it's split out (Greenhouse), else the year. */
+/**
+ * A month ("2023-09") as the field asks for it: a date where the field takes one (Workday's month and year), else the
+ * month's name where it's split out (Greenhouse), else the year.
+ */
 function datePart(key: string, field: ScannedField, month: string): Resolution {
   const label = norm(field.label);
   if (field.kind !== 'date' && /\bmonth\b/.test(label) && !/\byear\b/.test(label)) {
@@ -343,20 +365,17 @@ export function summarize(plan: readonly PlannedField[]): Record<PlannedField['s
   return counts;
 }
 
-/** Fields worth sending to the AI fallback: required, unplaced, not critical, not free text. */
+/**
+ * Fields worth sending to the AI fallback: required, unplaced, not critical, not free text, and saying what they ask
+ * (no answer is guessed for a bare "End date year").
+ */
 export function aiCandidates(fields: readonly ScannedField[], plan: readonly PlannedField[]): ScannedField[] {
   const byId = new Map(plan.map((entry) => [entry.fieldId, entry]));
   return fields.filter((field) => {
     const entry = byId.get(field.id);
     // Unknown questions, and dictionary matches whose options held no answer ("San Fransisco" for a Bay Area city).
     const open = entry?.key === 'unknown' || entry?.note === 'no matching option';
-    return (
-      entry?.status === 'missing' &&
-      open &&
-      !entry.critical &&
-      field.kind !== 'file' &&
-      norm(field.label) !== ''
-    );
+    return entry?.status === 'missing' && open && !entry.critical && field.kind !== 'file' && !unnamed(field);
   });
 }
 

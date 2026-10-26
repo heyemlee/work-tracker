@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { planForm } from '../../plan';
+import { aiCandidates, planForm } from '../../plan';
 import { pickOption } from '../../rules/options';
 import { loadFixture } from '../../test/fixtures';
 import { makeProfile } from '../../test/profiles';
@@ -62,6 +62,85 @@ const SCHOOLS = `<form id="application-form">${[0, 1]
       select(`discipline--${n}`, 'Discipline'),
   )
   .join('')}</form>`;
+
+// Lyft's employment section, unanswered, from the owner's report of 2026-10-23.
+const text = (id: string, label: string, maxLength: number) => `
+  <div><label id="${id}-label" for="${id}">${label}<span aria-hidden="true">*</span></label>
+    <input id="${id}" aria-label="${label}" aria-required="true" type="text" maxlength="${maxLength}"></div>`;
+const EMPLOYMENT = `<form id="application-form">
+  ${text('company-name-0', 'Company name', 255)}${text('title-0', 'Title', 255)}
+  ${select('start-date-month-0', 'Start date month')}${text('start-date-year-0', 'Start date year', 4)}
+  ${select('end-date-month-0', 'End date month')}${text('end-date-year-0', 'End date year', 4)}
+  <div id="current-role-0"><input type="checkbox" id="current-role-0_1" name="current-role-0">
+    <label for="current-role-0_1">Current role</label></div>
+  <div><label for="question_1">When can you start?</label><input id="question_1" type="text"></div>
+</form>`;
+
+// What the owner had typed on another form weeks before, under the same label.
+const OLD_END_YEAR = {
+  key: 'end date year|text|',
+  label: 'End date year',
+  answer: { type: 'text' as const, text: '2025' },
+  uses: 3,
+  updatedAt: '2026-10-24T06:41:33.264Z',
+};
+
+describe('greenhouse employment', () => {
+  const ctx = {
+    profile: makeProfile(),
+    email: 'alex@example.com',
+    resumeId: null,
+    posting: null,
+    today: '2026-10-23',
+    appliedBefore: false,
+  };
+
+  it('fills the newest job: its own dates, no end while it goes on, and "Current role" ticked', () => {
+    document.body.innerHTML = EMPLOYMENT;
+    const { fields } = extractFields(greenhouse, document, 0);
+    expect(fields.map((field) => `${field.kind} ${field.hint} ${field.entry?.kind ?? '-'}`)).toEqual([
+      'text experience.company experience',
+      'text experience.title experience',
+      'combobox experience.start experience',
+      'text experience.start experience',
+      'combobox experience.end experience',
+      'text experience.end experience',
+      'text null -',
+      'checkbox experience.current experience',
+    ]);
+    const plan = planForm(fields, ctx, [OLD_END_YEAR]);
+    expect(plan.map((entry) => entry.answer)).toEqual([
+      { type: 'text', text: 'Acme AI' },
+      { type: 'text', text: 'AI Engineer' },
+      { type: 'choice', want: { kind: 'like', texts: ['June', 'Jun', '06'] }, option: null },
+      { type: 'text', text: '2025' },
+      null,
+      null,
+      { type: 'text', text: 'Two weeks after an offer' },
+      { type: 'check', checked: true },
+    ]);
+    expect(plan[5]).toMatchObject({ status: 'skipped', source: null });
+  });
+
+  it('read without its numbering, leaves the dates and the box to the owner rather than guess', () => {
+    document.body.innerHTML = EMPLOYMENT;
+    const unnumbered = { ...greenhouse, hint: () => null, entry: () => null };
+    const { fields } = extractFields(unnumbered, document, 0);
+    const plan = planForm(fields, ctx, [OLD_END_YEAR]);
+    const answered = (label: string) => plan[fields.findIndex((field) => field.label === label)]?.answer;
+    // Before, "Start date year" took "Two weeks after an offer" (cut to "Two "), the end year the remembered "2025",
+    // and the box a job's title.
+    for (const label of [
+      'Start date month',
+      'Start date year',
+      'End date month',
+      'End date year',
+      'Current role',
+    ])
+      expect(answered(label), label).toBeNull();
+    expect(aiCandidates(fields, plan).map((field) => field.label)).toEqual([]);
+  });
+});
 
 describe('greenhouse education', () => {
   it('searches for each school by name and answers its degree and field', () => {

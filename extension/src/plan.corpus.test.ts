@@ -46,7 +46,9 @@ const fields: ScannedField[] = corpus.map((question, index) => ({
   filled: false,
   maxLength: null,
 }));
-const plan = planForm(fields, ctx, []);
+// Each question as a form of its own: they come from many forms, and in one form a second "Current company" is
+// another job's.
+const plan = fields.map((field) => planForm([field], ctx, [])[0]!);
 
 function shown(entry: PlannedField): string {
   const answer = entry.answer;

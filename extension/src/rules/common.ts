@@ -700,8 +700,9 @@ export const RULES: readonly Rule[] = [
   {
     key: 'startDate',
     test: /start date|earliest\b.{0,30}\b(start|begin)|when (can|could|would) you (be available to )?(start|begin)|available to (start|begin)|availability to (start|begin)|notice period|how soon (can|could) you|when can you start|when (will|would) you be available/,
-    // A fellowship's start date belongs to the veterans' programs some forms add.
-    not: /fellowship/,
+    // A fellowship's start date belongs to the veterans' programs some forms add; a start date's month or year, to a
+    // job or a school; a bare "Start date", to either as much as to the owner.
+    not: /fellowship|\bstart date (month|year)\b|^start date$/,
     answer: (field, ctx) => {
       const { answers } = ctx.profile;
       const iso = addDays(ctx.today, answers.startInWeeks * 7);

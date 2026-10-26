@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ScannedField } from './model';
 import { aiCandidates, planForm } from './plan';
 import { memoryKey, remember } from './rules/memory';
+import { fits } from './rules/resolve';
 import { makeProfile } from './test/profiles';
 
 const ctx = {
@@ -229,6 +230,106 @@ describe('a question with no label', () => {
       { key: memoryKey(unnamed), label: '', answer: yes, uses: 3, updatedAt: '2026-10-19T00:00:00.000Z' },
     ];
     expect(planForm([unnamed], ctx, kept)[0]).toMatchObject({ status: 'missing', answer: null });
+  });
+});
+
+describe('a date’s part with nothing to say whose', () => {
+  // Lyft's current job took the end year typed on another form weeks before (2026-10-23).
+  const endYear: ScannedField = { ...whyUs(false), label: 'End date year', kind: 'text', maxLength: 4 };
+  const typed = { type: 'text' as const, text: '2025' };
+
+  it('is neither remembered nor answered from memory, nor put to AI', () => {
+    expect(remember([], endYear, typed, '2026-10-24T00:00:00.000Z')).toEqual([]);
+    const kept = [
+      {
+        key: memoryKey(endYear),
+        label: endYear.label,
+        answer: typed,
+        uses: 3,
+        updatedAt: '2026-10-24T00:00:00.000Z',
+      },
+    ];
+    const plan = planForm([endYear], ctx, kept);
+    expect(plan[0]).toMatchObject({ status: 'missing', answer: null });
+    expect(aiCandidates([endYear], plan)).toEqual([]);
+  });
+
+  it('isn’t when the owner can start', () => {
+    const startMonth: ScannedField = { ...whyUs(false), label: 'Start date month', kind: 'combobox' };
+    expect(planForm([startMonth], ctx, [])[0]).toMatchObject({ key: 'unknown', answer: null });
+    const start: ScannedField = { ...whyUs(false), label: 'Start Date', kind: 'text' };
+    expect(planForm([start], ctx, [])[0]).toMatchObject({ key: 'unknown', answer: null });
+    expect(planForm([{ ...start, label: 'Desired start date' }], ctx, [])[0]).toMatchObject({
+      key: 'startDate',
+      answer: { text: 'Two weeks after an offer' },
+    });
+  });
+});
+
+describe('a second job or school on a form that doesn’t number them', () => {
+  const field = (id: string, label: string): ScannedField => ({ ...whyUs(false), id, label, kind: 'text' });
+
+  it('gets nothing: the newest one’s answers went to the first', () => {
+    const fields = [
+      field('0:1', 'Company name'),
+      field('0:2', 'Title'),
+      field('0:3', 'Company name'),
+      field('0:4', 'Title'),
+      field('0:5', 'School'),
+      field('0:6', 'School'),
+    ];
+    expect(planForm(fields, ctx, []).map((entry) => entry.answer)).toEqual([
+      { type: 'text', text: 'Acme AI' },
+      { type: 'text', text: 'AI Engineer' },
+      null,
+      null,
+      { type: 'text', text: 'Santa Clara University' },
+      null,
+    ]);
+  });
+});
+
+describe('an answer the field can’t take', () => {
+  const field = (label: string, kind: ScannedField['kind'] = 'text'): ScannedField => ({
+    ...whyUs(false),
+    label,
+    kind,
+  });
+
+  it('is left for the owner, not cut to fit', () => {
+    // "one week after an offer" went into Lyft's four-character year as "one" (2026-10-23).
+    const start = field('When can you start?');
+    expect(planForm([{ ...start, maxLength: 4 }], ctx, [])[0]).toMatchObject({
+      status: 'missing',
+      answer: null,
+      key: 'startDate',
+    });
+    expect(planForm([{ ...start, maxLength: 255 }], ctx, [])[0]).toMatchObject({
+      status: 'filled',
+      answer: { text: 'Two weeks after an offer' },
+    });
+  });
+
+  it('gives a box a yes or a no, never a name', () => {
+    expect(planForm([field('Current role', 'checkbox')], ctx, [])[0]).toMatchObject({ answer: null });
+    expect(fits(field('Current role', 'checkbox'), { type: 'text', text: 'AI Engineer' })).toBe(false);
+    expect(fits(field('Current role', 'checkbox'), { type: 'check', checked: true })).toBe(true);
+  });
+
+  it('is a year in a bare year, a month in a bare month', () => {
+    const like = (...texts: string[]) => ({
+      type: 'choice' as const,
+      want: { kind: 'like' as const, texts },
+      option: null,
+    });
+    expect(fits(field('Start date year'), { type: 'text', text: '2025' })).toBe(true);
+    expect(fits(field('Start date year'), { type: 'text', text: 'Two weeks after an offer' })).toBe(false);
+    expect(fits(field('End date month', 'combobox'), like('June', 'Jun', '06'))).toBe(true);
+    expect(fits(field('Start date month', 'combobox'), like('2 weeks', 'Immediately'))).toBe(false);
+    // A question that names more than a date isn't one of its parts.
+    expect(fits(field('What year will you complete your degree?'), { type: 'text', text: 'June 2025' })).toBe(
+      true,
+    );
   });
 });
 

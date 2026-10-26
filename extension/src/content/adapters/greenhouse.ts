@@ -33,6 +33,20 @@ const EDUCATION_HINTS: Record<string, Hint> = {
   'end-year': 'education.end',
 };
 
+/** The employment section's fields, numbered per job: "company-name-0", "start-date-year-0", "current-role-0_1". */
+const EMPLOYMENT =
+  /^(company-name|title|start-date-month|start-date-year|end-date-month|end-date-year|current-role)-(\d+)(?:_\d+)?$/;
+
+const EMPLOYMENT_HINTS: Record<string, Hint> = {
+  'company-name': 'experience.company',
+  title: 'experience.title',
+  'start-date-month': 'experience.start',
+  'start-date-year': 'experience.start',
+  'end-date-month': 'experience.end',
+  'end-date-year': 'experience.end',
+  'current-role': 'experience.current',
+};
+
 /** "Job Application for Software Engineer at Stripe" → ["Software Engineer", "Stripe"]. */
 function fromTitle(doc: Document): { title: string | null; company: string | null } {
   const match = /^Job Application for (.+) at (.+)$/.exec(doc.title.trim());
@@ -107,12 +121,20 @@ export const greenhouse: Adapter = {
     };
   },
 
-  hint: (control) => HINTS[control.id] ?? EDUCATION_HINTS[EDUCATION.exec(control.id)?.[1] ?? ''] ?? null,
+  hint: (control) =>
+    HINTS[control.id] ??
+    EDUCATION_HINTS[EDUCATION.exec(control.id)?.[1] ?? ''] ??
+    EMPLOYMENT_HINTS[EMPLOYMENT.exec(control.id)?.[1] ?? ''] ??
+    null,
 
-  // A school's dates are that school's, not "when can you start".
+  // A school's dates are that school's, and a job's that job's, not "when can you start": Lyft's "Start date year" got
+  // "one week after an offer" cut to "one", its end year another form's "2025", and "Current role" the job's title
+  // (2026-10-23).
   entry(control) {
-    const match = EDUCATION.exec(control.id);
-    return match ? { kind: 'education', index: Number(match[2]) } : null;
+    const school = EDUCATION.exec(control.id);
+    if (school) return { kind: 'education', index: Number(school[2]) };
+    const job = EMPLOYMENT.exec(control.id);
+    return job ? { kind: 'experience', index: Number(job[2]) } : null;
   },
 
   kind(control): FieldKind | null {

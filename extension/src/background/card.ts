@@ -662,6 +662,24 @@ function sameAnswer(planned: Answer | null, held: Answer): boolean {
   return JSON.stringify(planned) === JSON.stringify(held);
 }
 
+/** The field holds what the fill put there: the option it picked, the text it typed, the box as it left it. */
+function leftByFill(result: TabSession['results'][string] | undefined, held: Answer): boolean {
+  if (!result?.ok || result.value === undefined) return false;
+  const shown =
+    held.type === 'choice'
+      ? held.option
+      : held.type === 'text'
+        ? held.text
+        : held.type === 'choices'
+          ? held.texts.join(', ')
+          : held.type === 'check'
+            ? held.checked
+              ? 'checked'
+              : 'unchecked'
+            : null;
+  return shown !== null && norm(shown) === norm(result.value);
+}
+
 /**
  * What the owner typed where the rules had nothing, remembered for the same question next time, and AI's answers
  * sent as they were, remembered as AI's; AI drafts they rewrote, kept as examples of their voice. Work-authorization and EEO answers are never remembered.
@@ -675,7 +693,8 @@ async function learn(session: TabSession, captured: CapturedAnswer[]): Promise<v
   for (const { fieldId, answer } of captured) {
     const field = fields.get(fieldId);
     const entry = plan.get(fieldId);
-    if (!field || !entry || entry.critical || field.kind === 'file') continue;
+    // A job's or a school's own field is answered from the profile, and its label is the next entry's too.
+    if (!field || !entry || entry.critical || field.kind === 'file' || field.entry) continue;
     if (entry.key?.startsWith('auth.') || entry.key?.startsWith('eeo.') || entry.key === 'consent') continue;
     if (entry.key?.startsWith('text.') || (entry.source === 'ai' && field.kind === 'textarea')) {
       if (answer.type === 'text' && entry.answer?.type === 'text' && answer.text !== entry.answer.text) {
@@ -688,13 +707,15 @@ async function learn(session: TabSession, captured: CapturedAnswer[]): Promise<v
       }
       continue;
     }
-    if (entry.source === 'rule' && sameAnswer(entry.answer, answer)) continue;
+    // What the field holds as the fill left it is the fill's answer, not the owner's: a rule's "No" to "May we contact
+    // your current employer?", picked from options the plan hadn't seen, was remembered as theirs and filled the
+    // next form as their answer (Lyft, 2026-10-23).
+    const asLeft = sameAnswer(entry.answer, answer) || leftByFill(session.results[fieldId], answer);
+    if (entry.source === 'rule' && asLeft) continue;
     if (entry.source === 'rule' && entry.status === 'filled' && entry.answer) continue;
     // AI's answer sent as AI left it is remembered as AI's: next time it says so and waits to be checked. Changed by
     // the owner, it's theirs.
-    memory = remember(memory, field, answer, now, {
-      byAi: entry.source === 'ai' && sameAnswer(entry.answer, answer),
-    });
+    memory = remember(memory, field, answer, now, { byAi: entry.source === 'ai' && asLeft });
   }
   await memoryItem.setValue(memory);
   await finalsItem.setValue(finals.slice(0, 200));

@@ -1,4 +1,5 @@
 import type { Answer, FieldKind, FieldStatus, ScannedField, Want } from '../model';
+import { norm, words } from '../text';
 import { pickOption } from './options';
 
 /** What a rule decided for one field. */
@@ -15,6 +16,50 @@ const CHOICE_KINDS: readonly FieldKind[] = ['select', 'combobox', 'radio'];
 
 export const isTextKind = (kind: FieldKind) => TEXT_KINDS.includes(kind);
 export const isChoiceKind = (kind: FieldKind) => CHOICE_KINDS.includes(kind);
+
+const DATE_WORDS = new Set(['start', 'end', 'date', 'from', 'to', 'day', 'month', 'year', 'dd', 'mm', 'yyyy']); // prettier-ignore
+
+/**
+ * A label of a date's words alone, "End date year", "Start month", "From", says nothing of whose date it asks: a
+ * job's, a school's, the one beside it. Its entry answers it (an adapter that numbers the jobs) or the owner does.
+ */
+export function onlyDate(label: string): boolean {
+  const all = words(label);
+  return all.length > 0 && all.every((word) => DATE_WORDS.has(word));
+}
+
+const MONTH =
+  /^(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sept?(ember)?|oct(ober)?|nov(ember)?|dec(ember)?|0?[1-9]|1[0-2])$/;
+
+/**
+ * Whether the field can take the answer as it stands. One it can't was meant for another question: "one week after
+ * an offer" cut to a year's four characters, a job's title for the "Current role" box (Lyft, 2026-10-23). Such a
+ * field is left for the owner, as any the rules can't be sure of: a wrong answer is worse than none.
+ */
+export function fits(field: ScannedField, answer: Answer): boolean {
+  if (answer.type === 'text' && field.maxLength !== null && answer.text.trim().length > field.maxLength)
+    return false;
+  if (field.kind === 'checkbox')
+    return answer.type !== 'text' || /^(yes|no|true|false)$/i.test(answer.text.trim());
+  if (answer.type === 'date' || !onlyDate(field.label)) return true;
+  // A year or a month alone takes a year or a month.
+  const label = words(field.label);
+  const part = label.includes('year') ? 'year' : label.includes('month') ? 'month' : null;
+  if (!part || (label.includes('year') && label.includes('month'))) return true;
+  const texts =
+    answer.type === 'text'
+      ? [answer.text]
+      : answer.type === 'choice'
+        ? answer.option !== null
+          ? [answer.option]
+          : answer.want.kind === 'like'
+            ? answer.want.texts
+            : []
+        : answer.type === 'choices'
+          ? answer.texts
+          : [];
+  return texts.some((text) => (part === 'year' ? /^\d{4}$/.test(text.trim()) : MONTH.test(norm(text))));
+}
 
 interface Options {
   status?: FieldStatus;
@@ -59,7 +104,8 @@ export function choose(key: string, field: ScannedField, want: Want, options: Op
 /**
  * A text value that adapts to the field: typed into text fields, matched against options in choice fields. A group
  * of boxes takes it as a dropdown does, in one box: the alternatives are the answer's other names ("US" for the
- * United States), not answers of their own. Empty values leave the field empty.
+ * United States), not answers of their own. Empty values leave the field empty, and so does a lone box, which takes a
+ * yes or a no and not a name.
  */
 export function text(
   key: string,
@@ -68,7 +114,7 @@ export function text(
   alternatives: string[] = [],
   options: Options = {},
 ): Resolution {
-  if (!value) return empty(key, field, options.note ?? null, options.critical);
+  if (!value || field.kind === 'checkbox') return empty(key, field, options.note ?? null, options.critical);
   if (isTextKind(field.kind)) return done(key, { type: 'text', text: value }, options);
   if (isChoiceKind(field.kind) || field.kind === 'multi')
     return choose(key, field, { kind: 'like', texts: [value, ...alternatives] }, options);

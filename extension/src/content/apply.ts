@@ -168,6 +168,10 @@ export async function applyAnswer(
       }
 
       case 'checkbox': {
+        // A box is ticked by a yes and cleared by a no, and left as it is by some other text (a name meant for a name
+        // field).
+        if (answer.type === 'text' && !/^(yes|true|checked|no|false|unchecked)$/i.test(answer.text.trim()))
+          return { ok: false, error: 'not a yes or no' };
         const checked =
           answer.type === 'check'
             ? answer.checked
@@ -175,8 +179,7 @@ export async function applyAnswer(
               ? answer.want.kind !== 'no' && answer.want.kind !== 'decline'
               : answer.type === 'choices'
                 ? answer.texts.length > 0
-                : // A box is ticked by a yes, never by some other text (a name meant for a name field).
-                  answer.type === 'text'
+                : answer.type === 'text'
                   ? /^(yes|true|checked)$/i.test(answer.text.trim())
                   : true;
         setChecked(handle.element, checked);

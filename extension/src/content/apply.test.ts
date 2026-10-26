@@ -103,6 +103,11 @@ describe('applyAnswer', () => {
     expect(element.checked).toBe(false);
     await applyAnswer({ type: 'checkbox', element }, { type: 'text', text: 'Yes' }, noFile);
     expect(element.checked).toBe(true);
+    // Nor clears it: a job's title meant for "Current role" left the owner's tick off (Lyft, 2026-10-23).
+    expect(
+      await applyAnswer({ type: 'checkbox', element }, { type: 'text', text: 'AI Engineer' }, noFile),
+    ).toMatchObject({ ok: false });
+    expect(element.checked).toBe(true);
   });
 
   it('writes a date into separate month and year boxes', async () => {
