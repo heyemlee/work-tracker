@@ -25,18 +25,6 @@
    "resume"
   ],
   [
-   "LinkedIn Profile",
-   "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "Website",
-   "https://github.com/alexchen"
-  ],
-  [
-   "How did you hear about this job?",
-   "LinkedIn"
-  ],
-  [
    "Are you legally authorized to work in the United States for our Company?",
    "Yes"
   ],
@@ -71,36 +59,12 @@
    "alex@example.com"
   ],
   [
-   "Phone",
-   "+1 408-555-0100"
-  ],
-  [
    "Resume/CV",
    "resume"
   ],
   [
-   "Website",
-   "https://github.com/alexchen"
-  ],
-  [
-   "When is the earliest you would want to start working with us?",
-   "Two weeks after an offer"
-  ],
-  [
-   "Do you have any deadlines or timeline considerations we should be aware of?",
-   "No"
-  ],
-  [
    "AI Policy for Application",
    "Yes"
-  ],
-  [
-   "LinkedIn Profile",
-   "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "What is the address from which you plan on working? If you would need to relocate, please type \"relocating\".",
-   "Santa Clara, CA"
   ],
   [
    "Have you ever interviewed at Anthropic before?",
@@ -145,20 +109,8 @@
    "resume"
   ],
   [
-   "LinkedIn Profile",
-   "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "Other Website",
-   "https://github.com/alexchen"
-  ],
-  [
    "From where do you intend to work?",
    "Santa Clara, CA"
-  ],
-  [
-   "Preferred First Name",
-   "Al"
   ],
   [
    "Are you authorized to work in the country for which you applied?",
@@ -167,14 +119,6 @@
   [
    "Have you ever worked for Figma before, as an employee or a contractor/consultant?",
    "No"
-  ],
-  [
-   "Gender",
-   "Decline To Self Identify"
-  ],
-  [
-   "Veteran Status",
-   "I don't wish to answer"
   ]
  ],
  "greenhouse/stripe-embed.html": [
@@ -239,14 +183,6 @@
    "Santa Clara, CA"
   ],
   [
-   "Gender",
-   "Decline To Self Identify"
-  ],
-  [
-   "Veteran Status",
-   "I don't wish to answer"
-  ],
-  [
    "Please select the country or countries you anticipate working in for the role in which you are applying.",
    "US"
   ]
@@ -265,32 +201,8 @@
    "alex@example.com"
   ],
   [
-   "Phone",
-   "+1 408-555-0100"
-  ],
-  [
    "Current location",
    "Santa Clara, CA"
-  ],
-  [
-   "Current company",
-   "Acme AI"
-  ],
-  [
-   "LinkedIn URL",
-   "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "GitHub URL",
-   "https://github.com/alexchen"
-  ],
-  [
-   "Portfolio URL",
-   "https://github.com/alexchen"
-  ],
-  [
-   "Preferred Name | What would you like us to call you?",
-   "Al"
   ],
   [
    "Which university are you currently attending or did you last attend? Please select \"Other (School Not Listed)\" if your school is not listed.",
@@ -327,10 +239,6 @@
   [
    "As part of our interview process, we may use AI notetakers to transcribe conversations for accuracy and efficiency. Please see our candidate privacy policy for more information on how we process your data. Your decision to opt in or out of this tooling will not impact your candidacy.",
    "Yes, I consent"
-  ],
-  [
-   "Palantir Technologies has my consent to contact me about future job opportunities.",
-   "checked"
   ]
  ],
  "lever/spotify-80c3a1cd-3f98-49e5-88d1-b45fca349d7f.html": [
@@ -359,60 +267,8 @@
    "Acme AI"
   ],
   [
-   "LinkedIn URL",
-   "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "GitHub URL",
-   "https://github.com/alexchen"
-  ],
-  [
-   "Portfolio URL",
-   "https://github.com/alexchen"
-  ],
-  [
-   "Other website",
-   "https://github.com/alexchen"
-  ],
-  [
-   "What is your location?",
-   "United States"
-  ],
-  [
    "Have you ever been previously employed by Spotify?",
    "No"
-  ],
-  [
-   "What best describes your gender?",
-   "Prefer not to disclose"
-  ],
-  [
-   "What is your race/ethnicity?:",
-   "Prefer not to disclose"
-  ],
-  [
-   "Are you a veteran/have you served in the military?",
-   "Prefer not to disclose"
-  ],
-  [
-   "What best describes your gender?",
-   "Prefer not to disclose"
-  ],
-  [
-   "What gender do you identify with?",
-   "Choose Not to Disclose"
-  ],
-  [
-   "What best describes your gender?",
-   "Prefer not to disclose"
-  ],
-  [
-   "What best describes your ethnicity?",
-   "Prefer not to disclose"
-  ],
-  [
-   "Spotify has my consent to contact me about future job opportunities.",
-   "checked"
   ]
  ],
  "lever/spotify-faffd837-edbc-42f8-b4bf-14e1658c18e6.html": [
@@ -441,60 +297,8 @@
    "Acme AI"
   ],
   [
-   "LinkedIn URL",
-   "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "GitHub URL",
-   "https://github.com/alexchen"
-  ],
-  [
-   "Portfolio URL",
-   "https://github.com/alexchen"
-  ],
-  [
-   "Other website",
-   "https://github.com/alexchen"
-  ],
-  [
-   "What is your location?",
-   "United States"
-  ],
-  [
    "Have you ever been previously employed by Spotify?",
    "No"
-  ],
-  [
-   "What best describes your gender?",
-   "Prefer not to disclose"
-  ],
-  [
-   "What is your race/ethnicity?:",
-   "Prefer not to disclose"
-  ],
-  [
-   "Are you a veteran/have you served in the military?",
-   "Prefer not to disclose"
-  ],
-  [
-   "What best describes your gender?",
-   "Prefer not to disclose"
-  ],
-  [
-   "What gender do you identify with?",
-   "Choose Not to Disclose"
-  ],
-  [
-   "What best describes your gender?",
-   "Prefer not to disclose"
-  ],
-  [
-   "What best describes your ethnicity?",
-   "Prefer not to disclose"
-  ],
-  [
-   "Spotify has my consent to contact me about future job opportunities.",
-   "checked"
   ]
  ],
  "ashby/notion.html": [
@@ -529,22 +333,6 @@
   [
    "LinkedIn Profile",
    "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "What pronouns would you like our team to use when addressing you?",
-   "Prefer not to say"
-  ],
-  [
-   "How did you hear about this opportunity? (select all that apply)",
-   "LinkedIn"
-  ],
-  [
-   "Gender",
-   "Decline to self-identify"
-  ],
-  [
-   "Race",
-   "Decline to self-identify"
   ]
  ],
  "greenhouse/zscaler.html": [
@@ -567,10 +355,6 @@
   [
    "Resume/CV",
    "resume"
-  ],
-  [
-   "Website",
-   "https://github.com/alexchen"
   ],
   [
    "LinkedIn Profile",
@@ -663,14 +447,6 @@
    "No"
   ],
   [
-   "LinkedIn Profile",
-   "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "Website",
-   "https://github.com/alexchen"
-  ],
-  [
    "How did you hear about this job?",
    "Job Board"
   ],
@@ -717,14 +493,6 @@
    "resume"
   ],
   [
-   "LinkedIn Profile",
-   "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "Website",
-   "https://github.com/alexchen"
-  ],
-  [
    "What country are you located in?",
    "United States"
   ],
@@ -767,10 +535,6 @@
    "alex@example.com"
   ],
   [
-   "Phone",
-   "+1 408-555-0100"
-  ],
-  [
    "Location (City)",
    "Santa Clara, CA"
   ],
@@ -797,14 +561,6 @@
   [
    "Preferred Last Name",
    "Chen"
-  ],
-  [
-   "LinkedIn Profile",
-   "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "At Samsara, we encourage employees to bring their whole selves to work (this includes applicants too!) Feel free to share your preferred name and pronouns (she/her, they/them, he/him, ze/zir etc.).",
-   "Al"
   ],
   [
    "Processing of Personal Data",
@@ -845,36 +601,12 @@
    "Chen"
   ],
   [
-   "Preferred First Name",
-   "Al"
-  ],
-  [
    "Email",
    "alex@example.com"
   ],
   [
-   "Phone",
-   "+1 408-555-0100"
-  ],
-  [
    "Resume/CV",
    "resume"
-  ],
-  [
-   "LinkedIn Profile",
-   "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "Website",
-   "https://github.com/alexchen"
-  ],
-  [
-   "LinkedIn Profile",
-   "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "Website or GitHub",
-   "https://github.com/alexchen"
   ],
   [
    "How did you hear about us?",
@@ -893,10 +625,6 @@
    "Yes"
   ],
   [
-   "If you're not authorized to work at the stated location, what sponsorship would you require for the role?",
-   "F-1 STEM OPT; H-1B sponsorship needed in the future"
-  ],
-  [
    "Do you currently live in, or plan to relocate to, the specified location to meet this in-office requirement?",
    "Yes, I live here"
   ],
@@ -907,14 +635,6 @@
   [
    "Do you currently, or have you previously, worked at Capital One or a company acquired by Capital One as an employee, contractor, consultant, or temp? (For example Capital One Bank, N.A., Capital One Services, Inc., Chevy Chase Bank, Discover, Hibernia, ING Direct, North Fork Bank)",
    "No"
-  ],
-  [
-   "Gender",
-   "Decline To Self Identify"
-  ],
-  [
-   "Veteran Status",
-   "I don't wish to answer"
   ]
  ],
  "greenhouse/rubrik-embed.html": [
@@ -941,14 +661,6 @@
   [
    "Resume/CV",
    "resume"
-  ],
-  [
-   "LinkedIn Profile",
-   "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "Website",
-   "https://github.com/alexchen"
   ],
   [
    "What is your Legal Name?",
@@ -993,14 +705,6 @@
   [
    "Will you now or in the future require sponsorship for an employment visa?",
    "Yes"
-  ],
-  [
-   "Gender",
-   "Decline To Self Identify"
-  ],
-  [
-   "Veteran Status",
-   "I don't wish to answer"
   ]
  ],
  "lever/shieldai.html": [
@@ -1017,38 +721,6 @@
    "alex@example.com"
   ],
   [
-   "Phone",
-   "+1 408-555-0100"
-  ],
-  [
-   "Current location",
-   "Santa Clara, CA"
-  ],
-  [
-   "Current company",
-   "Acme AI"
-  ],
-  [
-   "LinkedIn URL",
-   "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "GitHub URL",
-   "https://github.com/alexchen"
-  ],
-  [
-   "Portfolio URL",
-   "https://github.com/alexchen"
-  ],
-  [
-   "Other website",
-   "https://github.com/alexchen"
-  ],
-  [
-   "If yes, what type of sponsorship?",
-   "F-1 STEM OPT; H-1B sponsorship needed in the future"
-  ],
-  [
    "Please state your full legal name:",
    "Alex Chen"
   ],
@@ -1059,26 +731,6 @@
   [
    "Are you local to or willing to relocate?",
    "Yes"
-  ],
-  [
-   "Gender",
-   "Decline to self-identify"
-  ],
-  [
-   "Veteran status",
-   "I decline to self-identify for protected veteran status"
-  ],
-  [
-   "Disability status",
-   "I do not want to answer"
-  ],
-  [
-   "Name",
-   "Alex Chen"
-  ],
-  [
-   "Date",
-   "2026-09-27"
   ],
   [
    "Are you authorized to work in the United States?",
@@ -1095,17 +747,9 @@
   [
    "How did you hear about us?",
    "LinkedIn Post"
-  ],
-  [
-   "Race",
-   "Decline to self-identify"
   ]
  ],
  "lever/wealthfront.html": [
-  [
-   "Which location are you applying for?",
-   "Palo Alto, CA"
-  ],
   [
    "Resume/CV",
    "resume"
@@ -1123,26 +767,6 @@
    "+1 408-555-0100"
   ],
   [
-   "Current location",
-   "Santa Clara, CA"
-  ],
-  [
-   "Current company",
-   "Acme AI"
-  ],
-  [
-   "LinkedIn URL",
-   "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "Portfolio URL",
-   "https://github.com/alexchen"
-  ],
-  [
-   "Other website",
-   "https://github.com/alexchen"
-  ],
-  [
    "Highest Education Completed?",
    "Master's Degree"
   ],
@@ -1153,18 +777,6 @@
   [
    "What university did you attend?",
    "Santa Clara University"
-  ],
-  [
-   "Gender",
-   "Decline to self-identify"
-  ],
-  [
-   "Race",
-   "Decline to self-identify"
-  ],
-  [
-   "Veteran status",
-   "Decline to self-identify"
   ],
   [
    "How did you hear about us?",
@@ -1193,36 +805,8 @@
    "+1 408-555-0100"
   ],
   [
-   "Current location",
-   "Santa Clara, CA"
-  ],
-  [
-   "Current company",
-   "Acme AI"
-  ],
-  [
-   "LinkedIn URL",
-   "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "Other website",
-   "https://github.com/alexchen"
-  ],
-  [
    "Do you require sponsorship, or will you require sponsorship in the future for employment authorization in the United States?",
    "Yes"
-  ],
-  [
-   "Gender",
-   "Decline to self-identify"
-  ],
-  [
-   "Race",
-   "Decline to self-identify"
-  ],
-  [
-   "Veteran status",
-   "Decline to self-identify"
   ],
   [
    "Are you currently enrolled in a 2-year or 4-year college or university program pursuing a degree or certificate in Software Engineering, Computer Science, Systems Engineering, Mechanical Engineering, Electrical Engineering, or a related field?",
@@ -1247,10 +831,6 @@
    "Alex Chen"
   ],
   [
-   "Preferred Name (if applicable)",
-   "Al"
-  ],
-  [
    "Email",
    "alex@example.com"
   ],
@@ -1261,10 +841,6 @@
   [
    "Phone Number",
    "+1 408-555-0100"
-  ],
-  [
-   "LinkedIn",
-   "https://www.linkedin.com/in/alex-chen"
   ],
   [
    "Where are you currently located?",
@@ -1285,18 +861,6 @@
   [
    "I hereby certify that I have not knowingly withheld any information that might adversely affect my chances for employment and that the answers given by me are true and correct to the best of my knowledge. I further certify that I, the undersigned applicant, have personally completed this application. I understand that, to the extent permitted by applicable law, any omission or misstatement of material fact on this application or on any document used to secure employment shall be grounds for rejection of this application or for immediate discharge if I am employed, regardless of the time elapsed before discovery.",
    "checked"
-  ],
-  [
-   "Gender",
-   "Decline to self-identify"
-  ],
-  [
-   "Race",
-   "Decline to self-identify"
-  ],
-  [
-   "Veteran Status",
-   "I decline to self-identify for protected veteran status"
   ]
  ],
  "ashby/replit.html": [
@@ -1337,36 +901,12 @@
    "resume"
   ],
   [
-   "Linkedin Profile URL",
-   "https://www.linkedin.com/in/alex-chen"
-  ],
-  [
-   "Portfolio URL",
-   "https://github.com/alexchen"
-  ],
-  [
-   "Github Profile URL",
-   "https://github.com/alexchen"
-  ],
-  [
    "Location",
    "Santa Clara, CA"
   ],
   [
    "How many years of relevant professional experience do you have?",
    "1-2 years"
-  ],
-  [
-   "Gender",
-   "Decline to self-identify"
-  ],
-  [
-   "Race",
-   "Decline to self-identify"
-  ],
-  [
-   "Veteran Status",
-   "I decline to self-identify for protected veteran status"
   ]
  ],
  "ashby/sierra.html": [
@@ -1417,22 +957,6 @@
   [
    "By submitting, I acknowledge my personal data will be processed in accordance with Sierra’s Privacy Policy.",
    "checked"
-  ],
-  [
-   "What is your gender identity?",
-   "I prefer not to answer"
-  ],
-  [
-   "Do you identify as transgender?",
-   "I prefer not to answer"
-  ],
-  [
-   "How do you identify your sexual orientation? Please select all that apply.",
-   "I prefer not to answer"
-  ],
-  [
-   "Which ethnicity(ies) do you identify with? Please select all that apply.",
-   "I prefer not to answer"
   ]
  ],
  "ashby/ramp.html": [
@@ -1493,14 +1017,6 @@
   [
    "Location",
    "Santa Clara, CA"
-  ],
-  [
-   "Github/Project link?",
-   "https://github.com/alexchen"
-  ],
-  [
-   "I agree",
-   "checked"
   ]
  ]
 }

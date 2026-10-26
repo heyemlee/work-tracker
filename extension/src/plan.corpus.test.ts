@@ -79,16 +79,20 @@ describe('the question corpus', () => {
     expect(lines).toMatchSnapshot();
   });
 
-  it('leaves no critical question to memory or AI, and marks every one for confirmation', () => {
-    for (const entry of plan.filter((item) => item.critical)) {
+  it('leaves no critical question to memory or AI, and marks every one asked for for confirmation', () => {
+    plan.forEach((entry, index) => {
+      if (!entry.critical) return;
       expect(entry.source === null || entry.source === 'rule').toBe(true);
-      expect(['confirm', 'missing']).toContain(entry.status);
-    }
+      // One the form doesn't ask for is left empty.
+      expect(fields[index]!.required ? ['confirm', 'missing'] : ['missing', 'skipped']).toContain(
+        entry.status,
+      );
+    });
   });
 
-  it('answers most questions without AI', () => {
-    const counts = summarize(plan);
-    const answered = counts.filled + counts.confirm;
-    expect(answered / corpus.length).toBeGreaterThan(0.6);
+  it('answers most of the questions forms ask without AI', () => {
+    const asked = plan.filter((_, index) => fields[index]!.required);
+    const counts = summarize(asked);
+    expect((counts.filled + counts.confirm) / asked.length).toBeGreaterThan(0.6);
   });
 });

@@ -45,22 +45,22 @@ for (const step of ['entries', 'screening'] as const) {
     await card.getByRole('button', { name: /^Fill/ }).click();
     await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45000 });
     if (step === 'entries') {
-      // One already saved entry precedes the editor: index 1 must use Beta Labs, not Acme AI.
-      await expect(page.locator('[data-test="company-autocomplete"] input')).toHaveValue('Beta Labs');
-      await expect(page.locator('[data-test="job-title-autocomplete"] input')).toHaveValue(
-        'Software Engineer Intern',
-      );
+      // One already saved entry precedes the editor: index 1 must use Beta Labs' start, not Acme AI's.
       await expect(page.locator('[data-test="experience-date-from"] input[data-input]')).toHaveValue(
         'May 2024',
       );
-      await expect(page.locator('[data-test="experience-date-to"] input')).toHaveValue('May 2025');
-      await expect(page.locator('[data-test="institution-autocomplete"] input')).toHaveValue(
-        'Santa Clara University',
-      );
-      await expect(page.locator('[data-test="education-major"] input')).toHaveValue('Computer Science');
-      await expect(page.locator('[data-test="education-degree"] input')).toHaveValue('Master of Science');
-      await expect(page.locator('[data-test="education-date-from"] input')).toHaveValue('September 2023');
-      await expect(page.locator('oc-education [data-test="location-autocomplete"] input')).toHaveValue('');
+      // The editors ask for nothing else: what isn't asked for is left to the owner.
+      for (const field of [
+        '[data-test="company-autocomplete"] input',
+        '[data-test="job-title-autocomplete"] input',
+        '[data-test="experience-date-to"] input',
+        '[data-test="institution-autocomplete"] input',
+        '[data-test="education-major"] input',
+        '[data-test="education-degree"] input',
+        '[data-test="education-date-from"] input',
+        'oc-education [data-test="location-autocomplete"] input',
+      ])
+        await expect(page.locator(field)).toHaveValue('');
     } else {
       await expect(page.locator('sr-question-field-text:not([hidden]) input')).toHaveValue(
         'Manual working hours',

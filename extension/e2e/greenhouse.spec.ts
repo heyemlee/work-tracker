@@ -30,8 +30,9 @@ test('fills a Greenhouse application and logs it to Outbox after the owner submi
   await expect(page.locator('#last_name')).toHaveValue('Chen');
   await expect(page.locator('#email')).toHaveValue('alex@example.com');
   await expect(page.locator('#phone')).toHaveValue('+1 408-555-0100');
-  await expect(page.getByLabel('LinkedIn Profile')).toHaveValue('https://www.linkedin.com/in/alex-chen');
-  await expect(page.getByLabel('How did you hear about this job?')).toHaveValue('LinkedIn');
+  // Discord doesn't ask for these: they're left to the owner.
+  await expect(page.getByLabel('LinkedIn Profile')).toHaveValue('');
+  await expect(page.getByLabel('How did you hear about this job?')).toHaveValue('');
   expect(await page.locator('#resume').evaluate((input: HTMLInputElement) => input.files?.[0]?.name)).toBe(
     'Alex_Chen_Resume.pdf',
   );
@@ -62,22 +63,22 @@ test('fills a Greenhouse application and logs it to Outbox after the owner submi
 });
 
 // Greenhouse asks for race only once "Are you Hispanic/Latino?" is answered. This stand-in adds the question when
-// the first one changes.
+// the first one changes. Both are asked for, as DoorDash's form asks them.
 const FOLLOW_UP_FORM = `<!doctype html><html><head><title>Job Application for Software Engineer at Acme</title></head><body>
 <form id="application-form">
-  <label for="first_name">First Name</label><input id="first_name" type="text">
-  <label for="last_name">Last Name</label><input id="last_name" type="text">
-  <label for="email">Email</label><input id="email" type="text">
+  <label for="first_name">First Name</label><input id="first_name" type="text" aria-required="true">
+  <label for="last_name">Last Name</label><input id="last_name" type="text" aria-required="true">
+  <label for="email">Email</label><input id="email" type="text" aria-required="true">
   <div id="eeo">
     <label for="hispanic_ethnicity">Are you Hispanic/Latino?</label>
-    <select id="hispanic_ethnicity"><option value="">Select...</option><option>Yes</option><option>No</option><option>Decline To Self Identify</option></select>
+    <select id="hispanic_ethnicity" aria-required="true"><option value="">Select...</option><option>Yes</option><option>No</option><option>Decline To Self Identify</option></select>
   </div>
 </form>
 <script>
   document.querySelector('#hispanic_ethnicity').addEventListener('change', () => {
     if (document.querySelector('#race')) return;
     document.querySelector('#eeo').insertAdjacentHTML('beforeend',
-      '<label for="race">Please identify your race</label><select id="race"><option value="">Select...</option><option>Asian</option><option>White</option><option>Decline To Self Identify</option></select>');
+      '<label for="race">Please identify your race</label><select id="race" aria-required="true"><option value="">Select...</option><option>Asian</option><option>White</option><option>Decline To Self Identify</option></select>');
   });
 </script></body></html>`;
 
@@ -98,21 +99,21 @@ test('fills a question that appears once another is answered', async ({ context,
 // Greenhouse's city and school fields search as you type and take only a pick. This stand-in draws them as its
 // react-select does: no list until a key comes up on typed text (the form opens it on keyup; text that only
 // changes opens nothing), suggestions a moment later, the pick shown beside an input that empties. The phone
-// widget's country list sits above them, hidden by its stylesheet.
+// widget's country list sits above them, hidden by its stylesheet. Both are asked for, as some forms ask them.
 const SEARCH_FORM = `<!doctype html><html><head><title>Job Application for Software Engineer at Acme</title>
 <style>.iti__hide { display: none; }</style></head><body>
 <form id="application-form">
-  <label for="first_name">First Name</label><input id="first_name" type="text">
-  <label for="last_name">Last Name</label><input id="last_name" type="text">
-  <label for="email">Email</label><input id="email" type="text">
+  <label for="first_name">First Name</label><input id="first_name" type="text" aria-required="true">
+  <label for="last_name">Last Name</label><input id="last_name" type="text" aria-required="true">
+  <label for="email">Email</label><input id="email" type="text" aria-required="true">
   <div class="iti__dropdown-content iti__hide"><ul role="listbox">
     <li role="option">Afghanistan +93</li><li role="option">United States +1</li></ul></div>
   <div class="select-shell" data-list="cities"><label id="candidate-location-label" for="candidate-location">Location (City)</label>
     <div><div class="select__control"><div class="select__input-container">
-      <input id="candidate-location" type="text" role="combobox" aria-labelledby="candidate-location-label"></div></div></div></div>
+      <input id="candidate-location" type="text" role="combobox" aria-labelledby="candidate-location-label" aria-required="true"></div></div></div></div>
   <div class="select-shell" data-list="schools"><label id="school--0-label" for="school--0">School</label>
     <div><div class="select__control"><div class="select__input-container">
-      <input id="school--0" type="text" role="combobox" aria-labelledby="school--0-label"></div></div></div></div>
+      <input id="school--0" type="text" role="combobox" aria-labelledby="school--0-label" aria-required="true"></div></div></div></div>
 </form>
 <script>
   const LISTS = {

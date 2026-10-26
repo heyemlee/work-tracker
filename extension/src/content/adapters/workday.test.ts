@@ -75,7 +75,8 @@ describe('workday', () => {
       'Software Engineer Intern',
       'Beta Labs',
     ]);
-    expect(answerOf('I currently work here', 0)).toBe(true);
+    // No end date is asked for, so neither is whether the job goes on.
+    expect(answerOf('I currently work here', 0)).toBeNull();
     expect(answerOf('From', 0)).toBe('2025-06-01');
   });
 });
@@ -558,24 +559,17 @@ describe('workday pages from snapshots', () => {
     expect(pickOption(['是', '否'], (entry!.answer as { want: Want }).want)).toBe('否');
   });
 
-  it('leaves "I have a preferred name" unticked without a preferred name', () => {
+  it('leaves "I have a preferred name" to the owner, and asked for, unticked without a preferred name', () => {
     document.body.innerHTML = LEGAL_NAME;
     const { fields } = extractFields(workday, document, 0);
     const box = fields.find((field) => field.kind === 'checkbox');
     expect(box?.label).toBe('I have a preferred name');
-    const plan = planForm(
-      fields,
-      { ...ctx, profile: makeProfile({ name: { first: 'Alex', last: 'Chen' } }) },
-      [],
-    );
-    expect(plan.find((entry) => entry.fieldId === box?.id)?.answer).toEqual({
-      type: 'check',
-      checked: false,
-    });
-    expect(planForm(fields, ctx, []).find((entry) => entry.fieldId === box?.id)?.answer).toEqual({
-      type: 'check',
-      checked: true,
-    });
+    const noPreferred = { ...ctx, profile: makeProfile({ name: { first: 'Alex', last: 'Chen' } }) };
+    const boxIn = (plan: ReturnType<typeof planForm>) => plan.find((entry) => entry.fieldId === box?.id);
+    expect(boxIn(planForm(fields, ctx, []))).toMatchObject({ status: 'skipped', answer: null });
+    const asked = fields.map((field) => ({ ...field, required: true }));
+    expect(boxIn(planForm(asked, noPreferred, []))?.answer).toEqual({ type: 'check', checked: false });
+    expect(boxIn(planForm(asked, ctx, []))?.answer).toEqual({ type: 'check', checked: true });
   });
 
   it('keeps chosen dropdown values out of a snapshot', () => {

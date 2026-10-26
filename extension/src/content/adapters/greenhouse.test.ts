@@ -51,9 +51,9 @@ const EDUCATION = `
 </form>`;
 
 // The school, degree and field of study above those dates, as Greenhouse's react-select draws them.
-const select = (id: string, label: string) => `
-  <div class="select-shell"><label id="${id}-label" for="${id}">${label}</label>
-    <div class="select__control"><input id="${id}" type="text" role="combobox" aria-labelledby="${id}-label"></div></div>`;
+const select = (id: string, label: string, required = false) => `
+  <div class="select-shell"><label id="${id}-label" for="${id}">${label}${required ? '<span aria-hidden="true">*</span>' : ''}</label>
+    <div class="select__control"><input id="${id}" type="text" role="combobox" aria-labelledby="${id}-label" aria-required="${required}"></div></div>`;
 const SCHOOLS = `<form id="application-form">${[0, 1]
   .map(
     (n) =>
@@ -69,8 +69,8 @@ const text = (id: string, label: string, maxLength: number) => `
     <input id="${id}" aria-label="${label}" aria-required="true" type="text" maxlength="${maxLength}"></div>`;
 const EMPLOYMENT = `<form id="application-form">
   ${text('company-name-0', 'Company name', 255)}${text('title-0', 'Title', 255)}
-  ${select('start-date-month-0', 'Start date month')}${text('start-date-year-0', 'Start date year', 4)}
-  ${select('end-date-month-0', 'End date month')}${text('end-date-year-0', 'End date year', 4)}
+  ${select('start-date-month-0', 'Start date month', true)}${text('start-date-year-0', 'Start date year', 4)}
+  ${select('end-date-month-0', 'End date month', true)}${text('end-date-year-0', 'End date year', 4)}
   <div id="current-role-0"><input type="checkbox" id="current-role-0_1" name="current-role-0">
     <label for="current-role-0_1">Current role</label></div>
   <div><label for="question_1">When can you start?</label><input id="question_1" type="text"></div>
@@ -95,7 +95,7 @@ describe('greenhouse employment', () => {
     appliedBefore: false,
   };
 
-  it('fills the newest job: its own dates, no end while it goes on, and "Current role" ticked', () => {
+  it('fills the newest job: its own dates, and no end while it goes on', () => {
     document.body.innerHTML = EMPLOYMENT;
     const { fields } = extractFields(greenhouse, document, 0);
     expect(fields.map((field) => `${field.kind} ${field.hint} ${field.entry?.kind ?? '-'}`)).toEqual([
@@ -116,8 +116,9 @@ describe('greenhouse employment', () => {
       { type: 'text', text: '2025' },
       null,
       null,
-      { type: 'text', text: 'Two weeks after an offer' },
-      { type: 'check', checked: true },
+      // Not asked for.
+      null,
+      null,
     ]);
     expect(plan[5]).toMatchObject({ status: 'skipped', source: null });
   });
@@ -154,16 +155,19 @@ describe('greenhouse education', () => {
       'combobox education.degree 1',
       'combobox education.field 1',
     ]);
+    const ctx = {
+      profile: makeProfile(),
+      email: 'alex@example.com',
+      resumeId: null,
+      posting: null,
+      today: '2026-10-06',
+      appliedBefore: false,
+    };
+    // Not asked for here, so left to the owner. Where a form asks for them:
+    expect(planForm(fields, ctx, []).map((entry) => entry.answer)).toEqual(fields.map(() => null));
     const plan = planForm(
-      fields,
-      {
-        profile: makeProfile(),
-        email: 'alex@example.com',
-        resumeId: null,
-        posting: null,
-        today: '2026-10-06',
-        appliedBefore: false,
-      },
+      fields.map((field) => ({ ...field, required: true })),
+      ctx,
       [],
     );
     // What each dropdown offers once opened; a school is typed in full.
@@ -197,8 +201,9 @@ describe('greenhouse education', () => {
     document.body.innerHTML = EDUCATION;
     const { fields } = extractFields(greenhouse, document, 0);
     expect(fields[0]).toMatchObject({ hint: 'education.start', entry: { kind: 'education', index: 0 } });
+    // Each asked for, as a form may ask: Scale AI's asks only for the start year.
     const plan = planForm(
-      fields,
+      fields.map((field) => ({ ...field, required: true })),
       {
         profile: makeProfile(),
         email: 'alex@example.com',

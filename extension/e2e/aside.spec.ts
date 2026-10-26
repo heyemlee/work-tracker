@@ -71,8 +71,8 @@ const BOARD = `<!doctype html><html><head><title>Jobs at Acme</title></head><bod
     document.title = 'Job Application for ' + JOBS[id] + ' at Acme';
     document.querySelector('main').innerHTML = sent
       ? '<h1>Received.</h1>'
-      : '<form id="application-form"><label for="first_name">First Name</label><input id="first_name" type="text">' +
-        '<label for="email">Email</label><input id="email" type="text">' +
+      : '<form id="application-form"><label for="first_name">First Name</label><input id="first_name" type="text" required>' +
+        '<label for="email">Email</label><input id="email" type="text" required>' +
         '<p><button type="submit">Send</button> <button type="button" id="next">See the next opening</button></p></form>';
     document.querySelector('form')?.addEventListener('submit', (event) => {
       event.preventDefault();

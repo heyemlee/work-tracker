@@ -20,8 +20,9 @@ test('fills a Lever application, and logs it once the thank-you page loads', asy
   await expect(card.getByText(/^Filled \d+/)).toBeVisible({ timeout: 45_000 });
   await expect(page.locator('input[name="name"]')).toHaveValue('Alex Chen');
   await expect(page.locator('input[name="email"]')).toHaveValue('alex@example.com');
-  await expect(page.locator('input[name="org"]')).toHaveValue('Acme AI');
-  await expect(page.locator('input[name="urls[GitHub]"]')).toHaveValue('https://github.com/alexchen');
+  // Palantir doesn't ask for these: they're left to the owner.
+  await expect(page.locator('input[name="org"]')).toHaveValue('');
+  await expect(page.locator('input[name="urls[GitHub]"]')).toHaveValue('');
   // Work authorization, by rule, for this posting's country: it's in London, where an F-1 student isn't authorized
   // and would need sponsorship.
   const authorized = page.locator(
@@ -48,7 +49,7 @@ test('fills a Lever application, and logs it once the thank-you page loads', asy
   });
 });
 
-test('keeps what Lever read from the resume and what the owner typed, and fills the rest', async ({
+test('keeps what Lever read from the resume and what the owner typed, and fills the rest asked for', async ({
   context,
   worker,
   outbox,
@@ -82,7 +83,8 @@ test('keeps what Lever read from the resume and what the owner typed, and fills 
   await expect(page.locator('input[name="phone"]')).toHaveValue('+1 408 555 0100');
   // The email is the account applying, not the resume's.
   await expect(page.locator('input[name="email"]')).toHaveValue('alex@example.com');
-  await expect(page.locator('input[name="urls[GitHub]"]')).toHaveValue('https://github.com/alexchen');
+  // Not asked for.
+  await expect(page.locator('input[name="urls[GitHub]"]')).toHaveValue('');
 });
 
 // What Lever's own script does with an attached resume, with a reader that takes `ms`: "Analyzing resume..." shows
@@ -205,8 +207,9 @@ test('fills an Ashby application: system fields, yes/no buttons, radio groups', 
   await expect(page.locator('#_systemfield_name')).toHaveValue('Alex Chen');
   await expect(page.locator('#_systemfield_email')).toHaveValue('alex@example.com');
   await expect(page.getByLabel('LinkedIn Profile')).toHaveValue('https://www.linkedin.com/in/alex-chen');
-  await expect(page.getByLabel('Decline to self-identify').first()).toBeChecked();
-  await expect(page.getByLabel('LinkedIn', { exact: true })).toBeChecked();
+  // Notion doesn't ask for the survey or how the applicant heard of the job: they're left to the owner.
+  await expect(page.getByLabel('Decline to self-identify').first()).not.toBeChecked();
+  await expect(page.getByLabel('LinkedIn', { exact: true })).not.toBeChecked();
   await page.locator('outbox-autofill .card').screenshot({ path: 'e2e/output/ashby-card.png' });
 });
 

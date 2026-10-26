@@ -73,9 +73,28 @@ describe('Eightfold', () => {
     expect(fields.some((field) => /保存/.test(field.label))).toBe(false);
   });
 
-  it('answers it from the profile', () => {
+  it('leaves what it doesn’t ask for empty: work authorization and the survey', () => {
     const { fields } = extractFields(eightfold, page(), 0);
     const plan = planForm(fields, ctx, []);
+    for (const label of [
+      'Are you currently eligible to work within the United States?',
+      'Gender',
+      'Veteran Status',
+    ])
+      expect(plan[fields.findIndex((field) => field.label === label)], label).toMatchObject({
+        status: 'skipped',
+        answer: null,
+      });
+  });
+
+  it('answers it from the profile', () => {
+    const { fields } = extractFields(eightfold, page(), 0);
+    // Every question asked for, as another employer's form may ask them: which this one leaves optional is above.
+    const plan = planForm(
+      fields.map((field) => ({ ...field, required: true })),
+      ctx,
+      [],
+    );
     const answer = (label: string) => {
       const at = fields.findIndex((field) => field.label === label);
       return plan[at];

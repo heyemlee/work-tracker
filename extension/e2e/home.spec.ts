@@ -30,9 +30,9 @@ const MARKED = shell(
 const SIGN_UP = shell(
   'Sign up - Example SaaS',
   '<meta property="og:site_name" content="Example SaaS">',
-  '<main><form><p><label for="first">First name</label><input id="first" name="first_name"></p>' +
-    '<p><label for="last">Last name</label><input id="last" name="last_name"></p>' +
-    '<p><label for="email">Email</label><input id="email" name="email" type="email"></p>' +
+  '<main><form><p><label for="first">First name</label><input id="first" name="first_name" required></p>' +
+    '<p><label for="last">Last name</label><input id="last" name="last_name" required></p>' +
+    '<p><label for="email">Email</label><input id="email" name="email" type="email" required></p>' +
     '<p><label for="phone">Phone</label><input id="phone" name="phone" type="tel"></p>' +
     '<p><label for="team">Team size</label><input id="team" name="team_size"></p>' +
     '<p><button type="submit">Sign up</button></p></form></main>',

@@ -219,7 +219,8 @@ describe('extractFields', () => {
       ]),
     );
     expect(typed).toMatchObject({
-      'LinkedIn URL': profile.links.linkedin,
+      // Known for what it asks, and left empty: the form doesn't ask for it.
+      'LinkedIn URL': 'links.linkedin',
       'Street Address': '1 Main St',
       City: 'Santa Clara',
       Zipcode: '95050',

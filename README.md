@@ -30,7 +30,7 @@ itself, and a NestJS service that gathers open roles from job boards and parses 
 ## Highlights
 
 - **Rules first, Claude for the rest.** A Chrome MV3 extension with adapters for 9 applicant tracking systems
-  fills forms by rule (365 of 365 hand-checked answers right on 22 saved pages) and asks Claude for the rest.
+  fills forms by rule (244 of 244 hand-checked answers right on 22 saved pages) and asks Claude for the rest.
 - **Measured LLM parsing.** Resumes are parsed by function calling or structured output, every reply must pass a
   strict zod schema, and an eval CLI scores both methods field by field.
 - **Job data in PostgreSQL.** A NestJS service syncs job boards in one transaction per company, keeps stored
@@ -72,7 +72,8 @@ and from the deployed app through the Worker and a Cloudflare Tunnel.
 ### Autofill extension
 
 The extension in [`extension/`](extension) fills applications from the profile you keep in Outbox and logs each
-submission to it. It never presses Submit: you check every answer first.
+submission to it. It never presses Submit: you check every answer first. It fills only the fields a form marks as
+required, and the resume; optional ones are left to you.
 
 - **Rules first.** Adapters for Greenhouse, Lever, Ashby, Workday, Gem, iCIMS, SmartRecruiters, Workable,
   Jobvite and Eightfold drive each form's widgets, with a generic adapter for other forms. Work authorization is answered by
@@ -88,9 +89,9 @@ Rules-only fill accuracy on 22 saved application pages, every expected answer ch
 
 | System     | Pages | Answers correct | Required fields filled |
 | ---------- | ----: | --------------: | ---------------------: |
-| Greenhouse |    10 |       172 / 172 |                    87% |
-| Lever      |     6 |       115 / 115 |                    79% |
-| Ashby      |     6 |         78 / 78 |                    77% |
+| Greenhouse |    10 |       135 / 135 |                    87% |
+| Lever      |     6 |         52 / 52 |                    79% |
+| Ashby      |     6 |         57 / 57 |                    77% |
 
 The blank required fields are essays and questions only the applicant can answer. Workday (behind a sign-in),
 iCIMS, SmartRecruiters, Workable and Jobvite are tested on pages modeled on their forms instead, and Eightfold on a

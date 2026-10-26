@@ -81,7 +81,8 @@ test('opens by itself on a Gem posting, fills its nameless fields, and logs the 
   await expect(typed('Last name')).toHaveValue('Chen');
   await expect(typed('Email')).toHaveValue('alex@example.com');
   await expect(typed('Phone number')).toHaveValue('+1 408-555-0100');
-  await expect(typed('LinkedIn URL')).toHaveValue('https://www.linkedin.com/in/alex-chen');
+  // Not asked for, so left to the owner.
+  await expect(typed('LinkedIn URL')).toHaveValue('');
   expect(
     await page
       .locator('input[type="file"]')
@@ -93,7 +94,8 @@ test('opens by itself on a Gem posting, fills its nameless fields, and logs the 
   // Its radios share no name either: the question is the block they sit in. On OPT, sponsorship comes later.
   await expect(page.getByLabel('Yes', { exact: true })).toBeChecked();
   await expect(page.getByLabel('N/A', { exact: true })).not.toBeChecked();
-  await expect(page.getByLabel('LinkedIn', { exact: true })).toBeChecked();
+  // "How did you hear about us?" isn't asked for either.
+  await expect(page.getByLabel('LinkedIn', { exact: true })).not.toBeChecked();
   await expect(card.getByTitle('Check: Do you agree to our candidate privacy notice?')).toBeVisible();
   await expect(card.getByTitle('Fill: How would you rate your Python?')).toBeVisible();
 

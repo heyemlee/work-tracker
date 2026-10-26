@@ -39,16 +39,67 @@ describe('planForm', () => {
   });
 });
 
-describe('a field the form names itself, with nothing for it in the profile', () => {
-  const blank = { ...ctx, profile: makeProfile({ name: { first: 'Alex', last: 'Chen', preferred: '' } }) };
-  // Greenhouse's own "Preferred First Name": the adapter knows it by its id, whatever the form calls it.
-  const preferred: ScannedField = {
+describe('a field the form doesn’t mark as required', () => {
+  const optional = (id: string, field: Partial<ScannedField>): ScannedField => ({
     ...whyUs(false),
-    label: 'Preferred First Name',
-    kind: 'text',
+    id,
     required: false,
-    hint: 'name.preferred',
+    ...field,
+  });
+
+  it('is left empty, whatever the profile, a rule or memory has for it', () => {
+    const fields = [
+      optional('0:1', { label: 'LinkedIn Profile', kind: 'url', hint: 'links.linkedin' }),
+      optional('0:2', { label: 'Phone', kind: 'tel', hint: 'phone' }),
+      optional('0:3', {
+        label: 'Gender',
+        kind: 'select',
+        options: ['Male', 'Female', 'Decline to self-identify'],
+      }),
+      optional('0:4', {
+        label: 'Will you now or in the future require sponsorship?',
+        kind: 'radio',
+        options: ['Yes', 'No'],
+      }),
+      optional('0:5', { label: 'What is your favorite programming language?', kind: 'text' }),
+    ];
+    const typed = {
+      key: memoryKey(fields[4]!),
+      label: fields[4]!.label,
+      answer: { type: 'text' as const, text: 'TypeScript' },
+      uses: 2,
+      updatedAt: '2026-10-06T00:00:00.000Z',
+    };
+    for (const entry of planForm(fields, ctx, [typed]))
+      expect(entry).toMatchObject({ status: 'skipped', answer: null, source: null });
+  });
+
+  it('keeps what the page holds', () => {
+    const phone = optional('0:1', { label: 'Phone', kind: 'tel', hint: 'phone', filled: true });
+    expect(planForm([phone], ctx, [])[0]).toMatchObject({
+      status: 'filled',
+      answer: null,
+      note: 'already filled',
+    });
+  });
+
+  it('takes the resume picked on the card all the same', () => {
+    const resume = optional('0:1', { label: 'Resume/CV', kind: 'file', hint: 'resume' });
+    expect(planForm([resume], { ...ctx, resumeId: 'resume-1' }, [])[0]).toMatchObject({
+      status: 'filled',
+      answer: { type: 'file', resumeId: 'resume-1' },
+    });
+  });
+});
+
+describe('a field the form names itself, with nothing for it in the profile', () => {
+  const blank = {
+    ...ctx,
+    profile: makeProfile({ address: { city: '', state: 'CA', zip: '95050', country: 'United States' } }),
   };
+  // Workday's own "City": the adapter knows it by its id, whatever the form calls it. Asked for: one that isn't is
+  // left empty.
+  const city: ScannedField = { ...whyUs(false), label: 'City', kind: 'text', hint: 'address.city' };
   const typed = (field: ScannedField, text: string) => ({
     key: memoryKey(field),
     label: field.label,
@@ -58,20 +109,20 @@ describe('a field the form names itself, with nothing for it in the profile', ()
   });
 
   it('takes what the owner typed there last time', () => {
-    expect(planForm([preferred], blank, [])[0]).toMatchObject({ status: 'skipped', answer: null });
-    expect(planForm([preferred], blank, [typed(preferred, 'Lucas')])[0]).toMatchObject({
+    expect(planForm([city], blank, [])[0]).toMatchObject({ status: 'missing', answer: null });
+    expect(planForm([city], blank, [typed(city, 'Sunnyvale')])[0]).toMatchObject({
       status: 'filled',
-      answer: { type: 'text', text: 'Lucas' },
+      answer: { type: 'text', text: 'Sunnyvale' },
       source: 'memory',
       key: 'memory',
     });
   });
 
   it('goes by the profile once it has an answer', () => {
-    expect(planForm([preferred], ctx, [typed(preferred, 'Lucas')])[0]).toMatchObject({
-      answer: { type: 'text', text: 'Al' },
+    expect(planForm([city], ctx, [typed(city, 'Sunnyvale')])[0]).toMatchObject({
+      answer: { type: 'text', text: 'Santa Clara' },
       source: 'rule',
-      key: 'name.preferred',
+      key: 'address.city',
     });
   });
 
