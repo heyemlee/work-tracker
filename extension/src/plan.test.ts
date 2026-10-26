@@ -90,6 +90,24 @@ describe('a field the form doesn’t mark as required', () => {
       answer: { type: 'file', resumeId: 'resume-1' },
     });
   });
+
+  it('is a job’s "I currently work here" only where the job’s end date is asked for', () => {
+    const job = { kind: 'experience' as const, index: 0 };
+    const current = optional('0:1', {
+      label: 'I currently work here',
+      kind: 'checkbox',
+      hint: 'experience.current',
+      entry: job,
+    });
+    const end = (required: boolean) =>
+      optional('0:2', { label: 'To', kind: 'date', hint: 'experience.end', entry: job, required });
+    // The newest job goes on: the box is the end date's "Present", and the date itself is left out.
+    expect(planForm([current, end(true)], ctx, [])).toMatchObject([
+      { status: 'filled', answer: { type: 'check', checked: true } },
+      { status: 'skipped', answer: null },
+    ]);
+    expect(planForm([current, end(false)], ctx, [])[0]).toMatchObject({ status: 'skipped', answer: null });
+  });
 });
 
 describe('a field the form names itself, with nothing for it in the profile', () => {

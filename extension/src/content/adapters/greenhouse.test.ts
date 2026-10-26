@@ -95,7 +95,7 @@ describe('greenhouse employment', () => {
     appliedBefore: false,
   };
 
-  it('fills the newest job: its own dates, and no end while it goes on', () => {
+  it('fills the newest job: its own dates, no end while it goes on, and "Current role" ticked for it', () => {
     document.body.innerHTML = EMPLOYMENT;
     const { fields } = extractFields(greenhouse, document, 0);
     expect(fields.map((field) => `${field.kind} ${field.hint} ${field.entry?.kind ?? '-'}`)).toEqual([
@@ -118,7 +118,8 @@ describe('greenhouse employment', () => {
       null,
       // Not asked for.
       null,
-      null,
+      // The box isn't marked as required, but it's the end date's "Present", which is.
+      { type: 'check', checked: true },
     ]);
     expect(plan[5]).toMatchObject({ status: 'skipped', source: null });
   });

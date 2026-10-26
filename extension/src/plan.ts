@@ -26,7 +26,8 @@ const NEWEST = new Set(['current.company', 'current.title', 'education.school', 
  * 7. Free-text questions — drafted by AI when required, skipped when optional.
  *
  * Whatever is left is `missing`; the service worker may hand those to AI. A field the form doesn't mark as required
- * is left empty, whatever a layer found for it: all but the resume.
+ * is left empty, whatever a layer found for it: all but the resume, and a job's "I currently work here" where the
+ * job's end date is asked for.
  */
 export function planForm(
   fields: readonly ScannedField[],
@@ -36,10 +37,18 @@ export function planForm(
   // Work experience or education the page filled in (Workday's "Autofill with Resume") is left to the page: its
   // entries needn't follow the profile's order, so filling their gaps from the profile could mix two jobs.
   const started = new Set(fields.flatMap((field) => (field.entry && field.filled ? [field.entry.kind] : [])));
+  // A job's "I currently work here" is how the form takes "Present" for an end date: where it asks for the end date,
+  // it asks for the box.
+  const endAsked = new Set(
+    fields.flatMap((field) =>
+      field.hint === 'experience.end' && field.entry && field.required ? [field.entry.index] : [],
+    ),
+  );
   const newest = new Set<string>();
   return fields.map((field) => {
     if (field.entry && started.has(field.entry.kind)) return leftToPage(field, field.entry);
-    const planned = planField(field, ctx, memory);
+    const current = field.hint === 'experience.current' && endAsked.has(field.entry?.index ?? -1);
+    const planned = planField(current ? { ...field, required: true } : field, ctx, memory);
     // Where the form doesn't number its jobs and schools, the newest one's answers go to the first field asking:
     // a second "Company name" or "School" is another one's, which nothing tells. (A question asked twice, or one
     // widget read twice in two kinds, is the same question.)

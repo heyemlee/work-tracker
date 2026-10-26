@@ -311,10 +311,11 @@ Each field goes through four layers and stops at the first that places it:
 **Only what the form asks for is filled** (the owner's call of 2026-10-26, after optional fields were filled
 wrong): a field the form doesn't mark as required is left empty, whatever a layer found for it, since a wrong
 answer there does harm and an empty one none. It's listed under **Optional, left empty**, and the AI is never asked
-about it. The resume picked on the card goes in all the same, into its upload, which Greenhouse often leaves
-unmarked. A field is required by its control's `required` or `aria-required`, a mark beside it (a `required` class,
-Workday's `abbr`), or a star ending its label: a label is read without its star, so the star is looked for in the
-page's own text (`isRequired` in `content/dom.ts`).
+about it. Two things go in all the same: the resume picked on the card, into its upload, which Greenhouse often
+leaves unmarked; and a job's "I currently work here" box where that job's end date is required, the box being how
+the form takes "Present". A field is required by its control's `required` or `aria-required`, a mark beside it (a
+`required` class, Workday's `abbr`), or a star ending its label: a label is read without its star, so the star is
+looked for in the page's own text (`isRequired` in `content/dom.ts`).
 
 **Critical questions are rules only**: authorization to work, sponsorship (now, in the future, either, and negated
 wordings like "do you not require…"), citizenship and visa status. They never reach the model; an ambiguous wording
