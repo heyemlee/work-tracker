@@ -107,10 +107,14 @@ function labelNear(element: Element): string {
   return clean(textOf(label).replace(/\*$/, ''));
 }
 
-const required = (element: Element) =>
-  Boolean(
-    element.closest('[data-automation-id^="formField-"]')?.querySelector('abbr, [class*="required"]'),
-  ) || /\*\s*$/.test(textOf(element.closest('[data-automation-id^="formField-"]')?.querySelector('label')));
+// The star is read from the label's own text: `textOf` takes it off.
+const required = (element: Element) => {
+  const field = element.closest('[data-automation-id^="formField-"]');
+  return (
+    Boolean(field?.querySelector('abbr, [class*="required"]')) ||
+    /\*\s*$/.test(field?.querySelector('label')?.textContent ?? '')
+  );
+};
 
 /** Something typed or picked in a section: a date, a job title, a school chosen from a prompt. */
 const holdsAnything = (section: Element) =>

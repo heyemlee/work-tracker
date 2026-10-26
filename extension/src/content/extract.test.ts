@@ -130,6 +130,25 @@ describe('extractFields', () => {
     ]);
   });
 
+  it('reads a star in a label’s own text as required, though the label is read without it', () => {
+    // A career site's own form: its stars are text, with no attribute or class to go by.
+    document.body.innerHTML = `<form id="application-form">
+      <label for="first">First name *</label><input id="first">
+      <div class="field"><label>Email<span>*</span></label><input id="email" type="email"></div>
+      <label for="site">Website</label><input id="site">
+      <label for="cv">Resume *</label><input id="cv" type="file">
+      <fieldset><legend>Are you 18 or older? ✱</legend><label><input type="radio" name="age">Yes</label><label><input type="radio" name="age">No</label></fieldset>
+    </form>`;
+    const { fields } = extractFields(generic, document, 0);
+    expect(fields.map(({ label, required }) => ({ label, required }))).toEqual([
+      { label: 'First name', required: true },
+      { label: 'Email', required: true },
+      { label: 'Website', required: false },
+      { label: 'Resume', required: true },
+      { label: 'Are you 18 or older?', required: true },
+    ]);
+  });
+
   it('names each field in a section by its own label, never by the section’s heading', () => {
     // Pinpoint's form (Brivo's, 2026-10-21): each field's label sits beside it with no `for`, and the section's legend
     // offers "Apply with LinkedIn". Read by the legend, the street, city and zip were filled with the LinkedIn link.

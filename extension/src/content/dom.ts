@@ -235,14 +235,18 @@ export function questionContainer(control: Element): Element | null {
 const QUESTION_SELECTOR =
   'legend, label, .label, [class*="label"], [class*="question-title"], [class*="question"] > .text, h3, h4, [role="heading"]';
 
-/** The question a container asks: its first label-like element that isn't one of the answer choices. */
-export function questionText(container: Element): string {
+/** What asks a container's question: its first label-like element that isn't one of the answer choices. */
+function questionElement(container: Element): Element | null {
   for (const candidate of container.querySelectorAll(QUESTION_SELECTOR)) {
     if (candidate.querySelector('input, select, textarea') && candidate.matches('label')) continue;
-    const text = textOf(candidate);
-    if (text) return text;
+    if (textOf(candidate)) return candidate;
   }
-  return '';
+  return null;
+}
+
+/** The question a container asks. */
+export function questionText(container: Element): string {
+  return textOf(questionElement(container));
 }
 
 /** The heading of the section a control sits in, e.g. "Voluntary Self-Identification". */
@@ -262,6 +266,20 @@ export function sectionOf(control: Element): string {
 
 const REQUIRED_MARK = '.required, [class*="required"], abbr[title="required"]';
 
+/** A required field's star at the end of its label: "First Name *", "Email ✱". */
+const STAR = /[*✱]\s*$/;
+
+/** The labels that point at a control or hold it. */
+function labelsOf(control: Element): Element[] {
+  const doc = control.ownerDocument;
+  const id = control.getAttribute('id');
+  return [
+    ...(control.getAttribute('aria-labelledby') ?? '').split(/\s+/).map((ref) => byId(doc, ref)),
+    id ? doc.querySelector(`label[for="${attributeValue(id)}"]`) : null,
+    control.closest('label'),
+  ].filter((label) => label !== null);
+}
+
 /** Whether the field must be answered; `controls` are all of its own, a group's boxes or circles. */
 export function isRequired(
   control: Element,
@@ -276,7 +294,13 @@ export function isRequired(
       ? container
       : labelBefore(controls[0] ?? control, container);
   if (marked?.matches(REQUIRED_MARK) || marked?.querySelector(REQUIRED_MARK)) return true;
-  return /[*✱]\s*$/.test(label);
+  // A star in the page's text, which a label is read without: the question's, or the control's own label's (a
+  // choice's label names only its choice).
+  const question = marked && marked === container ? questionElement(marked) : marked;
+  const own = controls.length === 1 ? labelsOf(control) : [];
+  return [label, ...[question, ...own].map((element) => element?.textContent ?? '')].some((text) =>
+    STAR.test(text),
+  );
 }
 
 /** "urls[LinkedIn]" → "LinkedIn", "first_name" → "first name". */
