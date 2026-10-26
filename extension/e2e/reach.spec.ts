@@ -11,8 +11,8 @@ const APPLY = `https://${HOST}/jobs/42/apply`;
 const THANKS = '<!doctype html><title>Thanks</title><main><h1>Thank you for applying.</h1></main>';
 const FORM =
   '<!doctype html><title>Robotics Engineer</title><main><h1>Robotics Engineer</h1><form>' +
-  '<label for="first">First name</label><input id="first" name="first_name">' +
-  '<label for="email">Email</label><input id="email" name="email" type="email">' +
+  '<label for="first">First name</label><input id="first" name="first_name" required>' +
+  '<label for="email">Email</label><input id="email" name="email" type="email" required>' +
   '<label for="resume">Resume/CV</label><input id="resume" name="resume" type="file">' +
   '<button type="submit">Submit application</button></form></main>';
 
