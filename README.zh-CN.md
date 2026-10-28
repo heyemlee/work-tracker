@@ -60,7 +60,7 @@
 
 ### 自动填表扩展
 
-[`extension/`](extension) 里的扩展用你在 Outbox 维护的资料填写申请表，提交后把这份申请记到 Outbox。它从不替你点提交：每个答案都由你检查过再提交。它只填表单标了必填的字段和简历，选填的留给你。
+[`extension/`](extension) 里的扩展用你在 Outbox 维护的资料填写申请表，提交后把这份申请记到 Outbox。它从不替你点提交：每个答案都由你检查过再提交。它只填表单标了必填的字段、简历，以及按你资料回答的 EEO 自愿调查；其他选填的留给你。
 
 - **规则优先。** Greenhouse、Lever、Ashby、Workday、Gem、iCIMS、SmartRecruiters、Workable、Jobvite 和 Eightfold 各有适配器操作表单控件，其他表单走通用适配器。工作许可按岗位所在国家用固定规则回答，从不交给模型，并且总会标出来请你确认。
 - **剩下的交给 Claude。** 规则放不下的字段，每张表单只发一次请求给 Claude；置信度低于 0.7 的留空。开放式问题会根据简历和岗位写一段简短的草稿。
@@ -71,9 +71,9 @@
 
 | 系统       | 页面数 |  答案正确 | 必填项填写率 |
 | ---------- | -----: | --------: | -----------: |
-| Greenhouse |     10 | 135 / 135 |          87% |
-| Lever      |      6 |   52 / 52 |          79% |
-| Ashby      |      6 |   57 / 57 |          77% |
+| Greenhouse |     10 | 143 / 143 |          87% |
+| Lever      |      6 |   76 / 76 |          79% |
+| Ashby      |      6 |   69 / 69 |          77% |
 
 留空的必填项是开放式问题和只有申请人自己能答的问题。Workday（需要登录才能看到表单）、iCIMS、SmartRecruiters、Workable 和 Jobvite 在仿照各自表单的页面上测试，Eightfold 在它自己的代码画出的页面上测试。设计文档见 [docs/autofill.md](docs/autofill.md)。
 

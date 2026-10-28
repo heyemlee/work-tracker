@@ -311,11 +311,12 @@ Each field goes through four layers and stops at the first that places it:
 **Only what the form asks for is filled** (the owner's call of 2026-10-26, after optional fields were filled
 wrong): a field the form doesn't mark as required is left empty, whatever a layer found for it, since a wrong
 answer there does harm and an empty one none. It's listed under **Optional, left empty**, and the AI is never asked
-about it. Two things go in all the same: the resume picked on the card, into its upload, which Greenhouse often
-leaves unmarked; and a job's "I currently work here" box where that job's end date is required, the box being how
-the form takes "Present". A field is required by its control's `required` or `aria-required`, a mark beside it (a
-`required` class, Workday's `abbr`), or a star ending its label: a label is read without its star, so the star is
-looked for in the page's own text (`isRequired` in `content/dom.ts`).
+about it. Three things go in all the same: the resume picked on the card, into its upload, which Greenhouse often
+leaves unmarked; the voluntary survey (EEO), which no form marks as required, answered from the profile as the owner
+set it (they filled Glean's by hand when it was left empty, 2026-10-28); and a job's "I currently work here" box where
+that job's end date is required, the box being how the form takes "Present". A field is required by its control's
+`required` or `aria-required`, a mark beside it (a `required` class, Workday's `abbr`), or a star ending its label: a
+label is read without its star, so the star is looked for in the page's own text (`isRequired` in `content/dom.ts`).
 
 **Critical questions are rules only**: authorization to work, sponsorship (now, in the future, either, and negated
 wordings like "do you not require…"), citizenship and visa status. They never reach the model; an ambiguous wording
@@ -631,7 +632,7 @@ else keep an answer isn't known.
 - **Free-text drafts** ("Why this company?") are grounded in real material: the resume, STAR stories, approved
   snippets, and one specific detail from the posting. Style rules keep them short and plain (no "passionate",
   "thrilled", "leverage"…). The owner's edited finals become examples for later drafts. Optional questions are
-  skipped, as every optional field is.
+  skipped, as optional fields are.
 - The field request and the drafts go out together, three at a time at most, and their answers go into the page
   one at a time as they come back (decided 2026-10-07: each takes seconds, and they used to wait for one
   another). One that fails among the others gets a second go alone, since a proxy may turn a crowd away; one that
@@ -819,8 +820,8 @@ looking, its window goes into that frame as well, and appears in place as the se
   answers are snapshot-tested. Workday's forms sit behind sign-in, so they come from the owner's snapshots.
 - **Fill accuracy** — answers correct over answers expected, and required fields filled, per system — is reported,
   gated in CI, and quoted in the README. Every expected answer was checked by hand. With rules only: Greenhouse
-  135/135 (87% of required fields filled), Lever 52/52 (79%), Ashby 57/57 (77%). Since 2026-10-26 optional fields
-  expect nothing: the answers dropped then were all theirs.
+  143/143 (87% of required fields filled), Lever 76/76 (79%), Ashby 69/69 (77%). Since 2026-10-26 optional fields
+  expect nothing but the voluntary survey's answers, which came back on 2026-10-28.
 - **End to end** (Playwright): the built extension in Chromium against fixtures served on the real hosts through
   request interception, logging to a mock Outbox: Greenhouse, Lever and Gem fill → submit → logged, Ashby fill;
   a Greenhouse form filled in by hand → submit → logged under the account its email names, and two postings

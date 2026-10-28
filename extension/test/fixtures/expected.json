@@ -119,6 +119,14 @@
   [
    "Have you ever worked for Figma before, as an employee or a contractor/consultant?",
    "No"
+  ],
+  [
+   "Gender",
+   "Decline To Self Identify"
+  ],
+  [
+   "Veteran Status",
+   "I don't wish to answer"
   ]
  ],
  "greenhouse/stripe-embed.html": [
@@ -181,6 +189,14 @@
   [
    "If located in the US, in what city and state do you reside?",
    "Santa Clara, CA"
+  ],
+  [
+   "Gender",
+   "Decline To Self Identify"
+  ],
+  [
+   "Veteran Status",
+   "I don't wish to answer"
   ],
   [
    "Please select the country or countries you anticipate working in for the role in which you are applying.",
@@ -269,6 +285,34 @@
   [
    "Have you ever been previously employed by Spotify?",
    "No"
+  ],
+  [
+   "What best describes your gender?",
+   "Prefer not to disclose"
+  ],
+  [
+   "What is your race/ethnicity?:",
+   "Prefer not to disclose"
+  ],
+  [
+   "Are you a veteran/have you served in the military?",
+   "Prefer not to disclose"
+  ],
+  [
+   "What best describes your gender?",
+   "Prefer not to disclose"
+  ],
+  [
+   "What gender do you identify with?",
+   "Choose Not to Disclose"
+  ],
+  [
+   "What best describes your gender?",
+   "Prefer not to disclose"
+  ],
+  [
+   "What best describes your ethnicity?",
+   "Prefer not to disclose"
   ]
  ],
  "lever/spotify-faffd837-edbc-42f8-b4bf-14e1658c18e6.html": [
@@ -299,6 +343,34 @@
   [
    "Have you ever been previously employed by Spotify?",
    "No"
+  ],
+  [
+   "What best describes your gender?",
+   "Prefer not to disclose"
+  ],
+  [
+   "What is your race/ethnicity?:",
+   "Prefer not to disclose"
+  ],
+  [
+   "Are you a veteran/have you served in the military?",
+   "Prefer not to disclose"
+  ],
+  [
+   "What best describes your gender?",
+   "Prefer not to disclose"
+  ],
+  [
+   "What gender do you identify with?",
+   "Choose Not to Disclose"
+  ],
+  [
+   "What best describes your gender?",
+   "Prefer not to disclose"
+  ],
+  [
+   "What best describes your ethnicity?",
+   "Prefer not to disclose"
   ]
  ],
  "ashby/notion.html": [
@@ -333,6 +405,14 @@
   [
    "LinkedIn Profile",
    "https://www.linkedin.com/in/alex-chen"
+  ],
+  [
+   "Gender",
+   "Decline to self-identify"
+  ],
+  [
+   "Race",
+   "Decline to self-identify"
   ]
  ],
  "greenhouse/zscaler.html": [
@@ -635,6 +715,14 @@
   [
    "Do you currently, or have you previously, worked at Capital One or a company acquired by Capital One as an employee, contractor, consultant, or temp? (For example Capital One Bank, N.A., Capital One Services, Inc., Chevy Chase Bank, Discover, Hibernia, ING Direct, North Fork Bank)",
    "No"
+  ],
+  [
+   "Gender",
+   "Decline To Self Identify"
+  ],
+  [
+   "Veteran Status",
+   "I don't wish to answer"
   ]
  ],
  "greenhouse/rubrik-embed.html": [
@@ -705,6 +793,14 @@
   [
    "Will you now or in the future require sponsorship for an employment visa?",
    "Yes"
+  ],
+  [
+   "Gender",
+   "Decline To Self Identify"
+  ],
+  [
+   "Veteran Status",
+   "I don't wish to answer"
   ]
  ],
  "lever/shieldai.html": [
@@ -733,6 +829,18 @@
    "Yes"
   ],
   [
+   "Gender",
+   "Decline to self-identify"
+  ],
+  [
+   "Veteran status",
+   "I decline to self-identify for protected veteran status"
+  ],
+  [
+   "Disability status",
+   "I do not want to answer"
+  ],
+  [
    "Are you authorized to work in the United States?",
    "Yes"
   ],
@@ -747,6 +855,10 @@
   [
    "How did you hear about us?",
    "LinkedIn Post"
+  ],
+  [
+   "Race",
+   "Decline to self-identify"
   ]
  ],
  "lever/wealthfront.html": [
@@ -779,6 +891,18 @@
    "Santa Clara University"
   ],
   [
+   "Gender",
+   "Decline to self-identify"
+  ],
+  [
+   "Race",
+   "Decline to self-identify"
+  ],
+  [
+   "Veteran status",
+   "Decline to self-identify"
+  ],
+  [
    "How did you hear about us?",
    "LinkedIn Job Postings"
   ],
@@ -807,6 +931,18 @@
   [
    "Do you require sponsorship, or will you require sponsorship in the future for employment authorization in the United States?",
    "Yes"
+  ],
+  [
+   "Gender",
+   "Decline to self-identify"
+  ],
+  [
+   "Race",
+   "Decline to self-identify"
+  ],
+  [
+   "Veteran status",
+   "Decline to self-identify"
   ],
   [
    "Are you currently enrolled in a 2-year or 4-year college or university program pursuing a degree or certificate in Software Engineering, Computer Science, Systems Engineering, Mechanical Engineering, Electrical Engineering, or a related field?",
@@ -861,6 +997,18 @@
   [
    "I hereby certify that I have not knowingly withheld any information that might adversely affect my chances for employment and that the answers given by me are true and correct to the best of my knowledge. I further certify that I, the undersigned applicant, have personally completed this application. I understand that, to the extent permitted by applicable law, any omission or misstatement of material fact on this application or on any document used to secure employment shall be grounds for rejection of this application or for immediate discharge if I am employed, regardless of the time elapsed before discovery.",
    "checked"
+  ],
+  [
+   "Gender",
+   "Decline to self-identify"
+  ],
+  [
+   "Race",
+   "Decline to self-identify"
+  ],
+  [
+   "Veteran Status",
+   "I decline to self-identify for protected veteran status"
   ]
  ],
  "ashby/replit.html": [
@@ -907,6 +1055,18 @@
   [
    "How many years of relevant professional experience do you have?",
    "1-2 years"
+  ],
+  [
+   "Gender",
+   "Decline to self-identify"
+  ],
+  [
+   "Race",
+   "Decline to self-identify"
+  ],
+  [
+   "Veteran Status",
+   "I decline to self-identify for protected veteran status"
   ]
  ],
  "ashby/sierra.html": [
@@ -957,6 +1117,22 @@
   [
    "By submitting, I acknowledge my personal data will be processed in accordance with Sierra’s Privacy Policy.",
    "checked"
+  ],
+  [
+   "What is your gender identity?",
+   "I prefer not to answer"
+  ],
+  [
+   "Do you identify as transgender?",
+   "I prefer not to answer"
+  ],
+  [
+   "How do you identify your sexual orientation? Please select all that apply.",
+   "I prefer not to answer"
+  ],
+  [
+   "Which ethnicity(ies) do you identify with? Please select all that apply.",
+   "I prefer not to answer"
   ]
  ],
  "ashby/ramp.html": [

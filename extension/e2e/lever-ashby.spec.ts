@@ -207,8 +207,9 @@ test('fills an Ashby application: system fields, yes/no buttons, radio groups', 
   await expect(page.locator('#_systemfield_name')).toHaveValue('Alex Chen');
   await expect(page.locator('#_systemfield_email')).toHaveValue('alex@example.com');
   await expect(page.getByLabel('LinkedIn Profile')).toHaveValue('https://www.linkedin.com/in/alex-chen');
-  // Notion doesn't ask for the survey or how the applicant heard of the job: they're left to the owner.
-  await expect(page.getByLabel('Decline to self-identify').first()).not.toBeChecked();
+  // Notion asks for neither the survey nor how the applicant heard of the job. The survey is answered from the
+  // profile all the same; how they heard is left to the owner.
+  await expect(page.getByLabel('Decline to self-identify').first()).toBeChecked();
   await expect(page.getByLabel('LinkedIn', { exact: true })).not.toBeChecked();
   await page.locator('outbox-autofill .card').screenshot({ path: 'e2e/output/ashby-card.png' });
 });

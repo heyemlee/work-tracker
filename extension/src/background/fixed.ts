@@ -67,6 +67,9 @@ export const FIXED_SNAPSHOTS: ReadonlySet<string> = new Set([
   // Fixed 2026-10-26: DoorDash's Greenhouse form asks "Do you identify as transgender?", which was always declined:
   // the profile now holds the answer.
   '69f7df7a-4aee-4df9-a108-033596375a53',
+  // Fixed 2026-10-28: Glean's Greenhouse form left the voluntary survey empty, as optional, and the owner filled it by
+  // hand. It's answered from the profile again.
+  '3f354623-282a-422f-adfd-b2eaa19e2228',
 ]);
 
 /** Takes the reports this build fixes off the list. */

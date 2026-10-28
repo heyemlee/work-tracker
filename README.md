@@ -73,7 +73,7 @@ and from the deployed app through the Worker and a Cloudflare Tunnel.
 
 The extension in [`extension/`](extension) fills applications from the profile you keep in Outbox and logs each
 submission to it. It never presses Submit: you check every answer first. It fills only the fields a form marks as
-required, and the resume; optional ones are left to you.
+required, the resume, and the voluntary EEO survey from your profile; other optional ones are left to you.
 
 - **Rules first.** Adapters for Greenhouse, Lever, Ashby, Workday, Gem, iCIMS, SmartRecruiters, Workable,
   Jobvite and Eightfold drive each form's widgets, with a generic adapter for other forms. Work authorization is answered by
@@ -89,9 +89,9 @@ Rules-only fill accuracy on 22 saved application pages, every expected answer ch
 
 | System     | Pages | Answers correct | Required fields filled |
 | ---------- | ----: | --------------: | ---------------------: |
-| Greenhouse |    10 |       135 / 135 |                    87% |
-| Lever      |     6 |         52 / 52 |                    79% |
-| Ashby      |     6 |         57 / 57 |                    77% |
+| Greenhouse |    10 |       143 / 143 |                    87% |
+| Lever      |     6 |         76 / 76 |                    79% |
+| Ashby      |     6 |         69 / 69 |                    77% |
 
 The blank required fields are essays and questions only the applicant can answer. Workday (behind a sign-in),
 iCIMS, SmartRecruiters, Workable and Jobvite are tested on pages modeled on their forms instead, and Eightfold on a

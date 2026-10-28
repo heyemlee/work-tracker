@@ -26,8 +26,8 @@ const NEWEST = new Set(['current.company', 'current.title', 'education.school', 
  * 7. Free-text questions — drafted by AI when required, skipped when optional.
  *
  * Whatever is left is `missing`; the service worker may hand those to AI. A field the form doesn't mark as required
- * is left empty, whatever a layer found for it: all but the resume, and a job's "I currently work here" where the
- * job's end date is asked for.
+ * is left empty, whatever a layer found for it: all but the resume, the voluntary survey, and a job's "I currently
+ * work here" where the job's end date is asked for.
  */
 export function planForm(
   fields: readonly ScannedField[],
@@ -86,10 +86,12 @@ export function planField(
   const { answer } = found.resolution;
   // A field the form doesn't mark as required is left for the owner: a wrong answer there does harm, a blank one none
   // (the owner's call, 2026-10-26, after optional fields were filled wrong). The resume picked on the card still goes
-  // in: Greenhouse often leaves "Resume/CV" unmarked. An answer the field can't take was meant for another question:
-  // that field is left for the owner too.
+  // in: Greenhouse often leaves "Resume/CV" unmarked. So does the voluntary survey, which no form marks as required:
+  // its answers are the owner's own, set on their profile (they filled Glean's by hand, 2026-10-28). An answer the
+  // field can't take was meant for another question: that field is left for the owner too.
+  const voluntary = found.resolution.key?.startsWith('eeo.') ?? false;
   const resolution: Resolution =
-    answer && !field.required && answer.type !== 'file'
+    answer && !field.required && answer.type !== 'file' && !voluntary
       ? { ...found.resolution, status: 'skipped', answer: null, note: 'optional: left for you' }
       : answer && !fits(field, answer)
         ? empty(found.resolution.key, field, 'doesn’t fit the field', found.resolution.critical)

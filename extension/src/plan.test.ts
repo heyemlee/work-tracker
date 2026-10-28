@@ -52,26 +52,35 @@ describe('a field the form doesn’t mark as required', () => {
       optional('0:1', { label: 'LinkedIn Profile', kind: 'url', hint: 'links.linkedin' }),
       optional('0:2', { label: 'Phone', kind: 'tel', hint: 'phone' }),
       optional('0:3', {
-        label: 'Gender',
-        kind: 'select',
-        options: ['Male', 'Female', 'Decline to self-identify'],
-      }),
-      optional('0:4', {
         label: 'Will you now or in the future require sponsorship?',
         kind: 'radio',
         options: ['Yes', 'No'],
       }),
-      optional('0:5', { label: 'What is your favorite programming language?', kind: 'text' }),
+      optional('0:4', { label: 'What is your favorite programming language?', kind: 'text' }),
     ];
     const typed = {
-      key: memoryKey(fields[4]!),
-      label: fields[4]!.label,
+      key: memoryKey(fields[3]!),
+      label: fields[3]!.label,
       answer: { type: 'text' as const, text: 'TypeScript' },
       uses: 2,
       updatedAt: '2026-10-06T00:00:00.000Z',
     };
     for (const entry of planForm(fields, ctx, [typed]))
       expect(entry).toMatchObject({ status: 'skipped', answer: null, source: null });
+  });
+
+  it('is the voluntary survey’s, answered from the profile all the same', () => {
+    const gender = optional('0:1', {
+      label: 'Gender',
+      kind: 'select',
+      options: ['Male', 'Female', 'Decline to self-identify'],
+    });
+    const owner = makeProfile({ eeo: { gender: 'female' } });
+    expect(planForm([gender], { ...ctx, profile: owner }, [])[0]).toMatchObject({
+      status: 'filled',
+      key: 'eeo.gender',
+      answer: { option: 'Female' },
+    });
   });
 
   it('keeps what the page holds', () => {
