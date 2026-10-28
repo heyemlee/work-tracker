@@ -117,6 +117,43 @@ describe('a field the form doesn’t mark as required', () => {
     ]);
     expect(planForm([current, end(false)], ctx, [])[0]).toMatchObject({ status: 'skipped', answer: null });
   });
+
+  it('is a school’s typed degree and field of study where the school is asked for', () => {
+    // Ashby's education entry (Broccoli): a school searched for, then its degree and field typed in.
+    const school = (required: boolean) => optional('0:1', { label: 'School', kind: 'typeahead', required });
+    const degree = optional('0:2', { label: 'Degree', kind: 'text' });
+    const field = optional('0:3', { label: 'Field of Study', kind: 'text' });
+    expect(planForm([school(true), degree, field], ctx, [])).toMatchObject([
+      { status: 'filled', key: 'education.school', answer: { text: 'Santa Clara University' } },
+      { status: 'filled', key: 'education.degree', answer: { text: 'Master of Science' } },
+      { status: 'filled', key: 'education.field', answer: { text: 'Computer Science' } },
+    ]);
+    for (const entry of planForm([school(false), degree, field], ctx, []))
+      expect(entry).toMatchObject({ status: 'skipped', answer: null });
+  });
+
+  it('is never a school’s degree picked from a list', () => {
+    // Greenhouse's education entry (DoorDash): the degree is a dropdown, which was filled wrong.
+    const entry = { kind: 'education' as const, index: 0 };
+    const school = optional('0:1', {
+      label: 'School',
+      kind: 'typeahead',
+      hint: 'education.school',
+      entry,
+      required: true,
+    });
+    const degree = optional('0:2', {
+      label: 'Degree',
+      kind: 'select',
+      options: ["Bachelor's Degree", "Master's Degree"],
+      hint: 'education.degree',
+      entry,
+    });
+    expect(planForm([school, degree], ctx, [])).toMatchObject([
+      { status: 'filled', key: 'education.school#0' },
+      { status: 'skipped', key: 'education.degree#0', answer: null },
+    ]);
+  });
 });
 
 describe('a field the form names itself, with nothing for it in the profile', () => {

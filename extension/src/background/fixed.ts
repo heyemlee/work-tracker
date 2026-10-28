@@ -70,6 +70,10 @@ export const FIXED_SNAPSHOTS: ReadonlySet<string> = new Set([
   // Fixed 2026-10-28: Glean's Greenhouse form left the voluntary survey empty, as optional, and the owner filled it by
   // hand. It's answered from the profile again.
   '3f354623-282a-422f-adfd-b2eaa19e2228',
+  // Fixed 2026-10-28: on Broccoli's Ashby form the owner typed the school's Degree and Field of Study in by hand, left
+  // empty as optional; they're filled from the profile where the school is asked for. The card also named the texting
+  // consent "Phone Number" and listed the "Autofill from resume" upload as a field.
+  '55b3a315-4a6a-4e91-8de5-8d769035d6b6',
 ]);
 
 /** Takes the reports this build fixes off the list. */

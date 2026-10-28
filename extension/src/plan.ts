@@ -26,8 +26,8 @@ const NEWEST = new Set(['current.company', 'current.title', 'education.school', 
  * 7. Free-text questions — drafted by AI when required, skipped when optional.
  *
  * Whatever is left is `missing`; the service worker may hand those to AI. A field the form doesn't mark as required
- * is left empty, whatever a layer found for it: all but the resume, the voluntary survey, and a job's "I currently
- * work here" where the job's end date is asked for.
+ * is left empty, whatever a layer found for it: all but the resume, the voluntary survey, a job's "I currently work
+ * here" where the job's end date is asked for, and a school's typed degree and field of study where the school is.
  */
 export function planForm(
   fields: readonly ScannedField[],
@@ -44,11 +44,28 @@ export function planForm(
       field.hint === 'experience.end' && field.entry && field.required ? [field.entry.index] : [],
     ),
   );
-  const newest = new Set<string>();
-  return fields.map((field) => {
+  const own = fields.map((field) => {
     if (field.entry && started.has(field.entry.kind)) return leftToPage(field, field.entry);
     const current = field.hint === 'experience.current' && endAsked.has(field.entry?.index ?? -1);
-    const planned = planField(current ? { ...field, required: true } : field, ctx, memory);
+    return planField(current ? { ...field, required: true } : field, ctx, memory);
+  });
+  // A school the form asks for, filled from the profile, takes its degree and field of study where they're typed in:
+  // the profile's own words, not a pick from a list, which can go wrong (DoorDash's Degree, 2026-10-26). The owner's
+  // call of 2026-10-28, after typing Broccoli's in by hand. By the school's number, where the form numbers them.
+  const schools = new Set(
+    own.flatMap((entry, index) => {
+      const school = /^education\.school(#\d+)?$/.exec(entry.key ?? '');
+      return school && entry.answer && fields[index]!.required ? [school[1] ?? ''] : [];
+    }),
+  );
+  const newest = new Set<string>();
+  return fields.map((field, index) => {
+    let planned = own[index]!;
+    const detail = /^education\.(?:degree|field)(#\d+)?$/.exec(planned.key ?? '');
+    if (detail && !field.required && field.kind === 'text' && schools.has(detail[1] ?? '')) {
+      const asked = planField({ ...field, required: true }, ctx, memory);
+      if (asked.answer) planned = asked;
+    }
     // Where the form doesn't number its jobs and schools, the newest one's answers go to the first field asking:
     // a second "Company name" or "School" is another one's, which nothing tells. (A question asked twice, or one
     // widget read twice in two kinds, is the same question.)
