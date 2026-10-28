@@ -119,6 +119,52 @@ function blank(form: Element): void {
   }
 }
 
+/** A question answered with Yes and No buttons, each over a checkbox it hides. */
+function yesNoGroups(form: Element): CustomField[] {
+  return [...form.querySelectorAll<HTMLElement>('.ashby-application-form-input-yesno')].map((group) => {
+    const entry = group.closest('[data-field-path]') ?? group.parentElement ?? group;
+    const title = entry.querySelector('.ashby-application-form-question-title');
+    const buttons = [...group.querySelectorAll<HTMLElement>('button[data-option]')];
+    return {
+      label: textOf(title),
+      kind: 'radio',
+      options: buttons.map((button) => textOf(button)),
+      required: Boolean(title?.className.includes('_required')),
+      hint: PATH_HINTS[pathOf(group)] ?? null,
+      handle: { type: 'buttons', buttons },
+      anchor: entry,
+    };
+  });
+}
+
+/**
+ * Whether texts about the application may be sent: two radios Ashby draws under the phone number, named by the text
+ * over them ("Check Yes or No to indicate your agreement to receive text message updates from … regarding your job
+ * application. Frequency may vary…"), not by the phone's own title, which they were read under (Broccoli, Ramp).
+ */
+function textingConsents(form: Element): CustomField[] {
+  return [...form.querySelectorAll('.ashby-application-form-texting-consent-description')].flatMap(
+    (description) => {
+      const radios = [...description.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
+      if (radios.length === 0) return [];
+      const title = description
+        .closest('[data-field-path]')
+        ?.querySelector('.ashby-application-form-question-title');
+      const words = textOf(description.querySelector('p') ?? description);
+      return [
+        {
+          label: words.replace(/(\bapplication\.)\s.*$/, '$1'),
+          kind: 'radio',
+          options: radios.map((radio) => textOf(radio.closest('label'))),
+          required: Boolean(title?.className.includes('_required')),
+          handle: { type: 'radio', inputs: radios },
+          anchor: description,
+        },
+      ];
+    },
+  );
+}
+
 /** Ashby renders in the browser from `window.__appData`, which the page ships as a script the content script can read. */
 function appData(doc: Document): AppData | null {
   for (const script of doc.querySelectorAll('script')) {
@@ -164,26 +210,16 @@ export const ashby: Adapter = {
     control.matches('.ashby-application-form-input-autocomplete') ? 'typeahead' : null,
 
   skip: (control) =>
-    // "Autofill from resume" uploads to Ashby's parser, not the application; yes/no buttons hide a checkbox.
+    // "Autofill from resume" uploads to Ashby's parser, not the application (its box was renamed a pane by
+    // 2026-10-28, and read as an unnamed upload holding the resume); yes/no buttons hide a checkbox.
     Boolean(
-      control.closest('.ashby-application-form-autofill-uploader, .ashby-application-form-input-yesno'),
+      control.closest(
+        '.ashby-application-form-autofill-uploader, .ashby-application-form-autofill-pane, .ashby-application-form-input-yesno',
+      ),
     ),
 
   custom(form): CustomField[] {
-    return [...form.querySelectorAll<HTMLElement>('.ashby-application-form-input-yesno')].map((group) => {
-      const entry = group.closest('[data-field-path]') ?? group.parentElement ?? group;
-      const title = entry.querySelector('.ashby-application-form-question-title');
-      const buttons = [...group.querySelectorAll<HTMLElement>('button[data-option]')];
-      return {
-        label: textOf(title),
-        kind: 'radio',
-        options: buttons.map((button) => textOf(button)),
-        required: Boolean(title?.className.includes('_required')),
-        hint: PATH_HINTS[pathOf(group)] ?? null,
-        handle: { type: 'buttons', buttons },
-        anchor: entry,
-      };
-    });
+    return [...yesNoGroups(form), ...textingConsents(form)];
   },
 
   blank,

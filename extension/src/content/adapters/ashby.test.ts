@@ -269,3 +269,34 @@ describe('a fill report of an Ashby page', () => {
     expect(doc.body.innerHTML).toBe(before);
   });
 });
+
+// Ramp's application as Ashby drew it on 2026-09-27: its "Autofill from resume" box in the markup Ashby renamed, and
+// the texting consent it asks under the phone number.
+describe('Ramp’s Ashby application', () => {
+  const ramp = () =>
+    loadFixture(
+      'ashby/ramp.html',
+      'https://jobs.ashbyhq.com/ramp/fc971889-db1d-4a20-a25e-f282f9296936/application',
+    );
+
+  it('takes the texting consent by its own words, not the phone number’s', () => {
+    const { fields } = extractFields(ashby, ramp(), 0);
+    const consent = fields.find((field) => field.label.startsWith('Check Yes or No'));
+    expect(consent).toMatchObject({
+      label:
+        'Check Yes or No to indicate your agreement to receive text message updates from Ramp Business Corporation regarding your job application.',
+      kind: 'radio',
+      options: [
+        'Yes - I consent to receiving text messages',
+        'No - I do not consent to receiving text messages',
+      ],
+      required: true,
+    });
+    expect(fields.filter((field) => field.label === 'Phone').map((field) => field.kind)).toEqual(['tel']);
+  });
+
+  it('leaves the resume Ashby reads for itself out of the form', () => {
+    const { fields } = extractFields(ashby, ramp(), 0);
+    expect(fields.filter((field) => field.kind === 'file').map((field) => field.label)).toEqual(['Resume']);
+  });
+});
